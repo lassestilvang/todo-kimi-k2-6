@@ -222,10 +222,12 @@ export function AppSidebar({
                 Lists
               </p>
               <Dialog open={newListOpen} onOpenChange={setNewListOpen}>
-                <DialogTrigger>
-                  <Button variant="ghost" size="icon" className="h-6 w-6">
-                    <Plus className="h-3.5 w-3.5" />
-                  </Button>
+                <DialogTrigger
+                  render={
+                    <Button variant="ghost" size="icon" className="h-6 w-6" />
+                  }
+                >
+                  <Plus className="h-3.5 w-3.5" />
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
@@ -322,10 +324,12 @@ export function AppSidebar({
                 Labels
               </p>
               <Dialog open={newLabelOpen} onOpenChange={setNewLabelOpen}>
-                <DialogTrigger>
-                  <Button variant="ghost" size="icon" className="h-6 w-6">
-                    <Plus className="h-3.5 w-3.5" />
-                  </Button>
+                <DialogTrigger
+                  render={
+                    <Button variant="ghost" size="icon" className="h-6 w-6" />
+                  }
+                >
+                  <Plus className="h-3.5 w-3.5" />
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
