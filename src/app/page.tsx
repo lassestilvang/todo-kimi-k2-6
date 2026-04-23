@@ -1,65 +1,135 @@
-import Image from "next/image";
+"use client";
+
+import { useState, useCallback, useEffect } from "react";
+import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { AppSidebar } from "@/components/sidebar/app-sidebar";
+import { TaskList } from "@/components/task/task-list";
+import { TaskModal } from "@/components/task/task-modal";
+import type { TaskWithRelations, List, Label } from "@/types";
+import {
+  getLists,
+  getLabels,
+  getTasks,
+  getOverdueCount,
+} from "@/lib/actions/tasks";
+
+const viewTitles: Record<string, string> = {
+  today: "Today",
+  next7: "Next 7 Days",
+  upcoming: "Upcoming",
+  all: "All Tasks",
+};
 
 export default function Home() {
+  const [lists, setLists] = useState<List[]>([]);
+  const [labels, setLabels] = useState<Label[]>([]);
+  const [tasks, setTasks] = useState<TaskWithRelations[]>([]);
+  const [currentView, setCurrentView] = useState("today");
+  const [currentListId, setCurrentListId] = useState<number | undefined>();
+  const [overdueCount, setOverdueCount] = useState(0);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<TaskWithRelations | undefined>();
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const loadData = useCallback(async () => {
+    const [listsData, labelsData, overdue] = await Promise.all([
+      getLists(),
+      getLabels(),
+      getOverdueCount(),
+    ]);
+    setLists(listsData);
+    setLabels(labelsData);
+    setOverdueCount(overdue);
+
+    let tasksData: TaskWithRelations[];
+    if (searchQuery) {
+      tasksData = await getTasks({ searchQuery, includeCompleted: true });
+    } else if (currentView === "list" && currentListId) {
+      tasksData = await getTasks({ listId: currentListId, includeCompleted: true });
+    } else {
+      tasksData = await getTasks({
+        view: currentView as "today" | "next7" | "upcoming" | "all",
+        includeCompleted: true,
+      });
+    }
+    setTasks(tasksData);
+  }, [currentView, currentListId, searchQuery]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const handleViewChange = (view: string, listId?: number) => {
+    setCurrentView(view);
+    setCurrentListId(listId);
+    setSearchQuery("");
+  };
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    if (query) {
+      setCurrentView("search");
+    } else {
+      setCurrentView("today");
+    }
+  };
+
+  const handleEditTask = (task: TaskWithRelations) => {
+    setEditingTask(task);
+    setModalOpen(true);
+  };
+
+  const handleNewTask = () => {
+    setEditingTask(undefined);
+    setModalOpen(true);
+  };
+
+  const getViewTitle = () => {
+    if (searchQuery) return `Search: "${searchQuery}"`;
+    if (currentView === "list" && currentListId) {
+      const list = lists.find((l) => l.id === currentListId);
+      return list ? `${list.emoji} ${list.name}` : "List";
+    }
+    return viewTitles[currentView] || "Tasks";
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="flex h-screen w-full overflow-hidden bg-background">
+      <AppSidebar
+        lists={lists}
+        labels={labels}
+        currentView={currentView}
+        currentListId={currentListId}
+        overdueCount={overdueCount}
+        onViewChange={handleViewChange}
+        onRefresh={loadData}
+        onSearch={handleSearch}
+      />
+      <div className="flex flex-1 flex-col min-w-0">
+        <TaskList
+          tasks={tasks}
+          lists={lists}
+          viewTitle={getViewTitle()}
+          onRefresh={loadData}
+          onEditTask={handleEditTask}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      </div>
+      <Button
+        size="icon"
+        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg"
+        onClick={handleNewTask}
+      >
+        <Plus className="h-6 w-6" />
+      </Button>
+      <TaskModal
+        task={editingTask}
+        lists={lists}
+        labels={labels}
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        onSuccess={loadData}
+      />
     </div>
   );
 }
