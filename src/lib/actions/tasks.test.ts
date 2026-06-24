@@ -8,15 +8,32 @@ import {
   updateList,
   deleteList,
   getLabels,
+  getLabelById,
   createLabel,
   deleteLabel,
   getTasks,
+  getTaskById,
   createTask,
   updateTask,
   deleteTask,
-  getTaskById,
   toggleSubtask,
   getOverdueCount,
+  generateRecurringTasks,
+  addTaskDependency,
+  removeTaskDependency,
+  getBlockedTasks,
+  createTemplate,
+  getTemplates,
+  deleteTemplate,
+  saveTemplateFromTask,
+  addTaskComment,
+  getTaskComments,
+  exportData,
+  importData,
+  exportCsv,
+  reorderTasks,
+  bulkUpdateTasks,
+  bulkDeleteTasks,
 } from "./tasks";
 
 describe("Task Actions", () => {
@@ -197,6 +214,137 @@ describe("Task Actions", () => {
       const listTasks = await getTasks({ listId: list.id });
       expect(listTasks.length).toBe(1);
       expect(listTasks[0].name).toBe("In Custom");
+    });
+  });
+
+  describe("Additional Coverage", () => {
+    it("should handle updateTask with empty string name", async () => {
+      const task = await createTask({ name: "Valid" });
+      const updated = await updateTask(task.id, { name: "" });
+      expect(updated.name).toBe("");
+    });
+
+    it("should handle null values in updateTask", async () => {
+      const task = await createTask({ name: "Task", description: "Original" });
+      const updated = await updateTask(task.id, { description: null });
+      expect(updated.description).toBeNull();
+    });
+
+    it("should handle updating only completed status", async () => {
+      const task = await createTask({ name: "Task" });
+      const updated = await updateTask(task.id, { completed: true });
+      expect(updated.completed).toBe(1);
+      expect(updated.completed_at).not.toBeNull();
+    });
+
+    it("should handle clearing completed status", async () => {
+      const task = await createTask({ name: "Task" });
+      await updateTask(task.id, { completed: true });
+      const updated = await updateTask(task.id, { completed: false });
+      expect(updated.completed).toBe(0);
+      expect(updated.completed_at).toBeNull();
+    });
+
+    it("should handle deleteList for non-existent list", async () => {
+      await deleteList(99999);
+    });
+
+    it("should handle deleteLabel for non-existent label", async () => {
+      await deleteLabel(99999);
+    });
+
+    it("should handle getLabelById for non-existent label", async () => {
+      const found = await getLabelById(99999);
+      expect(found).toBeNull();
+    });
+  });
+
+  describe("Import/Export", () => {
+    it("should export data with empty state", async () => {
+      const data = await exportData();
+      expect(data.lists.length).toBe(1); // Just Inbox
+      expect(data.labels.length).toBe(0);
+      expect(data.tasks.length).toBe(0);
+      expect(data.templates.length).toBe(0);
+      expect(data.time_entries.length).toBe(0);
+    });
+
+    it("should import empty data", async () => {
+      const result = await importData({
+        lists: [],
+        labels: [],
+        tasks: [],
+        templates: [],
+        time_entries: [],
+      });
+      expect(result.lists).toBe(0);
+      expect(result.tasks).toBe(0);
+    });
+
+    it("should export CSV with tasks", async () => {
+      await createTask({ name: "Task 1" });
+      const csv = await exportCsv();
+      expect(csv).toContain("id,name,description,date,deadline,priority,completed,list_id");
+      expect(csv).toContain("Task 1");
+    });
+
+    it("should handle CSV export with special characters", async () => {
+      await createTask({ name: "Task, with comma", description: 'Has "quotes"' });
+      const csv = await exportCsv();
+      expect(csv).toContain('"Task, with comma"');
+    });
+
+    it("should import tasks and preserve data", async () => {
+      await createTask({ name: "Original Task" });
+      const data = await exportData();
+      await importData(data);
+
+      const tasks = await getTasks({ includeCompleted: true });
+      expect(tasks.length).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  describe("Bulk Operations", () => {
+    it("should bulk update task priorities", async () => {
+      const task1 = await createTask({ name: "Task 1", priority: "low" });
+      const task2 = await createTask({ name: "Task 2", priority: "low" });
+
+      await bulkUpdateTasks([task1.id, task2.id], { priority: "high" });
+
+      const updated1 = await getTaskById(task1.id);
+      const updated2 = await getTaskById(task2.id);
+      expect(updated1?.priority).toBe("high");
+      expect(updated2?.priority).toBe("high");
+    });
+
+    it("should bulk complete tasks", async () => {
+      const task1 = await createTask({ name: "Task 1" });
+      const task2 = await createTask({ name: "Task 2" });
+
+      await bulkUpdateTasks([task1.id, task2.id], { completed: true });
+
+      const updated1 = await getTaskById(task1.id);
+      const updated2 = await getTaskById(task2.id);
+      expect(updated1?.completed).toBe(1);
+      expect(updated2?.completed).toBe(1);
+      expect(updated1?.completed_at).not.toBeNull();
+    });
+
+    it("should bulk delete tasks", async () => {
+      const task1 = await createTask({ name: "Task 1" });
+      const task2 = await createTask({ name: "Task 2" });
+
+      await bulkDeleteTasks([task1.id, task2.id]);
+
+      const found1 = await getTaskById(task1.id);
+      const found2 = await getTaskById(task2.id);
+      expect(found1).toBeUndefined();
+      expect(found2).toBeUndefined();
+    });
+
+    it("should handle empty bulk operations", async () => {
+      await bulkUpdateTasks([], { priority: "high" });
+      await bulkDeleteTasks([]);
     });
   });
 });
