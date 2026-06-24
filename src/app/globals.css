@@ -128,3 +128,27 @@
     @apply font-sans;
   }
 }
+
+/* Mobile touch improvements */
+@media (max-width: 768px) {
+  /* Ensure minimum touch targets */
+  button, input, select, textarea {
+    @apply min-h-10;
+  }
+
+  /* Larger touch targets for mobile */
+  .touch-manipulation {
+    -webkit-tap-highlight-color: transparent;
+    tap-highlight-color: transparent;
+  }
+
+  /* Prevent zoom on input focus */
+  input, textarea, select {
+    font-size: 16px;
+  }
+
+  /*Scrollable areas with momentum scrolling*/
+  .overflow-y-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+}
