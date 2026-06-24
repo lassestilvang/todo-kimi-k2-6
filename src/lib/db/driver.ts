@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export interface Statement {
   run(...params: unknown[]): { lastInsertRowid: number | bigint; changes: number };
   get(...params: unknown[]): any;
