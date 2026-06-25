@@ -16,6 +16,7 @@ import {
   Square,
   Move,
   Tag,
+  Filter,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -24,21 +25,30 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { TaskPreview } from "@/components/task/task-preview";
 import type { TaskWithRelations, List, SortField, SortDirection } from "@/types";
-import { updateTask, deleteTask, toggleSubtask, bulkDeleteTasks } from "@/lib/actions/tasks";
+import { updateTask, deleteTask, toggleSubtask, bulkDeleteTasks, bulkUpdateTasks } from "@/lib/actions/tasks";
 import { toast } from "sonner";
 
 interface TaskListProps {
   tasks: TaskWithRelations[];
   lists: List[];
+  labels?: import("@/types").Label[];
   viewTitle: string;
   onRefresh: () => void;
   onEditTask: (task: TaskWithRelations) => void;
   sortBy?: SortField;
   sortDirection?: SortDirection;
   onSort?: (field: SortField) => void;
+  filterListId?: number;
+  filterLabelIds?: number[];
+  filterPriority?: import("@/types").Priority;
+  onFilterList?: (listId: number | undefined) => void;
+  onFilterLabel?: (labelId: number) => void;
+  onFilterPriority?: (priority: import("@/types").Priority | undefined) => void;
+  onClearFilters?: () => void;
 }
 
 const priorityConfig = {
@@ -52,12 +62,20 @@ const priorityConfig = {
 export function TaskList({
   tasks,
   lists,
+  labels = [],
   viewTitle,
   onRefresh,
   onEditTask,
   sortBy = "date",
   sortDirection = "asc",
   onSort,
+  filterListId,
+  filterLabelIds = [],
+  filterPriority,
+  onFilterList,
+  onFilterLabel,
+  onFilterPriority,
+  onClearFilters,
 }: TaskListProps) {
   const [showCompleted, setShowCompleted] = useState(false);
   const [expandedTasks, setExpandedTasks] = useState<Set<number>>(new Set());
@@ -65,6 +83,7 @@ export function TaskList({
   const [previewPosition, setPreviewPosition] = useState({ x: 0, y: 0 });
   const [selectedTasks, setSelectedTasks] = useState<Set<number>>(new Set());
   const [isSelectMode, setIsSelectMode] = useState(false);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   const getSortIndicator = (field: SortField) => {
     if (sortBy !== field) return <ArrowUpDown className="h-3.5 w-3.5 opacity-30" />;
@@ -168,6 +187,120 @@ export function TaskList({
             {renderSortButton("priority", "Priority")}
             {renderSortButton("name", "Name")}
           </div>
+          {/* Filter Popover */}
+          <Popover open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+            <PopoverTrigger>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7"
+              >
+                <Filter className="h-3.5 w-3.5 mr-1" />
+                Filter
+                <kbd className="ml-1 hidden sm:inline text-xs text-muted-foreground/60">⌘+f</kbd>
+                {(filterListId || filterLabelIds.length > 0 || filterPriority) && (
+                  <span className="ml-1 h-2 w-2 bg-primary rounded-full" />
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64" align="end">
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-sm font-medium">List</Label>
+                  <div className="mt-1 space-y-1 max-h-40 overflow-y-auto">
+                    <button
+                      className={cn(
+                        "text-sm w-full text-left px-2 py-1 rounded hover:bg-muted",
+                        !filterListId && "bg-muted"
+                      )}
+                      onClick={() => {
+                        onFilterList?.(undefined);
+                      }}
+                    >
+                      All Lists
+                    </button>
+                    {lists.map((list) => (
+                      <button
+                        key={list.id}
+                        className={cn(
+                          "text-sm w-full text-left px-2 py-1 rounded hover:bg-muted flex items-center gap-2",
+                          filterListId === list.id && "bg-muted"
+                        )}
+                        onClick={() => {
+                          onFilterList?.(list.id);
+                        }}
+                      >
+                        <span>{list.emoji}</span>
+                        {list.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {labels.length > 0 && (
+                  <div>
+                    <Label className="text-sm font-medium">Labels</Label>
+                    <div className="mt-1 flex flex-wrap gap-1 max-h-40 overflow-y-auto">
+                      {labels.map((label) => {
+                        const isSelected = filterLabelIds.includes(label.id);
+                        return (
+                          <button
+                            key={label.id}
+                            className={cn(
+                              "text-xs px-2 py-1 rounded border flex items-center gap-1",
+                              isSelected ? "ring-2 ring-primary" : "opacity-60"
+                            )}
+                            onClick={() => onFilterLabel?.(label.id)}
+                          >
+                            <span>{label.icon}</span>
+                            {label.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                <div>
+                  <Label className="text-sm font-medium">Priority</Label>
+                  <div className="mt-1 space-y-1">
+                    <button
+                      className={cn(
+                        "text-sm w-full text-left px-2 py-1 rounded hover:bg-muted",
+                        !filterPriority && "bg-muted"
+                      )}
+                      onClick={() => onFilterPriority?.(undefined)}
+                    >
+                      All Priorities
+                    </button>
+                    {(["critical", "high", "medium", "low"] as const).map((p) => (
+                      <button
+                        key={p}
+                        className={cn(
+                          "text-sm w-full text-left px-2 py-1 rounded hover:bg-muted",
+                          filterPriority === p && "bg-muted"
+                        )}
+                        onClick={() => onFilterPriority?.(p)}
+                      >
+                        {priorityConfig[p].label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {(filterListId || filterLabelIds.length > 0 || filterPriority) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => {
+                      onClearFilters?.();
+                      setIsFilterOpen(false);
+                    }}
+                  >
+                    Clear Filters
+                  </Button>
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
           <div className="flex items-center gap-2">
             <Button
               variant={isSelectMode ? "default" : "ghost"}
@@ -181,6 +314,7 @@ export function TaskList({
                 <Square className="h-3.5 w-3.5 mr-1" />
               )}
               Select
+              <kbd className="ml-1 text-xs text-muted-foreground/60 hidden sm:inline">S</kbd>
             </Button>
             <Switch
               id="show-completed"
@@ -189,6 +323,7 @@ export function TaskList({
             />
             <Label htmlFor="show-completed" className="text-sm">
               Show completed
+              <kbd className="ml-1 text-xs text-muted-foreground/60 hidden sm:inline">C</kbd>
             </Label>
           </div>
         </div>
@@ -212,8 +347,16 @@ export function TaskList({
                   variant="outline"
                   size="sm"
                   onClick={async () => {
-                    // TODO: Implement move bulk action
-                    toast.info("Move functionality coming soon");
+                    const selectedListId = prompt("Enter the list ID to move tasks to:");
+                    if (!selectedListId) return;
+                    try {
+                      await bulkUpdateTasks(Array.from(selectedTasks), { list_id: parseInt(selectedListId) });
+                      setSelectedTasks(new Set());
+                      onRefresh();
+                      toast.success(`Moved ${selectedTasks.size} task(s)`);
+                    } catch {
+                      toast.error("Failed to move tasks");
+                    }
                   }}
                 >
                   <Move className="h-3.5 w-3.5 mr-1" />
@@ -223,8 +366,18 @@ export function TaskList({
                   variant="outline"
                   size="sm"
                   onClick={async () => {
-                    // TODO: Implement label bulk action
-                    toast.info("Label functionality coming soon");
+                    const labelIdsStr = prompt("Enter label IDs (comma-separated):");
+                    if (!labelIdsStr) return;
+                    const labelIds = labelIdsStr.split(",").map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+                    if (labelIds.length === 0) return;
+                    try {
+                      await bulkUpdateTasks(Array.from(selectedTasks), { label_ids: labelIds });
+                      setSelectedTasks(new Set());
+                      onRefresh();
+                      toast.success(`Labeled ${selectedTasks.size} task(s)`);
+                    } catch {
+                      toast.error("Failed to label tasks");
+                    }
                   }}
                 >
                   <Tag className="h-3.5 w-3.5 mr-1" />
