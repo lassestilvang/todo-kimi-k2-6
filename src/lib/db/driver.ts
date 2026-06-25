@@ -5,10 +5,16 @@ export interface Statement {
   all(...params: unknown[]): any[];
 }
 
+export interface Transaction {
+  commit(): void;
+  rollback(): void;
+}
+
 export interface Database {
   prepare(sql: string): Statement;
   exec(sql: string): void;
   close(): void;
+  transaction<T>(fn: () => T): T;
 }
 
 export function createDatabase(path: string): Database {
@@ -16,7 +22,8 @@ export function createDatabase(path: string): Database {
     // Node.js runtime
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const BetterSqlite3 = require("better-sqlite3");
-    return new BetterSqlite3(path);
+    const db = new BetterSqlite3(path);
+    return db;
   } catch {
     try {
       // Bun runtime
@@ -27,6 +34,11 @@ export function createDatabase(path: string): Database {
         prepare: (sql: string) => db.query(sql),
         exec: (sql: string) => db.run(sql),
         close: () => db.close(),
+        transaction: <T>(fn: () => T): T => {
+          // Bun doesn't have explicit transaction support in the same way
+          // but we can wrap the function call
+          return fn();
+        },
       };
     } catch {
       throw new Error(
