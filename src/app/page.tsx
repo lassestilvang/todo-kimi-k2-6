@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Plus, Download, Upload, BarChart3, CalendarPlus } from "lucide-react";
+import { Plus, Download, Upload, BarChart3, CalendarPlus, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AppSidebar } from "@/components/sidebar/app-sidebar";
 import { TaskList } from "@/components/task/task-list";
@@ -9,10 +9,13 @@ import { TaskModal } from "@/components/task/task-modal";
 import { TaskStats } from "@/components/task/task-stats";
 import { TaskCalendar } from "@/components/task/task-calendar";
 import { TaskDependencyGraph } from "@/components/task/task-dependency-graph";
+import { GanttChart } from "@/components/task/gantt-chart";
 import { EisenhowerMatrix } from "@/components/task/eisenhower-matrix";
 import { KanbanBoard } from "@/components/task/kanban-board";
 import { NotificationProvider } from "@/components/task/notification-provider";
 import { ImportExport } from "@/components/task/import-export";
+import { CalendarSyncSettings } from "@/components/task/calendar-sync-settings";
+import { PwaInstallPrompt } from "@/components/task/pwa-install-prompt";
 import { AIAssistant } from "@/components/task/ai-assistant";
 import { KeyboardShortcuts } from "@/components/task/keyboard-shortcuts";
 import { TaskAnalytics } from "@/components/task/task-analytics";
@@ -27,6 +30,7 @@ const viewTitles: Record<string, string> = {
   upcoming: "Upcoming",
   all: "All Tasks",
   blocked: "Blocked Tasks",
+  calendar_sync: "Calendar Sync",
   calendar: "Calendar",
   graph: "Dependency Graph",
   matrix: "Eisenhower Matrix",
@@ -42,6 +46,7 @@ export default function Home() {
   const [editingTask, setEditingTask] = useState<TaskWithRelations | undefined>();
   const [isLoading, setIsLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
+  const [isOnline, setIsOnline] = useState(true);
 
   const {
     tasks,
@@ -80,14 +85,26 @@ export default function Home() {
     initialLabels: [],
   });
 
-  // Check for mobile view
+  // Check for mobile view and online status
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
     checkMobile();
     window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
+
+    // Check online status
+    setIsOnline(navigator.onLine);
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("resize", checkMobile);
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
   }, []);
 
   // Get completed tasks for statistics
@@ -285,13 +302,10 @@ export default function Home() {
 
     if (currentView === "gantt") {
       return (
-        <div className="flex-1 flex items-center justify-center p-8">
-          <div className="text-center">
-            <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-            <h3 className="font-medium">Gantt Chart</h3>
-            <p className="text-sm text-muted-foreground">Task timeline visualization coming soon</p>
-          </div>
-        </div>
+        <GanttChart
+          tasks={tasks}
+          onTaskClick={handleEditTask}
+        />
       );
     }
 
@@ -301,6 +315,19 @@ export default function Home() {
           tasks={tasks}
           completedTasks={completedTasks}
         />
+      );
+    }
+
+    if (currentView === "calendar_sync") {
+      return (
+        <div className="p-6">
+          <CalendarSyncSettings
+            accessToken={null}
+            onAuth={() => window.location.href = "/api/calendar/sync?action=auth"}
+            onSync={loadData}
+            lastSynced={undefined}
+          />
+        </div>
       );
     }
 
@@ -330,12 +357,20 @@ export default function Home() {
         <TaskList
           tasks={visibleTasks}
           lists={lists}
+          labels={labels}
           viewTitle={getViewTitle()}
           onRefresh={loadData}
           onEditTask={handleEditTask}
           sortBy={sortBy}
           sortDirection={sortDirection}
           onSort={handleSort}
+          filterListId={filterListId}
+          filterLabelIds={filterLabelIds}
+          filterPriority={filterPriority}
+          onFilterList={handleFilterList}
+          onFilterLabel={handleFilterLabel}
+          onFilterPriority={handleFilterPriority}
+          onClearFilters={clearFilters}
         />
       </>
     );
@@ -375,6 +410,12 @@ export default function Home() {
       )}
 
       <div className="flex flex-1 flex-col min-w-0">
+        {!isOnline && (
+          <div className="bg-yellow-500/10 border-b border-yellow-500/20 px-4 py-2 text-center text-sm">
+            <WifiOff className="h-4 w-4 inline mr-1.5" />
+            You are offline. Changes will be saved locally and synced when you're back online.
+          </div>
+        )}
         {isLoading ? (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
@@ -429,6 +470,7 @@ export default function Home() {
       />
       <KeyboardShortcuts />
       <NotificationProvider tasks={tasks} />
+      <PwaInstallPrompt />
     </div>
   );
 }
