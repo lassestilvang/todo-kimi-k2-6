@@ -5,17 +5,18 @@ import {
   deleteTask,
 } from '@/lib/actions/tasks';
 
-export async function GET(request: NextRequest, params: { id: string }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   try {
-    const id = parseInt(params.id);
-    if (isNaN(id)) {
+    const taskId = parseInt(id);
+    if (isNaN(taskId)) {
       return NextResponse.json(
         { error: 'Invalid task ID' },
         { status: 400 }
       );
     }
 
-    const task = await getTaskById(id);
+    const task = await getTaskById(taskId);
     if (!task) {
       return NextResponse.json(
         { error: 'Task not found' },
@@ -33,10 +34,11 @@ export async function GET(request: NextRequest, params: { id: string }) {
   }
 }
 
-export async function PATCH(request: NextRequest, params: { id: string }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   try {
-    const id = parseInt(params.id);
-    if (isNaN(id)) {
+    const taskId = parseInt(id);
+    if (isNaN(taskId)) {
       return NextResponse.json(
         { error: 'Invalid task ID' },
         { status: 400 }
@@ -44,7 +46,7 @@ export async function PATCH(request: NextRequest, params: { id: string }) {
     }
 
     const body = await request.json();
-    const task = await updateTask(id, body);
+    const task = await updateTask(taskId, body);
     return NextResponse.json(task);
   } catch (error) {
     console.error('Error updating task:', error);
@@ -55,17 +57,18 @@ export async function PATCH(request: NextRequest, params: { id: string }) {
   }
 }
 
-export async function DELETE(request: NextRequest, params: { id: string }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   try {
-    const id = parseInt(params.id);
-    if (isNaN(id)) {
+    const taskId = parseInt(id);
+    if (isNaN(taskId)) {
       return NextResponse.json(
         { error: 'Invalid task ID' },
         { status: 400 }
       );
     }
 
-    await deleteTask(id);
+    await deleteTask(taskId);
     return NextResponse.json({ message: 'Task deleted' }, { status: 204 });
   } catch (error) {
     console.error('Error deleting task:', error);
