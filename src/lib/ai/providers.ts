@@ -19,7 +19,7 @@ export class KeywordParser implements AIProvider {
   name = "keyword-parser";
 
   private readonly priorityKeywords = {
-    critical: ["urgent", "asap", "critical", "important", "high priority", "deadline"],
+    critical: ["urgent", "asap", "critical", "high priority", "deadline"],
     high: ["important", "high priority", "soon", "today", "this week"],
     medium: ["medium priority", "normal", "standard"],
     low: ["low priority", "later", "someday", "optional", "backlog"],
