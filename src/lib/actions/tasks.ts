@@ -354,72 +354,77 @@ export async function getTasks(options?: {
 export async function createTask(input: CreateTaskInput & { sort_order?: number }): Promise<TaskWithRelations> {
   const db = getDb();
 
-  // Determine sort_order: use provided value or auto-increment
-  let sortOrder: number;
-  if (input.sort_order !== undefined) {
-    sortOrder = input.sort_order;
-  } else {
-    // Get max sort_order for the list or default to 0
-    const maxSortOrder = input.list_id
-      ? (db.prepare("SELECT MAX(sort_order) as max FROM tasks WHERE list_id = ?").get(input.list_id) as { max: number })?.max
-      : (db.prepare("SELECT MAX(sort_order) as max FROM tasks").get() as { max: number })?.max;
-    sortOrder = (maxSortOrder ?? -1) + 1;
-  }
-
-  const result = db
-    .prepare(
-      `INSERT INTO tasks
-       (name, description, list_id, date, deadline, estimate, actual_time, priority, recurring, recurring_config, sort_order)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    )
-    .run(
-      input.name,
-      input.description || null,
-      input.list_id || 1,
-      input.date || null,
-      input.deadline || null,
-      input.estimate || null,
-      input.actual_time || null,
-      input.priority || "none",
-      input.recurring || "none",
-      input.recurring_config || null,
-      sortOrder
-    );
-
-  const taskId = result.lastInsertRowid as number;
-
-  if (input.label_ids?.length) {
-    const stmt = db.prepare("INSERT INTO task_labels (task_id, label_id) VALUES (?, ?)");
-    for (const labelId of input.label_ids) {
-      stmt.run(taskId, labelId);
+  // Use transaction for atomic operation
+  const result = db.transaction(() => {
+    // Determine sort_order: use provided value or auto-increment
+    let sortOrder: number;
+    if (input.sort_order !== undefined) {
+      sortOrder = input.sort_order;
+    } else {
+      // Get max sort_order for the list or default to 0
+      const maxSortOrder = input.list_id
+        ? (db.prepare("SELECT MAX(sort_order) as max FROM tasks WHERE list_id = ?").get(input.list_id) as { max: number })?.max
+        : (db.prepare("SELECT MAX(sort_order) as max FROM tasks").get() as { max: number })?.max;
+      sortOrder = (maxSortOrder ?? -1) + 1;
     }
-  }
 
-  if (input.subtasks?.length) {
-    const stmt = db.prepare("INSERT INTO subtasks (task_id, name) VALUES (?, ?)");
-    for (const name of input.subtasks) {
-      stmt.run(taskId, name);
+    const insertResult = db
+      .prepare(
+        `INSERT INTO tasks
+         (name, description, list_id, date, deadline, estimate, actual_time, priority, recurring, recurring_config, sort_order)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      )
+      .run(
+        input.name,
+        input.description || null,
+        input.list_id || 1,
+        input.date || null,
+        input.deadline || null,
+        input.estimate || null,
+        input.actual_time || null,
+        input.priority || "none",
+        input.recurring || "none",
+        input.recurring_config || null,
+        sortOrder
+      );
+
+    const taskId = insertResult.lastInsertRowid as number;
+
+    if (input.label_ids?.length) {
+      const stmt = db.prepare("INSERT INTO task_labels (task_id, label_id) VALUES (?, ?)");
+      for (const labelId of input.label_ids) {
+        stmt.run(taskId, labelId);
+      }
     }
-  }
 
-  if (input.reminders?.length) {
-    const stmt = db.prepare("INSERT INTO reminders (task_id, remind_at) VALUES (?, ?)");
-    for (const remindAt of input.reminders) {
-      stmt.run(taskId, remindAt);
+    if (input.subtasks?.length) {
+      const stmt = db.prepare("INSERT INTO subtasks (task_id, name) VALUES (?, ?)");
+      for (const name of input.subtasks) {
+        stmt.run(taskId, name);
+      }
     }
-  }
 
-  // Handle task dependencies (blockers)
-  if (input.blocker_ids?.length) {
-    const stmt = db.prepare("INSERT INTO task_dependencies (task_id, depends_on_task_id) VALUES (?, ?)");
-    for (const blockingTaskId of input.blocker_ids) {
-      stmt.run(taskId, blockingTaskId);
+    if (input.reminders?.length) {
+      const stmt = db.prepare("INSERT INTO reminders (task_id, remind_at) VALUES (?, ?)");
+      for (const remindAt of input.reminders) {
+        stmt.run(taskId, remindAt);
+      }
     }
-  }
 
-  logTaskAction(taskId, "created", `Task "${input.name}" created`);
+    // Handle task dependencies (blockers)
+    if (input.blocker_ids?.length) {
+      const stmt = db.prepare("INSERT INTO task_dependencies (task_id, depends_on_task_id) VALUES (?, ?)");
+      for (const blockingTaskId of input.blocker_ids) {
+        stmt.run(taskId, blockingTaskId);
+      }
+    }
 
-  return getTaskById(taskId) as Promise<TaskWithRelations>;
+    logTaskAction(taskId, "created", `Task "${input.name}" created`);
+
+    return taskId;
+  });
+
+  return getTaskById(result) as Promise<TaskWithRelations>;
 }
 
 export async function updateTask(id: number, input: UpdateTaskInput): Promise<TaskWithRelations> {
