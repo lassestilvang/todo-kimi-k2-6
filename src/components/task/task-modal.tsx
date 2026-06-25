@@ -57,6 +57,7 @@ import type {
   Template,
 } from "@/types";
 import { createTask as createTaskAction, updateTask as updateTaskAction, addTaskComment, saveTemplateFromTask } from "@/lib/actions/tasks";
+import { saveOfflineTask } from "@/lib/offline-storage";
 import { ShareDialog } from "@/components/task/share-dialog";
 
 interface TaskModalProps {
@@ -270,7 +271,17 @@ export function TaskModal({
       onSuccess();
       onOpenChange(false);
     } catch (error) {
-      toast.error("Failed to save task. Please try again.");
+      // If offline, save to offline storage
+      if (!navigator.onLine) {
+        // Convert null values to undefined for offline storage
+        const offlineData = isEditing ? { id: task.id, ...parsed.data } : parsed.data;
+        saveOfflineTask(isEditing ? "update" : "create", offlineData as any);
+        toast.success("Task saved locally. Will sync when online.");
+        onSuccess();
+        onOpenChange(false);
+      } else {
+        toast.error("Failed to save task. Please try again.");
+      }
       console.error(error);
     } finally {
       setIsSubmitting(false);
