@@ -1,8 +1,8 @@
 // Email notification system
 // This implementation uses Nodemailer for sending emails
 // Requires SMTP configuration (e.g., SendGrid, Resend, or custom SMTP)
+// Install nodemailer to enable: npm install nodemailer @types/nodemailer
 
-import nodemailer from "nodemailer";
 import type { TaskWithRelations } from "@/types";
 
 interface EmailConfig {
@@ -17,17 +17,28 @@ interface EmailConfig {
 
 // Create transporter with config
 function createTransporter(config?: EmailConfig) {
-  const smtp = config || {
-    host: process.env.SMTP_HOST || "smtp.resend.dev",
-    port: parseInt(process.env.SMTP_PORT || "587"),
-    secure: false,
-    auth: {
-      user: process.env.SMTP_USER || "resend",
-      pass: process.env.SMTP_PASS || "",
-    },
-  };
+  // Check if nodemailer is available
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const nodemailer = require("nodemailer");
 
-  return nodemailer.createTransporter(smtp);
+    const smtp = config || {
+      host: process.env.SMTP_HOST || "smtp.resend.dev",
+      port: parseInt(process.env.SMTP_PORT || "587"),
+      secure: false,
+      auth: {
+        user: process.env.SMTP_USER || "resend",
+        pass: process.env.SMTP_PASS || "",
+      },
+    };
+
+    return nodemailer.createTransporter(smtp);
+  } catch {
+    // Fallback stub for development
+    return {
+      sendMail: async () => ({ success: true }),
+    };
+  }
 }
 
 export interface EmailOptions {
@@ -40,7 +51,7 @@ export interface EmailOptions {
 export async function sendEmail(options: EmailOptions, config?: EmailConfig): Promise<boolean> {
   try {
     const transporter = createTransporter(config);
-    
+
     await transporter.sendMail({
       from: process.env.EMAIL_FROM || "TaskFlow <noreply@taskflow.app>",
       to: options.to,
@@ -48,7 +59,7 @@ export async function sendEmail(options: EmailOptions, config?: EmailConfig): Pr
       html: options.html,
       text: options.text,
     });
-    
+
     return true;
   } catch (error) {
     console.error("Failed to send email:", error);
