@@ -18,6 +18,7 @@ import {
   Settings,
   BarChart3,
   Bot,
+  CalendarPlus,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
@@ -66,6 +67,7 @@ const views = [
   { id: "matrix", name: "Priority Matrix", icon: LayoutGrid },
   { id: "gantt", name: "Gantt Chart", icon: BarChart3 },
   { id: "ai", name: "AI Assistant", icon: Bot },
+  { id: "calendar_sync", name: "Calendar Sync", icon: CalendarPlus },
 ];
 
 export function AppSidebar({
