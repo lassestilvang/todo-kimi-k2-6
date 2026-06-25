@@ -24,10 +24,11 @@ const shortcuts: Shortcut[] = [
   { key: "⌘N", label: "New Task", description: "Create a new task", category: "navigation" },
   { key: "/", label: "Search", description: "Focus search bar", category: "navigation" },
   { key: "Esc", label: "Clear", description: "Clear search or filters", category: "navigation" },
-  { key: "j", label: "Next", description: "Move to next task", category: "navigation" },
-  { key: "k", label: "Previous", description: "Move to previous task", category: "navigation" },
-  { key: "x", label: "Select", description: "Toggle task selection", category: "navigation" },
-  { key: "⌘O", label: "Open", description: "Open selected task", category: "navigation" },
+  { key: "1", label: "Today", description: "Switch to Today view", category: "navigation" },
+  { key: "2", label: "Kanban", description: "Switch to Kanban view", category: "navigation" },
+  { key: "3", label: "Analytics", description: "Switch to Analytics view", category: "navigation" },
+  { key: "S", label: "Select", description: "Toggle select mode", category: "navigation" },
+  { key: "C", label: "Completed", description: "Toggle completed tasks", category: "navigation" },
 
   // Tasks
   { key: "Space", label: "Toggle", description: "Mark task as complete/incomplete", category: "tasks" },
