@@ -1,6 +1,8 @@
-import { describe, it, expect, beforeEach } from "bun:test";
-import { createTestDb } from "@/lib/db/test-db";
-import { setDb } from "@/lib/db";
+ 
+ 
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { createTestDb } from "../db/test-db";
+import { setDb, resetDb } from "../db";
 import {
   getLists,
   getListById,
@@ -31,6 +33,10 @@ import {
   exportData,
   importData,
   exportCsv,
+  exportJson,
+  exportIcal,
+  getTimeReport,
+  getWeeklyTimeSummary,
   reorderTasks,
   bulkUpdateTasks,
   bulkDeleteTasks,
@@ -226,7 +232,7 @@ describe("Task Actions", () => {
 
     it("should handle null values in updateTask", async () => {
       const task = await createTask({ name: "Task", description: "Original" });
-      const updated = await updateTask(task.id, { description: null });
+      const updated = await updateTask(task.id, { description: null as unknown as string });
       expect(updated.description).toBeNull();
     });
 
@@ -301,6 +307,41 @@ describe("Task Actions", () => {
 
       const tasks = await getTasks({ includeCompleted: true });
       expect(tasks.length).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  describe("Export Formats", () => {
+    it("should export JSON data", async () => {
+      await createTask({ name: "JSON Task" });
+      const blob = await exportJson();
+      expect(blob.type).toContain("application/json");
+      const text = await blob.text();
+      const data = JSON.parse(text);
+      expect(data.tasks.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it("should export iCal data", async () => {
+      await createTask({ name: "iCal Task", deadline: "2024-12-31" });
+      const blob = await exportIcal();
+      expect(blob.type).toBe("text/calendar");
+      const text = await blob.text();
+      expect(text).toContain("BEGIN:VCALENDAR");
+      expect(text).toContain("iCal Task");
+    });
+  });
+
+  describe("Time Tracking", () => {
+    it("should get time report for tasks", async () => {
+      const task = await createTask({ name: "Time Tracking Task" });
+      const reports = await getTimeReport({ taskId: task.id });
+      expect(Array.isArray(reports)).toBe(true);
+    });
+
+    it("should get weekly time summary", async () => {
+      const summary = await getWeeklyTimeSummary();
+      expect(summary).toHaveProperty("totalSeconds");
+      expect(summary).toHaveProperty("byDay");
+      expect(summary).toHaveProperty("topTasks");
     });
   });
 

@@ -1,6 +1,8 @@
 "use server";
 
 import { getDb } from "@/lib/db";
+import { getTaskRelations } from "@/lib/db/relations";
+import { taskCache, cached } from "@/lib/cache";
 import {
   type Task,
   type TaskWithRelations,
@@ -9,6 +11,7 @@ import {
   type Subtask,
   type Reminder,
   type TaskLog,
+  type TaskComment,
   type CreateTaskInput,
   type UpdateTaskInput,
   type CreateListInput,
@@ -16,13 +19,20 @@ import {
   type TaskDependency,
   type Template,
   type CreateTemplateInput,
-  type TaskComment,
   type CreateCommentInput,
   type FilterPreset,
   type TimeEntry,
   type Priority,
   type TaskAttachment,
   type CreateAttachmentInput,
+  type TemplateCategory,
+  type CreateTemplateCategoryInput,
+  type CustomView,
+  type CreateCustomViewInput,
+  type ViewType,
+  type SortField,
+  type SortDirection,
+  type User,
 } from "@/types";
 import { listSchema, labelSchema } from "@/lib/validation";
 
@@ -130,7 +140,7 @@ export async function getTaskById(id: number): Promise<TaskWithRelations | undef
   if (!task) return undefined;
 
   // Batch fetch all relations
-  const [labels, subtasks, reminders, logs, blockers, blockedBy] = await Promise.all([
+  const [labels, subtasks, reminders, logs, blockers, blockedBy, attachments, comments, timeEntries] = await Promise.all([
     db.prepare(
       `SELECT l.* FROM labels l
        JOIN task_labels tl ON l.id = tl.label_id
@@ -150,6 +160,12 @@ export async function getTaskById(id: number): Promise<TaskWithRelations | undef
       `SELECT td.* FROM task_dependencies td
        WHERE td.task_id = ?`
     ).all(id) as TaskDependency[],
+    // Attachments
+    db.prepare("SELECT * FROM task_attachments WHERE task_id = ? ORDER BY created_at DESC").all(id) as TaskAttachment[],
+    // Comments
+    db.prepare("SELECT * FROM task_comments WHERE task_id = ? ORDER BY created_at ASC").all(id) as TaskComment[],
+    // Time entries
+    db.prepare("SELECT * FROM time_entries WHERE task_id = ? ORDER BY created_at DESC").all(id) as TimeEntry[],
   ]);
 
   return {
@@ -158,8 +174,11 @@ export async function getTaskById(id: number): Promise<TaskWithRelations | undef
     subtasks,
     reminders,
     logs,
+    comments,
     blockers,
     blocked_by: blockedBy,
+    attachments,
+    time_entries: timeEntries || [],
   };
 }
 
@@ -169,8 +188,16 @@ export async function getTasks(options?: {
   includeCompleted?: boolean;
   searchQuery?: string;
   filterPreset?: FilterPreset;
+  limit?: number;
+  offset?: number;
 }): Promise<TaskWithRelations[]> {
   const db = getDb();
+  // Try cache first (only for non-search queries)
+  const cacheKey = JSON.stringify(options);
+  if (!options?.searchQuery) {
+    const cached = taskCache.tasks.get(cacheKey);
+    if (cached) return cached;
+  }
   const whereClauses: string[] = [];
   const params: unknown[] = [];
   const today = new Date().toISOString().split("T")[0];
@@ -239,104 +266,24 @@ export async function getTasks(options?: {
   const where = whereClauses.length > 0 ? `WHERE ${whereClauses.join(" AND ")}` : "";
   const orderBy = options?.view === "all" ? "updated_at DESC, sort_order ASC" : "sort_order ASC, date ASC, deadline ASC, priority DESC";
 
-  const tasks = db.prepare(`SELECT * FROM tasks ${where} ORDER BY ${orderBy}`).all(...params) as Task[];
+  // Build pagination clause
+  let limitClause = "";
+  if (options?.limit !== undefined) {
+    limitClause = `LIMIT ${options.limit}`;
+    if (options?.offset !== undefined) {
+      limitClause += ` OFFSET ${options.offset}`;
+    }
+  }
+
+  const tasks = db.prepare(`SELECT * FROM tasks ${where} ORDER BY ${orderBy} ${limitClause}`).all(...params) as Task[];
   const taskIds = tasks.map((t) => t.id);
 
-  // Batch fetch all relations in parallel
-  const [labelsResult, subtasksResult, remindersResult, logsResult, commentsResult, blockersResult, blockedByResult] = await Promise.all([
-    taskIds.length > 0
-      ? db
-          .prepare(
-            `SELECT l.*, tl.task_id FROM labels l
-             JOIN task_labels tl ON l.id = tl.label_id
-             WHERE tl.task_id IN (${taskIds.map(() => "?").join(",")})`
-          )
-          .all(...taskIds)
-      : [],
-    taskIds.length > 0
-      ? db.prepare(`SELECT * FROM subtasks WHERE task_id IN (${taskIds.map(() => "?").join(",")}) ORDER BY task_id, id`).all(...taskIds)
-      : [],
-    taskIds.length > 0
-      ? db
-          .prepare(`SELECT * FROM reminders WHERE task_id IN (${taskIds.map(() => "?").join(",")}) ORDER BY task_id, remind_at`)
-          .all(...taskIds)
-      : [],
-    taskIds.length > 0
-      ? db
-          .prepare(`SELECT * FROM task_logs WHERE task_id IN (${taskIds.map(() => "?").join(",")}) ORDER BY task_id, created_at DESC`)
-          .all(...taskIds)
-      : [],
-    taskIds.length > 0
-      ? db.prepare(`SELECT * FROM task_comments WHERE task_id IN (${taskIds.map(() => "?").join(",")}) ORDER BY task_id, created_at ASC`).all(...taskIds)
-      : [],
-    taskIds.length > 0
-      ? db
-          .prepare(`SELECT td.*, t.name as blocked_task_name FROM task_dependencies td JOIN tasks t ON td.task_id = t.id WHERE td.depends_on_task_id IN (${taskIds.map(() => "?").join(",")})`)
-          .all(...taskIds)
-      : [],
-    taskIds.length > 0
-      ? db
-          .prepare(`SELECT td.*, t.name as blocking_task_name FROM task_dependencies td JOIN tasks t ON td.depends_on_task_id = t.id WHERE td.task_id IN (${taskIds.map(() => "?").join(",")})`)
-          .all(...taskIds)
-      : [],
-  ]);
-
-  // Group relations by task_id
-  // Labels need special handling since they don't have task_id in the result
-  interface LabelWithTaskId extends Label {
-    task_id: number;
-  }
-  const labelsByTask = (labelsResult as LabelWithTaskId[]).reduce((acc, label) => {
-    if (!acc[label.task_id]) acc[label.task_id] = [];
-    acc[label.task_id].push(label);
-    return acc;
-  }, {} as Record<number, Label[]>);
-
-  const subtasksByTask = (subtasksResult as Subtask[]).reduce((acc, subtask) => {
-    if (!acc[subtask.task_id]) acc[subtask.task_id] = [];
-    acc[subtask.task_id].push(subtask);
-    return acc;
-  }, {} as Record<number, Subtask[]>);
-
-  const remindersByTask = (remindersResult as Reminder[]).reduce((acc, reminder) => {
-    if (!acc[reminder.task_id]) acc[reminder.task_id] = [];
-    acc[reminder.task_id].push(reminder);
-    return acc;
-  }, {} as Record<number, Reminder[]>);
-
-  const logsByTask = (logsResult as TaskLog[]).reduce((acc, log) => {
-    if (!acc[log.task_id]) acc[log.task_id] = [];
-    acc[log.task_id].push(log);
-    return acc;
-  }, {} as Record<number, TaskLog[]>);
-
-  const commentsByTask = (commentsResult as TaskComment[]).reduce((acc, comment) => {
-    if (!acc[comment.task_id]) acc[comment.task_id] = [];
-    acc[comment.task_id].push(comment);
-    return acc;
-  }, {} as Record<number, TaskComment[]>);
-
-  const blockersByTask = (blockersResult as TaskDependency[]).reduce((acc, dep) => {
-    if (!acc[dep.depends_on_task_id]) acc[dep.depends_on_task_id] = [];
-    acc[dep.depends_on_task_id].push(dep);
-    return acc;
-  }, {} as Record<number, TaskDependency[]>);
-
-  const blockedByTask = (blockedByResult as TaskDependency[]).reduce((acc, dep) => {
-    if (!acc[dep.task_id]) acc[dep.task_id] = [];
-    acc[dep.task_id].push(dep);
-    return acc;
-  }, {} as Record<number, TaskDependency[]>);
+  // Use shared relation-fetching helper
+  const relations = await getTaskRelations(db, taskIds);
 
   const result: TaskWithRelations[] = tasks.map((task) => ({
     ...task,
-    labels: labelsByTask[task.id] || [],
-    subtasks: subtasksByTask[task.id] || [],
-    reminders: remindersByTask[task.id] || [],
-    logs: logsByTask[task.id] || [],
-    comments: commentsByTask[task.id] || [],
-    blockers: blockersByTask[task.id] || [],
-    blocked_by: blockedByTask[task.id] || [],
+    ...relations[task.id],
   }));
 
   if (options?.searchQuery) {
@@ -346,6 +293,11 @@ export async function getTasks(options?: {
       threshold: 0.4,
     });
     return fuse.search(options.searchQuery).map((r) => r.item);
+  }
+
+  // Cache the result
+  if (!options?.searchQuery) {
+    taskCache.tasks.set(cacheKey, result, 5 * 60 * 1000);
   }
 
   return result;
@@ -423,6 +375,9 @@ export async function createTask(input: CreateTaskInput & { sort_order?: number 
 
     return taskId;
   });
+
+  // Invalidate task cache
+  taskCache.tasks.invalidate();
 
   return getTaskById(result) as Promise<TaskWithRelations>;
 }
@@ -533,12 +488,17 @@ export async function updateTask(id: number, input: UpdateTaskInput): Promise<Ta
     }
   }
 
+  // Invalidate task cache
+  taskCache.tasks.invalidate();
+
   return getTaskById(id) as Promise<TaskWithRelations>;
 }
 
 export async function deleteTask(id: number): Promise<void> {
   const db = getDb();
   db.prepare("DELETE FROM tasks WHERE id = ?").run(id);
+  // Invalidate task cache
+  taskCache.tasks.invalidate();
 }
 
 export async function bulkUpdateTasks(
@@ -552,43 +512,55 @@ export async function bulkUpdateTasks(
 ): Promise<void> {
   const db = getDb();
 
-  for (const taskId of taskIds) {
-    const fields: string[] = [];
-    const values: unknown[] = [];
+  // Handle empty array early
+  if (taskIds.length === 0) return;
 
-    if (updates.list_id !== undefined) {
-      fields.push("list_id = ?");
-      values.push(updates.list_id);
-    }
-    if (updates.priority !== undefined) {
-      fields.push("priority = ?");
-      values.push(updates.priority);
-    }
-    if (updates.completed !== undefined) {
-      fields.push("completed = ?, completed_at = ?");
-      values.push(updates.completed ? 1 : 0, updates.completed ? new Date().toISOString() : null);
-    }
+  // Use transaction for atomic bulk operations
+  const result = db.transaction(() => {
+    for (const taskId of taskIds) {
+      const fields: string[] = [];
+      const values: unknown[] = [];
 
-    if (fields.length > 0) {
-      fields.push("updated_at = CURRENT_TIMESTAMP");
-      values.push(taskId);
-      db.prepare(`UPDATE tasks SET ${fields.join(", ")} WHERE id = ?`).run(...values);
-
-      if (updates.completed !== undefined && updates.completed) {
-        logTaskAction(taskId, "completed", "Task marked as completed (bulk)");
+      if (updates.list_id !== undefined) {
+        fields.push("list_id = ?");
+        values.push(updates.list_id);
       }
-    }
+      if (updates.priority !== undefined) {
+        fields.push("priority = ?");
+        values.push(updates.priority);
+      }
+      if (updates.completed !== undefined) {
+        fields.push("completed = ?, completed_at = ?");
+        values.push(updates.completed ? 1 : 0, updates.completed ? new Date().toISOString() : null);
+      }
 
-    // Handle label updates separately
-    if (updates.label_ids !== undefined) {
-      db.prepare("DELETE FROM task_labels WHERE task_id = ?").run(taskId);
-      if (updates.label_ids.length > 0) {
-        const stmt = db.prepare("INSERT INTO task_labels (task_id, label_id) VALUES (?, ?)");
-        for (const labelId of updates.label_ids) {
-          stmt.run(taskId, labelId);
+      if (fields.length > 0) {
+        fields.push("updated_at = CURRENT_TIMESTAMP");
+        values.push(taskId);
+        db.prepare(`UPDATE tasks SET ${fields.join(", ")} WHERE id = ?`).run(...values);
+
+        if (updates.completed !== undefined && updates.completed) {
+          logTaskAction(taskId, "completed", "Task marked as completed (bulk)");
+        }
+      }
+
+      // Handle label updates separately
+      if (updates.label_ids !== undefined) {
+        db.prepare("DELETE FROM task_labels WHERE task_id = ?").run(taskId);
+        if (updates.label_ids.length > 0) {
+          const stmt = db.prepare("INSERT INTO task_labels (task_id, label_id) VALUES (?, ?)");
+          for (const labelId of updates.label_ids) {
+            stmt.run(taskId, labelId);
+          }
         }
       }
     }
+    return true;
+  });
+
+  // For Bun compatibility, transaction might return void
+  if (result === undefined) {
+    // Transaction was already executed
   }
 }
 
@@ -759,16 +731,32 @@ export async function getBlockedTasks(): Promise<TaskWithRelations[]> {
 // Templates
 // ============================================
 
-export async function getTemplates(): Promise<Template[]> {
+export async function getTemplates(includeCategories: boolean = false): Promise<Template[]> {
   const db = getDb();
+  if (includeCategories) {
+    return db
+      .prepare(
+        `SELECT t.*, tc.name as category_name, tc.description as category_description
+         FROM templates t
+         LEFT JOIN template_categories tc ON t.category_id = tc.id
+         ORDER BY t.name ASC`
+      )
+      .all()
+      .map((row: any) => ({
+        ...row,
+        category: row.category_name
+          ? { id: row.category_id, name: row.category_name, description: row.category_description, created_at: "" }
+          : undefined,
+      })) as Template[];
+  }
   return db.prepare("SELECT * FROM templates ORDER BY name ASC").all() as Template[];
 }
 
-export async function createTemplate(input: CreateTemplateInput & { subtasks?: string[]; label_ids?: number[] }): Promise<Template> {
+export async function createTemplate(input: CreateTemplateInput & { subtasks?: string[]; label_ids?: number[]; category_id?: number }): Promise<Template> {
   const db = getDb();
   const result = db
     .prepare(
-      "INSERT INTO templates (name, description, list_id, priority, label_ids, subtasks) VALUES (?, ?, ?, ?, ?, ?)"
+      "INSERT INTO templates (name, description, list_id, priority, label_ids, subtasks, category_id) VALUES (?, ?, ?, ?, ?, ?, ?)"
     )
     .run(
       input.name,
@@ -776,7 +764,8 @@ export async function createTemplate(input: CreateTemplateInput & { subtasks?: s
       input.list_id || null,
       input.priority || "none",
       input.label_ids ? JSON.stringify(input.label_ids) : null,
-      input.subtasks ? JSON.stringify(input.subtasks) : null
+      input.subtasks ? JSON.stringify(input.subtasks) : null,
+      input.category_id || null
     );
   return {
     id: Number(result.lastInsertRowid),
@@ -786,6 +775,7 @@ export async function createTemplate(input: CreateTemplateInput & { subtasks?: s
     priority: input.priority || "none",
     label_ids: input.label_ids || [],
     subtasks: input.subtasks || [],
+    category_id: input.category_id || null,
     created_at: new Date().toISOString(),
   };
 }
@@ -793,6 +783,47 @@ export async function createTemplate(input: CreateTemplateInput & { subtasks?: s
 export async function deleteTemplate(id: number): Promise<void> {
   const db = getDb();
   db.prepare("DELETE FROM templates WHERE id = ?").run(id);
+}
+
+// ============================================
+// Template Categories
+// ============================================
+
+export async function getTemplateCategories(): Promise<TemplateCategory[]> {
+  const db = getDb();
+  return db.prepare("SELECT * FROM template_categories ORDER BY name ASC").all() as TemplateCategory[];
+}
+
+export async function getTemplateCategoryById(id: number): Promise<TemplateCategory | undefined> {
+  const db = getDb();
+  return db.prepare("SELECT * FROM template_categories WHERE id = ?").get(id) as TemplateCategory | undefined;
+}
+
+export async function createTemplateCategory(input: CreateTemplateCategoryInput): Promise<TemplateCategory> {
+  const db = getDb();
+  const result = db
+    .prepare("INSERT INTO template_categories (name, description) VALUES (?, ?)")
+    .run(input.name, input.description || null);
+  return {
+    id: Number(result.lastInsertRowid),
+    name: input.name,
+    description: input.description || null,
+    created_at: new Date().toISOString(),
+  };
+}
+
+export async function deleteTemplateCategory(id: number): Promise<void> {
+  const db = getDb();
+  // Reassign templates to "Uncategorized" or delete category_id
+  db.prepare("UPDATE templates SET category_id = NULL WHERE category_id = ?").run(id);
+  db.prepare("DELETE FROM template_categories WHERE id = ?").run(id);
+}
+
+export async function getTemplatesByCategory(categoryId: number): Promise<Template[]> {
+  const db = getDb();
+  return db
+    .prepare("SELECT * FROM templates WHERE category_id = ? ORDER BY name ASC")
+    .all(categoryId) as Template[];
 }
 
 /**
@@ -804,12 +835,13 @@ export async function saveTemplateFromTask(
   listId: number | null,
   priority: Priority,
   labelIds: number[],
-  subtasks: string[]
+  subtasks: string[],
+  categoryId?: number
 ): Promise<Template> {
   const db = getDb();
   const result = db
     .prepare(
-      "INSERT INTO templates (name, description, list_id, priority, label_ids, subtasks) VALUES (?, ?, ?, ?, ?, ?)"
+      "INSERT INTO templates (name, description, list_id, priority, label_ids, subtasks, category_id) VALUES (?, ?, ?, ?, ?, ?, ?)"
     )
     .run(
       name,
@@ -817,7 +849,8 @@ export async function saveTemplateFromTask(
       listId,
       priority,
       JSON.stringify(labelIds),
-      JSON.stringify(subtasks)
+      JSON.stringify(subtasks),
+      categoryId || null
     );
   return {
     id: Number(result.lastInsertRowid),
@@ -827,6 +860,7 @@ export async function saveTemplateFromTask(
     priority,
     label_ids: labelIds,
     subtasks,
+    category_id: categoryId || null,
     created_at: new Date().toISOString(),
   };
 }
@@ -865,6 +899,7 @@ export interface ExportData {
   tasks: TaskWithRelations[];
   templates: Template[];
   time_entries: TimeEntry[];
+  users?: User[];
 }
 
 // CSV export helpers
@@ -901,9 +936,59 @@ export async function exportData(): Promise<ExportData> {
 
 export async function exportCsv(): Promise<string> {
   const tasks = await getTasks({ includeCompleted: true });
-  const header = "id,name,description,date,deadline,priority,completed,list_id";
+  const header = "id,name,description,date,deadline,priority,completed,list_id,estimate,actual_time";
   const rows = tasks.map(taskToCsvRow);
   return [header, ...rows].join("\n");
+}
+
+/**
+ * Generates a JSON export of all data.
+ * Returns a blob that can be downloaded.
+ */
+export async function exportJson(): Promise<Blob> {
+  const data = await exportData();
+  return new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+}
+
+/**
+ * Generates an iCal export for calendar integration.
+ * Returns a blob that can be downloaded.
+ */
+export async function exportIcal(): Promise<Blob> {
+  const tasks = await getTasks({ includeCompleted: true });
+  const now = new Date();
+
+  const lines: string[] = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//TaskFlow//TaskFlow//EN",
+    "CALSCALE:GREGORIAN",
+  ];
+
+  for (const task of tasks) {
+    if (!task.deadline && !task.date) continue;
+
+    const dateStr = (task.deadline || task.date!).replace(/-/g, "");
+    const uid = `${task.id}@taskflow.local`;
+    const dtStamp = now.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+
+    lines.push("BEGIN:VEVENT");
+    lines.push(`UID:${uid}`);
+    lines.push(`DTSTAMP:${dtStamp}`);
+    lines.push(`DTSTART:${dateStr}`);
+    lines.push(`SUMMARY:${task.name}`);
+    if (task.description) {
+      lines.push(`DESCRIPTION:${task.description.replace(/\n/g, "\\n")}`);
+    }
+    if (task.priority !== "none") {
+      lines.push(`CATEGORIES:${task.priority}`);
+    }
+    lines.push("END:VEVENT");
+  }
+
+  lines.push("END:VCALENDAR");
+
+  return new Blob([lines.join("\n")], { type: "text/calendar" });
 }
 
 /**
@@ -1049,6 +1134,113 @@ export async function importData(data: ExportData): Promise<{ lists: number; lab
 }
 
 // ============================================
+// Time Tracking Reports
+// ============================================
+
+export interface TimeReport {
+  taskId: number;
+  taskName: string;
+  totalSeconds: number;
+  entries: TimeEntry[];
+}
+
+export async function getTimeReport(options?: {
+  startDate?: string;
+  endDate?: string;
+  taskId?: number;
+}): Promise<TimeReport[]> {
+  const db = getDb();
+  const conditions: string[] = [];
+  const params: unknown[] = [];
+
+  if (options?.taskId) {
+    conditions.push("task_id = ?");
+    params.push(options.taskId);
+  }
+  if (options?.startDate) {
+    conditions.push("created_at >= ?");
+    params.push(options.startDate);
+  }
+  if (options?.endDate) {
+    conditions.push("created_at <= ?");
+    params.push(options.endDate);
+  }
+
+  const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+
+  const entries = db
+    .prepare(`SELECT * FROM time_entries ${where} ORDER BY task_id, created_at`)
+    .all(...params) as TimeEntry[];
+
+  // Group by task
+  const byTask = entries.reduce((acc, entry) => {
+    if (!acc[entry.task_id]) {
+      acc[entry.task_id] = [];
+    }
+    acc[entry.task_id].push(entry);
+    return acc;
+  }, {} as Record<number, TimeEntry[]>);
+
+  // Get task names
+  const taskIds = Object.keys(byTask).map(Number);
+  const tasks = taskIds.length > 0
+    ? (await db.prepare(`SELECT id, name FROM tasks WHERE id IN (${taskIds.map(() => "?").join(",")})`).all(...taskIds) as { id: number; name: string }[])
+    : [];
+
+  const taskNames = new Map(tasks.map(t => [t.id, t.name]));
+
+  return Object.entries(byTask).map(([taskId, entries]) => ({
+    taskId: Number(taskId),
+    taskName: taskNames.get(Number(taskId)) || "Unknown",
+    totalSeconds: entries.reduce((sum, e) => sum + (e.duration_seconds || 0), 0),
+    entries,
+  }));
+}
+
+export async function getWeeklyTimeSummary(): Promise<{
+  totalSeconds: number;
+  byDay: Record<string, number>;
+  topTasks: { taskId: number; taskName: string; seconds: number }[];
+}> {
+  const db = getDb();
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+
+  const entries = db
+    .prepare(`SELECT task_id, duration_seconds, created_at FROM time_entries WHERE created_at >= ? AND duration_seconds IS NOT NULL`)
+    .all(weekAgo) as TimeEntry[];
+
+  const totalSeconds = entries.reduce((sum, e) => sum + (e.duration_seconds || 0), 0);
+
+  const byDay: Record<string, number> = {};
+  for (const entry of entries) {
+    const day = entry.created_at.split("T")[0];
+    byDay[day] = (byDay[day] || 0) + (entry.duration_seconds || 0);
+  }
+
+  // Top tasks by time
+  const byTask = entries.reduce((acc, e) => {
+    acc[e.task_id] = (acc[e.task_id] || 0) + (e.duration_seconds || 0);
+    return acc;
+  }, {} as Record<number, number>);
+
+  const sortedTasks = Object.entries(byTask)
+    .sort(([,a], [,b]) => b - a)
+    .slice(0, 5);
+
+  const taskNames = await db
+    .prepare(`SELECT id, name FROM tasks WHERE id IN (${sortedTasks.map(([id]) => id).join(",")})`)
+    .all(...sortedTasks.map(([id]) => Number(id))) as { id: number; name: string }[];
+
+  const topTasks = sortedTasks.map(([taskId, seconds]) => ({
+    taskId: Number(taskId),
+    taskName: taskNames.find(t => t.id === Number(taskId))?.name || "Unknown",
+    seconds,
+  }));
+
+  return { totalSeconds, byDay, topTasks };
+}
+
+// ============================================
 // Task Attachments
 // ============================================
 
@@ -1080,4 +1272,266 @@ export async function addTaskAttachment(input: CreateAttachmentInput): Promise<T
 export async function deleteTaskAttachment(id: number): Promise<void> {
   const db = getDb();
   db.prepare("DELETE FROM task_attachments WHERE id = ?").run(id);
+}
+
+// ============================================
+// Calendar Sync
+// ============================================
+
+export interface CalendarSyncConfig {
+  provider: "google" | "outlook";
+  access_token: string;
+  refresh_token?: string | null;
+  expires_at?: string | null;
+  enabled: boolean;
+}
+
+export async function getCalendarSync(userId: number): Promise<CalendarSyncConfig | null> {
+  const db = getDb();
+  const result = db.prepare(
+    "SELECT provider, access_token, refresh_token, expires_at, enabled FROM calendar_sync WHERE user_id = ?"
+  ).get(userId) as CalendarSyncConfig | undefined;
+  return result ?? null;
+}
+
+export async function saveCalendarSync(
+  userId: number,
+  config: Omit<CalendarSyncConfig, "user_id">
+): Promise<CalendarSyncConfig> {
+  const db = getDb();
+
+  // Check if already exists
+  const existing = db.prepare("SELECT id FROM calendar_sync WHERE user_id = ?").get(userId);
+
+  if (existing) {
+    db.prepare(
+      `UPDATE calendar_sync
+       SET provider = ?, access_token = ?, refresh_token = ?, expires_at = ?, enabled = ?
+       WHERE user_id = ?`
+    ).run(
+      config.provider,
+      config.access_token,
+      config.refresh_token,
+      config.expires_at,
+      config.enabled,
+      userId
+    );
+  } else {
+    db.prepare(
+      "INSERT INTO calendar_sync (user_id, provider, access_token, refresh_token, expires_at, enabled) VALUES (?, ?, ?, ?, ?, ?)"
+    ).run(
+      userId,
+      config.provider,
+      config.access_token,
+      config.refresh_token,
+      config.expires_at,
+      config.enabled
+    );
+  }
+
+  const result = await getCalendarSync(userId);
+  if (!result) {
+    throw new Error("Failed to save calendar sync config");
+  }
+  return result;
+}
+
+export async function deleteCalendarSync(userId: number): Promise<void> {
+  const db = getDb();
+  db.prepare("DELETE FROM calendar_sync WHERE user_id = ?").run(userId);
+}
+
+// ============================================
+// Task Assignment
+// ============================================
+
+export async function getTaskAssignments(taskId: number): Promise<Array<{ user_id: number; user_email: string; user_name: string | null; permission: "view" | "edit" }>> {
+  const db = getDb();
+  return db
+    .prepare(
+      `SELECT ta.user_id, u.email as user_email, u.name as user_name, ta.permission
+       FROM task_shares ta
+       JOIN users u ON ta.user_id = u.id
+       WHERE ta.task_id = ?`
+    )
+    .all(taskId) as Array<{ user_id: number; user_email: string; user_name: string | null; permission: "view" | "edit" }>;
+}
+
+export async function assignTask(taskId: number, userId: number, permission: "view" | "edit" = "view"): Promise<void> {
+  const db = getDb();
+  // Use INSERT OR IGNORE to handle duplicates gracefully
+  db.prepare("INSERT OR IGNORE INTO task_shares (task_id, user_id, permission) VALUES (?, ?, ?)")
+    .run(taskId, userId, permission);
+  logTaskAction(taskId, "assigned", `Task assigned to user ${userId} with ${permission} permission`);
+}
+
+export async function unassignTask(taskId: number, userId: number): Promise<void> {
+  const db = getDb();
+  db.prepare("DELETE FROM task_shares WHERE task_id = ? AND user_id = ?").run(taskId, userId);
+  logTaskAction(taskId, "unassigned", `Task unassigned from user ${userId}`);
+}
+
+export async function getTasksAssignedToUser(userId: number): Promise<TaskWithRelations[]> {
+  const db = getDb();
+  const taskIds = db
+    .prepare("SELECT task_id FROM task_shares WHERE user_id = ? AND permission = 'edit'")
+    .all(userId)
+    .map((r: { task_id: number }) => r.task_id);
+
+  if (taskIds.length === 0) return [];
+
+  // Fetch tasks by their IDs directly
+  return getTasksByIds(taskIds);
+}
+
+export async function getPendingAssignments(userId: number): Promise<TaskWithRelations[]> {
+  const db = getDb();
+  const taskIds = db
+    .prepare("SELECT task_id FROM task_shares WHERE user_id = ? AND permission = 'edit'")
+    .all(userId)
+    .map((r: { task_id: number }) => r.task_id);
+
+  if (taskIds.length === 0) return [];
+
+  // Fetch tasks by their IDs directly, excluding completed ones
+  const tasks = await getTasksByIds(taskIds);
+  return tasks.filter(t => !t.completed);
+}
+
+/**
+ * Helper function to fetch tasks by their IDs.
+ */
+async function getTasksByIds(taskIds: number[]): Promise<TaskWithRelations[]> {
+  if (taskIds.length === 0) return [];
+
+  const db = getDb();
+  const tasks = db.prepare(`SELECT * FROM tasks WHERE id IN (${taskIds.map(() => "?").join(",")})`).all(...taskIds) as Task[];
+  const taskIdsFetched = tasks.map((t) => t.id);
+
+  // Use shared relation-fetching helper
+  const relations = await getTaskRelations(db, taskIdsFetched);
+
+  return tasks.map((task) => ({
+    ...task,
+    ...relations[task.id],
+  }));
+}
+
+// ============================================
+// Custom Views
+// ============================================
+
+export async function getCustomViews(userId: number): Promise<CustomView[]> {
+  const db = getDb();
+  return db
+    .prepare("SELECT * FROM custom_views WHERE user_id = ? ORDER BY name ASC")
+    .all(userId)
+    .map((row: any) => ({
+      ...row,
+      label_ids: row.label_ids ? JSON.parse(row.label_ids) : [],
+    })) as CustomView[];
+}
+
+export async function getCustomViewById(id: number, userId: number): Promise<CustomView | undefined> {
+  const db = getDb();
+  const row = db
+    .prepare("SELECT * FROM custom_views WHERE id = ? AND user_id = ?")
+    .get(id, userId) as any;
+
+  if (!row) return undefined;
+
+  return {
+    ...row,
+    label_ids: row.label_ids ? JSON.parse(row.label_ids) : [],
+  };
+}
+
+export async function createCustomView(userId: number, input: CreateCustomViewInput): Promise<CustomView> {
+  const db = getDb();
+  const result = db
+    .prepare(
+      `INSERT INTO custom_views (user_id, name, filter_preset, list_id, label_ids, priority, sort_field, sort_direction, view_type)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    )
+    .run(
+      userId,
+      input.name,
+      input.filter_preset || null,
+      input.list_id || null,
+      input.label_ids ? JSON.stringify(input.label_ids) : null,
+      input.priority || null,
+      input.sort_field || "date",
+      input.sort_direction || "asc",
+      input.view_type || "today"
+    );
+
+  return {
+    id: Number(result.lastInsertRowid),
+    user_id: userId,
+    name: input.name,
+    filter_preset: input.filter_preset || null,
+    list_id: input.list_id || null,
+    label_ids: input.label_ids || [],
+    priority: input.priority || null,
+    sort_field: (input.sort_field || "date") as SortField,
+    sort_direction: (input.sort_direction || "asc") as SortDirection,
+    view_type: (input.view_type || "today") as ViewType,
+    created_at: new Date().toISOString(),
+  };
+}
+
+export async function updateCustomView(id: number, userId: number, input: Partial<CreateCustomViewInput>): Promise<CustomView> {
+  const db = getDb();
+  const existing = await getCustomViewById(id, userId);
+  if (!existing) throw new Error("Custom view not found");
+
+  const fields: string[] = [];
+  const values: unknown[] = [];
+
+  if (input.name !== undefined) {
+    fields.push("name = ?");
+    values.push(input.name);
+  }
+  if (input.filter_preset !== undefined) {
+    fields.push("filter_preset = ?");
+    values.push(input.filter_preset);
+  }
+  if (input.list_id !== undefined) {
+    fields.push("list_id = ?");
+    values.push(input.list_id);
+  }
+  if (input.label_ids !== undefined) {
+    fields.push("label_ids = ?");
+    values.push(JSON.stringify(input.label_ids));
+  }
+  if (input.priority !== undefined) {
+    fields.push("priority = ?");
+    values.push(input.priority);
+  }
+  if (input.sort_field !== undefined) {
+    fields.push("sort_field = ?");
+    values.push(input.sort_field);
+  }
+  if (input.sort_direction !== undefined) {
+    fields.push("sort_direction = ?");
+    values.push(input.sort_direction);
+  }
+  if (input.view_type !== undefined) {
+    fields.push("view_type = ?");
+    values.push(input.view_type);
+  }
+
+  if (fields.length > 0) {
+    values.push(id, userId);
+    db.prepare(`UPDATE custom_views SET ${fields.join(", ")} WHERE id = ? AND user_id = ?`).run(...values);
+  }
+
+  const updated = await getCustomViewById(id, userId);
+  if (!updated) throw new Error("Failed to update custom view");
+  return updated;
+}
+
+export async function deleteCustomView(id: number, userId: number): Promise<void> {
+  const db = getDb();
+  db.prepare("DELETE FROM custom_views WHERE id = ? AND user_id = ?").run(id, userId);
 }

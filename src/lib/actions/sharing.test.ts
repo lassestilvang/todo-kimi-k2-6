@@ -1,16 +1,20 @@
-import { describe, it, expect, beforeEach } from "bun:test";
-import { createTestDb } from "@/lib/db/test-db";
-import { setDb } from "@/lib/db";
+ 
+import { describe, it, expect, beforeEach } from "vitest";
+import { createTestDb } from "../db/test-db";
+import { setDb, resetDb } from "../db";
 import {
   shareTask,
   getTaskShares,
   getSharedTasks,
   removeShare,
   getOrCreateUser,
+  createPublicShare,
+  getShareByToken,
 } from "./sharing";
 
 describe("Sharing Actions", () => {
   beforeEach(() => {
+    resetDb();
     const testDb = createTestDb();
     setDb(testDb);
   });
@@ -44,7 +48,7 @@ describe("Sharing Actions", () => {
 
       const shares = await getTaskShares(1);
       expect(shares.length).toBe(1);
-      expect(shares[0].user.email).toBe("test@example.com");
+      expect(shares[0].user?.email).toBe("test@example.com");
     });
 
     it("should remove a share", async () => {
@@ -55,6 +59,26 @@ describe("Sharing Actions", () => {
 
       const shares = await getTaskShares(1);
       expect(shares.length).toBe(0);
+    });
+
+    it("should create a public share", async () => {
+      const { token, permission } = await createPublicShare(1, "view");
+      expect(token).toBeDefined();
+      expect(token.length).toBeGreaterThan(0);
+      expect(permission).toBe("view");
+    });
+
+    it("should get share by token", async () => {
+      const { token } = await createPublicShare(1, "edit");
+      const share = await getShareByToken(token!);
+      expect(share).not.toBeNull();
+      expect(share?.task_id).toBe(1);
+      expect(share?.permission).toBe("edit");
+    });
+
+    it("should return null for invalid token", async () => {
+      const share = await getShareByToken("invalid-token");
+      expect(share).toBeNull();
     });
   });
 });
