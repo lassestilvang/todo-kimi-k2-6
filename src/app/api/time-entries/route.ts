@@ -13,7 +13,8 @@ export async function GET(request: NextRequest) {
     const entries = await getTimeEntries(Number(taskId));
     return NextResponse.json({ entries });
   } catch (error) {
-    return NextResponse.json({ error: "Failed to fetch time entries" }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Failed to fetch time entries";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -56,6 +57,7 @@ export async function DELETE(request: NextRequest) {
     await deleteTimeEntry(Number(id));
     return NextResponse.json({ success: true });
   } catch (error) {
-    return NextResponse.json({ error: "Failed to delete time entry" }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Failed to delete time entry";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

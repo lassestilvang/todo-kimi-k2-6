@@ -18,7 +18,15 @@ import {
   generateRecurringTasks,
   exportData,
   importData,
+  getTimeReport,
+  getWeeklyTimeSummary,
 } from "@/lib/actions/tasks";
+import {
+  syncOfflineTasks,
+  getSyncStatus,
+  hasPendingOfflineTasks,
+  clearSyncedTasks,
+} from "@/lib/offline-storage";
 import type { CreateTaskInput, UpdateTaskInput, CreateListInput, CreateLabelInput } from "@/types";
 
 // GET /api/tasks - Get all tasks with optional filtering
@@ -55,5 +63,48 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to create task";
     return NextResponse.json({ error: message }, { status: 400 });
+  }
+}
+
+// PUT /api/tasks/sync - Sync offline tasks
+export async function PUT(request: NextRequest) {
+  try {
+    const { action, data } = await request.json();
+
+    if (action === "status") {
+      const status = getSyncStatus();
+      return NextResponse.json({ status });
+    }
+
+    if (action === "sync") {
+      const result = await syncOfflineTasks();
+      return NextResponse.json({ result });
+    }
+
+    if (action === "clear") {
+      clearSyncedTasks();
+      return NextResponse.json({ success: true });
+    }
+
+    return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Sync failed";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
+// GET /api/tasks/time-report - Get time tracking reports
+export async function GET_TIME_REPORT(request: NextRequest) {
+  try {
+    const searchParams = request.nextUrl.searchParams;
+    const startDate = searchParams.get("startDate") || undefined;
+    const endDate = searchParams.get("endDate") || undefined;
+    const taskId = searchParams.get("taskId") ? Number(searchParams.get("taskId")) : undefined;
+
+    const reports = await getTimeReport({ startDate, endDate, taskId });
+    return NextResponse.json({ reports });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to get time report";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -8,7 +8,8 @@ export async function GET() {
     const templates = await getTemplates();
     return NextResponse.json({ templates });
   } catch (error) {
-    return NextResponse.json({ error: "Failed to fetch templates" }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Failed to fetch templates";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -35,6 +36,7 @@ export async function DELETE(request: NextRequest) {
     await deleteTemplate(Number(id));
     return NextResponse.json({ success: true });
   } catch (error) {
-    return NextResponse.json({ error: "Failed to delete template" }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Failed to delete template";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
