@@ -57,6 +57,19 @@ const pwaConfig = {
 const nextConfig: NextConfig = withPWA(pwaConfig)({
   output: "standalone",
   turbopack: {},
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "no-store, max-age=0",
+          },
+        ],
+      },
+    ];
+  },
 });
 
 export default nextConfig;
