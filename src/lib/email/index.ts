@@ -3,7 +3,7 @@
 // Requires SMTP configuration (e.g., SendGrid, Resend, or custom SMTP)
 // Install nodemailer to enable: npm install nodemailer @types/nodemailer
 
-import type { TaskWithRelations } from "@/types";
+import type { Task } from "@/types";
 
 interface EmailConfig {
   host: string;
@@ -69,7 +69,7 @@ export async function sendEmail(options: EmailOptions, config?: EmailConfig): Pr
 
 export async function sendTaskReminderEmail(
   userEmail: string,
-  task: TaskWithRelations
+  task: Task
 ): Promise<boolean> {
   const subject = `Task Reminder: ${task.name}`;
   const html = `
@@ -90,7 +90,7 @@ export async function sendTaskReminderEmail(
 
 export async function sendDueSoonEmail(
   userEmail: string,
-  task: TaskWithRelations
+  task: Task
 ): Promise<boolean> {
   const subject = `Due Soon: ${task.name}`;
   const html = `
@@ -99,6 +99,56 @@ export async function sendDueSoonEmail(
     <h3>${task.name}</h3>
     ${task.deadline ? `<p><strong>Due:</strong> ${new Date(task.deadline).toLocaleString()}</p>` : ""}
     <p><a href="${process.env.NEXTAUTH_URL}/tasks/${task.id}">View Task</a></p>
+  `;
+
+  return sendEmail({
+    to: userEmail,
+    subject,
+    html,
+  });
+}
+
+export async function sendTaskSharedEmail(
+  userEmail: string,
+  taskName: string,
+  sharerName: string,
+  permission: "view" | "edit"
+): Promise<boolean> {
+  const subject = `${sharerName} shared a task with you`;
+  const html = `
+    <h2>Task Shared With You</h2>
+    <p>${sharerName} has shared a task with you.</p>
+    <h3>${taskName}</h3>
+    <p><strong>Your permission:</strong> ${permission}</p>
+    <p><a href="${process.env.NEXTAUTH_URL}/tasks">View Tasks</a></p>
+  `;
+
+  return sendEmail({
+    to: userEmail,
+    subject,
+    html,
+  });
+}
+
+export async function sendWeeklyDigest(
+  userEmail: string,
+  summary: {
+    totalTasks: number;
+    completedTasks: number;
+    overdueTasks: number;
+    criticalTasks: number;
+  }
+): Promise<boolean> {
+  const subject = `Your Weekly Task Summary`;
+  const html = `
+    <h2>Weekly Task Summary</h2>
+    <div style="display: grid; gap: 8px;">
+      <div><strong>Total Tasks:</strong> ${summary.totalTasks}</div>
+      <div><strong>Completed:</strong> ${summary.completedTasks}</div>
+      <div><strong>Overdue:</strong> ${summary.overdueTasks}</div>
+      <div><strong>Critical:</strong> ${summary.criticalTasks}</div>
+    </div>
+    <p style="margin-top: 16px;"><a href="${process.env.NEXTAUTH_URL}">View Dashboard</a></p>
   `;
 
   return sendEmail({

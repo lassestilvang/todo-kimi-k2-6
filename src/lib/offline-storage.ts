@@ -3,58 +3,98 @@
  * Allows tasks to be created/modified while offline and synced later
  */
 
-import type { TaskWithRelations, CreateTaskInput } from "@/types";
+import type { CreateTaskInput } from "../types";
 
 const OFFLINE_TASKS_KEY = "taskflow_offline_tasks";
 const SYNC_STATUS_KEY = "taskflow_sync_status";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface OfflineTask {
   id: string;
   action: "create" | "update" | "delete";
-  data: any;
+  data: CreateTaskInput | Partial<CreateTaskInput> | { id: number };
   timestamp: number;
   synced: boolean;
+  retryCount?: number;
+}
+
+export interface SyncStatus {
+  lastSync: number | null;
+  pendingCount: number;
+  isSyncing: boolean;
+  error?: string;
+}
+
+/**
+ * Get the localStorage object (handles SSR)
+ */
+function getLocalStorage(): Storage | null {
+  if (typeof window === "undefined") return null;
+  return window.localStorage;
+}
+
+/**
+ * Get current sync status
+ */
+export function getSyncStatus(): SyncStatus {
+  const ls = getLocalStorage();
+  if (!ls) {
+    return { lastSync: null, pendingCount: 0, isSyncing: false };
+  }
+
+  const statusStr = ls.getItem(SYNC_STATUS_KEY);
+  const pendingCount = getPendingOfflineTasks().length;
+
+  if (statusStr) {
+    const status: SyncStatus = JSON.parse(statusStr);
+    return { ...status, pendingCount };
+  }
+
+  return { lastSync: null, pendingCount, isSyncing: false };
 }
 
 /**
  * Save a pending task operation for later sync
  */
 export function saveOfflineTask(action: "create" | "update" | "delete", data: CreateTaskInput | Partial<CreateTaskInput> | { id: number }): void {
-  if (typeof window === "undefined") return;
+  const ls = getLocalStorage();
+  if (!ls) return;
 
-  const offlineTasks: OfflineTask[] = JSON.parse(localStorage.getItem(OFFLINE_TASKS_KEY) || "[]");
+  const offlineTasks: OfflineTask[] = JSON.parse(ls.getItem(OFFLINE_TASKS_KEY) || "[]");
   const newTask: OfflineTask = {
     id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     action,
     data,
     timestamp: Date.now(),
     synced: false,
+    retryCount: 0,
   };
 
   offlineTasks.push(newTask);
-  localStorage.setItem(OFFLINE_TASKS_KEY, JSON.stringify(offlineTasks));
+  ls.setItem(OFFLINE_TASKS_KEY, JSON.stringify(offlineTasks));
+  updateSyncStatus(true);
 }
 
 /**
  * Get all pending offline tasks
  */
 export function getOfflineTasks(): OfflineTask[] {
-  if (typeof window === "undefined") return [];
-  return JSON.parse(localStorage.getItem(OFFLINE_TASKS_KEY) || "[]");
+  const ls = getLocalStorage();
+  if (!ls) return [];
+  return JSON.parse(ls.getItem(OFFLINE_TASKS_KEY) || "[]");
 }
 
 /**
  * Mark an offline task as synced
  */
 export function markTaskAsSynced(taskId: string): void {
-  if (typeof window === "undefined") return;
+  const ls = getLocalStorage();
+  if (!ls) return;
 
-  const offlineTasks: OfflineTask[] = JSON.parse(localStorage.getItem(OFFLINE_TASKS_KEY) || "[]");
+  const offlineTasks: OfflineTask[] = JSON.parse(ls.getItem(OFFLINE_TASKS_KEY) || "[]");
   const index = offlineTasks.findIndex((t) => t.id === taskId);
   if (index !== -1) {
     offlineTasks[index].synced = true;
-    localStorage.setItem(OFFLINE_TASKS_KEY, JSON.stringify(offlineTasks));
+    ls.setItem(OFFLINE_TASKS_KEY, JSON.stringify(offlineTasks));
   }
 }
 
@@ -62,11 +102,27 @@ export function markTaskAsSynced(taskId: string): void {
  * Remove a synced task from offline storage
  */
 export function removeOfflineTask(taskId: string): void {
-  if (typeof window === "undefined") return;
+  const ls = getLocalStorage();
+  if (!ls) return;
 
-  const offlineTasks: OfflineTask[] = JSON.parse(localStorage.getItem(OFFLINE_TASKS_KEY) || "[]");
+  const offlineTasks: OfflineTask[] = JSON.parse(ls.getItem(OFFLINE_TASKS_KEY) || "[]");
   const filtered = offlineTasks.filter((t) => t.id !== taskId);
-  localStorage.setItem(OFFLINE_TASKS_KEY, JSON.stringify(filtered));
+  ls.setItem(OFFLINE_TASKS_KEY, JSON.stringify(filtered));
+}
+
+/**
+ * Increment retry count for a failed task
+ */
+function retryOfflineTask(taskId: string): void {
+  const ls = getLocalStorage();
+  if (!ls) return;
+
+  const offlineTasks: OfflineTask[] = JSON.parse(ls.getItem(OFFLINE_TASKS_KEY) || "[]");
+  const index = offlineTasks.findIndex((t) => t.id === taskId);
+  if (index !== -1) {
+    offlineTasks[index].retryCount = (offlineTasks[index].retryCount || 0) + 1;
+    ls.setItem(OFFLINE_TASKS_KEY, JSON.stringify(offlineTasks));
+  }
 }
 
 /**
@@ -81,11 +137,12 @@ export function getPendingOfflineTasks(): OfflineTask[] {
  * Clear all synced tasks from offline storage
  */
 export function clearSyncedTasks(): void {
-  if (typeof window === "undefined") return;
+  const ls = getLocalStorage();
+  if (!ls) return;
 
-  const offlineTasks: OfflineTask[] = JSON.parse(localStorage.getItem(OFFLINE_TASKS_KEY) || "[]");
+  const offlineTasks: OfflineTask[] = JSON.parse(ls.getItem(OFFLINE_TASKS_KEY) || "[]");
   const filtered = offlineTasks.filter((t) => !t.synced);
-  localStorage.setItem(OFFLINE_TASKS_KEY, JSON.stringify(filtered));
+  ls.setItem(OFFLINE_TASKS_KEY, JSON.stringify(filtered));
 }
 
 /**
@@ -95,6 +152,8 @@ export async function syncOfflineTasks(): Promise<{ success: number; failed: num
   const pendingTasks = getPendingOfflineTasks();
   let success = 0;
   let failed = 0;
+
+  updateSyncStatus(true);
 
   for (const task of pendingTasks) {
     try {
@@ -109,6 +168,9 @@ export async function syncOfflineTasks(): Promise<{ success: number; failed: num
           success++;
         } else {
           failed++;
+          if ((task.retryCount || 0) < 3) {
+            retryOfflineTask(task.id);
+          }
         }
       } else if (task.action === "update") {
         const { id, ...updates } = task.data as { id: number };
@@ -122,6 +184,9 @@ export async function syncOfflineTasks(): Promise<{ success: number; failed: num
           success++;
         } else {
           failed++;
+          if ((task.retryCount || 0) < 3) {
+            retryOfflineTask(task.id);
+          }
         }
       } else if (task.action === "delete") {
         const { id } = task.data as { id: number };
@@ -133,14 +198,38 @@ export async function syncOfflineTasks(): Promise<{ success: number; failed: num
           success++;
         } else {
           failed++;
+          if ((task.retryCount || 0) < 3) {
+            retryOfflineTask(task.id);
+          }
         }
       }
     } catch {
       failed++;
+      if ((task.retryCount || 0) < 3) {
+        retryOfflineTask(task.id);
+      }
     }
   }
 
+  updateSyncStatus(false);
   return { success, failed };
+}
+
+/**
+ * Update sync status
+ */
+function updateSyncStatus(isSyncing: boolean, error?: string): void {
+  const ls = getLocalStorage();
+  if (!ls) return;
+
+  const status: SyncStatus = {
+    lastSync: error ? null : Date.now(),
+    pendingCount: getPendingOfflineTasks().length,
+    isSyncing,
+    error,
+  };
+
+  ls.setItem(SYNC_STATUS_KEY, JSON.stringify(status));
 }
 
 /**
