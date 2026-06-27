@@ -12,6 +12,7 @@ import { TaskDependencyGraph } from "@/components/task/task-dependency-graph";
 import { GanttChart } from "@/components/task/gantt-chart";
 import { EisenhowerMatrix } from "@/components/task/eisenhower-matrix";
 import { KanbanBoard } from "@/components/task/kanban-board";
+import { FocusMode } from "@/components/task/focus-mode";
 import { NotificationProvider } from "@/components/task/notification-provider";
 import { ImportExport } from "@/components/task/import-export";
 import { CalendarSyncSettings } from "@/components/task/calendar-sync-settings";
@@ -90,20 +91,20 @@ export default function Home() {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
+    const checkOnline = () => {
+      setIsOnline(navigator.onLine);
+    };
 
-    // Check online status
-    setIsOnline(navigator.onLine);
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-    window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", handleOffline);
+    checkMobile();
+    checkOnline();
+    window.addEventListener("resize", checkMobile);
+    window.addEventListener("online", checkOnline);
+    window.addEventListener("offline", checkOnline);
 
     return () => {
       window.removeEventListener("resize", checkMobile);
-      window.removeEventListener("online", handleOnline);
-      window.removeEventListener("offline", handleOffline);
+      window.removeEventListener("online", checkOnline);
+      window.removeEventListener("offline", checkOnline);
     };
   }, []);
 
@@ -181,6 +182,13 @@ export default function Home() {
         searchInputRef.current?.focus();
       }
 
+      if (e.key === "?" && !(e.target instanceof HTMLInputElement)) {
+        e.preventDefault();
+        // Open keyboard shortcuts dialog
+        const event = new KeyboardEvent("keydown", { key: "?" });
+        document.dispatchEvent(event);
+      }
+
       if (e.key === "Escape") {
         if (searchQuery) {
           setSearchQuery("");
@@ -204,11 +212,43 @@ export default function Home() {
         e.preventDefault();
         handleViewChange("analytics");
       }
+
+      // View navigation shortcuts
+      if (e.key === "g" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        handleViewChange("gantt");
+      }
+      if (e.key === "m" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        handleViewChange("matrix");
+      }
+      if (e.key === "c" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        handleViewChange("calendar");
+      }
+      if (e.key === "a" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        handleViewChange("ai");
+      }
+
+      // Assignment shortcut (Shift+A) - only when modal is open
+      if (e.key === "a" && e.shiftKey && modalOpen) {
+        e.preventDefault();
+        // Switch to assign tab in modal
+        const assignEvent = new CustomEvent("openAssignTab");
+        document.dispatchEvent(assignEvent);
+      }
+
+      // Focus mode shortcut
+      if (e.key === "f" && e.shiftKey && !modalOpen) {
+        e.preventDefault();
+        handleViewChange("focus");
+      }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [searchQuery, currentFilterPreset]);
+  }, [searchQuery, currentFilterPreset, modalOpen]);
 
   // Export data
   const handleExport = async (format: "json" | "csv" = "json") => {
@@ -331,6 +371,44 @@ export default function Home() {
       );
     }
 
+    if (currentView === "focus") {
+      const currentTask = tasks.find(t => !t.completed);
+      return (
+        <FocusMode
+          task={currentTask || {
+            id: 1,
+            name: "Select a task to focus on",
+            description: null,
+            notes: null,
+            list_id: 1,
+            date: null,
+            deadline: null,
+            estimate: null,
+            actual_time: null,
+            priority: "none",
+            recurring: "none",
+            recurring_config: null,
+            completed: false,
+            completed_at: null,
+            created_at: "",
+            updated_at: "",
+            sort_order: 0,
+            labels: [],
+            subtasks: [],
+            reminders: [],
+            logs: [],
+            comments: [],
+            attachments: [],
+            blockers: [],
+            blocked_by: [],
+            time_entries: [],
+          }}
+          open={true}
+          onOpenChange={(open) => !open && handleViewChange("today")}
+        />
+      );
+    }
+
     // Default: task list view
     return (
       <>
@@ -378,8 +456,6 @@ export default function Home() {
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background">
-      <NotificationProvider tasks={tasks} />
-
       {/* Mobile sidebar */}
       {isMobile && (
         <MobileSidebar
@@ -469,7 +545,6 @@ export default function Home() {
         onSuccess={loadData}
       />
       <KeyboardShortcuts />
-      <NotificationProvider tasks={tasks} />
       <PwaInstallPrompt />
     </div>
   );
