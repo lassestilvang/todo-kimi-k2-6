@@ -56,15 +56,40 @@ export const taskCache = {
     key: (filters: string) => `tasks:${filters}`,
     set: (filters: string, data: any, ttl?: number) => set(`tasks:${filters}`, data, ttl),
     get: (filters: string) => get<any>(`tasks:${filters}`),
+    invalidate: () => {
+      for (const key of cache.keys()) {
+        if (key.startsWith("tasks:")) cache.delete(key);
+      }
+    },
   },
   lists: {
     key: () => "lists",
     set: (data: any, ttl?: number) => set("lists", data, ttl),
     get: () => get<any>("lists"),
+    invalidate: () => del("lists"),
   },
   labels: {
     key: () => "labels",
     set: (data: any, ttl?: number) => set("labels", data, ttl),
     get: () => get<any>("labels"),
+    invalidate: () => del("labels"),
   },
 };
+
+// Cache decorator for functions
+export function cached<T extends (...args: any[]) => Promise<any>>(
+  fn: T,
+  keyGenerator: (...args: Parameters<T>) => string,
+  ttl: number = DEFAULT_TTL
+): T {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (async (...args: Parameters<T>): Promise<any> => {
+    const key = keyGenerator(...args);
+    const cached = get<ReturnType<T>>(key);
+    if (cached !== null) return cached;
+
+    const result = await fn(...args);
+    set(key, result, ttl);
+    return result;
+  }) as T;
+}

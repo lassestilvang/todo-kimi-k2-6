@@ -3,7 +3,7 @@
  * Supports real-time updates, mentions, and task assignments
  */
 
-import type { TaskWithRelations, User } from "@/types";
+import type { TaskWithRelations, User } from "../types";
 
 export interface CollaborationEvent {
   type: "task_updated" | "task_created" | "task_deleted" | "comment_added" | "user_joined" | "user_left";
@@ -28,10 +28,8 @@ export interface Mention {
 export function parseMentions(text: string): { mentions: Mention[]; cleanedText: string } {
   const mentionRegex = /@(\w+)/g;
   const mentions: Mention[] = [];
-  let cleanedText = text;
-  let match;
-  let offset = 0;
 
+  let match;
   while ((match = mentionRegex.exec(text)) !== null) {
     const userName = match[1];
     const originalIndex = match.index;
@@ -45,7 +43,7 @@ export function parseMentions(text: string): { mentions: Mention[]; cleanedText:
   }
 
   // Remove @ mentions from cleaned text
-  cleanedText = text.replace(mentionRegex, "").replace(/\s+/g, " ").trim();
+  const cleanedText = text.replace(mentionRegex, "").replace(/\s+/g, " ").trim();
 
   return { mentions, cleanedText };
 }
@@ -55,7 +53,7 @@ export function parseMentions(text: string): { mentions: Mention[]; cleanedText:
  */
 export function generateTaskShareLink(taskId: number, baseUrl: string): string {
   const token = Buffer.from(`task:${taskId}:${Date.now()}`).toString("base64");
-  return `${baseUrl}/shared/task/${token}`;
+  return `${baseUrl}/share/${token}`;
 }
 
 /**
@@ -63,7 +61,7 @@ export function generateTaskShareLink(taskId: number, baseUrl: string): string {
  */
 export function generateListShareLink(listId: number, baseUrl: string): string {
   const token = Buffer.from(`list:${listId}:${Date.now()}`).toString("base64");
-  return `${baseUrl}/shared/list/${token}`;
+  return `${baseUrl}/share/${token}`;
 }
 
 /**
@@ -95,8 +93,7 @@ export interface TaskShare {
  */
 export function canPerformAction(
   user: User | null,
-  task: TaskWithRelations,
-  action: "view" | "edit" | "delete" | "comment"
+  task: TaskWithRelations
 ): boolean {
   if (!user) return false;
 
