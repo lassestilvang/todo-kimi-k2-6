@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
-import { createTestDb } from '@/lib/db/test-db';
-import { setDb, resetDb } from '@/lib/db';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { createTestDb } from '../../../../lib/db/test-db';
+import { setDb, resetDb } from '../../../../lib/db';
 import {
   getLists,
   getTasks,
@@ -8,7 +9,7 @@ import {
   getTaskById,
   updateTask,
   deleteTask,
-} from '@/lib/actions/tasks';
+} from '../../../../lib/actions/tasks';
 
 // Mock NextRequest
 class MockNextRequest {
@@ -80,8 +81,9 @@ describe('API Routes - Tasks', () => {
 
     it('should filter by listId', async () => {
       const lists = await getLists();
-      const inboxList = lists.find(l => l.is_inbox === 1);
-      const customList = lists.length > 1 ? lists[1] : await (await import('@/lib/actions/tasks')).createList({ name: 'Custom' });
+      const inboxList = lists.find(l => Number(l.is_inbox) === 1);
+      const { createList } = await import('../../../../lib/actions/tasks');
+      const customList = lists.length > 1 ? lists[1] : await createList({ name: 'Custom' });
 
       await createTask({ name: 'Custom Task', list_id: customList.id });
       await createTask({ name: 'Inbox Task', list_id: inboxList!.id });
