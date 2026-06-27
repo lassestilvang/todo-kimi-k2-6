@@ -27,7 +27,7 @@ export class KeywordParser implements AIProvider {
 
   private readonly durationKeywords: Record<string, number> = {
     meeting: 30,
-    call: 15,
+    call: 30,
     review: 15,
     write: 120,
     report: 120,
@@ -38,6 +38,10 @@ export class KeywordParser implements AIProvider {
     planning: 60,
     reading: 30,
     brainstorm: 45,
+    presentation: 60,
+    interview: 60,
+    debugging: 90,
+    refactoring: 120,
   };
 
   private readonly recurringKeywords = {
@@ -48,9 +52,59 @@ export class KeywordParser implements AIProvider {
     yearly: ["yearly", "every year", "each year"],
   };
 
+  private readonly listKeywords: Record<string, string> = {
+    "work": "Work",
+    "personal": "Personal",
+    "health": "Health",
+    "finance": "Finance",
+    "home": "Home",
+    "family": "Family",
+    "travel": "Travel",
+    "errand": "Errands",
+    "gym": "Health",
+    "exercise": "Health",
+    "meeting": "Work",
+    "call": "Work",
+    "email": "Work",
+    "review": "Work",
+    "project": "Work",
+    "study": "Personal",
+    "learning": "Personal",
+    "grocery": "Shopping",
+    "buy": "Shopping",
+    "doctor": "Health",
+    "appointment": "Health",
+    "pay": "Finance",
+    "bill": "Finance",
+    "budget": "Finance",
+    "clean": "Home",
+    "chore": "Home",
+    "trip": "Travel",
+    "vacation": "Travel",
+  };
+
+  // Enhanced date/time patterns
+  private readonly timePatterns: Array<{ pattern: RegExp; parse: (match: RegExpMatchArray) => { hours: number; minutes: number } }> = [
+    {
+      pattern: /(\d{1,2})(?::(\d{2}))?\s*(am|pm)/i,
+      parse: (match) => {
+        let hours = parseInt(match[1]);
+        const minutes = parseInt(match[2] || "0");
+        if (match[3]?.toLowerCase() === "pm" && hours !== 12) hours += 12;
+        if (match[3]?.toLowerCase() === "am" && hours === 12) hours = 0;
+        return { hours, minutes };
+      },
+    },
+    {
+      pattern: /(\d{1,2})[:\s](\d{2})/,
+      parse: (match) => ({ hours: parseInt(match[1]), minutes: parseInt(match[2]) }),
+    },
+  ];
+
+  private readonly dayKeywords = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+
   async parseTask(input: AITaskInput): Promise<TaskSuggestion> {
     const text = input.text.toLowerCase();
-    const words = text.split(/\s+/);
 
     // Extract priority
     let priority: "critical" | "high" | "medium" | "low" | "none" = "none";
@@ -72,11 +126,12 @@ export class KeywordParser implements AIProvider {
 
     // Extract date patterns
     let suggested_date: string | undefined;
+    let deadline: string | undefined;
 
     // Check for specific dates
     const today = new Date();
     const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
-    const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 1000);
 
     if (text.includes("tomorrow")) {
       suggested_date = tomorrow.toISOString().split("T")[0];
@@ -84,6 +139,41 @@ export class KeywordParser implements AIProvider {
       suggested_date = nextWeek.toISOString().split("T")[0];
     } else if (text.includes("today")) {
       suggested_date = today.toISOString().split("T")[0];
+    }
+
+    // Check for specific weekdays
+    for (const day of this.dayKeywords) {
+      if (text.includes(day)) {
+        const nextDay = this.getNextDay(day);
+        if (!suggested_date) suggested_date = nextDay.toISOString().split("T")[0];
+        break;
+      }
+    }
+
+    // Enhanced date parsing: "in X days/weeks"
+    const inMatch = text.match(/in\s+(\d+)\s+(day|week|month)s?/);
+    if (inMatch && !suggested_date) {
+      const num = parseInt(inMatch[1]);
+      const unit = inMatch[2];
+      const ms = num * (unit === "day" ? 24 : unit === "week" ? 24 * 7 : 30 * 24) * 60 * 60 * 1000;
+      const futureDate = new Date(Date.now() + ms);
+      suggested_date = futureDate.toISOString().split("T")[0];
+    }
+
+    // Enhanced deadline parsing
+    const deadlinePatterns = [
+      { pattern: /deadline[:\s]+(\d{4}-\d{2}-\d{2})/i, parse: (m: string[]) => m[1] },
+      { pattern: /due[:\s]+(\d{4}-\d{2}-\d{2})/i, parse: (m: string[]) => m[1] },
+      { pattern: /by[:\s]+(tomorrow)/i, parse: () => tomorrow.toISOString().split("T")[0] },
+      { pattern: /by[:\s]+(next week)/i, parse: () => nextWeek.toISOString().split("T")[0] },
+    ];
+
+    for (const { pattern, parse } of deadlinePatterns) {
+      const match = text.match(pattern);
+      if (match) {
+        deadline = parse(match);
+        break;
+      }
     }
 
     // Extract recurring pattern
@@ -95,19 +185,35 @@ export class KeywordParser implements AIProvider {
       }
     }
 
-    // Extract list/project context
-    const listMatch = text.match(/(?:in|for|under)\s+(?:the\s+)?([a-z][a-z\s]+?)(?:\s+(?:project|list|folder)|$)/i);
-    const list_name = listMatch ? listMatch[1].trim() : undefined;
+    // Extract list/project context - first check explicit list mention, then keywords
+    let list_name: string | undefined;
+    let list_id: number | undefined;
 
-    // Extract deadline
-    const deadlineMatch = text.match(/deadline[:\s]+(\d{4}-\d{2}-\d{2}|tomorrow|today|next week)/i);
-    let deadline: string | undefined;
-    if (deadlineMatch) {
-      const d = deadlineMatch[1].toLowerCase();
-      if (d === "today") deadline = today.toISOString().split("T")[0];
-      else if (d === "tomorrow") deadline = tomorrow.toISOString().split("T")[0];
-      else if (d === "next week") deadline = nextWeek.toISOString().split("T")[0];
-      else deadline = d;
+    // Check for explicit list mention
+    const listMatch = text.match(/(?:in|for|under)\s+(?:the\s+)?([a-z][a-z\s]+?)(?:\s+(?:project|list|folder)|$)/i);
+    if (listMatch) {
+      list_name = listMatch[1].trim();
+    }
+
+    // Check context lists if available
+    if (input.context?.lists && !list_name) {
+      for (const list of input.context.lists) {
+        if (text.includes(list.name.toLowerCase()) || text.includes(list.emoji)) {
+          list_name = list.name;
+          list_id = list.id;
+          break;
+        }
+      }
+    }
+
+    // Check list keywords
+    if (!list_name) {
+      for (const [keyword, name] of Object.entries(this.listKeywords)) {
+        if (text.includes(keyword)) {
+          list_name = name;
+          break;
+        }
+      }
     }
 
     return {
@@ -118,6 +224,7 @@ export class KeywordParser implements AIProvider {
       suggested_date,
       recurring,
       list_name,
+      list_id,
       deadline,
     };
   }
@@ -131,6 +238,10 @@ export class KeywordParser implements AIProvider {
       "remind me to",
       "i need to",
       "please",
+      "don't forget to",
+      "remember to",
+      "let's",
+      "let us",
     ];
 
     let name = text;
@@ -138,7 +249,18 @@ export class KeywordParser implements AIProvider {
       name = name.replace(new RegExp(`^${prefix}\\s*`, "i"), "");
     }
 
+    // Remove trailing context that's not part of the task name
+    name = name.replace(/\s*\(due.*?\)$/i, "");
+    name = name.replace(/\s*\binbox\b/i, "");
+
     return name.trim().charAt(0).toUpperCase() + name.slice(1);
+  }
+
+  /**
+   * Parse time from text (e.g., "at 2pm", "2:30", "14:00")
+   */
+  private parseTimeFromText(text: string): { hours: number; minutes: number } | null {
+    return this.parseTime(text);
   }
 
   private generateDescription(text: string, priority: string, duration?: number): string | undefined {
@@ -153,6 +275,60 @@ export class KeywordParser implements AIProvider {
     }
 
     return desc.length > 0 ? desc.join(". ") : undefined;
+  }
+
+  /**
+   * Parse time from text (e.g., "at 2pm", "2:30", "14:00")
+   */
+  private parseTime(text: string): { hours: number; minutes: number } | null {
+    for (const { pattern, parse } of this.timePatterns) {
+      const match = text.match(pattern);
+      if (match) {
+        return parse(match);
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Find the next occurrence of a specific day
+   */
+  private getNextDay(dayName: string): Date {
+    const dayMap: Record<string, number> = {
+      "monday": 1, "tuesday": 2, "wednesday": 3, "thursday": 4,
+      "friday": 5, "saturday": 6, "sunday": 0
+    };
+    const targetDay = dayMap[dayName.toLowerCase()] ?? 1;
+    const today = new Date();
+    const currentDay = today.getDay();
+    const daysAhead = (targetDay - currentDay + 7) % 7 || 7;
+    const nextDay = new Date(today.getTime() + daysAhead * 24 * 60 * 60 * 1000);
+    return nextDay;
+  }
+
+  /**
+   * Generate tasks from bullet points or notes
+   */
+  async generateTasksFromNotes(notes: string): Promise<Array<{
+    name: string;
+    description?: string;
+    priority?: "critical" | "high" | "medium" | "low" | "none";
+  }>> {
+    const lines = notes.split("\n").filter(line => line.trim());
+    const tasks: Array<{ name: string; description?: string; priority?: "critical" | "high" | "medium" | "low" | "none" }> = [];
+
+    for (const line of lines) {
+      // Remove markdown bullet characters
+      const cleanLine = line.replace(/^[\s]*[-*>\d.\)\s]+/, "").trim();
+      if (cleanLine && cleanLine.length > 3) {
+        tasks.push({
+          name: cleanLine,
+          priority: "medium",
+        });
+      }
+    }
+
+    return tasks;
   }
 
   async generateInsights(tasks: Array<{ name: string; completed: boolean; priority: string; date?: string | null; deadline?: string | null }>): Promise<{ tips: string[]; suggestions: string[]; trends: string[] }> {
@@ -199,6 +375,11 @@ export class KeywordParser implements AIProvider {
  */
 export class OpenAIProvider implements AIProvider {
   name = "openai-gpt4";
+  private readonly model: string;
+
+  constructor() {
+    this.model = process.env.OPENAI_MODEL || "gpt-4o-mini";
+  }
 
   async parseTask(input: AITaskInput): Promise<TaskSuggestion> {
     // Check if API key is available
@@ -232,14 +413,16 @@ Output format:
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "gpt-4o-mini",
+          model: this.model,
           messages: [{ role: "user", content: prompt }],
           temperature: 0.3,
         }),
       });
 
       if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.statusText}`);
+        const errorBody = await response.text();
+        console.error("OpenAI API error:", response.status, errorBody);
+        throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
@@ -298,6 +481,11 @@ Return JSON:
  */
 export class ClaudeProvider implements AIProvider {
   name = "claude-sonnet";
+  private readonly model: string;
+
+  constructor() {
+    this.model = process.env.CLAUDE_MODEL || "claude-3-5-sonnet-20241022";
+  }
 
   async parseTask(input: AITaskInput): Promise<TaskSuggestion> {
     if (!process.env.ANTHROPIC_API_KEY) {
@@ -328,14 +516,16 @@ Return only JSON with these fields:
           "anthropic-version": "2023-06-01",
         },
         body: JSON.stringify({
-          model: "claude-3-5-sonnet-20241022",
+          model: this.model,
           max_tokens: 500,
           messages: [{ role: "user", content: prompt }],
         }),
       });
 
       if (!response.ok) {
-        throw new Error(`Claude API error: ${response.statusText}`);
+        const errorBody = await response.text();
+        console.error("Claude API error:", response.status, errorBody);
+        throw new Error(`Claude API error: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
@@ -437,6 +627,21 @@ export class AIManager {
 
     const result = await new KeywordParser().generateInsights(tasks);
     return { ...result, provider: "keyword-parser" };
+  }
+
+  async generateTasksFromNotes(
+    notes: string,
+    context?: {
+      lists?: Array<{ id: number; name: string; emoji: string }>;
+    }
+  ): Promise<Array<TaskSuggestion & { provider: string }>> {
+    // Always use keyword parser for this since it has the implementation
+    const parser = new KeywordParser();
+    const result = await parser.generateTasksFromNotes(notes);
+    return result.map(task => ({
+      ...task,
+      provider: "keyword-parser",
+    }));
   }
 }
 

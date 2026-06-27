@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach } from "bun:test";
-import { createTestDb } from "@/lib/db/test-db";
-import { setDb, resetDb } from "@/lib/db";
+import { describe, it, expect, beforeEach } from "vitest";
+import { createTestDb } from "../db/test-db";
+import { setDb, resetDb } from "../db";
 import {
   getTimeEntries,
   addTimeEntry,
@@ -125,9 +125,9 @@ describe("Time Actions", () => {
       const entry = await addTimeEntry({
         task_id: 1,
         start_time: "2026-06-24T10:00:00Z",
-        end_time: null,
-        duration_seconds: null,
-        description: null,
+        end_time: null as unknown as string,
+        duration_seconds: null as unknown as number,
+        description: null as unknown as string,
       });
 
       expect(entry.end_time).toBeNull();
@@ -278,9 +278,9 @@ describe("Time Actions", () => {
       const entry = await addTimeEntry({
         task_id: 1,
         start_time: "2026-06-24T10:00:00Z",
-        end_time: null,
-        duration_seconds: null,
-        description: null,
+        end_time: null as unknown as string,
+        duration_seconds: null as unknown as number,
+        description: null as unknown as string,
       });
 
       expect(entry.end_time).toBeNull();

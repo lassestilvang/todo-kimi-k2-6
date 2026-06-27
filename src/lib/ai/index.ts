@@ -12,16 +12,18 @@ export interface TaskSuggestion {
   recurring?: "none" | "daily" | "weekly" | "weekdays" | "monthly" | "yearly" | "custom";
   list_name?: string;
   deadline?: string;
+  list_id?: number;
 }
 
 export interface AITaskInput {
   text: string;
   context?: {
-    existingTasks?: Array<{ name: string; date?: string | null; deadline?: string | null }>;
+    existingTasks?: Array<{ name: string; date?: string | null; deadline?: string | null; priority?: string }>;
     preferences?: {
       workHours?: { start: number; end: number };
       preferredTimes?: string[];
     };
+    lists?: Array<{ id: number; name: string; emoji: string }>;
   };
 }
 
@@ -66,6 +68,24 @@ export async function generateTaskInsights(
     trends: result.trends,
     provider: result.provider,
   };
+}
+
+// Generate tasks from bullet points or notes
+export async function generateTasksFromNotes(
+  notes: string,
+  context?: {
+    lists?: Array<{ id: number; name: string; emoji: string }>;
+  }
+): Promise<Array<TaskSuggestion & { provider: string }>> {
+  const ai = getAIManager();
+
+  // Use keyword parser by default since it has the generateTasksFromNotes method
+  const result = await ai.generateTasksFromNotes(notes, context);
+
+  return result.map(task => ({
+    ...task,
+    provider: "keyword-parser",
+  }));
 }
 
 // Re-export types from providers
