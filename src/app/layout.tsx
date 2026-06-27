@@ -3,6 +3,10 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { NotificationProvider } from "@/components/task/notification-provider";
+import { ErrorBoundary } from "@/components/error-boundary";
+import { KeyboardShortcutsHandler } from "@/components/task/keyboard-shortcuts-handler";
+import { QueryProvider } from "@/components/query-provider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -26,10 +30,17 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         <ThemeProvider>
-          <TooltipProvider delay={0}>
-            {children}
-          </TooltipProvider>
+          <ErrorBoundary>
+            <QueryProvider>
+              <NotificationProvider>
+                <TooltipProvider delay={0}>
+                  {children}
+                </TooltipProvider>
+              </NotificationProvider>
+            </QueryProvider>
+          </ErrorBoundary>
         </ThemeProvider>
+        <KeyboardShortcutsHandler />
       </body>
     </html>
   );
