@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Filter, X } from "lucide-react";
+import { Filter, X, Save, Bookmark } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -10,8 +10,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
-import type { List, Label as LabelType, Priority } from "@/types";
+import { Input } from "@/components/ui/input";
+import type { List, Label as LabelType, Priority, SavedFilterPreset } from "@/types";
 
 interface TaskSearchFiltersProps {
   lists: List[];
@@ -23,6 +23,9 @@ interface TaskSearchFiltersProps {
   onLabelChange: (labelId: number) => void;
   onPriorityChange: (priority: Priority | undefined) => void;
   onClear: () => void;
+  savedPresets?: SavedFilterPreset[];
+  onLoadPreset?: (preset: SavedFilterPreset) => void;
+  onSavePreset?: (name: string, filterType?: string) => void;
 }
 
 const priorityOptions: { value: Priority | "none"; label: string; color: string }[] = [
@@ -43,6 +46,9 @@ export function TaskSearchFilters({
   onLabelChange,
   onPriorityChange,
   onClear,
+  savedPresets,
+  onLoadPreset,
+  onSavePreset,
 }: TaskSearchFiltersProps) {
   const [open, setOpen] = useState(false);
 
@@ -196,6 +202,64 @@ export function TaskSearchFilters({
               {selectedPriority}
             </Badge>
           )}
+        </div>
+      )}
+
+      {/* Saved Presets */}
+      {savedPresets && savedPresets.length > 0 && (
+        <div className="mt-2 pt-2 border-t">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1.5">
+            <Bookmark className="h-3 w-3" />
+            <span>Saved filters</span>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {savedPresets.map((preset) => (
+              <Button
+                key={preset.id}
+                variant="ghost"
+                size="sm"
+                className="text-xs h-6"
+                onClick={() => onLoadPreset?.(preset)}
+                title={preset.name}
+              >
+                {preset.name}
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Save Filter */}
+      {activeFilterCount > 0 && onSavePreset && (
+        <div className="mt-3 pt-3 border-t">
+          <div className="flex gap-2">
+            <Input
+              placeholder="Save filter as..."
+              className="flex-1 h-7 text-xs"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && e.currentTarget.value.trim()) {
+                  onSavePreset(e.currentTarget.value.trim());
+                  e.currentTarget.value = "";
+                }
+              }}
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0"
+              onClick={() => {
+                const input = document.querySelector(
+                  'input[placeholder="Save filter as..."]'
+                ) as HTMLInputElement;
+                if (input?.value.trim()) {
+                  onSavePreset(input.value.trim());
+                  input.value = "";
+                }
+              }}
+            >
+              <Save className="h-3 w-3" />
+            </Button>
+          </div>
         </div>
       )}
     </div>

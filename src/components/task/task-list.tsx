@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, memo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   CheckCircle2,
@@ -17,6 +17,9 @@ import {
   Move,
   Tag,
   Filter,
+  MoreVertical,
+  TrendingUp,
+  Paperclip,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -24,18 +27,20 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
+import { Label as UiLabel } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { TaskPreview } from "@/components/task/task-preview";
-import type { TaskWithRelations, List, SortField, SortDirection } from "@/types";
+import { BulkActionsMenu } from "@/components/task/bulk-actions-menu";
+import { useVirtualizer } from "@tanstack/react-virtual";
+import type { TaskWithRelations, List, SortField, SortDirection, Label, Priority } from "@/types";
 import { updateTask, deleteTask, toggleSubtask, bulkDeleteTasks, bulkUpdateTasks } from "@/lib/actions/tasks";
 import { toast } from "sonner";
 
 interface TaskListProps {
   tasks: TaskWithRelations[];
   lists: List[];
-  labels?: import("@/types").Label[];
+  labels?: Label[];
   viewTitle: string;
   onRefresh: () => void;
   onEditTask: (task: TaskWithRelations) => void;
@@ -44,10 +49,10 @@ interface TaskListProps {
   onSort?: (field: SortField) => void;
   filterListId?: number;
   filterLabelIds?: number[];
-  filterPriority?: import("@/types").Priority;
+  filterPriority?: Priority;
   onFilterList?: (listId: number | undefined) => void;
   onFilterLabel?: (labelId: number) => void;
-  onFilterPriority?: (priority: import("@/types").Priority | undefined) => void;
+  onFilterPriority?: (priority: Priority | undefined) => void;
   onClearFilters?: () => void;
 }
 
@@ -84,6 +89,19 @@ export function TaskList({
   const [selectedTasks, setSelectedTasks] = useState<Set<number>>(new Set());
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+
+  // Virtual scrolling for large task lists
+  const parentRef = useRef<HTMLDivElement>(null);
+  const visibleTasks = showCompleted
+    ? tasks
+    : tasks.filter((t) => !t.completed);
+
+  const rowVirtualizer = useVirtualizer({
+    count: visibleTasks.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 80, // Approximate task item height
+    overscan: 5,
+  });
 
   const getSortIndicator = (field: SortField) => {
     if (sortBy !== field) return <ArrowUpDown className="h-3.5 w-3.5 opacity-30" />;
@@ -130,10 +148,6 @@ export function TaskList({
     await deleteTask(taskId);
     onRefresh();
   };
-
-  const visibleTasks = showCompleted
-    ? tasks
-    : tasks.filter((t) => !t.completed);
 
   // Separate pending and completed tasks for display
   const pendingTasks = visibleTasks.filter((t) => !t.completed);
@@ -206,7 +220,7 @@ export function TaskList({
             <PopoverContent className="w-64" align="end">
               <div className="space-y-3">
                 <div>
-                  <Label className="text-sm font-medium">List</Label>
+                  <UiLabel className="text-sm font-medium">List</UiLabel>
                   <div className="mt-1 space-y-1 max-h-40 overflow-y-auto">
                     <button
                       className={cn(
@@ -238,7 +252,7 @@ export function TaskList({
                 </div>
                 {labels.length > 0 && (
                   <div>
-                    <Label className="text-sm font-medium">Labels</Label>
+                    <UiLabel className="text-sm font-medium">Labels</UiLabel>
                     <div className="mt-1 flex flex-wrap gap-1 max-h-40 overflow-y-auto">
                       {labels.map((label) => {
                         const isSelected = filterLabelIds.includes(label.id);
@@ -260,7 +274,7 @@ export function TaskList({
                   </div>
                 )}
                 <div>
-                  <Label className="text-sm font-medium">Priority</Label>
+                  <UiLabel className="text-sm font-medium">Priority</UiLabel>
                   <div className="mt-1 space-y-1">
                     <button
                       className={cn(
@@ -321,15 +335,15 @@ export function TaskList({
               checked={showCompleted}
               onCheckedChange={setShowCompleted}
             />
-            <Label htmlFor="show-completed" className="text-sm">
+            <UiLabel htmlFor="show-completed" className="text-sm">
               Show completed
               <kbd className="ml-1 text-xs text-muted-foreground/60 hidden sm:inline">C</kbd>
-            </Label>
+            </UiLabel>
           </div>
         </div>
       </div>
 
-      <ScrollArea className="flex-1 px-6 py-4">
+      <ScrollArea ref={parentRef} className="flex-1 px-6 py-4">
         {/* Bulk Action Bar */}
         <AnimatePresence>
           {isSelectMode && selectedTasks.size > 0 && (
@@ -343,64 +357,11 @@ export function TaskList({
                 {selectedTasks.size} task{selectedTasks.size > 1 ? "s" : ""} selected
               </span>
               <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={async () => {
-                    const selectedListId = prompt("Enter the list ID to move tasks to:");
-                    if (!selectedListId) return;
-                    try {
-                      await bulkUpdateTasks(Array.from(selectedTasks), { list_id: parseInt(selectedListId) });
-                      setSelectedTasks(new Set());
-                      onRefresh();
-                      toast.success(`Moved ${selectedTasks.size} task(s)`);
-                    } catch {
-                      toast.error("Failed to move tasks");
-                    }
-                  }}
-                >
-                  <Move className="h-3.5 w-3.5 mr-1" />
-                  Move
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={async () => {
-                    const labelIdsStr = prompt("Enter label IDs (comma-separated):");
-                    if (!labelIdsStr) return;
-                    const labelIds = labelIdsStr.split(",").map(id => parseInt(id.trim())).filter(id => !isNaN(id));
-                    if (labelIds.length === 0) return;
-                    try {
-                      await bulkUpdateTasks(Array.from(selectedTasks), { label_ids: labelIds });
-                      setSelectedTasks(new Set());
-                      onRefresh();
-                      toast.success(`Labeled ${selectedTasks.size} task(s)`);
-                    } catch {
-                      toast.error("Failed to label tasks");
-                    }
-                  }}
-                >
-                  <Tag className="h-3.5 w-3.5 mr-1" />
-                  Label
-                </Button>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={async () => {
-                    if (!confirm(`Delete ${selectedTasks.size} task(s)?`)) return;
-                    try {
-                      await bulkDeleteTasks(Array.from(selectedTasks));
-                      setSelectedTasks(new Set());
-                      onRefresh();
-                      toast.success(`Deleted ${selectedTasks.size} task(s)`);
-                    } catch {
-                      toast.error("Failed to delete tasks");
-                    }
-                  }}
-                >
-                  <Trash2 className="h-3.5 w-3.5 mr-1" />
-                  Delete
-                </Button>
+                <BulkActionsMenu
+                  selectedTasks={Array.from(selectedTasks)}
+                  onAction={() => setSelectedTasks(new Set())}
+                  onRefresh={onRefresh}
+                />
               </div>
             </motion.div>
           )}
@@ -413,9 +374,17 @@ export function TaskList({
             <p className="text-sm">Create a new task to get started</p>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div
+            className="space-y-2"
+            style={{
+              height: rowVirtualizer.getTotalSize(),
+              width: "100%",
+              overflow: "hidden",
+            }}
+          >
             <AnimatePresence mode="popLayout">
-              {visibleTasks.map((task) => {
+              {rowVirtualizer.getVirtualItems().map((virtualItem) => {
+                const task = visibleTasks[virtualItem.index];
                 const isExpanded = expandedTasks.has(task.id);
                 const isSelected = selectedTasks.has(task.id);
 
@@ -432,6 +401,13 @@ export function TaskList({
                       task.completed && "opacity-60",
                       isSelected && "ring-2 ring-primary"
                     )}
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      width: "100%",
+                      transform: `translateY(${virtualItem.start}px)`,
+                    }}
                     onClick={() => {
                       if (isSelectMode) {
                         setSelectedTasks((prev) => {
@@ -564,6 +540,13 @@ export function TaskList({
                             </span>
                           ))}
 
+                          {task.attachments && task.attachments.length > 0 && (
+                            <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground" aria-label={`${task.attachments.length} attachment(s)`}>
+                              <Paperclip className="h-2.5 w-2.5" />
+                              {task.attachments.length}
+                            </span>
+                          )}
+
                           {task.subtasks.length > 0 && (
                             <button
                               onClick={(e) => {
@@ -597,40 +580,6 @@ export function TaskList({
                         <Trash2 className="h-3 w-3 text-red-500" />
                       </Button>
                     </div>
-
-                    <AnimatePresence>
-                      {isExpanded && task.subtasks.length > 0 && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: "auto", opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.2 }}
-                          className="overflow-hidden"
-                        >
-                          <div className="px-4 pb-3 pl-12 space-y-1">
-                            {task.subtasks.map((subtask) => (
-                              <div
-                                key={subtask.id}
-                                className="flex items-center gap-2 text-sm"
-                              >
-                                <Checkbox
-                                  checked={subtask.completed}
-                                  onCheckedChange={() => handleToggleSubtask(subtask.id)}
-                                />
-                                <span
-                                  className={cn(
-                                    subtask.completed &&
-                                      "line-through text-muted-foreground"
-                                  )}
-                                >
-                                  {subtask.name}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
                   </motion.div>
                 );
               })}

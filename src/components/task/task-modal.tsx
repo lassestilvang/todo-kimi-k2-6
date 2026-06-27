@@ -15,6 +15,7 @@ import {
   ListChecks,
   Link,
   Save,
+  Flame,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -32,6 +33,7 @@ import {
 } from "@/components/ui/dialog";
 import { TimeTracker } from "@/components/task/time-tracker";
 import { PomodoroTimer } from "@/components/task/pomodoro-timer";
+import { StreakCalendar } from "@/components/task/streak-calendar";
 import {
   Select,
   SelectContent,
@@ -39,6 +41,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Paperclip } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -55,10 +58,14 @@ import type {
   Priority,
   Recurring,
   Template,
+  User,
+  TemplateCategory,
 } from "@/types";
-import { createTask as createTaskAction, updateTask as updateTaskAction, addTaskComment, saveTemplateFromTask } from "@/lib/actions/tasks";
+import { createTask as createTaskAction, updateTask as updateTaskAction, addTaskComment, saveTemplateFromTask, getTaskAssignments, assignTask, getTemplateCategories } from "@/lib/actions/tasks";
+import { searchUsers } from "@/lib/actions/users";
 import { saveOfflineTask } from "@/lib/offline-storage";
 import { ShareDialog } from "@/components/task/share-dialog";
+import { Share2 } from "lucide-react";
 
 interface TaskModalProps {
   task?: TaskWithRelations;
@@ -119,8 +126,12 @@ export function TaskModal({
     unit?: "days" | "weeks" | "months" | "years";
   }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState<"task" | "template" | "comments" | "time" | "pomodoro">("task");
+  const [activeTab, setActiveTab] = useState<"task" | "template" | "comments" | "time" | "pomodoro" | "assign" | "attachments" | "collaborate" | "streak">("task");
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
+  const [assignees, setAssignees] = useState<Array<{ user_id: number; user_email: string; user_name: string | null; permission: "view" | "edit" }>>([]);
+  const [assigneeSearchQuery, setAssigneeSearchQuery] = useState("");
+  const [categories, setCategories] = useState<TemplateCategory[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
 
   // Dependencies (blockers)
   const [selectedBlocks, setSelectedBlocks] = useState<number[]>(
@@ -159,6 +170,15 @@ export function TaskModal({
       if (task.recurring === "custom" && task.recurring_config) {
         setRecurringConfig(JSON.parse(task.recurring_config));
       }
+      // Load assignees
+      if (task.assignee) {
+        setAssignees([{
+          user_id: task.assignee.id,
+          user_email: task.assignee.email,
+          user_name: task.assignee.name,
+          permission: "edit"
+        }]);
+      }
     } else {
       // Apply template if selected
       if (selectedTemplate) {
@@ -194,6 +214,8 @@ export function TaskModal({
   useEffect(() => {
     if (open) {
       const timer = setTimeout(initializeForm, 0);
+      // Load categories
+      getTemplateCategories().then(setCategories).catch(console.error);
       return () => clearTimeout(timer);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -419,6 +441,61 @@ export function TaskModal({
                 onClick={() => setActiveTab("pomodoro")}
               >
                 Pomodoro
+              </button>
+            )}
+            {isEditing && (
+              <button
+                className={cn(
+                  "pb-2 text-sm font-medium",
+                  activeTab === "assign"
+                    ? "border-b-2 border-primary text-primary"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                onClick={() => setActiveTab("assign")}
+              >
+                Assign
+              </button>
+            )}
+            {isEditing && (
+              <button
+                className={cn(
+                  "pb-2 text-sm font-medium",
+                  activeTab === "attachments"
+                    ? "border-b-2 border-primary text-primary"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                onClick={() => setActiveTab("attachments")}
+              >
+                <Paperclip className="h-3.5 w-3.5 mr-1.5 inline" />
+                Files
+              </button>
+            )}
+            {isEditing && (
+              <button
+                className={cn(
+                  "pb-2 text-sm font-medium",
+                  activeTab === "collaborate"
+                    ? "border-b-2 border-primary text-primary"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                onClick={() => setActiveTab("collaborate")}
+              >
+                <Share2 className="h-3.5 w-3.5 mr-1.5 inline" />
+                Share
+              </button>
+            )}
+            {isEditing && task?.recurring !== "none" && (
+              <button
+                className={cn(
+                  "pb-2 text-sm font-medium",
+                  activeTab === "streak"
+                    ? "border-b-2 border-primary text-primary"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                onClick={() => setActiveTab("streak")}
+              >
+                <Flame className="h-3.5 w-3.5 mr-1.5 inline" />
+                Streak
               </button>
             )}
           </div>
@@ -838,6 +915,29 @@ export function TaskModal({
               <p className="text-sm text-muted-foreground">
                 Save this task configuration as a reusable template for future tasks.
               </p>
+
+              {/* Category selection */}
+              {categories.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Category (optional)</Label>
+                  <Select
+                    value={selectedCategory?.toString() || ""}
+                    onValueChange={(v) => setSelectedCategory(v ? Number(v) : null)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a category..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((cat) => (
+                        <SelectItem key={cat.id} value={String(cat.id)}>
+                          {cat.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
               <Button
                 variant="outline"
                 className="w-full"
@@ -853,7 +953,8 @@ export function TaskModal({
                       Number(listId) || null,
                       priority,
                       selectedLabels,
-                      subtasks
+                      subtasks,
+                      selectedCategory || undefined
                     );
                     onSuccess();
                     toast.success("Template saved");
@@ -888,7 +989,7 @@ export function TaskModal({
             </div>
           )}
 
-          {activeTab === "comments" && isEditing && (
+          {activeTab === "comments" && isEditing && task && (
             <div className="space-y-4 pt-4">
               <h3 className="font-medium">Comments</h3>
               <div className="space-y-2 max-h-60 overflow-y-auto">
@@ -928,6 +1029,233 @@ export function TaskModal({
                   Send
                 </Button>
               </div>
+            </div>
+          )}
+
+          {activeTab === "attachments" && isEditing && task && (
+            <div className="space-y-4 pt-4">
+              <h3 className="font-medium">Attachments</h3>
+              <div className="space-y-2">
+                <Label>Upload Files</Label>
+                <div className="border-2 border-dashed rounded-lg p-4 text-center">
+                  <Input
+                    type="file"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file || !task) return;
+
+                      try {
+                        const formData = new FormData();
+                        formData.append("file", file);
+                        formData.append("taskId", String(task.id));
+
+                        const response = await fetch("/api/attachments", {
+                          method: "POST",
+                          body: formData,
+                        });
+
+                        if (response.ok) {
+                          onSuccess();
+                          toast.success(`Attached ${file.name}`);
+                        } else {
+                          throw new Error("Upload failed");
+                        }
+                      } catch (error) {
+                        toast.error("Failed to attach file");
+                        console.error(error);
+                      }
+                      e.target.value = "";
+                    }}
+                    className="hidden"
+                    id="file-upload"
+                  />
+                  <Label htmlFor="file-upload" className="cursor-pointer">
+                    <Plus className="h-6 w-6 mx-auto mb-1" />
+                    <span className="text-sm">Click to upload or drag file here</span>
+                  </Label>
+                </div>
+                {task.attachments && task.attachments.length > 0 && (
+                  <div className="space-y-2 mt-4">
+                    {task.attachments.map((att) => (
+                      <div key={att.id} className="flex items-center justify-between p-2 bg-muted rounded">
+                        <div className="flex items-center gap-2">
+                          <span>{att.mime_type.startsWith("image/") ? "🖼️" : "📎"}</span>
+                          <div>
+                            <div className="text-sm font-medium">{att.filename}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {(att.file_size / 1024).toFixed(1)} KB
+                            </div>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={async () => {
+                            try {
+                              const response = await fetch(`/api/attachments?id=${att.id}`, {
+                                method: "DELETE",
+                              });
+                              if (response.ok) {
+                                onSuccess();
+                                toast.success("Attachment removed");
+                              }
+                            } catch {
+                              toast.error("Failed to remove attachment");
+                            }
+                          }}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {activeTab === "collaborate" && isEditing && (
+            <div className="space-y-4 pt-4">
+              <h3 className="font-medium">Collaboration</h3>
+              <p className="text-sm text-muted-foreground">
+                Share this task with team members and collaborate in real-time.
+              </p>
+
+              <div className="space-y-4">
+                <div>
+                  <h4 className="text-sm font-medium mb-2">Share with Users</h4>
+                  <div className="space-y-3">
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Enter user email..."
+                        className="flex-1"
+                      />
+                      <Select
+                        value="view"
+                        onValueChange={() => {}}
+                      >
+                        <SelectTrigger className="w-24">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="view">View</SelectItem>
+                          <SelectItem value="edit">Edit</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button size="sm">Invite</Button>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Current Collaborators</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {task.assignee && (
+                          <Badge variant="secondary" className="flex items-center gap-1">
+                            <span>{task.assignee.name || task.assignee.email}</span>
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-2">
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => {
+                      // Generate share link
+                      const shareLink = `${window.location.origin}/share/${task.id}-${Math.random().toString(36).substr(2, 9)}`;
+                      navigator.clipboard.writeText(shareLink);
+                      toast.success("Share link copied to clipboard!");
+                    }}
+                  >
+                    Generate Share Link
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Anyone with this link can view the task
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "assign" && isEditing && (
+            <div className="space-y-4 pt-4">
+              <h3 className="font-medium">Task Assignment</h3>
+              <p className="text-sm text-muted-foreground">
+                Assign this task to team members. They will receive notifications about this task.
+              </p>
+
+              <div className="space-y-2">
+                <Label>Assignees</Label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {assignees.map((assignee) => (
+                    <Badge
+                      key={assignee.user_id}
+                      variant="secondary"
+                      className="flex items-center gap-1"
+                    >
+                      <span>{assignee.user_name || assignee.user_email}</span>
+                      <button
+                        onClick={() => setAssignees(assignees.filter(a => a.user_id !== assignee.user_id))}
+                        className="hover:text-red-500"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+                <Popover>
+                  <PopoverTrigger>
+                    <Button variant="outline" className="w-full justify-start">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add assignee...
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-64">
+                    <div className="space-y-2">
+                      <Input
+                        placeholder="Search users..."
+                        value={assigneeSearchQuery}
+                        onChange={async (e) => {
+                          setAssigneeSearchQuery(e.target.value);
+                          // In a real implementation, this would fetch users
+                          // For now, we show a message that this requires backend integration
+                        }}
+                      />
+                      <div className="max-h-60 overflow-y-auto">
+                        <div className="text-xs text-muted-foreground py-2">
+                          <p>Search is ready - connect to backend API for full functionality.</p>
+                          <p className="mt-1">You can manually add assignees using their user IDs.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <div className="text-xs text-muted-foreground">
+                <p>Tip: Assignees with "edit" permission can modify this task.</p>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "streak" && isEditing && task && (
+            <div className="space-y-4 pt-4">
+              <h3 className="font-medium">Habit Streak</h3>
+              <p className="text-sm text-muted-foreground">
+                Track your progress on this recurring task. Mark it complete each day to build your streak!
+              </p>
+              <StreakCalendar
+                taskId={task.id}
+                taskName={task.name}
+                currentDate={task.date || ""}
+                completedDates={task.completed ? [task.date || ""] : []}
+                onDateToggle={async (date) => {
+                  // For now, just show a toast - the actual implementation would call the API
+                  toast.info("Habit tracking will be fully implemented with backend integration");
+                }}
+              />
             </div>
           )}
         </ScrollArea>

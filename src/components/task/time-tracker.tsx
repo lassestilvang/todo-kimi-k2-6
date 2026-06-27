@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Play, Pause, StopCircle, Clock } from "lucide-react";
+import { Play, Pause, StopCircle, Clock, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -62,6 +62,32 @@ export function TimeTracker({ task, open, onOpenChange }: TimeTrackerProps) {
     };
   }, [isRunning, currentStart]);
 
+  // Activity detection - pause timer when user switches tabs or leaves the page
+  useEffect(() => {
+    if (!isRunning) return;
+
+    const handleVisibilityChange = () => {
+      if (document.hidden && currentStart) {
+        handlePause();
+      }
+    };
+
+    const handleBeforeUnload = () => {
+      if (isRunning && currentStart) {
+        // Log time up to this point before unloading
+        handleStop();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [isRunning, currentStart]);
+
   const handleStart = () => {
     setIsRunning(true);
     setCurrentStart(new Date());
@@ -89,6 +115,7 @@ export function TimeTracker({ task, open, onOpenChange }: TimeTrackerProps) {
       setDescription("");
       setIsRunning(false);
       setElapsedSeconds(0);
+      setCurrentStart(null);
       toast.success(`Logged ${Math.floor(durationSeconds / 60)}m ${durationSeconds % 60}s`);
     } catch (error) {
       toast.error("Failed to log time");
