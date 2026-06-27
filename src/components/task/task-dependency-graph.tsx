@@ -69,7 +69,7 @@ function useForceLayout(nodes: Node[], edges: Edge[], width: number, height: num
       iterationsRef.current++;
 
       setPositions(prev => {
-        let newNodes = prev.map(n => ({ ...n }));
+        const newNodes = prev.map(n => ({ ...n }));
 
         // Apply forces
         newNodes.forEach(node => {

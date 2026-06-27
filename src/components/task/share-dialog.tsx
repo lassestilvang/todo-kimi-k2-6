@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Share2, Copy, Check, UserPlus, Shield, ShieldOff } from "lucide-react";
+import { Share2, Copy, Check, UserPlus, Shield, ShieldOff, Users, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -22,19 +23,33 @@ import {
 import { toast } from "sonner";
 import type { TaskWithRelations } from "@/types";
 
+// Extended type that includes user info
+interface ShareWithUser {
+  id: number;
+  task_id: number;
+  user_id: number;
+  permission: "view" | "edit";
+  share_token?: string;
+  created_at: string;
+  user?: { id: number; email: string; name: string | null };
+}
+
 interface ShareDialogProps {
   task: TaskWithRelations;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  shares?: any[];
+  onShare?: (email: string, permission: "view" | "edit") => void;
+  onRemoveShare?: (userId: number) => void;
 }
 
-export function ShareDialog({ task, open, onOpenChange }: ShareDialogProps) {
+export function ShareDialog({ task, open, onOpenChange, shares = [], onShare, onRemoveShare }: ShareDialogProps) {
   const [email, setEmail] = useState("");
   const [permission, setPermission] = useState<"view" | "edit">("view");
   const [isSharing, setIsSharing] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const shareLink = `${window.location.origin}/shared/task/${task.id}`;
+  const shareLink = `${window.location.origin}/share/${task.id}`; // Use task ID as token for now
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(shareLink);
@@ -44,19 +59,27 @@ export function ShareDialog({ task, open, onOpenChange }: ShareDialogProps) {
   };
 
   const handleShare = async () => {
-    if (!email.trim()) return;
+    if (!email.trim() || !onShare) return;
 
     setIsSharing(true);
     try {
-      // This would call the shareTask action
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await onShare(email, permission);
       toast.success(`Task shared with ${email}`);
       setEmail("");
-      onOpenChange(false);
     } catch {
       toast.error("Failed to share task");
     } finally {
       setIsSharing(false);
+    }
+  };
+
+  const handleRemoveShare = async (userId: number) => {
+    if (!onRemoveShare) return;
+    try {
+      await onRemoveShare(userId);
+      toast.success("Share removed");
+    } catch {
+      toast.error("Failed to remove share");
     }
   };
 
@@ -140,6 +163,41 @@ export function ShareDialog({ task, open, onOpenChange }: ShareDialogProps) {
               </SelectContent>
             </Select>
           </div>
+
+          {/* Shared Users */}
+          {shares.length > 0 && (
+            <div className="space-y-2">
+              <Label>Shared with</Label>
+              <div className="space-y-2">
+                {(shares as any).map((share: any, index: number) => (
+                  <div key={index} className="flex items-center justify-between p-2 border rounded">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      <div>
+                        <p className="text-sm font-medium">{share.user?.name || share.user?.email || "Public share"}</p>
+                        <p className="text-xs text-muted-foreground">{share.user?.email || "Public link"}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={share.permission === "edit" ? "default" : "secondary"}>
+                        {share.permission}
+                      </Badge>
+                      {onRemoveShare && share.user && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveShare(share.user.id)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          Remove
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

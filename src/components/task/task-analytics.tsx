@@ -1,11 +1,12 @@
 "use client";
 
 import { useMemo } from "react";
-import { format, subDays, startOfDay, endOfDay, isWithinInterval } from "date-fns";
-import { BarChart3, TrendingUp, Clock, Target, PieChart, Activity, Award, Calendar } from "lucide-react";
+import { format, subDays, startOfDay, endOfDay, isWithinInterval, parseISO, isAfter } from "date-fns";
+import { BarChart3, TrendingUp, Clock, Target, PieChart, Activity, Award, Calendar, List, Tag, CheckSquare, Flame } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Pie, Cell, LineChart, Line } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import type { TaskWithRelations } from "@/types";
 
 interface TaskAnalyticsProps {
@@ -55,7 +56,62 @@ export function TaskAnalytics({ tasks, completedTasks }: TaskAnalyticsProps) {
   const totalTasks = tasks.length + (completedTasks?.length ?? 0);
   const completionRate = totalTasks > 0 ? ((completedTasks?.length ?? 0) / totalTasks) * 100 : 0;
 
+  // Calculate productivity score (0-100)
+  const productivityScore = useMemo(() => {
+    const completionScore = completionRate;
+    const priorityScore = 100 - (tasks.filter(t => t.priority === "critical" && !t.completed).length * 10);
+    const timeScore = Math.min(totalTimeTracked / 3600, 1) * 100; // Normalize to 1 hour
+    return Math.round((completionScore + Math.max(0, priorityScore) + timeScore) / 3);
+  }, [completionRate, tasks, totalTimeTracked]);
+
+  // List distribution
+  const listDistribution = useMemo(() => {
+    const byList = tasks.reduce((acc, t) => {
+      const listId = t.list_id || 0;
+      acc[listId] = (acc[listId] || 0) + 1;
+      return acc;
+    }, {} as Record<number, number>);
+    return Object.entries(byList).map(([id, count]) => ({ id: Number(id), count }));
+  }, [tasks]);
+
+  // Label usage
+  const labelUsage = useMemo(() => {
+    const labelCounts = tasks.reduce((acc, t) => {
+      t.labels?.forEach(l => {
+        acc[l.name] = (acc[l.name] || 0) + 1;
+      });
+      return acc;
+    }, {} as Record<string, number>);
+    return Object.entries(labelCounts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+  }, [tasks]);
+
   const COLORS = ["#dc2626", "#ea580c", "#ca8a04", "#2563eb"];
+
+  // Calculate streak (consecutive days with completed tasks)
+  const streak = useMemo(() => {
+    const completedByDay: Record<string, number> = {};
+    completedTasks?.forEach((task) => {
+      if (task.completed_at) {
+        const day = format(new Date(task.completed_at), "yyyy-MM-dd");
+        completedByDay[day] = (completedByDay[day] || 0) + 1;
+      }
+    });
+
+    let currentStreak = 0;
+    const today = new Date();
+    for (let i = 0; i < 30; i++) {
+      const day = format(subDays(today, i), "yyyy-MM-dd");
+      if (completedByDay[day] > 0) {
+        currentStreak++;
+      } else {
+        break;
+      }
+    }
+    return currentStreak;
+  }, [completedTasks]);
 
   // Weekly trend with completion rate
   const weeklyTrendData = useMemo(() => {
@@ -114,7 +170,7 @@ export function TaskAnalytics({ tasks, completedTasks }: TaskAnalyticsProps) {
       </div>
 
       {/* Key Metrics */}
-      <div className="grid gap-3 md:grid-cols-4 mb-4">
+      <div className="grid gap-3 md:grid-cols-6 mb-4">
         <Card className="p-3 text-center">
           <div className="text-2xl font-bold">{tasks.length}</div>
           <p className="text-xs text-muted-foreground">Active Tasks</p>
@@ -130,6 +186,17 @@ export function TaskAnalytics({ tasks, completedTasks }: TaskAnalyticsProps) {
         <Card className="p-3 text-center">
           <div className="text-2xl font-bold">{tasks.filter(t => !t.completed && t.deadline).length}</div>
           <p className="text-xs text-muted-foreground">With Deadlines</p>
+        </Card>
+        <Card className="p-3 text-center">
+          <div className="text-2xl font-bold">{productivityScore}</div>
+          <p className="text-xs text-muted-foreground">Productivity Score</p>
+        </Card>
+        <Card className="p-3 text-center">
+          <div className="text-2xl font-bold flex items-center justify-center gap-1">
+            <Flame className="h-4 w-4 text-orange-500" />
+            {streak}
+          </div>
+          <p className="text-xs text-muted-foreground">Day Streak</p>
         </Card>
       </div>
 
@@ -245,6 +312,129 @@ export function TaskAnalytics({ tasks, completedTasks }: TaskAnalyticsProps) {
             className="h-full bg-primary transition-all duration-500"
             style={{ width: `${completionRate}%` }}
           />
+        </div>
+      </div>
+
+      {/* Additional Metrics */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mt-4 pt-4 border-t">
+        {/* List Distribution */}
+        {listDistribution.length > 0 && (
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium flex items-center gap-1.5">
+              <List className="h-3.5 w-3.5" />
+              Tasks by List
+            </h4>
+            <div className="space-y-1">
+              {listDistribution.map((item) => (
+                <div key={item.id} className="flex justify-between text-sm">
+                  <span>{item.id ? "List " + item.id : "Unassigned"}</span>
+                  <span className="font-medium">{item.count}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Label Usage */}
+        {labelUsage.length > 0 && (
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium flex items-center gap-1.5">
+              <Tag className="h-3.5 w-3.5" />
+              Popular Labels
+            </h4>
+            <div className="space-y-1">
+              {labelUsage.map((item) => (
+                <div key={item.name} className="flex justify-between text-sm">
+                  <span>{item.name}</span>
+                  <Badge variant="secondary">{item.count}</Badge>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Upcoming Deadlines */}
+        <div className="space-y-2">
+          <h4 className="text-sm font-medium flex items-center gap-1.5">
+            <Calendar className="h-3.5 w-3.5" />
+            Upcoming Deadlines
+          </h4>
+          <div className="space-y-1">
+            {tasks
+              .filter(t => !t.completed && t.deadline)
+              .sort((a, b) => (a.deadline || "").localeCompare(b.deadline || ""))
+              .slice(0, 3)
+              .map((task) => (
+                <div key={task.id} className="text-sm">
+                  <span className="font-medium">{task.name}</span>
+                  <div className="text-xs text-muted-foreground">
+                    {task.deadline && format(parseISO(task.deadline), "MMM d")}
+                  </div>
+                </div>
+              ))}
+            {!tasks.some(t => !t.completed && t.deadline) && (
+              <p className="text-xs text-muted-foreground">No upcoming deadlines</p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Focus Time Analysis */}
+      <div className="grid gap-4 md:grid-cols-2 mt-4 pt-4 border-t">
+        <div className="space-y-2">
+          <h4 className="text-sm font-medium flex items-center gap-1.5">
+            <Clock className="h-3.5 w-3.5" />
+            Focus Time Analysis
+          </h4>
+          <div className="bg-muted/30 rounded-lg p-4">
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <span className="text-muted-foreground">Total Time</span>
+                <div className="font-bold">{Math.round(totalTimeTracked / 60)}m</div>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Avg/Task</span>
+                <div className="font-bold">
+                  {tasks.length > 0 ? Math.round(totalTimeTracked / tasks.length / 60) : 0}m
+                </div>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Best Day</span>
+                <div className="font-bold">
+                  {chartData.reduce((max, d) => d.count > max.count ? d : max, { date: "", count: 0 }).date || "N/A"}
+                </div>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Focus Score</span>
+                <div className="font-bold">{productivityScore}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Habit Streak */}
+        <div className="space-y-2">
+          <h4 className="text-sm font-medium flex items-center gap-1.5">
+            <Flame className="h-3.5 w-3.5" />
+            Habit Tracker
+          </h4>
+          <div className="bg-muted/30 rounded-lg p-4 text-center">
+            <div className="text-4xl font-bold text-orange-500">{streak}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {streak > 0 ? `${streak} day${streak > 1 ? "s" : ""} streak!` : "Start your streak today"}
+            </p>
+            <div className="flex justify-center gap-1 mt-2">
+              {Array.from({ length: 7 }).map((_, i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    "w-2 h-2 rounded-full",
+                    i < streak ? "bg-orange-500" : "bg-muted"
+                  )}
+                />
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>
