@@ -19,6 +19,7 @@ import {
   BarChart3,
   Bot,
   CalendarPlus,
+  Focus,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
@@ -63,11 +64,13 @@ const views = [
   { id: "upcoming", name: "Upcoming", icon: CalendarRange },
   { id: "kanban", name: "Kanban", icon: LayoutGrid },
   { id: "all", name: "All", icon: LayoutGrid },
+  { id: "focus", name: "Focus Mode", icon: Focus },
   { id: "graph", name: "Dependencies", icon: LayoutGrid },
   { id: "matrix", name: "Priority Matrix", icon: LayoutGrid },
   { id: "gantt", name: "Gantt Chart", icon: BarChart3 },
   { id: "ai", name: "AI Assistant", icon: Bot },
   { id: "calendar_sync", name: "Calendar Sync", icon: CalendarPlus },
+  { id: "analytics", name: "Analytics", icon: BarChart3 },
 ];
 
 export function AppSidebar({
@@ -259,6 +262,18 @@ export function AppSidebar({
                 </Button>
               )}
             </AnimatePresence>
+          </div>
+
+          <div className="px-3 py-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start gap-2 text-sm"
+              onClick={() => window.location.href = "/settings"}
+            >
+              <Settings className="h-4 w-4" />
+              Settings
+            </Button>
           </div>
 
           <ScrollArea className="flex-1 px-2">
