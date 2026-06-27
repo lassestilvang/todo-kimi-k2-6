@@ -1,20 +1,24 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Bot, Send, Sparkles, Lightbulb, Clock, Target, Copy, Check } from "lucide-react";
+import { Bot, Send, Sparkles, Lightbulb, Clock, Target, Copy, Check, Calendar, List as ListIcon, Mic, MicOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import type { TaskWithRelations } from "@/types";
-import { parseTaskInput, generateTaskInsights } from "@/lib/ai";
+import { cn } from "@/lib/utils";
+import type { TaskWithRelations, List } from "@/types";
+import type { TaskSuggestion } from "@/lib/ai";
 import { toast } from "sonner";
 
 interface AIAssistantProps {
   tasks: TaskWithRelations[];
+  lists: List[];
   onAddTask: (task: Partial<TaskWithRelations>) => void;
+  className?: string;
 }
 
 interface Message {
@@ -22,7 +26,7 @@ interface Message {
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
-  parsedTask?: any;
+  parsedTask?: TaskSuggestion & { provider: string };
 }
 
 interface QuickAction {
@@ -32,13 +36,101 @@ interface QuickAction {
   prompt: string;
 }
 
-export function AIAssistant({ tasks, onAddTask }: AIAssistantProps) {
+export function AIAssistant({ tasks, lists, onAddTask, className }: AIAssistantProps) {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const [insights, setInsights] = useState<{ tips: string[]; suggestions: string[]; trends: string[]; provider: string } | null>(null);
+  const [showSuggestions, setShowSuggestions] = useState(true);
+  const [aiStatus, setAiStatus] = useState<{ openai: boolean; anthropic: boolean; activeProvider: string } | null>(null);
+  const [isTyping, setIsTyping] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
+
+  // Initialize speech recognition
+  useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.lang = "en-US";
+      recognitionRef.current.interimResults = false;
+
+      recognitionRef.current.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setInput(transcript);
+        setIsListening(false);
+      };
+
+      recognitionRef.current.onerror = () => {
+        setIsListening(false);
+      };
+
+      recognitionRef.current.onend = () => {
+        if (isListening) {
+          recognitionRef.current?.start();
+        }
+      };
+    }
+
+    return () => {
+      recognitionRef.current?.stop();
+    };
+  }, [isListening]);
+
+  // Fetch AI status on mount
+  useEffect(() => {
+    fetch("/api/ai")
+      .then((r) => r.json())
+      .then(setAiStatus)
+      .catch(console.error);
+  }, []);
+
+  // Calculate smart suggestions based on task context
+  const smartSuggestions = useMemo(() => {
+    const today = new Date().toISOString().split("T")[0];
+    const suggestions: QuickAction[] = [];
+
+    // Suggest tasks for today based on incomplete tasks
+    const incompleteToday = tasks.filter(t => t.date === today && !t.completed);
+    if (incompleteToday.length > 0) {
+      suggestions.push({
+        title: "Continue task",
+        description: `Pick up where you left off`,
+        icon: <Clock className="h-3.5 w-3.5" />,
+        prompt: `Continue working on "${incompleteToday[0].name}"`,
+      });
+    }
+
+    // Suggest based on priority
+    const criticalTasks = tasks.filter(t => t.priority === "critical" && !t.completed);
+    if (criticalTasks.length > 0) {
+      suggestions.push({
+        title: "Critical task",
+        description: `${criticalTasks.length} critical tasks need attention`,
+        icon: <Target className="h-3.5 w-3.5" />,
+        prompt: `Focus on "${criticalTasks[0].name}" - it's marked as critical`,
+      });
+    }
+
+    // Suggest based on list context
+    if (lists.length > 1) {
+      const inboxList = lists.find(l => l.is_inbox);
+      if (inboxList) {
+        suggestions.push({
+          title: `Add to ${inboxList.name}`,
+          description: "Quick entry to inbox",
+          icon: <ListIcon className="h-3.5 w-3.5" />,
+          prompt: `Add to ${inboxList.name}: ${inboxList.emoji} `,
+        });
+      }
+    }
+
+    return suggestions;
+  }, [tasks, lists]);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -52,18 +144,29 @@ export function AIAssistant({ tasks, onAddTask }: AIAssistantProps) {
 
   const loadInsights = async () => {
     try {
-      const result = await generateTaskInsights(tasks.map(t => ({
-        name: t.name,
-        completed: t.completed,
-        priority: t.priority,
-        date: t.date,
-        deadline: t.deadline,
-      })));
+      const result = await fetch("/api/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "insights",
+          input: {
+            tasks: tasks.map(t => ({
+              name: t.name,
+              completed: t.completed,
+              priority: t.priority,
+              date: t.date,
+              deadline: t.deadline,
+            })),
+          },
+        }),
+      });
+
+      const data = await result.json();
       setInsights({
-        tips: result.productivity_tips || [],
-        suggestions: result.suggestions || [],
-        trends: result.trends || [],
-        provider: result.provider || "keyword-parser",
+        tips: data.tips || [],
+        suggestions: data.suggestions || [],
+        trends: data.trends || [],
+        provider: aiStatus?.activeProvider || "keyword-parser",
       });
     } catch (error) {
       console.error("Failed to load insights:", error);
@@ -85,16 +188,40 @@ export function AIAssistant({ tasks, onAddTask }: AIAssistantProps) {
     setIsLoading(true);
 
     try {
-      const result = await parseTaskInput({ text: input });
+      const result = await fetch("/api/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "parse",
+          input: {
+            text: input,
+            context: {
+              existingTasks: tasks.map(t => ({
+                name: t.name,
+                date: t.date,
+                deadline: t.deadline,
+                priority: t.priority,
+              })),
+              lists: lists.map(l => ({
+                id: l.id,
+                name: l.name,
+                emoji: l.emoji,
+              })),
+            },
+          },
+        }),
+      });
+
+      const parsed = await result.json();
 
       const aiResponse: Message = {
         id: Date.now() + 1,
         role: "assistant",
-        content: result.description
-          ? `I've parsed your request: "${result.name}"\n\n**Priority:** ${result.priority}\n**Estimated time:** ${result.estimated_duration ? `${result.estimated_duration}m` : 'Unknown'}\n\n${result.description}\n\nWould you like me to add this to your task list?`
-          : `I've parsed: "${result.name}". Priority: ${result.priority}. Add this task?`,
+        content: parsed.description
+          ? `I've parsed your request: "${parsed.name}"\n\n**Priority:** ${parsed.priority}\n**Estimated time:** ${parsed.estimated_duration ? `${parsed.estimated_duration}m` : 'Unknown'}\n\n${parsed.description}\n\nWould you like me to add this to your task list?`
+          : `I've parsed: "${parsed.name}". Priority: ${parsed.priority}. Add this task?`,
         timestamp: new Date(),
-        parsedTask: result,
+        parsedTask: { ...parsed, provider: aiStatus?.activeProvider || "keyword-parser" },
       };
       setMessages((prev) => [...prev, aiResponse]);
     } catch (error) {
@@ -103,7 +230,7 @@ export function AIAssistant({ tasks, onAddTask }: AIAssistantProps) {
         role: "assistant",
         content: `I've understood: "${input}". I've prepared this as a task with normal priority. Would you like me to add it to your task list?`,
         timestamp: new Date(),
-        parsedTask: { name: input, priority: "none" },
+        parsedTask: { name: input, priority: "none", provider: aiStatus?.activeProvider || "keyword-parser" },
       };
       setMessages((prev) => [...prev, aiResponse]);
     } finally {
@@ -121,6 +248,7 @@ export function AIAssistant({ tasks, onAddTask }: AIAssistantProps) {
       date: parsedTask.suggested_date,
       deadline: parsedTask.deadline,
       recurring: parsedTask.recurring,
+      list_id: parsedTask.list_id,
     });
 
     toast.success(`Task "${parsedTask.name}" added`);
@@ -137,46 +265,133 @@ export function AIAssistant({ tasks, onAddTask }: AIAssistantProps) {
     setInput(prompt);
   };
 
-  const quickActions: QuickAction[] = [
-    {
-      title: "Meeting task",
-      description: "Create a task for meeting follow-up",
-      icon: <Clock className="h-3.5 w-3.5" />,
-      prompt: "Create a task for the marketing report due next Friday",
-    },
-    {
-      title: "Call task",
-      description: "Schedule a call/meeting task",
-      icon: <Bot className="h-3.5 w-3.5" />,
-      prompt: "Add a meeting with the team tomorrow at 2pm",
-    },
-    {
-      title: "Review task",
-      description: "Create a review task",
-      icon: <Target className="h-3.5 w-3.5" />,
-      prompt: "Schedule a review of the quarterly goals",
-    },
-    {
-      title: "Reminder",
-      description: "Set up a reminder task",
-      icon: <Sparkles className="h-3.5 w-3.5" />,
-      prompt: "Set up a reminder for the client presentation next week",
-    },
-  ];
+  // Combine static and smart suggestions
+  const allQuickActions = useMemo(() => {
+    const staticActions: QuickAction[] = [
+      {
+        title: "Meeting task",
+        description: "Create a task for meeting follow-up",
+        icon: <Clock className="h-3.5 w-3.5" />,
+        prompt: "Create a task for the marketing report due next Friday",
+      },
+      {
+        title: "Call task",
+        description: "Schedule a call/meeting task",
+        icon: <Bot className="h-3.5 w-3.5" />,
+        prompt: "Add a meeting with the team tomorrow at 2pm",
+      },
+      {
+        title: "Review task",
+        description: "Create a review task",
+        icon: <Target className="h-3.5 w-3.5" />,
+        prompt: "Schedule a review of the quarterly goals",
+      },
+      {
+        title: "Reminder",
+        description: "Set up a reminder task",
+        icon: <Sparkles className="h-3.5 w-3.5" />,
+        prompt: "Set up a reminder for the client presentation next week",
+      },
+    ];
+    return [...smartSuggestions, ...staticActions];
+  }, [smartSuggestions]);
+
+  // Generate task suggestions based on patterns
+  const taskSuggestions = useMemo(() => {
+    const now = new Date();
+    const today = now.toISOString().split("T")[0];
+    const suggestions: string[] = [];
+
+    // Suggest reviewing overdue tasks
+    const overdue = tasks.filter(t => t.deadline && new Date(t.deadline) < now && !t.completed);
+    if (overdue.length > 0) {
+      suggestions.push(`Review ${overdue.length} overdue task(s) first`);
+    }
+
+    // Suggest batching similar tasks
+    const byList = tasks.reduce((acc, t) => {
+      const listName = t.list_id ? lists.find(l => l.id === t.list_id)?.name ?? "Uncategorized" : "Uncategorized";
+      if (!acc[listName]) acc[listName] = [];
+      acc[listName].push(t);
+      return acc;
+    }, {} as Record<string, typeof tasks>);
+
+    Object.entries(byList).forEach(([listName, listTasks]) => {
+      if (listTasks.length >= 3) {
+        suggestions.push(`Batch process ${listTasks.length} tasks in ${listName}`);
+      }
+    });
+
+    return suggestions.slice(0, 3);
+  }, [tasks, lists]);
 
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
+  // Generate tasks from notes/bullet points
+  const [notesInput, setNotesInput] = useState("");
+  const [isGeneratingFromNotes, setIsGeneratingFromNotes] = useState(false);
+
+  const handleGenerateFromNotes = async () => {
+    if (!notesInput.trim()) return;
+
+    setIsGeneratingFromNotes(true);
+    try {
+      const response = await fetch("/api/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "generateTasks",
+          input: {
+            notes: notesInput,
+            context: {
+              lists: lists.map(l => ({ id: l.id, name: l.name, emoji: l.emoji })),
+            },
+          },
+        }),
+      });
+
+      if (response.ok) {
+        const generatedTasks = await response.json();
+        if (generatedTasks.tasks && generatedTasks.tasks.length > 0) {
+          // Add each generated task
+          generatedTasks.tasks.forEach((task: any) => {
+            onAddTask({
+              name: task.name,
+              description: task.description,
+              priority: task.priority || "medium",
+              date: task.suggested_date,
+              list_id: task.list_id,
+            });
+          });
+          toast.success(`Generated ${generatedTasks.tasks.length} task(s)`);
+          setNotesInput("");
+        } else {
+          toast.info("No tasks could be generated from the provided text");
+        }
+      } else {
+        toast.error("Failed to generate tasks from notes");
+      }
+    } catch (error) {
+      toast.error("Failed to generate tasks");
+      console.error(error);
+    } finally {
+      setIsGeneratingFromNotes(false);
+    }
+  };
+
   return (
-    <div className="flex flex-col h-full">
+    <div className={cn("flex flex-col h-full", className)}>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Bot className="h-5 w-5" />
           AI Assistant
         </CardTitle>
         <p className="text-sm text-muted-foreground">
-          Use natural language to create and manage tasks. {insights?.provider && `Powered by ${insights.provider}`}
+          Use natural language to create and manage tasks.{" "}
+          {aiStatus?.activeProvider && `Powered by ${aiStatus.activeProvider}`}
+          {!aiStatus?.openai && !aiStatus?.anthropic && " (keyword mode)"}
         </p>
       </CardHeader>
 
@@ -194,6 +409,20 @@ export function AIAssistant({ tasks, onAddTask }: AIAssistantProps) {
                       <div>Completion rate: {Math.round((tasks.filter(t => t.completed).length / Math.max(tasks.length, 1)) * 100)}%</div>
                       <div>{tasks.filter(t => t.priority === "critical" && !t.completed).length} critical tasks pending</div>
                     </div>
+                  </div>
+                )}
+                {showSuggestions && taskSuggestions.length > 0 && (
+                  <div className="mt-3 space-y-1">
+                    <div className="text-xs font-medium text-muted-foreground">Smart suggestions:</div>
+                    {taskSuggestions.map((suggestion, i) => (
+                      <button
+                        key={i}
+                        className="text-xs text-left text-muted-foreground hover:text-foreground transition-colors"
+                        onClick={() => setInput(suggestion)}
+                      >
+                        → {suggestion}
+                      </button>
+                    ))}
                   </div>
                 )}
               </div>
@@ -247,6 +476,15 @@ export function AIAssistant({ tasks, onAddTask }: AIAssistantProps) {
 
         <div className="space-y-3">
           <div className="flex gap-2">
+            <Button
+              variant={isListening ? "destructive" : "outline"}
+              size="icon"
+              onClick={() => setIsListening(!isListening)}
+              disabled={!recognitionRef.current}
+              title={isListening ? "Stop listening" : "Start voice input"}
+            >
+              {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+            </Button>
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -259,10 +497,31 @@ export function AIAssistant({ tasks, onAddTask }: AIAssistantProps) {
             </Button>
           </div>
 
+          <div className="border-t pt-3">
+            <div className="flex items-center gap-2 mb-2">
+              <Input
+                value={notesInput}
+                onChange={(e) => setNotesInput(e.target.value)}
+                placeholder="Paste meeting notes or bullet points..."
+                className="flex-1"
+              />
+              <Button
+                onClick={handleGenerateFromNotes}
+                disabled={isGeneratingFromNotes || !notesInput.trim()}
+                size="sm"
+              >
+                {isGeneratingFromNotes ? "Generating..." : "Generate Tasks"}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Paste meeting notes, bullet points, or a to-do list to auto-generate tasks
+            </p>
+          </div>
+
           <div className="space-y-2">
             <p className="text-xs text-muted-foreground">Quick actions:</p>
             <div className="flex flex-wrap gap-2">
-              {quickActions.map((action) => (
+              {allQuickActions.slice(0, 6).map((action) => (
                 <button
                   key={action.title}
                   className="flex items-center gap-1.5 px-2 py-1 text-xs border rounded hover:bg-muted transition-colors"

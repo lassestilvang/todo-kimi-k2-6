@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { format, parseISO, addDays, startOfWeek, endOfWeek, eachDayOfInterval } from "date-fns";
-import { BarChart3, Calendar, Clock } from "lucide-react";
+import { BarChart3, Calendar, Clock, Link, Unlink } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { TaskWithRelations } from "@/types";
@@ -77,7 +77,8 @@ export function GanttChart({ tasks, onTaskClick }: GanttChartProps) {
       .sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
   }, [dateRange, tasks]);
 
-  const getPriorityColor = (priority: string) => {
+  const getPriorityColor = (priority: string, hasDependencies?: boolean) => {
+    if (hasDependencies) return "bg-purple-500";
     switch (priority) {
       case "critical":
         return "bg-red-500";
@@ -91,6 +92,32 @@ export function GanttChart({ tasks, onTaskClick }: GanttChartProps) {
         return "bg-gray-500";
     }
   };
+
+  // Calculate dependency lines for visualization
+  const dependencyLines = useMemo(() => {
+    const lines: Array<{ from: { x: number; y: number }; to: { x: number; y: number }; taskId: number }> = [];
+
+    ganttTasks.forEach((task) => {
+      if (task.blockers && task.blockers.length > 0) {
+        const blockerIds = task.blockers.map(b => b.task_id);
+        const blockingTasks = ganttTasks.filter(t => blockerIds.includes(t.id));
+
+        blockingTasks.forEach((blocker) => {
+          // Calculate positions
+          const blockerEndX = blocker.startOffset + blocker.width;
+          const taskStartX = task.startOffset;
+
+          lines.push({
+            from: { x: blockerEndX, y: task.id },
+            to: { x: taskStartX, y: blocker.id },
+            taskId: task.id,
+          });
+        });
+      }
+    });
+
+    return lines;
+  }, [ganttTasks]);
 
   return (
     <div className="p-4">
@@ -119,6 +146,10 @@ export function GanttChart({ tasks, onTaskClick }: GanttChartProps) {
           <div className="flex items-center gap-1">
             <div className="w-3 h-3 bg-blue-500 rounded"></div>
             <span>Low</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 bg-purple-500 rounded"></div>
+            <span>Has Dependencies</span>
           </div>
         </div>
 
@@ -157,7 +188,7 @@ export function GanttChart({ tasks, onTaskClick }: GanttChartProps) {
                     </div>
                     <div className="flex-1 relative h-6">
                       <div
-                        className={`h-6 rounded ${getPriorityColor(task.priority)} opacity-80 hover:opacity-100 cursor-pointer transition-opacity`}
+                        className={`h-6 rounded ${getPriorityColor(task.priority, task.blockers && task.blockers.length > 0)} opacity-80 hover:opacity-100 cursor-pointer transition-opacity relative group`}
                         style={{
                           marginLeft: `${task.startOffset}%`,
                           width: `${task.width}%`,
@@ -171,6 +202,11 @@ export function GanttChart({ tasks, onTaskClick }: GanttChartProps) {
                             {task.duration}d
                           </Badge>
                         </div>
+                        {/* Dependency indicator */}
+                        {task.blockers && task.blockers.length > 0 && (
+                          <div className="absolute -left-1 -top-1 w-2 h-2 bg-purple-400 rounded-full opacity-0 group-hover:opacity-100"
+                               title={`${task.blockers.length} blocking task(s)`} />
+                        )}
                       </div>
                     </div>
                   </div>

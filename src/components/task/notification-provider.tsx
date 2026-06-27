@@ -1,46 +1,52 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, createContext, useContext, useCallback } from "react";
 import { toast } from "sonner";
-import type { TaskWithRelations } from "@/types";
+import type { Reminder } from "@/types";
 
 interface NotificationProviderProps {
-  tasks: TaskWithRelations[];
+  children: React.ReactNode;
+}
+
+interface ReminderWithTask extends Reminder {
+  task_name: string;
+  task_completed: number;
 }
 
 // Track which notifications have been shown to avoid duplicates
 const shownNotifications = new Set<string>();
 
-export function NotificationProvider({ tasks }: NotificationProviderProps) {
+const NotificationContext = createContext<{
+  permission: NotificationPermission;
+  enableNotifications: () => Promise<void>;
+  testNotification: () => void;
+} | null>(null);
+
+export function NotificationProvider({ children }: NotificationProviderProps) {
   const [permission, setPermission] = useState<NotificationPermission>("default");
   const [showPrompt, setShowPrompt] = useState(true);
+  const [isEnabled, setIsEnabled] = useState(false);
   const lastCheckRef = useRef<number>(0);
 
-  const showBrowserNotification = (title: string, body: string, tag: string) => {
-    if (!("Notification" in window)) return;
-
-    if (Notification.permission === "granted") {
-      new Notification("TaskFlow", {
-        body,
-        tag,
-        icon: "/favicon.ico",
-      } as NotificationOptions);
-    }
-
-    // Also show toast
-    toast(title, { description: body });
-  };
-
+  // Check permission on mount
   useEffect(() => {
-    // Check permission
     if (typeof window !== "undefined" && "Notification" in window) {
       setPermission(Notification.permission);
     }
   }, []);
 
+  // Set up periodic reminder checking
   useEffect(() => {
-    if (permission !== "granted") return;
+    if (!isEnabled || permission !== "granted") return;
 
+    // Check every 5 minutes
+    const interval = setInterval(checkReminders, 5 * 60 * 1000);
+    checkReminders(); // Check immediately
+
+    return () => clearInterval(interval);
+  }, [isEnabled, permission]);
+
+  const checkReminders = useCallback(async () => {
     const now = new Date();
     const currentTimestamp = now.getTime();
 
@@ -50,94 +56,113 @@ export function NotificationProvider({ tasks }: NotificationProviderProps) {
     }
     lastCheckRef.current = currentTimestamp;
 
-    // Find tasks with reminders
-    const remindedTasks = tasks.filter((task) => {
-      if (task.completed) return false;
-      if (!task.reminders || task.reminders.length === 0) return false;
+    try {
+      const response = await fetch("/api/reminders/upcoming");
+      if (!response.ok) return;
 
-      const now = new Date();
-      return task.reminders.some(r => {
-        const remindAt = new Date(r.remind_at);
-        return remindAt <= now && !shownNotifications.has(`${task.id}-${r.id}`);
-      });
-    });
+      const reminders: ReminderWithTask[] = await response.json();
 
-    // Also check for due soon tasks
-    const dueSoonTasks = tasks.filter((task) => {
-      if (task.completed) return false;
-      if (!task.deadline) return false;
+      for (const reminder of reminders) {
+        // Skip if already notified
+        const notificationKey = `${reminder.task_id}-${reminder.id}`;
+        if (shownNotifications.has(notificationKey)) continue;
 
-      const deadline = new Date(task.deadline);
-      const tenMinutesFromNow = new Date(now.getTime() + 10 * 60 * 1000);
-      return deadline <= tenMinutesFromNow && deadline >= now;
-    });
+        shownNotifications.add(notificationKey);
 
-    // Show notifications for reminders
-    remindedTasks.forEach((task) => {
-      task.reminders?.forEach((reminder) => {
-        const remindAt = new Date(reminder.remind_at);
-        if (remindAt <= new Date() && !shownNotifications.has(`${task.id}-${reminder.id}`)) {
-          shownNotifications.add(`${task.id}-${reminder.id}`);
-          showBrowserNotification(task.name, task.description || "Reminder", "reminder");
-        }
-      });
-    });
+        // Show notification
+        const title = `📅 Reminder: ${reminder.task_name}`;
+        const body = `Task was due at ${new Date(reminder.remind_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
 
-    // Show notifications for due tasks
-    dueSoonTasks.forEach((task) => {
-      const deadline = new Date(task.deadline!);
-      const isOverdue = deadline < now;
-      const title = isOverdue
-        ? `⚠️ Overdue: ${task.name}`
-        : `📅 Due soon: ${task.name}`;
-
-      if (isOverdue) {
-        toast.error(title, {
-          description: task.description || "Task needs attention",
-        });
-      } else {
-        toast(title, {
-          description: `Due at ${deadline.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
-        });
+        showBrowserNotification(title, body, `task-${reminder.task_id}`);
       }
-    });
-  }, [permission, tasks]);
+    } catch (error) {
+      console.error("Error checking reminders:", error);
+    }
+  }, []);
 
-  const requestPermission = async () => {
+  const showBrowserNotification = (title: string, body: string, tag: string) => {
+    if (!("Notification" in window)) return;
+
+    if (Notification.permission === "granted") {
+      try {
+        new Notification("TaskFlow", {
+          body,
+          tag,
+          icon: "/favicon.ico",
+        } as NotificationOptions);
+      } catch (e) {
+        // Fallback to toast
+      }
+    }
+
+    // Always show toast as well
+    toast(title, {
+      description: body,
+      action: {
+        label: "View",
+        onClick: () => {
+          window.location.href = `/?highlight=${tag.replace("task-", "")}`;
+        },
+      },
+      duration: 10000,
+    });
+  };
+
+  const enableNotifications = async () => {
     if (typeof window !== "undefined" && "Notification" in window) {
       const granted = await Notification.requestPermission();
       setPermission(granted);
       setShowPrompt(false);
       if (granted === "granted") {
+        setIsEnabled(true);
         toast.success("Notifications enabled!");
+      } else {
+        toast.error("Permission denied. Please enable notifications in browser settings.");
       }
     }
   };
 
-  if (permission === "default" && showPrompt) {
-    return (
-      <div className="fixed bottom-6 left-6 z-50 rounded-lg bg-card border p-4 shadow-lg max-w-sm animate-in slide-in-from-bottom-4">
-        <p className="text-sm mb-2">Enable notifications for due date reminders?</p>
-        <div className="flex gap-2">
-          <button
-            onClick={requestPermission}
-            className="px-3 py-1 text-xs bg-primary text-primary-foreground rounded hover:opacity-90"
-          >
-            Enable
-          </button>
-          <button
-            onClick={() => setShowPrompt(false)}
-            className="px-3 py-1 text-xs bg-muted rounded hover:opacity-90"
-          >
-            Later
-          </button>
-        </div>
-      </div>
+  const testNotification = () => {
+    showBrowserNotification(
+      "Test Notification",
+      "This is a test reminder from TaskFlow!",
+      "test"
     );
-  }
+  };
 
-  return null;
+  return (
+    <NotificationContext.Provider value={{ permission, enableNotifications, testNotification }}>
+      {children}
+      {permission === "default" && showPrompt && (
+        <div className="fixed bottom-6 left-6 z-50 rounded-lg bg-card border p-4 shadow-lg max-w-sm animate-in slide-in-from-bottom-4">
+          <p className="text-sm mb-2">Enable notifications for due date reminders?</p>
+          <div className="flex gap-2">
+            <button
+              onClick={enableNotifications}
+              className="px-3 py-1 text-xs bg-primary text-primary-foreground rounded hover:opacity-90"
+            >
+              Enable
+            </button>
+            <button
+              onClick={() => setShowPrompt(false)}
+              className="px-3 py-1 text-xs bg-muted rounded hover:opacity-90"
+            >
+              Later
+            </button>
+          </div>
+        </div>
+      )}
+    </NotificationContext.Provider>
+  );
 }
+
+export const useNotifications = () => {
+  const context = useContext(NotificationContext);
+  if (!context) {
+    throw new Error("useNotifications must be used within NotificationProvider");
+  }
+  return context;
+};
 
 export function isBrowserNotificationSupported(): boolean {
   return typeof window !== "undefined" && "Notification" in window;

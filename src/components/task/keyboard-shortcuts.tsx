@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -25,15 +26,24 @@ const shortcuts: Shortcut[] = [
   { key: "/", label: "Search", description: "Focus search bar", category: "navigation" },
   { key: "Esc", label: "Clear", description: "Clear search or filters", category: "navigation" },
   { key: "1", label: "Today", description: "Switch to Today view", category: "navigation" },
-  { key: "2", label: "Kanban", description: "Switch to Kanban view", category: "navigation" },
+  { key: "2", label: "Kanban", description: "Switch to Kanban board", category: "navigation" },
   { key: "3", label: "Analytics", description: "Switch to Analytics view", category: "navigation" },
-  { key: "S", label: "Select", description: "Toggle select mode", category: "navigation" },
-  { key: "C", label: "Completed", description: "Toggle completed tasks", category: "navigation" },
+  { key: "G", label: "Gantt", description: "Switch to Gantt chart", category: "navigation" },
+  { key: "M", label: "Matrix", description: "Switch to Eisenhower Matrix", category: "navigation" },
+  { key: "⌘K", label: "AI Assistant", description: "Open AI Assistant", category: "navigation" },
+  { key: "C", label: "Calendar", description: "Switch to Calendar view", category: "navigation" },
+  { key: "K", label: "Shortcuts", description: "Show keyboard shortcuts", category: "navigation" },
 
   // Tasks
   { key: "Space", label: "Toggle", description: "Mark task as complete/incomplete", category: "tasks" },
   { key: "e", label: "Edit", description: "Edit selected task", category: "tasks" },
   { key: "d", label: "Delete", description: "Delete selected task", category: "tasks" },
+  { key: "↑↓", label: "Navigate", description: "Move between tasks", category: "tasks" },
+  { key: "f", label: "Focus", description: "Enter focus mode", category: "tasks" },
+  { key: "Shift+A", label: "Assign", description: "Open assignment tab", category: "tasks" },
+  { key: "Shift+E", label: "Time", description: "Open time tracking tab", category: "tasks" },
+  { key: "Shift+C", label: "Comments", description: "Open comments tab", category: "tasks" },
+  { key: "Shift+F", label: "Files", description: "Open attachments tab", category: "tasks" },
 
   // Search
   { key: "⌘,", label: "Settings", description: "Open settings", category: "search" },
@@ -65,6 +75,9 @@ export function KeyboardShortcuts() {
       <DialogContent className="sm:max-w-lg max-h-[80vh]">
         <DialogHeader>
           <DialogTitle>Keyboard Shortcuts</DialogTitle>
+          <DialogDescription>
+            Press <kbd className="kbd">⌘/Ctrl</kbd> + <kbd className="kbd">K</kbd> to open anytime
+          </DialogDescription>
         </DialogHeader>
 
         <div className="py-4 space-y-4">
