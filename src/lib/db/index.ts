@@ -105,10 +105,28 @@ export function initializeSchema(db: Database) {
     CREATE INDEX IF NOT EXISTS idx_tasks_list ON tasks(list_id);
     CREATE INDEX IF NOT EXISTS idx_tasks_completed ON tasks(completed);
     CREATE INDEX IF NOT EXISTS idx_tasks_sort_order ON tasks(sort_order);
+    CREATE INDEX IF NOT EXISTS idx_tasks_priority ON tasks(priority);
+    CREATE INDEX IF NOT EXISTS idx_tasks_completed_date ON tasks(completed, date);
+    CREATE INDEX IF NOT EXISTS idx_tasks_assignee ON tasks(assignee_id);
+    CREATE INDEX IF NOT EXISTS idx_tasks_deadline_completed ON tasks(deadline, completed);
+    CREATE INDEX IF NOT EXISTS idx_tasks_priority_deadline ON tasks(priority, deadline);
     CREATE INDEX IF NOT EXISTS idx_subtasks_task ON subtasks(task_id);
     CREATE INDEX IF NOT EXISTS idx_logs_task ON task_logs(task_id);
     CREATE INDEX IF NOT EXISTS idx_reminders_task ON reminders(task_id);
     CREATE INDEX IF NOT EXISTS idx_reminders_at ON reminders(remind_at);
+    -- Task shares
+    CREATE TABLE IF NOT EXISTS task_shares (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      permission TEXT DEFAULT 'view' CHECK(permission IN ('view', 'edit')),
+      share_token TEXT UNIQUE,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(task_id, user_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_task_shares_task ON task_shares(task_id);
+    CREATE INDEX IF NOT EXISTS idx_task_shares_user ON task_shares(user_id);
+    CREATE INDEX IF NOT EXISTS idx_task_shares_token ON task_shares(share_token);
 
     -- Task dependencies (blockers)
     CREATE TABLE IF NOT EXISTS task_dependencies (
@@ -130,6 +148,15 @@ export function initializeSchema(db: Database) {
       priority TEXT DEFAULT 'none' CHECK(priority IN ('critical', 'high', 'medium', 'low', 'none')),
       label_ids TEXT,
       subtasks TEXT,
+      category_id INTEGER REFERENCES template_categories(id),
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- Template categories
+    CREATE TABLE IF NOT EXISTS template_categories (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      description TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -172,20 +199,27 @@ export function initializeSchema(db: Database) {
       email TEXT NOT NULL UNIQUE,
       name TEXT,
       avatar_url TEXT,
+      password_hash TEXT,
+      preferences TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
+
+    -- User preferences as JSON
+    -- preferences: {"theme": "dark|light", "notifications": true, "workHours": {"start": 9, "end": 17}}
 
     -- Task shares
     CREATE TABLE IF NOT EXISTS task_shares (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
-      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
       permission TEXT DEFAULT 'view' CHECK(permission IN ('view', 'edit')),
+      share_token TEXT UNIQUE,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       UNIQUE(task_id, user_id)
     );
     CREATE INDEX IF NOT EXISTS idx_task_shares_task ON task_shares(task_id);
     CREATE INDEX IF NOT EXISTS idx_task_shares_user ON task_shares(user_id);
+    CREATE INDEX IF NOT EXISTS idx_task_shares_token ON task_shares(share_token);
 
     -- Calendar sync
     CREATE TABLE IF NOT EXISTS calendar_sync (
@@ -199,6 +233,75 @@ export function initializeSchema(db: Database) {
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
 
+    -- Saved filter presets
+    CREATE TABLE IF NOT EXISTS filter_presets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      filter_type TEXT,
+      list_id INTEGER,
+      label_ids TEXT,
+      priority TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_filter_presets_user ON filter_presets(user_id);
+
+    -- Custom views
+    CREATE TABLE IF NOT EXISTS custom_views (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      filter_preset TEXT,
+      list_id INTEGER,
+      label_ids TEXT,
+      priority TEXT,
+      sort_field TEXT DEFAULT 'date' CHECK(sort_field IN ('name', 'date', 'deadline', 'priority', 'created_at', 'updated_at')),
+      sort_direction TEXT DEFAULT 'asc' CHECK(sort_direction IN ('asc', 'desc')),
+      view_type TEXT DEFAULT 'today' CHECK(view_type IN ('today', 'next7', 'upcoming', 'all', 'list', 'blocked')),
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_custom_views_user ON custom_views(user_id);
+
+    -- Habit tracking for recurring tasks
+    CREATE TABLE IF NOT EXISTS habit_streaks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+      streak_count INTEGER DEFAULT 0,
+      last_completed TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(task_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_habit_streaks_task ON habit_streaks(task_id);
+    CREATE INDEX IF NOT EXISTS idx_habit_streaks_streak ON habit_streaks(streak_count DESC);
+
+    CREATE TABLE IF NOT EXISTS habit_completions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+      date TEXT NOT NULL,
+      completed_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(task_id, date)
+    );
+    CREATE INDEX IF NOT EXISTS idx_habit_completions_task ON habit_completions(task_id);
+    CREATE INDEX IF NOT EXISTS idx_habit_completions_date ON habit_completions(date);
+
+    -- Activity logs
+    CREATE TABLE IF NOT EXISTS activity_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      task_id INTEGER REFERENCES tasks(id) ON DELETE CASCADE,
+      user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      action TEXT NOT NULL,
+      entity_type TEXT NOT NULL CHECK(entity_type IN ('task', 'list', 'label', 'template', 'user')),
+      entity_id INTEGER,
+      details TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_activity_logs_task ON activity_logs(task_id);
+    CREATE INDEX IF NOT EXISTS idx_activity_logs_user ON activity_logs(user_id);
+    CREATE INDEX IF NOT EXISTS idx_activity_logs_entity ON activity_logs(entity_type, entity_id);
+    CREATE INDEX IF NOT EXISTS idx_activity_logs_created ON activity_logs(created_at DESC);
+
+    -- Ensure default inbox list exists
     INSERT OR IGNORE INTO lists (id, name, emoji, color, is_inbox) VALUES (1, 'Inbox', '📥', '#6366f1', 1);
   `);
 }

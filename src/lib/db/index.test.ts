@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "bun:test";
+import { describe, it, expect, beforeEach } from "vitest";
 import { getDb, setDb, resetDb, initializeSchema } from "./index";
 import { createTestDb } from "./test-db";
 import { createDatabase } from "./driver";

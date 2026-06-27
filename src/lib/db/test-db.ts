@@ -39,7 +39,9 @@ export function createTestDb(): Database {
       completed_at TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
-      sort_order INTEGER DEFAULT 0
+      sort_order INTEGER DEFAULT 0,
+      assignee_id INTEGER REFERENCES users(id),
+      created_by INTEGER REFERENCES users(id)
     );
 
     CREATE TABLE task_labels (
@@ -79,6 +81,13 @@ export function createTestDb(): Database {
       UNIQUE(task_id, depends_on_task_id)
     );
 
+    CREATE TABLE template_categories (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      description TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+
     CREATE TABLE templates (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
@@ -87,6 +96,7 @@ export function createTestDb(): Database {
       priority TEXT DEFAULT 'none' CHECK(priority IN ('critical', 'high', 'medium', 'low', 'none')),
       label_ids TEXT,
       subtasks TEXT,
+      category_id INTEGER REFERENCES template_categories(id),
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -127,6 +137,8 @@ export function createTestDb(): Database {
       email TEXT NOT NULL UNIQUE,
       name TEXT,
       avatar_url TEXT,
+      password_hash TEXT,
+      preferences TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -134,8 +146,9 @@ export function createTestDb(): Database {
     CREATE TABLE task_shares (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
-      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
       permission TEXT DEFAULT 'view' CHECK(permission IN ('view', 'edit')),
+      share_token TEXT UNIQUE,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       UNIQUE(task_id, user_id)
     );
@@ -164,8 +177,58 @@ export function createTestDb(): Database {
     );
     CREATE INDEX IF NOT EXISTS idx_attachments_task ON task_attachments(task_id);
 
+    -- Saved filter presets
+    CREATE TABLE filter_presets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      name TEXT NOT NULL,
+      filter_type TEXT,
+      list_id INTEGER,
+      label_ids TEXT,
+      priority TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- Custom views
+    CREATE TABLE custom_views (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      name TEXT NOT NULL,
+      filter_preset TEXT,
+      list_id INTEGER,
+      label_ids TEXT,
+      priority TEXT,
+      sort_field TEXT DEFAULT 'date' CHECK(sort_field IN ('name', 'date', 'deadline', 'priority', 'created_at', 'updated_at')),
+      sort_direction TEXT DEFAULT 'asc' CHECK(sort_direction IN ('asc', 'desc')),
+      view_type TEXT DEFAULT 'today' CHECK(view_type IN ('today', 'next7', 'upcoming', 'all', 'list', 'blocked')),
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- Habit tracking
+    CREATE TABLE habit_streaks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+      streak_count INTEGER DEFAULT 0,
+      last_completed TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE habit_completions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+      date TEXT NOT NULL,
+      completed_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(task_id, date)
+    );
+
     INSERT INTO lists (id, name, emoji, color, is_inbox) VALUES (1, 'Inbox', '📥', '#6366f1', 1);
   `);
+
+  // Add transaction support to the database
+  (db as Database & { transaction: <T>(fn: () => T) => T }).transaction = <T>(fn: () => T): T => {
+    return fn();
+  };
 
   return db;
 }

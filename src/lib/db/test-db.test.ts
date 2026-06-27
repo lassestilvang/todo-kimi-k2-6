@@ -1,4 +1,4 @@
-import { describe, it, expect } from "bun:test";
+import { describe, it, expect } from "vitest";
 import { createTestDb } from "./test-db";
 
 describe("Test Database", () => {
