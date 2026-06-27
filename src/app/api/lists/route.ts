@@ -8,7 +8,8 @@ export async function GET() {
     const lists = await getLists();
     return NextResponse.json({ lists });
   } catch (error) {
-    return NextResponse.json({ error: "Failed to fetch lists" }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Failed to fetch lists";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -35,6 +36,7 @@ export async function DELETE(request: NextRequest) {
     await deleteList(Number(id));
     return NextResponse.json({ success: true });
   } catch (error) {
-    return NextResponse.json({ error: "Failed to delete list" }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Failed to delete list";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

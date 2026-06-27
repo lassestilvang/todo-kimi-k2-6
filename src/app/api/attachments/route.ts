@@ -17,7 +17,8 @@ export async function GET(request: NextRequest) {
     const attachments = await getTaskAttachments(Number(taskId));
     return NextResponse.json({ attachments });
   } catch (error) {
-    return NextResponse.json({ error: "Failed to fetch attachments" }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Failed to fetch attachments";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -71,6 +72,7 @@ export async function DELETE(request: NextRequest) {
     await deleteTaskAttachment(Number(id));
     return NextResponse.json({ success: true });
   } catch (error) {
-    return NextResponse.json({ error: "Failed to delete attachment" }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Failed to delete attachment";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

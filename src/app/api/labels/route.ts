@@ -8,7 +8,8 @@ export async function GET() {
     const labels = await getLabels();
     return NextResponse.json({ labels });
   } catch (error) {
-    return NextResponse.json({ error: "Failed to fetch labels" }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Failed to fetch labels";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -35,6 +36,7 @@ export async function DELETE(request: NextRequest) {
     await deleteLabel(Number(id));
     return NextResponse.json({ success: true });
   } catch (error) {
-    return NextResponse.json({ error: "Failed to delete label" }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Failed to delete label";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getTasks } from "@/lib/actions/tasks";
-import { syncTasksToCalendar, getAuthUrl } from "@/lib/calendar/google";
+import { getTasks, getCalendarSync } from "@/lib/actions/tasks";
+import { syncTasksToCalendar, getAuthUrl } from "@/lib/calendar";
 import type { Task } from "@/types";
 
 export async function GET(request: NextRequest) {
@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   if (action === "auth") {
     // Redirect to Google OAuth
     const state = Math.random().toString(36).substring(2, 15);
-    const authUrl = getAuthUrl(state);
+    const authUrl = getAuthUrl("google", state);
     return Response.redirect(authUrl);
   }
 
@@ -20,10 +20,15 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { accessToken, tasks: taskIds } = body;
+    const { tasks: taskIds } = body;
 
-    if (!accessToken) {
-      return NextResponse.json({ error: "Access token required" }, { status: 400 });
+    // Get stored calendar config (using default user ID 1)
+    // In a production app, get userId from session
+    const userId = 1;
+    const calendarConfig = await getCalendarSync(userId);
+
+    if (!calendarConfig) {
+      return NextResponse.json({ error: "Calendar not configured. Please connect your calendar first." }, { status: 400 });
     }
 
     // Get tasks to sync
@@ -36,7 +41,12 @@ export async function POST(request: NextRequest) {
     const tasksWithDates = tasksToSync.filter((t) => t.date);
 
     const result = await syncTasksToCalendar(
-      { accessToken },
+      {
+        provider: calendarConfig.provider,
+        accessToken: calendarConfig.access_token,
+        refreshToken: calendarConfig.refresh_token || undefined,
+        expiresAt: calendarConfig.expires_at || undefined,
+      },
       tasksWithDates as Task[]
     );
 
