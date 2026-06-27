@@ -5,6 +5,42 @@ export type FilterPreset = "needs_attention" | "this_week" | "with_labels" | "wi
 export type SortField = "name" | "date" | "deadline" | "priority" | "created_at" | "updated_at";
 export type SortDirection = "asc" | "desc";
 
+export interface SavedFilterPreset {
+  id: number;
+  user_id: number;
+  name: string;
+  filter_type: string | null;
+  list_id: number | null;
+  label_ids: number[];
+  priority: Priority | null;
+  created_at: string;
+}
+
+export interface CustomView {
+  id: number;
+  user_id: number;
+  name: string;
+  filter_preset: FilterPreset | null;
+  list_id: number | null;
+  label_ids: number[];
+  priority: Priority | null;
+  sort_field: SortField;
+  sort_direction: SortDirection;
+  view_type: ViewType;
+  created_at: string;
+}
+
+export interface CreateCustomViewInput {
+  name: string;
+  filter_preset?: FilterPreset;
+  list_id?: number;
+  label_ids?: number[];
+  priority?: Priority;
+  sort_field?: SortField;
+  sort_direction?: SortDirection;
+  view_type?: ViewType;
+}
+
 export interface List {
   id: number;
   name: string;
@@ -78,6 +114,7 @@ export interface User {
   email: string;
   name: string | null;
   avatar_url: string | null;
+  password_hash?: string;
   created_at: string;
 }
 
@@ -123,11 +160,14 @@ export interface Task {
   reminders?: Reminder[];
   logs?: TaskLog[];
   comments?: TaskComment[];
+  attachments?: TaskAttachment[];
   blockers?: TaskDependency[];
   blocked_by?: TaskDependency[];
   time_entries?: TimeEntry[];
   assignee_id?: number | null;
+  assignee?: User;
   created_by?: number | null;
+  created_by_user?: User;
 }
 
 export interface TaskWithRelations extends Task {
@@ -135,6 +175,9 @@ export interface TaskWithRelations extends Task {
   subtasks: Subtask[];
   reminders: Reminder[];
   logs: TaskLog[];
+  comments: TaskComment[];
+  attachments: TaskAttachment[];
+  time_entries: TimeEntry[];
 }
 
 export interface CreateTaskInput {
@@ -178,6 +221,13 @@ export interface TaskDependency {
   created_at: string;
 }
 
+export interface TemplateCategory {
+  id: number;
+  name: string;
+  description: string | null;
+  created_at: string;
+}
+
 export interface Template {
   id: number;
   name: string;
@@ -186,6 +236,8 @@ export interface Template {
   priority: Priority;
   label_ids: number[];
   subtasks: string[];
+  category_id: number | null;
+  category?: TemplateCategory;
   created_at: string;
 }
 
@@ -196,6 +248,12 @@ export interface CreateTemplateInput {
   priority?: Priority;
   label_ids?: number[];
   subtasks?: string[];
+  category_id?: number;
+}
+
+export interface CreateTemplateCategoryInput {
+  name: string;
+  description?: string;
 }
 
 export interface TaskComment {
@@ -220,4 +278,30 @@ export interface CreateTimeEntryInput {
   end_time?: string;
   duration_seconds?: number;
   description?: string;
+}
+
+// Habit Tracking Types
+export interface HabitStreak {
+  id: number;
+  task_id: number;
+  streak_count: number;
+  last_completed: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface HabitCompletion {
+  id: number;
+  task_id: number;
+  date: string;
+  completed_at: string;
+}
+
+export interface NotificationSettings {
+  enabled: boolean;
+  reminderMinutes: number;
+  dueDateReminders: boolean;
+  overdueReminders: boolean;
+  dailySummary: boolean;
+  pushEnabled: boolean;
 }

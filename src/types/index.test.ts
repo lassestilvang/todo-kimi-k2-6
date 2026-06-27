@@ -1,4 +1,4 @@
-import { describe, it, expect } from "bun:test";
+import { describe, it, expect } from "vitest";
 
 // Type tests - these verify that the types are correctly exported and usable
 describe("Types", () => {
