@@ -1,10 +1,7 @@
-// Setup for jsdom environment
-import { TextDecoder, TextEncoder } from 'util';
+// Setup for vitest/jsdom environment
+import '@testing-library/jest-dom';
 
-global.TextDecoder = TextDecoder;
-global.TextEncoder = TextEncoder as typeof global.TextEncoder;
-
-// Mock window for use-mobile
+// Mock window.matchMedia for use-mobile tests
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: (query: string) => ({
