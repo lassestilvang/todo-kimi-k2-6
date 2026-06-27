@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'bun:test';
-import { cn } from '@/lib/utils';
+import { describe, it, expect } from 'vitest';
+import { cn } from '../../../lib/utils';
 
 describe('UI Components - Utilities', () => {
   describe('cn (className utility)', () => {
