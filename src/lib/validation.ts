@@ -32,3 +32,36 @@ export const labelSchema = z.object({
 export type TaskFormData = z.infer<typeof taskSchema>;
 export type ListFormData = z.infer<typeof listSchema>;
 export type LabelFormData = z.infer<typeof labelSchema>;
+
+// Additional validation schemas
+export const updateTaskSchema = taskSchema.partial().extend({
+  completed: z.boolean().optional(),
+});
+
+export const templateSchema = z.object({
+  name: z.string().min(1, "Template name is required"),
+  description: z.string().optional().nullable(),
+  list_id: z.number().optional(),
+  priority: z.enum(["critical", "high", "medium", "low", "none"]).default("none"),
+  label_ids: z.array(z.number()).optional(),
+  subtasks: z.array(z.string()).optional(),
+});
+
+export const customViewSchema = z.object({
+  name: z.string().min(1, "View name is required"),
+  filter_preset: z.enum(["needs_attention", "this_week", "with_labels", "with_subtasks", "completed"]).optional().nullable(),
+  list_id: z.number().optional().nullable(),
+  label_ids: z.array(z.number()).optional(),
+  priority: z.enum(["critical", "high", "medium", "low", "none"]).optional().nullable(),
+  sort_field: z.enum(["name", "date", "deadline", "priority", "created_at", "updated_at"]).default("date"),
+  sort_direction: z.enum(["asc", "desc"]).default("asc"),
+  view_type: z.enum(["today", "next7", "upcoming", "all", "list", "blocked"]).default("today"),
+});
+
+export const timeEntrySchema = z.object({
+  task_id: z.number().min(1, "Task ID is required"),
+  start_time: z.string().min(1, "Start time is required"),
+  end_time: z.string().optional().nullable(),
+  duration_seconds: z.number().min(0).optional().nullable(),
+  description: z.string().optional().nullable(),
+});

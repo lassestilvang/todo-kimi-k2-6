@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "bun:test";
+import { describe, it, expect, beforeEach } from "vitest";
 import { createTestDb } from "@/lib/db/test-db";
 import { setDb, resetDb } from "@/lib/db";
 import {
