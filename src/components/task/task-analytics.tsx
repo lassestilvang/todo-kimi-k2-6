@@ -16,7 +16,7 @@ interface TaskAnalyticsProps {
 }
 
 export function TaskAnalytics({ tasks, completedTasks }: TaskAnalyticsProps) {
-  const { insights: aiInsights, isFetching: isFetchingInsights } = useAIInsights(tasks, completedTasks || []);
+  const { insights: aiInsights, isFetching: isFetchingInsights, refetch: refetchInsights } = useAIInsights(tasks, completedTasks || []);
   const chartData = useMemo(() => {
     const now = new Date();
     const last7Days = Array.from({ length: 7 }, (_, i) => {
@@ -450,7 +450,7 @@ export function TaskAnalytics({ tasks, completedTasks }: TaskAnalyticsProps) {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => fetchInsights()}
+            onClick={() => refetchInsights && refetchInsights()}
             disabled={isFetchingInsights}
           >
             <RefreshCw className={cn("h-3.5 w-3.5", isFetchingInsights && "animate-spin")} />
@@ -476,56 +476,6 @@ export function TaskAnalytics({ tasks, completedTasks }: TaskAnalyticsProps) {
       </div>
     </div>
   );
-}
-
-// AI Insights hook
-function useAIInsights(tasks: TaskWithRelations[], completedTasks: TaskWithRelations[]) {
-  const [insights, setInsights] = useState<{
-    tips: string[];
-    suggestions: string[];
-    trends: string[];
-  }>({ tips: [], suggestions: [], trends: [] });
-  const [isFetching, setIsFetching] = useState(false);
-
-  const fetchInsights = async () => {
-    setIsFetching(true);
-    try {
-      const result = await fetch("/api/ai", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: "insights",
-          input: {
-            tasks: tasks.map(t => ({
-              name: t.name,
-              completed: t.completed,
-              priority: t.priority,
-              date: t.date,
-              deadline: t.deadline,
-            })),
-          },
-        }),
-      });
-      const data = await result.json();
-      setInsights({
-        tips: data.tips || [],
-        suggestions: data.suggestions || [],
-        trends: data.trends || [],
-      });
-    } catch (error) {
-      console.error("Failed to fetch insights:", error);
-    } finally {
-      setIsFetching(false);
-    }
-  };
-
-  useEffect(() => {
-    if (tasks.length > 0) {
-      fetchInsights();
-    }
-  }, [tasks.length]);
-
-  return { insights, isFetching, refetch: fetchInsights };
 }
 
 // AI Insights hook
