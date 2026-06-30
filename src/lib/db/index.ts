@@ -207,20 +207,6 @@ export function initializeSchema(db: Database) {
     -- User preferences as JSON
     -- preferences: {"theme": "dark|light", "notifications": true, "workHours": {"start": 9, "end": 17}}
 
-    -- Task shares
-    CREATE TABLE IF NOT EXISTS task_shares (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
-      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-      permission TEXT DEFAULT 'view' CHECK(permission IN ('view', 'edit')),
-      share_token TEXT UNIQUE,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-      UNIQUE(task_id, user_id)
-    );
-    CREATE INDEX IF NOT EXISTS idx_task_shares_task ON task_shares(task_id);
-    CREATE INDEX IF NOT EXISTS idx_task_shares_user ON task_shares(user_id);
-    CREATE INDEX IF NOT EXISTS idx_task_shares_token ON task_shares(share_token);
-
     -- Calendar sync
     CREATE TABLE IF NOT EXISTS calendar_sync (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
