@@ -58,7 +58,6 @@ export function CollaborationProvider({
       type: "presence_change",
       userId,
       userName,
-      timestamp: new Date().toISOString(),
     });
 
     setConnected(true);
@@ -73,7 +72,6 @@ export function CollaborationProvider({
       type: "task_update",
       taskId,
       data: updates,
-      timestamp: new Date().toISOString(),
     });
   };
 
@@ -82,7 +80,6 @@ export function CollaborationProvider({
       type: "task_created",
       taskId: task.id,
       data: task,
-      timestamp: new Date().toISOString(),
     });
   };
 
@@ -90,7 +87,6 @@ export function CollaborationProvider({
     wsRef.current.send({
       type: "task_deleted",
       taskId,
-      timestamp: new Date().toISOString(),
     });
   };
 
