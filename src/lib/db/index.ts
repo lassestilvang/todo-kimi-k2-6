@@ -1,5 +1,6 @@
 import { join } from "path";
 import { createDatabase, type Database } from "./driver";
+import { runMigrations } from "./migrations";
 
 const DB_PATH = join(process.cwd(), "data", "planner.db");
 
@@ -10,6 +11,7 @@ export function getDb(): Database {
     db = createDatabase(DB_PATH);
     db.exec("PRAGMA journal_mode = WAL");
     initializeSchema(db);
+    runMigrations().catch(console.error);
   }
   return db;
 }
@@ -289,5 +291,38 @@ export function initializeSchema(db: Database) {
 
     -- Ensure default inbox list exists
     INSERT OR IGNORE INTO lists (id, name, emoji, color, is_inbox) VALUES (1, 'Inbox', '📥', '#6366f1', 1);
+
+    -- Goal tracking
+    CREATE TABLE IF NOT EXISTS goals (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      description TEXT,
+      target_count INTEGER NOT NULL,
+      target_unit TEXT NOT NULL,
+      period TEXT NOT NULL CHECK(period IN ('daily', 'weekly', 'monthly', 'yearly')),
+      current_count INTEGER DEFAULT 0,
+      streak_count INTEGER DEFAULT 0,
+      last_updated TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_goals_user ON goals(user_id);
+    CREATE INDEX IF NOT EXISTS idx_goals_period ON goals(period);
+
+    -- User settings
+    CREATE TABLE IF NOT EXISTS user_settings (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      work_start_hour INTEGER DEFAULT 9,
+      work_end_hour INTEGER DEFAULT 17,
+      preferred_pomodoro_minutes INTEGER DEFAULT 25,
+      preferred_break_minutes INTEGER DEFAULT 5,
+      theme TEXT DEFAULT 'system' CHECK(theme IN ('light', 'dark', 'system')),
+      language TEXT DEFAULT 'en',
+      timezone TEXT DEFAULT 'UTC',
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_user_settings_user ON user_settings(user_id);
   `);
 }
