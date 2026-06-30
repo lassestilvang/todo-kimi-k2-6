@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Focus, Minimize2 } from "lucide-react";
+import { X, Focus, Minimize2, Play, Pause } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { PomodoroTimer } from "./pomodoro-timer";
 import type { TaskWithRelations } from "@/types";
 
 interface FocusModeProps {
@@ -101,6 +102,16 @@ export function FocusMode({ task, open, onOpenChange }: FocusModeProps) {
                   {task.description}
                 </motion.p>
               )}
+
+              {/* Pomodoro Timer Integration */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 }}
+                className="mb-6"
+              >
+                <PomodoroTimer task={task} />
+              </motion.div>
 
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
