@@ -305,3 +305,50 @@ export interface NotificationSettings {
   dailySummary: boolean;
   pushEnabled: boolean;
 }
+
+// Goal Tracking Types
+export type GoalPeriod = "daily" | "weekly" | "monthly" | "yearly";
+
+export interface Goal {
+  id: number;
+  user_id: number;
+  name: string;
+  description: string | null;
+  target_count: number;
+  target_unit: string; // e.g., "tasks", "hours", "pomodoros"
+  period: GoalPeriod;
+  current_count: number;
+  streak_count: number;
+  last_updated: string | null;
+  created_at: string;
+}
+
+export interface CreateGoalInput {
+  name: string;
+  description?: string;
+  target_count: number;
+  target_unit: string;
+  period: GoalPeriod;
+}
+
+export interface GoalProgress {
+  goal: Goal;
+  progress_percent: number;
+  is_completed: boolean;
+  days_remaining: number;
+}
+
+// User Settings Types
+export interface UserSettings {
+  id: number;
+  user_id: number;
+  work_start_hour: number;
+  work_end_hour: number;
+  preferred_pomodoro_minutes: number;
+  preferred_break_minutes: number;
+  theme: "light" | "dark" | "system";
+  language: string;
+  timezone: string;
+  created_at: string;
+  updated_at: string;
+}
