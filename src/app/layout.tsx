@@ -7,6 +7,8 @@ import { NotificationProvider } from "@/components/task/notification-provider";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { KeyboardShortcutsHandler } from "@/components/task/keyboard-shortcuts-handler";
 import { QueryProvider } from "@/components/query-provider";
+import { SessionProvider } from "next-auth/react";
+import { WebVitalsTracker } from "@/components/web-vitals";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -31,16 +33,19 @@ export default function RootLayout({
       <body className={inter.className}>
         <ThemeProvider>
           <ErrorBoundary>
-            <QueryProvider>
-              <NotificationProvider>
-                <TooltipProvider delay={0}>
-                  {children}
-                </TooltipProvider>
-              </NotificationProvider>
-            </QueryProvider>
+            <SessionProvider>
+              <QueryProvider>
+                <NotificationProvider>
+                  <TooltipProvider delay={0}>
+                    {children}
+                  </TooltipProvider>
+                </NotificationProvider>
+              </QueryProvider>
+            </SessionProvider>
           </ErrorBoundary>
         </ThemeProvider>
         <KeyboardShortcutsHandler />
+        <WebVitalsTracker />
       </body>
     </html>
   );
