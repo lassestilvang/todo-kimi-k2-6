@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,10 +23,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { taskSchema, type TaskFormData } from "@/lib/validation";
+import { saveOfflineTask } from "@/lib/offline-storage";
 import type {
   TaskWithRelations,
   List,
@@ -33,13 +36,35 @@ import type {
   Priority,
   Recurring,
   Template,
+  TemplateCategory,
 } from "@/types";
-import { createTask as createTaskAction, updateTask as updateTaskAction, addTaskComment, saveTemplateFromTask } from "@/lib/actions/tasks";
+import { createTask as createTaskAction, updateTask as updateTaskAction, addTaskComment, saveTemplateFromTask, getTemplateCategories } from "@/lib/actions/tasks";
 import { TaskBasicInfo } from "./modal/task-basic-info";
 import { TaskSchedule } from "./modal/task-schedule";
 import { TaskLabels } from "./modal/task-labels";
 import { TaskSubtasks } from "./modal/task-subtasks";
 import { TaskDependencies } from "./modal/task-dependencies";
+import { TimeReport } from "./time-report";
+import { PomodoroTimer } from "./pomodoro-timer";
+import { StreakCalendar } from "./streak-calendar";
+// Icons
+import {
+  Calendar,
+  Clock,
+  Tag,
+  Plus,
+  Trash2,
+  X,
+  Paperclip,
+  Share2,
+  Flame,
+  Flag,
+  Repeat,
+  ListChecks,
+  Link,
+  CheckCircle2,
+  Save,
+} from "lucide-react";
 
 interface TaskModalProps {
   task?: TaskWithRelations;
@@ -870,10 +895,10 @@ export function TaskModal({
           )}
 
           {activeTab === "time" && isEditing && task && (
-            <TimeTracker
-              task={task}
-              open={activeTab === "time"}
-              onOpenChange={() => setActiveTab("task")}
+            <TimeReport
+              tasks={[task]}
+              timeEntries={task.time_entries || []}
+              period="all"
             />
           )}
 
