@@ -4,7 +4,7 @@ import { getDb } from "@/lib/db";
 import { comparePassword } from "@/lib/auth";
 import type { User } from "@/types";
 import type { JWT } from "next-auth/jwt";
-import type { Session, Account, Profile } from "next-auth";
+import type { Session } from "next-auth";
 
 interface Credentials {
   email?: string;
@@ -24,55 +24,36 @@ export default NextAuth({
         const email = credentials?.email as string;
         const password = credentials?.password as string;
 
-        // Check for demo mode (no password required)
-        if (process.env.AUTH_DEMO_MODE === "true") {
-          const user = db
-            .prepare("SELECT * FROM users WHERE email = ?")
-            .get(email) as User | null;
-
-          if (user) {
-            return {
-              id: String(user.id),
-              email: user.email,
-              name: user.name,
-              image: user.avatar_url,
-            };
-          }
-
-          // Create new demo user
-          const result = db
-            .prepare("INSERT INTO users (email, name) VALUES (?, ?)")
-            .run(email, email.split("@")[0]);
-
-          return {
-            id: String(result.lastInsertRowid),
-            email,
-            name: email.split("@")[0] || null,
-            image: null,
-          };
+        if (!email || !password) {
+          return null;
         }
 
-        // Production mode: verify password
         const user = db
           .prepare("SELECT * FROM users WHERE email = ?")
           .get(email) as User & { password_hash: string };
 
-        if (user && user.password_hash && await comparePassword(password, user.password_hash)) {
-          return {
-            id: String(user.id),
-            email: user.email,
-            name: user.name,
-            image: user.avatar_url,
-          };
+        if (!user || !user.password_hash) {
+          return null;
         }
 
-        return null;
+        const isValid = await comparePassword(password, user.password_hash);
+        if (!isValid) {
+          return null;
+        }
+
+        return {
+          id: String(user.id),
+          email: user.email,
+          name: user.name,
+          image: user.avatar_url,
+        };
       },
     }),
   ],
   pages: {
-    signIn: "/auth/signin",
+    signIn: "/login",
     signOut: "/auth/signout",
+    error: "/auth/error",
   },
   callbacks: {
     async jwt({ token, user }) {
@@ -89,4 +70,5 @@ export default NextAuth({
     },
   },
   secret: process.env.NEXTAUTH_SECRET || process.env.SECRET || "default-secret-change-in-production",
+  debug: process.env.NODE_ENV === "development",
 });
