@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { Plus, Download, Upload, BarChart3, CalendarPlus, WifiOff } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { AppSidebar } from "@/components/sidebar/app-sidebar";
 import { TaskList } from "@/components/task/task-list";
@@ -21,6 +22,7 @@ import { AIAssistant } from "@/components/task/ai-assistant";
 import { KeyboardShortcuts } from "@/components/task/keyboard-shortcuts";
 import { TaskAnalytics } from "@/components/task/task-analytics";
 import { MobileSidebar } from "@/components/task/mobile-sidebar";
+import { LoginRequired } from "@/components/task/login-required";
 import { useTasks } from "@/hooks/use-tasks";
 import type { TaskWithRelations, FilterPreset, Template } from "@/types";
 import { toast } from "sonner";
@@ -42,6 +44,7 @@ const viewTitles: Record<string, string> = {
 };
 
 export default function Home() {
+  const { data: session, status } = useSession();
   const [templates, setTemplates] = useState<Template[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<TaskWithRelations | undefined>();
@@ -85,6 +88,11 @@ export default function Home() {
     initialLists: [],
     initialLabels: [],
   });
+
+  // Show login page if not authenticated
+  if (status === "unauthenticated") {
+    return <LoginRequired />;
+  }
 
   // Check for mobile view and online status
   useEffect(() => {
