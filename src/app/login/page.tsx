@@ -15,10 +15,10 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSignIn = async (provider: "credentials" | "demo") => {
+  const handleSignIn = async () => {
     setIsLoading(true);
     try {
-      const result = await signIn(provider === "demo" ? "credentials" : "credentials", {
+      const result = await signIn("credentials", {
         email,
         password,
         redirect: false,
@@ -36,11 +36,6 @@ export default function LoginPage() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleDemoSignIn = () => {
-    // Demo mode: allow any email
-    handleSignIn("demo");
   };
 
   return (
@@ -62,6 +57,7 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={isLoading}
+              autoFocus
             />
           </div>
           <div className="space-y-2">
@@ -72,13 +68,14 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={isLoading}
+              autoComplete="current-password"
             />
           </div>
         </CardContent>
         <CardFooter className="flex flex-col gap-2">
           <Button
             className="w-full"
-            onClick={() => handleSignIn("credentials")}
+            onClick={handleSignIn}
             disabled={isLoading || !email || !password}
           >
             {isLoading ? "Signing in..." : "Sign In"}
@@ -86,10 +83,9 @@ export default function LoginPage() {
           <Button
             variant="outline"
             className="w-full"
-            onClick={handleDemoSignIn}
-            disabled={isLoading}
+            onClick={() => router.push("/register")}
           >
-            Demo Mode
+            Create an Account
           </Button>
         </CardFooter>
       </Card>
