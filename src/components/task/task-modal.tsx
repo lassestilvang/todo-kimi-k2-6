@@ -1,22 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import {
-  X,
-  Plus,
-  Trash2,
-  Clock,
-  Calendar,
-  Flag,
-  Repeat,
-  Tag,
-  CheckCircle2,
-  ListChecks,
-  Link,
-  Save,
-  Flame,
-} from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
 import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -31,9 +15,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { TimeTracker } from "@/components/task/time-tracker";
-import { PomodoroTimer } from "@/components/task/pomodoro-timer";
-import { StreakCalendar } from "@/components/task/streak-calendar";
 import {
   Select,
   SelectContent,
@@ -41,14 +22,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Paperclip } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { toast } from "sonner";
 import { taskSchema, type TaskFormData } from "@/lib/validation";
 import type {
@@ -58,14 +33,13 @@ import type {
   Priority,
   Recurring,
   Template,
-  User,
-  TemplateCategory,
 } from "@/types";
-import { createTask as createTaskAction, updateTask as updateTaskAction, addTaskComment, saveTemplateFromTask, getTaskAssignments, assignTask, getTemplateCategories } from "@/lib/actions/tasks";
-import { searchUsers } from "@/lib/actions/users";
-import { saveOfflineTask } from "@/lib/offline-storage";
-import { ShareDialog } from "@/components/task/share-dialog";
-import { Share2 } from "lucide-react";
+import { createTask as createTaskAction, updateTask as updateTaskAction, addTaskComment, saveTemplateFromTask } from "@/lib/actions/tasks";
+import { TaskBasicInfo } from "./modal/task-basic-info";
+import { TaskSchedule } from "./modal/task-schedule";
+import { TaskLabels } from "./modal/task-labels";
+import { TaskSubtasks } from "./modal/task-subtasks";
+import { TaskDependencies } from "./modal/task-dependencies";
 
 interface TaskModalProps {
   task?: TaskWithRelations;
