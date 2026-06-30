@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { format, subDays, startOfDay, endOfDay, isWithinInterval, parseISO, isAfter } from "date-fns";
-import { BarChart3, TrendingUp, Clock, Target, PieChart, Activity, Award, Calendar, List, Tag, CheckSquare, Flame } from "lucide-react";
+import { BarChart3, TrendingUp, Clock, Target, PieChart, Activity, Award, Calendar, List, Tag, CheckSquare, Flame, Lightbulb, RefreshCw } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Pie, Cell, LineChart, Line } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { TaskWithRelations } from "@/types";
 
@@ -15,6 +16,7 @@ interface TaskAnalyticsProps {
 }
 
 export function TaskAnalytics({ tasks, completedTasks }: TaskAnalyticsProps) {
+  const { insights: aiInsights, isFetching: isFetchingInsights } = useAIInsights(tasks, completedTasks || []);
   const chartData = useMemo(() => {
     const now = new Date();
     const last7Days = Array.from({ length: 7 }, (_, i) => {
@@ -437,6 +439,141 @@ export function TaskAnalytics({ tasks, completedTasks }: TaskAnalyticsProps) {
           </div>
         </div>
       </div>
+
+      {/* AI-Powered Insights */}
+      <div className="mt-4 pt-4 border-t">
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="text-sm font-medium flex items-center gap-1.5">
+            <Lightbulb className="h-3.5 w-3.5" />
+            AI Insights
+          </h4>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => fetchInsights()}
+            disabled={isFetchingInsights}
+          >
+            <RefreshCw className={cn("h-3.5 w-3.5", isFetchingInsights && "animate-spin")} />
+          </Button>
+        </div>
+        <div className="space-y-2">
+          {aiInsights.tips.map((tip, i) => (
+            <div key={`tip-${i}`} className="p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
+              <p className="text-sm text-blue-700 dark:text-blue-300">{tip}</p>
+            </div>
+          ))}
+          {aiInsights.suggestions.map((suggestion, i) => (
+            <div key={`sug-${i}`} className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg">
+              <p className="text-sm text-amber-700 dark:text-amber-300">{suggestion}</p>
+            </div>
+          ))}
+          {aiInsights.trends.map((trend, i) => (
+            <div key={`trend-${i}`} className="p-2 bg-muted/30 rounded-lg">
+              <p className="text-xs text-muted-foreground">{trend}</p>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
+}
+
+// AI Insights hook
+function useAIInsights(tasks: TaskWithRelations[], completedTasks: TaskWithRelations[]) {
+  const [insights, setInsights] = useState<{
+    tips: string[];
+    suggestions: string[];
+    trends: string[];
+  }>({ tips: [], suggestions: [], trends: [] });
+  const [isFetching, setIsFetching] = useState(false);
+
+  const fetchInsights = async () => {
+    setIsFetching(true);
+    try {
+      const result = await fetch("/api/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "insights",
+          input: {
+            tasks: tasks.map(t => ({
+              name: t.name,
+              completed: t.completed,
+              priority: t.priority,
+              date: t.date,
+              deadline: t.deadline,
+            })),
+          },
+        }),
+      });
+      const data = await result.json();
+      setInsights({
+        tips: data.tips || [],
+        suggestions: data.suggestions || [],
+        trends: data.trends || [],
+      });
+    } catch (error) {
+      console.error("Failed to fetch insights:", error);
+    } finally {
+      setIsFetching(false);
+    }
+  };
+
+  useEffect(() => {
+    if (tasks.length > 0) {
+      fetchInsights();
+    }
+  }, [tasks.length]);
+
+  return { insights, isFetching, refetch: fetchInsights };
+}
+
+// AI Insights hook
+function useAIInsights(tasks: TaskWithRelations[], completedTasks: TaskWithRelations[]) {
+  const [insights, setInsights] = useState<{
+    tips: string[];
+    suggestions: string[];
+    trends: string[];
+  }>({ tips: [], suggestions: [], trends: [] });
+  const [isFetching, setIsFetching] = useState(false);
+
+  const fetchInsights = async () => {
+    setIsFetching(true);
+    try {
+      const result = await fetch("/api/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "insights",
+          input: {
+            tasks: tasks.map(t => ({
+              name: t.name,
+              completed: t.completed,
+              priority: t.priority,
+              date: t.date,
+              deadline: t.deadline,
+            })),
+          },
+        }),
+      });
+      const data = await result.json();
+      setInsights({
+        tips: data.tips || [],
+        suggestions: data.suggestions || [],
+        trends: data.trends || [],
+      });
+    } catch (error) {
+      console.error("Failed to fetch insights:", error);
+    } finally {
+      setIsFetching(false);
+    }
+  };
+
+  useEffect(() => {
+    if (tasks.length > 0) {
+      fetchInsights();
+    }
+  }, [tasks.length]);
+
+  return { insights, isFetching, refetch: fetchInsights };
 }
