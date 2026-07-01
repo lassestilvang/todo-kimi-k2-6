@@ -1,29 +1,14 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { setDb, resetDb } from "@/lib/db";
+import { createTestDb } from "@/lib/db/test-db";
 import { createGoal, getGoals, getGoalById, updateGoalProgress, resetGoal, deleteGoal } from "@/lib/actions/goals";
-import Database from "better-sqlite3";
 
 describe("Goals Actions", () => {
-  let db: Database.Database;
+  let db: ReturnType<typeof createTestDb>;
 
   beforeEach(() => {
     resetDb();
-    db = new Database(":memory:");
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS goals (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
-        name TEXT NOT NULL,
-        description TEXT,
-        target_count INTEGER NOT NULL,
-        target_unit TEXT NOT NULL,
-        period TEXT NOT NULL,
-        current_count INTEGER DEFAULT 0,
-        streak_count INTEGER DEFAULT 0,
-        last_updated TEXT,
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
+    db = createTestDb();
     setDb(db);
   });
 
