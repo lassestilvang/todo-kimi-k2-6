@@ -40,6 +40,7 @@ import {
   generateRecurringTasks,
 } from "@/lib/actions/tasks";
 import { toast } from "sonner";
+import { WorkspaceSelector } from "@/components/workspace/workspace-selector";
 
 interface MobileSidebarProps {
   lists: ListType[];
@@ -51,6 +52,9 @@ interface MobileSidebarProps {
   onRefresh: () => void;
   onSearch: (query: string) => void;
   onNewTask: () => void;
+  workspaces?: Array<{ id: number; name: string; description: string | null }>;
+  currentWorkspace?: { id: number; name: string; description: string | null } | null;
+  onWorkspaceChange?: (workspace: { id: number; name: string; description: string | null } | null) => void;
 }
 
 const views = [
@@ -75,6 +79,9 @@ export function MobileSidebar({
   onRefresh,
   onSearch,
   onNewTask,
+  workspaces,
+  currentWorkspace,
+  onWorkspaceChange,
 }: MobileSidebarProps) {
   const { theme, setTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
@@ -203,6 +210,18 @@ export function MobileSidebar({
                   >
                     <X className="h-4 w-4" />
                   </Button>
+                </div>
+
+                <div className="px-4 py-3 border-b">
+                  <WorkspaceSelector
+                    workspaces={workspaces || []}
+                    currentWorkspace={currentWorkspace || null}
+                    onWorkspaceChange={(ws) => {
+                      onWorkspaceChange?.(ws);
+                      setIsOpen(false);
+                    }}
+                    onCreateWorkspace={() => {}}
+                  />
                 </div>
 
                 <div className="ml-auto mt-2">
