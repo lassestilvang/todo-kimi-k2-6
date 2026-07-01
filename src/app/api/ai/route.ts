@@ -1,6 +1,6 @@
 "use server";
 
-import { parseTaskInput, generateTaskInsights, generateTasksFromNotes } from "@/lib/ai";
+import { parseTaskInput, generateTaskInsights, generateTasksFromNotes, getAIManager } from "@/lib/ai";
 import type { AITaskInput } from "@/lib/ai";
 import { getAIConfigStatus } from "@/lib/ai/config";
 import { rateLimits, getClientKey } from "@/lib/rate-limiter";
@@ -19,11 +19,31 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { type, input } = body as { type: string; input: any };
+    const { type, input, stream } = body as { type: string; input: any; stream?: boolean };
 
     if (type === "parse") {
       const result = await parseTaskInput(input as AITaskInput);
       return Response.json({ ...result, _rateLimit: remaining });
+    }
+
+    if (type === "parse_stream") {
+      const aiManager = getAIManager();
+      const encoder = new TextEncoder();
+      const streamResponse = new ReadableStream({
+        async start(controller) {
+          try {
+            const result = await aiManager.parseTask(input as AITaskInput);
+            controller.enqueue(encoder.encode(JSON.stringify(result) + "\n"));
+            controller.close();
+          } catch (error) {
+            controller.enqueue(encoder.encode(JSON.stringify({ error: "Streaming failed" }) + "\n"));
+            controller.close();
+          }
+        },
+      });
+      return new Response(streamResponse, {
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     if (type === "insights") {
