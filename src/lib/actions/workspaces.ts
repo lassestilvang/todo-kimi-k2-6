@@ -100,3 +100,50 @@ export async function canUserAccessWorkspace(userId: number, workspaceId: number
     .get(userId, workspaceId);
   return !!result;
 }
+
+export async function getUserWorkspaceRole(userId: number, workspaceId: number): Promise<WorkspaceRole | null> {
+  const db = getDb();
+  const result = db
+    .prepare("SELECT role FROM workspace_users WHERE user_id = ? AND workspace_id = ?")
+    .get(userId, workspaceId) as { role: WorkspaceRole } | undefined;
+  return result?.role || null;
+}
+
+export async function updateUserWorkspaceRole(userId: number, workspaceId: number, role: WorkspaceRole): Promise<void> {
+  const db = getDb();
+  db.prepare("UPDATE workspace_users SET role = ? WHERE user_id = ? AND workspace_id = ?")
+    .run(role, userId, workspaceId);
+}
+
+export async function transferWorkspaceOwnership(workspaceId: number, newOwnerId: number): Promise<void> {
+  const db = getDb();
+  // Remove new owner from workspace if they exist
+  db.prepare("DELETE FROM workspace_users WHERE workspace_id = ? AND user_id = ?").run(workspaceId, newOwnerId);
+  // Add as owner
+  db.prepare("INSERT INTO workspace_users (workspace_id, user_id, role) VALUES (?, ?, 'owner')")
+    .run(workspaceId, newOwnerId);
+}
+
+export async function getWorkspacePermissions(userId: number, workspaceId: number): Promise<{
+  canView: boolean;
+  canEdit: boolean;
+  canManageMembers: boolean;
+  canDelete: boolean;
+}> {
+  const db = getDb();
+  const membership = db
+    .prepare("SELECT role FROM workspace_users WHERE user_id = ? AND workspace_id = ?")
+    .get(userId, workspaceId) as { role: WorkspaceRole } | undefined;
+
+  if (!membership) {
+    return { canView: false, canEdit: false, canManageMembers: false, canDelete: false };
+  }
+
+  const role = membership.role;
+  return {
+    canView: true,
+    canEdit: ["owner", "admin", "member"].includes(role),
+    canManageMembers: ["owner", "admin"].includes(role),
+    canDelete: role === "owner",
+  };
+}
