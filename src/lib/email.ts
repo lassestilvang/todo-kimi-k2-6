@@ -1,5 +1,5 @@
 import nodemailer from "nodemailer";
-import type { TaskWithRelations } from "@/types";
+import type { Task } from "@/types";
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || "smtp.resend.dev",
@@ -11,7 +11,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-export async function sendTaskReminderEmail(email: string, task: TaskWithRelations) {
+export async function sendTaskReminderEmail(email: string, task: Task) {
   const mailOptions = {
     from: process.env.EMAIL_FROM || "TaskFlow <noreply@taskflow.app>",
     to: email,
@@ -28,7 +28,7 @@ export async function sendTaskReminderEmail(email: string, task: TaskWithRelatio
   return transporter.sendMail(mailOptions);
 }
 
-export async function sendDueSoonEmail(email: string, task: TaskWithRelations) {
+export async function sendDueSoonEmail(email: string, task: Task) {
   const mailOptions = {
     from: process.env.EMAIL_FROM || "TaskFlow <noreply@taskflow.app>",
     to: email,
@@ -38,6 +38,24 @@ export async function sendDueSoonEmail(email: string, task: TaskWithRelations) {
       <p>⚠️ The following task is due soon:</p>
       <p><strong>${task.name}</strong></p>
       ${task.deadline ? `<p>Deadline: ${new Date(task.deadline).toLocaleDateString()}</p>` : ""}
+    `,
+  };
+
+  return transporter.sendMail(mailOptions);
+}
+
+export async function sendTaskSharedEmail(email: string, task: Task, inviterName: string) {
+  const mailOptions = {
+    from: process.env.EMAIL_FROM || "TaskFlow <noreply@taskflow.app>",
+    to: email,
+    subject: `Task Shared: ${task.name}`,
+    html: `
+      <h2>Task Shared with You</h2>
+      <p><strong>${inviterName}</strong> has shared a task with you.</p>
+      <p><strong>Task:</strong> ${task.name}</p>
+      ${task.description ? `<p>Description: ${task.description}</p>` : ""}
+      ${task.deadline ? `<p>Deadline: ${new Date(task.deadline).toLocaleDateString()}</p>` : ""}
+      <p><a href="${process.env.NEXTAUTH_URL}/tasks">View Task</a></p>
     `,
   };
 
