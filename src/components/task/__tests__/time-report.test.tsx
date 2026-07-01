@@ -45,4 +45,35 @@ describe('TimeReport', () => {
     render(<TimeReport tasks={mockTasks} timeEntries={mockTimeEntries} />);
     expect(screen.getByText('This Week')).toBeInTheDocument();
   });
+
+  it('renders with month period', () => {
+    render(<TimeReport tasks={mockTasks} timeEntries={mockTimeEntries} period="month" />);
+    expect(screen.getByText('Total Time')).toBeInTheDocument();
+  });
+
+  it('renders with all period', () => {
+    render(<TimeReport tasks={mockTasks} timeEntries={mockTimeEntries} period="all" />);
+    expect(screen.getByText('Total Time')).toBeInTheDocument();
+  });
+
+  it('handles empty time entries', () => {
+    render(<TimeReport tasks={mockTasks} timeEntries={[]} />);
+    expect(screen.getByText('Total Time')).toBeInTheDocument();
+  });
+
+  it('handles entries with null duration', () => {
+    const entriesWithNull = [
+      { id: 1, task_id: 1, start_time: new Date().toISOString(), end_time: new Date().toISOString(), duration_seconds: null, description: 'Test' },
+    ];
+    render(<TimeReport tasks={mockTasks} timeEntries={entriesWithNull} />);
+    expect(screen.getByText('Total Time')).toBeInTheDocument();
+  });
+
+  it('handles entries with no matching task', () => {
+    const entriesWithoutTask = [
+      { id: 1, task_id: 999, start_time: new Date().toISOString(), end_time: new Date().toISOString(), duration_seconds: 3600, description: 'Test' },
+    ];
+    render(<TimeReport tasks={mockTasks} timeEntries={entriesWithoutTask} />);
+    expect(screen.getByText('Total Time')).toBeInTheDocument();
+  });
 });
