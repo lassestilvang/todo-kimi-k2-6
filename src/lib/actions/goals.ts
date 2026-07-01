@@ -120,3 +120,62 @@ export async function updateGoalsFromTaskCompletion(taskCount: number = 1) {
     );
   }
 }
+
+// ============================================
+// Goal Milestones
+// ============================================
+
+import { type GoalMilestone } from "@/types";
+
+export async function getGoalMilestones(goalId: number): Promise<GoalMilestone[]> {
+  const db = getDb();
+  return db
+    .prepare("SELECT * FROM goal_milestones WHERE goal_id = ? ORDER BY due_date ASC, created_at DESC")
+    .all(goalId) as GoalMilestone[];
+}
+
+export async function createGoalMilestone(
+  goalId: number,
+  input: { name: string; target_count: number; due_date?: string }
+): Promise<GoalMilestone> {
+  const db = getDb();
+  const result = db
+    .prepare(
+      "INSERT INTO goal_milestones (goal_id, name, target_count, due_date) VALUES (?, ?, ?, ?)"
+    )
+    .run(goalId, input.name, input.target_count, input.due_date || null);
+
+  return {
+    id: Number(result.lastInsertRowid),
+    goal_id: goalId,
+    name: input.name,
+    target_count: input.target_count,
+    current_count: 0,
+    due_date: input.due_date || null,
+    completed: false,
+    created_at: new Date().toISOString(),
+  };
+}
+
+export async function updateMilestoneProgress(id: number, increment: number): Promise<GoalMilestone> {
+  const db = getDb();
+  const milestone = db.prepare("SELECT * FROM goal_milestones WHERE id = ?").get(id) as GoalMilestone | undefined;
+  if (!milestone) throw new Error("Milestone not found");
+
+  const newCount = Math.min(milestone.current_count + increment, milestone.target_count);
+  const isCompleted = newCount >= milestone.target_count;
+
+  db.prepare("UPDATE goal_milestones SET current_count = ?, completed = ? WHERE id = ?").run(
+    newCount,
+    isCompleted ? 1 : 0,
+    id
+  );
+
+  const updated = db.prepare("SELECT * FROM goal_milestones WHERE id = ?").get(id) as GoalMilestone;
+  return updated;
+}
+
+export async function deleteGoalMilestone(id: number): Promise<void> {
+  const db = getDb();
+  db.prepare("DELETE FROM goal_milestones WHERE id = ?").run(id);
+}
