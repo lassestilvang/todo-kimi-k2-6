@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Plus, Download, Upload, BarChart3, CalendarPlus, WifiOff } from "lucide-react";
+import { Plus, BarChart3, WifiOff } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { AppSidebar } from "@/components/sidebar/app-sidebar";
@@ -24,8 +25,9 @@ import { TaskAnalytics } from "@/components/task/task-analytics";
 import { MobileSidebar } from "@/components/task/mobile-sidebar";
 import { LoginRequired } from "@/components/task/login-required";
 import { GoalsDashboard } from "@/components/task/goals-dashboard";
+import { WorkspaceSelector, CreateWorkspaceDialog } from "@/components/workspace";
 import { useTasks } from "@/hooks/use-tasks";
-import type { TaskWithRelations, FilterPreset, Template, Goal } from "@/types";
+import type { TaskWithRelations, FilterPreset, Template, Goal, Workspace } from "@/types";
 import { toast } from "sonner";
 
 const viewTitles: Record<string, string> = {
@@ -54,6 +56,9 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [currentWorkspace, setCurrentWorkspace] = useState<Workspace | null>(null);
+  const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
 
   const {
     tasks,
@@ -125,10 +130,17 @@ export default function Home() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [listsData, labelsData, , allTasks, templatesData, generatedCount, goalsData] = await Promise.all([
+      const [listsData, labelsData, workspacesData, allTasks, templatesData, generatedCount, goalsData] = await Promise.all([
         (await import("@/lib/actions/tasks")).getLists(),
         (await import("@/lib/actions/tasks")).getLabels(),
-        (await import("@/lib/actions/tasks")).getOverdueCount(),
+        (async () => {
+          try {
+            const res = await fetch("/api/workspaces");
+            return res.json();
+          } catch {
+            return [];
+          }
+        })(),
         (await import("@/lib/actions/tasks")).getTasks({ includeCompleted: true }),
         (await import("@/lib/actions/tasks")).getTemplates(),
         (await import("@/lib/actions/tasks")).generateRecurringTasks(),
@@ -136,6 +148,7 @@ export default function Home() {
       ]);
       setLists(listsData);
       setLabels(labelsData);
+      setWorkspaces(workspacesData);
       setTasks(allTasks);
       setTemplates(templatesData);
       setGoals(goalsData);
@@ -450,6 +463,7 @@ export default function Home() {
             blockers: [],
             blocked_by: [],
             time_entries: [],
+            recurring_exceptions: [],
           }}
           open={true}
           onOpenChange={(open) => !open && handleViewChange("today")}
@@ -516,6 +530,9 @@ export default function Home() {
           onRefresh={loadData}
           onSearch={handleSearch}
           onNewTask={handleNewTask}
+          workspaces={workspaces}
+          currentWorkspace={currentWorkspace}
+          onWorkspaceChange={setCurrentWorkspace}
         />
       )}
 
@@ -530,14 +547,35 @@ export default function Home() {
           onViewChange={handleViewChange}
           onRefresh={loadData}
           onSearch={handleSearch}
+          workspaces={workspaces}
+          currentWorkspace={currentWorkspace}
+          onWorkspaceChange={setCurrentWorkspace}
         />
       )}
 
       <div className="flex flex-1 flex-col min-w-0">
+        {/* Workspace Header */}
+        {currentWorkspace && (
+          <div className="border-b px-6 py-3 bg-muted/30 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary">{currentWorkspace.name}</Badge>
+              <span className="text-sm text-muted-foreground truncate">
+                {currentWorkspace.description}
+              </span>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setCurrentWorkspace(null)}
+            >
+              Switch Workspace
+            </Button>
+          </div>
+        )}
         {!isOnline && (
           <div className="bg-yellow-500/10 border-b border-yellow-500/20 px-4 py-2 text-center text-sm">
             <WifiOff className="h-4 w-4 inline mr-1.5" />
-            You are offline. Changes will be saved locally and synced when you're back online.
+            You are offline. Changes will be saved locally and synced when you are back online.
           </div>
         )}
         {isLoading ? (
