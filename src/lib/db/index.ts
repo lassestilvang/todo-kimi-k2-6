@@ -171,6 +171,43 @@ export function initializeSchema(db: Database) {
     );
     CREATE INDEX IF NOT EXISTS idx_comments_task ON task_comments(task_id);
 
+    -- Comment mentions (for @mentions)
+    CREATE TABLE IF NOT EXISTS comment_mentions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      comment_id INTEGER NOT NULL REFERENCES task_comments(id) ON DELETE CASCADE,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(comment_id, user_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_mentions_user ON comment_mentions(user_id);
+    CREATE INDEX IF NOT EXISTS idx_mentions_task ON comment_mentions(task_id);
+
+    -- External Integrations (Slack, Discord webhooks)
+    CREATE TABLE IF NOT EXISTS integrations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      type TEXT NOT NULL CHECK(type IN ('slack', 'discord', 'email')),
+      webhook_url TEXT,
+      channel TEXT,
+      enabled INTEGER DEFAULT 1,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(user_id, type)
+    );
+    CREATE INDEX IF NOT EXISTS idx_integrations_user ON integrations(user_id);
+
+    -- Task votes for prioritization
+    CREATE TABLE IF NOT EXISTS task_votes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      value INTEGER NOT NULL CHECK(value IN (-1, 1)),
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(task_id, user_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_votes_task ON task_votes(task_id);
+    CREATE INDEX IF NOT EXISTS idx_votes_user ON task_votes(user_id);
+
     -- Time tracking entries
     CREATE TABLE IF NOT EXISTS time_entries (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -291,6 +328,43 @@ export function initializeSchema(db: Database) {
 
     -- Ensure default inbox list exists
     INSERT OR IGNORE INTO lists (id, name, emoji, color, is_inbox) VALUES (1, 'Inbox', '📥', '#6366f1', 1);
+
+    -- Recurring task exceptions (skip specific dates)
+    CREATE TABLE IF NOT EXISTS recurring_exceptions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+      exception_date TEXT NOT NULL,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(task_id, exception_date)
+    );
+    CREATE INDEX IF NOT EXISTS idx_recurring_exceptions_task ON recurring_exceptions(task_id);
+    CREATE INDEX IF NOT EXISTS idx_recurring_exceptions_date ON recurring_exceptions(exception_date);
+
+    -- Custom view sharing
+    CREATE TABLE IF NOT EXISTS custom_view_shares (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      view_id INTEGER NOT NULL REFERENCES custom_views(id) ON DELETE CASCADE,
+      shared_by INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      shared_with INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      share_token TEXT UNIQUE,
+      permission TEXT DEFAULT 'view' CHECK(permission IN ('view', 'edit')),
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_view_shares_view ON custom_view_shares(view_id);
+    CREATE INDEX IF NOT EXISTS idx_view_shares_token ON custom_view_shares(share_token);
+
+    -- Goal milestones
+    CREATE TABLE IF NOT EXISTS goal_milestones (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      goal_id INTEGER NOT NULL REFERENCES goals(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      target_count INTEGER NOT NULL,
+      current_count INTEGER DEFAULT 0,
+      due_date TEXT,
+      completed INTEGER DEFAULT 0,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_milestones_goal ON goal_milestones(goal_id);
 
     -- Goal tracking
     CREATE TABLE IF NOT EXISTS goals (
