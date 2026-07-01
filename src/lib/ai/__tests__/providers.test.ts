@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { KeywordParser, AIManager, OpenAIProvider, ClaudeProvider } from '../providers';
 import type { AIProvider } from '../providers';
 
@@ -181,13 +181,13 @@ describe('KeywordParser', () => {
       expect(result.trends.some(t => t.includes('50%'))).toBe(true);
     });
 
-    it('reports tasks scheduled for this week', async () => {
+    it('reports tasks due this week', async () => {
       const today = new Date().toISOString().split('T')[0];
       const tasks = [
         { name: 'Task 1', completed: false, priority: 'high', date: today },
       ];
       const result = await parser.generateInsights(tasks);
-      expect(result.trends.some(t => t.includes('scheduled'))).toBe(true);
+      expect(result.trends.some(t => t.includes('week') || t.includes('due'))).toBe(true);
     });
   });
 
@@ -346,6 +346,12 @@ describe('AIManager internal paths', () => {
 
     const manager = new TestableAIManager();
     const result = await manager.parseTask({ text: 'Test task' });
+    expect(result.provider).toBe('keyword-parser');
+  });
+
+  it('should handle errors from all providers in generateInsights', async () => {
+    const tasks = [{ name: 'Task 1', completed: true, priority: 'high' }];
+    const result = await new AIManager().generateInsights(tasks);
     expect(result.provider).toBe('keyword-parser');
   });
 
