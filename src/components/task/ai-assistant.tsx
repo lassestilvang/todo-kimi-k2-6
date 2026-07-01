@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
@@ -172,6 +171,30 @@ export function AIAssistant({ tasks, lists, onAddTask, className }: AIAssistantP
       console.error("Failed to load insights:", error);
     }
   };
+
+  const [workloadSuggestions, setWorkloadSuggestions] = useState<Array<{
+    type: string;
+    taskName: string;
+    reason: string;
+    confidence: number;
+  }>>([]);
+
+  // Load workload suggestions on mount
+  useEffect(() => {
+    fetch("/api/workload")
+      .then((r) => r.json())
+      .then((data) => {
+        setWorkloadSuggestions(
+          data.suggestions?.map((s: any) => ({
+            type: s.type,
+            taskName: s.taskName,
+            reason: s.reason,
+            confidence: s.confidence,
+          })) || []
+        );
+      })
+      .catch(console.error);
+  }, []);
 
   const handleSubmit = async () => {
     if (!input.trim()) return;
@@ -422,6 +445,18 @@ export function AIAssistant({ tasks, lists, onAddTask, className }: AIAssistantP
                       >
                         → {suggestion}
                       </button>
+                    ))}
+                  </div>
+                )}
+                {workloadSuggestions.length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    <div className="text-xs font-medium text-muted-foreground">Workload Balance:</div>
+                    {workloadSuggestions.map((s, i) => (
+                      <div key={i} className="text-xs p-2 bg-amber-500/10 rounded">
+                        <div className="font-medium">{s.taskName}</div>
+                        <div className="text-muted-foreground">{s.reason}</div>
+                        <div className="text-amber-600">{(s.confidence * 100).toFixed(0)}% confidence</div>
+                      </div>
                     ))}
                   </div>
                 )}
