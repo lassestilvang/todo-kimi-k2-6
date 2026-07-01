@@ -8,6 +8,7 @@ import type { TaskSuggestion, AITaskInput } from "./index";
 export interface AIProvider {
   name: string;
   parseTask(input: AITaskInput): Promise<TaskSuggestion>;
+  parseTaskStream?(input: AITaskInput, onChunk: (chunk: string) => void): Promise<TaskSuggestion>;
   generateInsights(tasks: Array<{ name: string; completed: boolean; priority: string; date?: string | null; deadline?: string | null }>): Promise<{ tips: string[]; suggestions: string[]; trends: string[] }>;
 }
 
@@ -376,13 +377,32 @@ export class KeywordParser implements AIProvider {
 export class OpenAIProvider implements AIProvider {
   name = "openai-gpt4";
   private readonly model: string;
+  private readonly baseURL: string;
+  private readonly maxRetries: number;
 
   constructor() {
     this.model = process.env.OPENAI_MODEL || "gpt-4o-mini";
+    this.baseURL = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
+    this.maxRetries = 3;
+  }
+
+  private async withRetry<T>(fn: () => Promise<T>): Promise<T> {
+    let lastError: Error | undefined;
+    for (let i = 0; i < this.maxRetries; i++) {
+      try {
+        return await fn();
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        if (i < this.maxRetries - 1) {
+          // Exponential backoff: 1s, 2s, 4s
+          await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
+        }
+      }
+    }
+    throw lastError;
   }
 
   async parseTask(input: AITaskInput): Promise<TaskSuggestion> {
-    // Check if API key is available
     if (!process.env.OPENAI_API_KEY) {
       throw new Error("OPENAI_API_KEY not configured");
     }
@@ -406,37 +426,129 @@ Output format:
 `;
 
     try {
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: this.model,
-          messages: [{ role: "user", content: prompt }],
-          temperature: 0.3,
-        }),
+      return await this.withRetry(async () => {
+        const response = await fetch(`${this.baseURL}/chat/completions`, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: this.model,
+            messages: [{ role: "user", content: prompt }],
+            temperature: 0.3,
+            stream: false,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorBody = await response.text();
+          console.error("OpenAI API error:", response.status, errorBody);
+          throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        const content = data.choices[0]?.message?.content || "{}";
+        return JSON.parse(content) as TaskSuggestion;
       });
-
-      if (!response.ok) {
-        const errorBody = await response.text();
-        console.error("OpenAI API error:", response.status, errorBody);
-        throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      const content = data.choices[0]?.message?.content || "{}";
-      return JSON.parse(content) as TaskSuggestion;
     } catch (error) {
       console.error("OpenAI parsing failed:", error);
       throw error;
     }
   }
 
+  async parseTaskStream(input: AITaskInput, onChunk: (chunk: string) => Promise<void> | void): Promise<TaskSuggestion> {
+    if (!process.env.OPENAI_API_KEY) {
+      return new KeywordParser().parseTask(input);
+    }
+
+    const prompt = `
+Parse the following natural language task input into a structured task object.
+Return only valid JSON.
+
+Input: "${input.text}"
+
+Output format:
+{
+  "name": "Task name (clear and concise)",
+  "description": "Brief description or null",
+  "priority": "critical|high|medium|low|none",
+  "estimated_duration": number in minutes or null,
+  "suggested_date": "YYYY-MM-DD" or null,
+  "recurring": "none|daily|weekly|weekdays|monthly|yearly|custom",
+  "deadline": "YYYY-MM-DD" or null
+}
+`;
+
+    const response = await fetch(`${this.baseURL}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: this.model,
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.3,
+        stream: true,
+      }),
+    });
+
+    if (!response.ok || !response.body) {
+      return new KeywordParser().parseTask(input);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const data = line.slice(6);
+            if (data === "[DONE]") continue;
+            try {
+              const parsed = JSON.parse(data);
+              const content = parsed.choices[0]?.delta?.content || "";
+              if (content) {
+                await onChunk(content);
+              }
+            } catch {
+              // Skip invalid JSON
+            }
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+
+    // Return parsed result from the accumulated content
+    try {
+      const lastLine = buffer.split("\n").pop();
+      if (lastLine?.startsWith("data: ")) {
+        const data = JSON.parse(lastLine.slice(6));
+        const content = data.choices[0]?.delta?.content || "{}";
+        return JSON.parse(content) as TaskSuggestion;
+      }
+    } catch {
+      // Fall back to keyword parser
+    }
+
+    return new KeywordParser().parseTask(input);
+  }
+
   async generateInsights(tasks: Array<{ name: string; completed: boolean; priority: string; date?: string | null; deadline?: string | null }>): Promise<{ tips: string[]; suggestions: string[]; trends: string[] }> {
     if (!process.env.OPENAI_API_KEY) {
-      throw new Error("OPENAI_API_KEY not configured");
+      return { tips: [], suggestions: [], trends: [] };
     }
 
     const prompt = `
@@ -453,21 +565,27 @@ Return JSON:
 `;
 
     try {
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages: [{ role: "user", content: prompt }],
-          temperature: 0.5,
-        }),
-      });
+      return await this.withRetry(async () => {
+        const response = await fetch(`${this.baseURL}/chat/completions`, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: this.model,
+            messages: [{ role: "user", content: prompt }],
+            temperature: 0.5,
+          }),
+        });
 
-      const data = await response.json();
-      return JSON.parse(data.choices[0]?.message?.content || '{"tips":[],"suggestions":[],"trends":[]}');
+        if (!response.ok) {
+          throw new Error(`OpenAI API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return JSON.parse(data.choices[0]?.message?.content || '{"tips":[],"suggestions":[],"trends":[]}');
+      });
     } catch (error) {
       console.error("OpenAI insights failed:", error);
       return { tips: [], suggestions: [], trends: [] };
@@ -482,9 +600,29 @@ Return JSON:
 export class ClaudeProvider implements AIProvider {
   name = "claude-sonnet";
   private readonly model: string;
+  private readonly baseURL: string;
+  private readonly maxRetries: number;
 
   constructor() {
     this.model = process.env.CLAUDE_MODEL || "claude-3-5-sonnet-20241022";
+    this.baseURL = process.env.CLAUDE_BASE_URL || "https://api.anthropic.com";
+    this.maxRetries = 3;
+  }
+
+  private async withRetry<T>(fn: () => Promise<T>): Promise<T> {
+    let lastError: Error | undefined;
+    for (let i = 0; i < this.maxRetries; i++) {
+      try {
+        return await fn();
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        if (i < this.maxRetries - 1) {
+          // Exponential backoff: 1s, 2s, 4s
+          await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
+        }
+      }
+    }
+    throw lastError;
   }
 
   async parseTask(input: AITaskInput): Promise<TaskSuggestion> {
@@ -508,29 +646,31 @@ Return only JSON with these fields:
 `;
 
     try {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "x-api-key": process.env.ANTHROPIC_API_KEY,
-          "Content-Type": "application/json",
-          "anthropic-version": "2023-06-01",
-        },
-        body: JSON.stringify({
-          model: this.model,
-          max_tokens: 500,
-          messages: [{ role: "user", content: prompt }],
-        }),
+      return await this.withRetry(async () => {
+        const response = await fetch(`${this.baseURL}/v1/messages`, {
+          method: "POST",
+          headers: {
+            "x-api-key": process.env.ANTHROPIC_API_KEY!,
+            "Content-Type": "application/json",
+            "anthropic-version": "2023-06-01",
+          },
+          body: JSON.stringify({
+            model: this.model,
+            max_tokens: 500,
+            messages: [{ role: "user", content: prompt }],
+          }),
+        });
+
+        if (!response.ok) {
+          const errorBody = await response.text();
+          console.error("Claude API error:", response.status, errorBody);
+          throw new Error(`Claude API error: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        const content = data.content[0]?.text || "{}";
+        return JSON.parse(content) as TaskSuggestion;
       });
-
-      if (!response.ok) {
-        const errorBody = await response.text();
-        console.error("Claude API error:", response.status, errorBody);
-        throw new Error(`Claude API error: ${response.status} ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      const content = data.content[0]?.text || "{}";
-      return JSON.parse(content) as TaskSuggestion;
     } catch (error) {
       console.error("Claude parsing failed:", error);
       throw error;
@@ -539,7 +679,7 @@ Return only JSON with these fields:
 
   async generateInsights(tasks: Array<{ name: string; completed: boolean; priority: string; date?: string | null; deadline?: string | null }>): Promise<{ tips: string[]; suggestions: string[]; trends: string[] }> {
     if (!process.env.ANTHROPIC_API_KEY) {
-      throw new Error("ANTHROPIC_API_KEY not configured");
+      return { tips: [], suggestions: [], trends: [] };
     }
 
     const prompt = `
@@ -551,22 +691,28 @@ Return JSON: {"tips":["..."],"suggestions":["..."],"trends":["..."]}
 `;
 
     try {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "x-api-key": process.env.ANTHROPIC_API_KEY,
-          "Content-Type": "application/json",
-          "anthropic-version": "2023-06-01",
-        },
-        body: JSON.stringify({
-          model: "claude-3-5-sonnet-20241022",
-          max_tokens: 500,
-          messages: [{ role: "user", content: prompt }],
-        }),
-      });
+      return await this.withRetry(async () => {
+        const response = await fetch(`${this.baseURL}/v1/messages`, {
+          method: "POST",
+          headers: {
+            "x-api-key": process.env.ANTHROPIC_API_KEY!,
+            "Content-Type": "application/json",
+            "anthropic-version": "2023-06-01",
+          },
+          body: JSON.stringify({
+            model: this.model,
+            max_tokens: 500,
+            messages: [{ role: "user", content: prompt }],
+          }),
+        });
 
-      const data = await response.json();
-      return JSON.parse(data.content[0]?.text || '{"tips":[],"suggestions":[],"trends":[]}');
+        if (!response.ok) {
+          throw new Error(`Claude API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return JSON.parse(data.content[0]?.text || '{"tips":[],"suggestions":[],"trends":[]}');
+      });
     } catch (error) {
       console.error("Claude insights failed:", error);
       return { tips: [], suggestions: [], trends: [] };
