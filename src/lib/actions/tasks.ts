@@ -140,7 +140,7 @@ export async function getTaskById(id: number): Promise<TaskWithRelations | undef
   if (!task) return undefined;
 
   // Batch fetch all relations
-  const [labels, subtasks, reminders, logs, blockers, blockedBy, attachments, comments, timeEntries] = await Promise.all([
+  const [labels, subtasks, reminders, logs, blockers, blockedBy, attachments, comments, timeEntries, recurringExceptions] = await Promise.all([
     db.prepare(
       `SELECT l.* FROM labels l
        JOIN task_labels tl ON l.id = tl.label_id
@@ -166,6 +166,8 @@ export async function getTaskById(id: number): Promise<TaskWithRelations | undef
     db.prepare("SELECT * FROM task_comments WHERE task_id = ? ORDER BY created_at ASC").all(id) as TaskComment[],
     // Time entries
     db.prepare("SELECT * FROM time_entries WHERE task_id = ? ORDER BY created_at DESC").all(id) as TimeEntry[],
+    // Recurring exceptions
+    db.prepare("SELECT id, task_id, exception_date, created_at FROM recurring_exceptions WHERE task_id = ? ORDER BY exception_date").all(id) as { id: number; task_id: number; exception_date: string; created_at: string }[],
   ]);
 
   return {
@@ -179,6 +181,7 @@ export async function getTaskById(id: number): Promise<TaskWithRelations | undef
     blocked_by: blockedBy,
     attachments,
     time_entries: timeEntries || [],
+    recurring_exceptions: recurringExceptions || [],
   };
 }
 
@@ -874,12 +877,25 @@ export async function addTaskComment(taskId: number, input: CreateCommentInput):
   const result = db
     .prepare("INSERT INTO task_comments (task_id, content) VALUES (?, ?)")
     .run(taskId, input.content);
-  return {
+
+  const comment = {
     id: Number(result.lastInsertRowid),
     task_id: taskId,
     content: input.content,
     created_at: new Date().toISOString(),
   };
+
+  // Handle mentions - in a real implementation, this would send notifications
+  if (input.mentions && input.mentions.length > 0) {
+    // Store mentions for notification system
+    for (const userId of input.mentions) {
+      db.prepare(
+        "INSERT INTO comment_mentions (comment_id, user_id, task_id) VALUES (?, ?, ?)"
+      ).run(result.lastInsertRowid, userId, taskId);
+    }
+  }
+
+  return comment;
 }
 
 export async function getTaskComments(taskId: number): Promise<TaskComment[]> {
