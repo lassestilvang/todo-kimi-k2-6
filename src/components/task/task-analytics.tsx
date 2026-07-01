@@ -440,6 +440,11 @@ export function TaskAnalytics({ tasks, completedTasks }: TaskAnalyticsProps) {
         </div>
       </div>
 
+      {/* Productivity Heatmap */}
+      <div className="mt-4 pt-4 border-t">
+        <ProductivityHeatmap tasks={tasks} completedTasks={completedTasks} />
+      </div>
+
       {/* AI-Powered Insights */}
       <div className="mt-4 pt-4 border-t">
         <div className="flex items-center justify-between mb-3">
@@ -526,4 +531,49 @@ function useAIInsights(tasks: TaskWithRelations[], completedTasks: TaskWithRelat
   }, [tasks.length]);
 
   return { insights, isFetching, refetch: fetchInsights };
+}
+
+// Productivity Heatmap Component
+function ProductivityHeatmap({ tasks, completedTasks }: { tasks: TaskWithRelations[], completedTasks: TaskWithRelations[] }) {
+  const heatmapData = useMemo(() => {
+    const last30Days = Array.from({ length: 30 }, (_, i) => {
+      const date = subDays(new Date(), 29 - i);
+      return format(date, "yyyy-MM-dd");
+    });
+
+    const completionByDay: Record<string, number> = {};
+    completedTasks.forEach(task => {
+      if (task.completed_at) {
+        const day = format(new Date(task.completed_at), "yyyy-MM-dd");
+        completionByDay[day] = (completionByDay[day] || 0) + 1;
+      }
+    });
+
+    return last30Days.map(date => ({
+      date,
+      count: completionByDay[date] || 0,
+    }));
+  }, [tasks, completedTasks]);
+
+  const getColor = (count: number) => {
+    if (count === 0) return "bg-muted/30";
+    if (count === 1) return "bg-green-200";
+    if (count <= 3) return "bg-green-400";
+    return "bg-green-600";
+  };
+
+  return (
+    <div className="space-y-2">
+      <h4 className="text-sm font-medium">Productivity Heatmap (Last 30 Days)</h4>
+      <div className="grid grid-cols-10 gap-1">
+        {heatmapData.map((day) => (
+          <div
+            key={day.date}
+            className={cn("h-6 rounded-sm", getColor(day.count))}
+            title={`${day.date}: ${day.count} completed`}
+          />
+        ))}
+      </div>
+    </div>
+  );
 }
