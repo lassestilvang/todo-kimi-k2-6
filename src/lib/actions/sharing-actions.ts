@@ -2,7 +2,7 @@
 
 import { getDb } from "@/lib/db";
 import { sendTaskSharedEmail } from "@/lib/email";
-import type { User, TaskWithRelations } from "@/types";
+import type { User, TaskWithRelations, Task } from "@/types";
 
 /**
  * Share a task with a user and send notification email
@@ -40,7 +40,7 @@ export async function shareTaskWithUser(
       const task = db.prepare("SELECT name FROM tasks WHERE id = ?").get(taskId) as { name: string } | undefined;
       if (task) {
         try {
-          await sendTaskSharedEmail(user.email, task.name, sender.name || sender.email, permission);
+          await sendTaskSharedEmail(user.email, { id: 0, name: task.name, description: null, notes: null, list_id: 1, date: null, deadline: null, estimate: null, actual_time: null, priority: "none", recurring: "none", recurring_config: null, completed: false, completed_at: null, created_at: "", updated_at: "", sort_order: 0 } as Task, sender.name || sender.email);
           emailSent = true;
         } catch (error) {
           console.error("Failed to send share email:", error);
