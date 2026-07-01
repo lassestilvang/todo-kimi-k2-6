@@ -25,3 +25,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }
+
+// DELETE /api/filter-presets - Delete a filter preset
+export async function DELETE(request: NextRequest) {
+  const searchParams = request.nextUrl.searchParams;
+  const id = searchParams.get("id");
+  const userId = searchParams.get("userId");
+
+  if (!id || !userId) {
+    return NextResponse.json({ error: "id and userId are required" }, { status: 400 });
+  }
+
+  try {
+    await deleteFilterPreset(Number(id), Number(userId));
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to delete filter preset";
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
+}
