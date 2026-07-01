@@ -72,6 +72,44 @@ const migrations: Record<number, string> = {
     -- Add share_token column to task_shares
     ALTER TABLE task_shares ADD COLUMN share_token TEXT UNIQUE;
   `,
+  8: `
+    -- Add indexes for task queries
+    CREATE INDEX IF NOT EXISTS idx_tasks_completed_at ON tasks(completed_at);
+    CREATE INDEX IF NOT EXISTS idx_tasks_created_at ON tasks(created_at);
+    CREATE INDEX IF NOT EXISTS idx_tasks_date ON tasks(date);
+    CREATE INDEX IF NOT EXISTS idx_tasks_deadline ON tasks(deadline);
+    CREATE INDEX IF NOT EXISTS idx_tasks_priority ON tasks(priority);
+    CREATE INDEX IF NOT EXISTS idx_tasks_list_id ON tasks(list_id);
+  `,
+  9: `
+    -- Add workspace tables
+    CREATE TABLE IF NOT EXISTS workspaces (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      description TEXT,
+      created_by INTEGER REFERENCES users(id),
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS workspace_users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      workspace_id INTEGER NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      role TEXT NOT NULL CHECK(role IN ('owner', 'admin', 'member', 'viewer')) DEFAULT 'member',
+      joined_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(workspace_id, user_id)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_workspace_users_workspace ON workspace_users(workspace_id);
+    CREATE INDEX IF NOT EXISTS idx_workspace_users_user ON workspace_users(user_id);
+  `,
+  10: `
+    -- Add workspace_id to tasks and lists
+    ALTER TABLE tasks ADD COLUMN workspace_id INTEGER REFERENCES workspaces(id) ON DELETE SET NULL;
+    ALTER TABLE lists ADD COLUMN workspace_id INTEGER REFERENCES workspaces(id) ON DELETE SET NULL;
+    CREATE INDEX IF NOT EXISTS idx_tasks_workspace_id ON tasks(workspace_id);
+    CREATE INDEX IF NOT EXISTS idx_lists_workspace_id ON lists(workspace_id);
+  `,
 };
 
 export async function runMigrations(): Promise<void> {
