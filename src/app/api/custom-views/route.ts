@@ -1,5 +1,4 @@
-"use server";
-
+import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import type { CustomView, CreateCustomViewInput, SortField, SortDirection, ViewType } from "@/types";
 
@@ -17,13 +16,13 @@ interface CustomViewRow {
   created_at: string;
 }
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get("userId");
 
     if (!userId) {
-      return Response.json({ error: "userId is required" }, { status: 400 });
+      return NextResponse.json({ error: "userId is required" }, { status: 400 });
     }
 
     const db = getDb();
@@ -35,14 +34,14 @@ export async function GET(request: Request) {
         label_ids: row.label_ids ? JSON.parse(row.label_ids) : [],
       })) as CustomView[];
 
-    return Response.json(views);
+    return NextResponse.json(views);
   } catch (error) {
     console.error("Failed to fetch custom views:", error);
-    return Response.json([], { status: 500 });
+    return NextResponse.json([], { status: 500 });
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const input: CreateCustomViewInput & { userId: number } = body;
@@ -79,29 +78,29 @@ export async function POST(request: Request) {
       created_at: new Date().toISOString(),
     };
 
-    return Response.json(view);
+    return NextResponse.json(view);
   } catch (error) {
     console.error("Failed to create custom view:", error);
-    return Response.json({ error: "Failed to create custom view" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to create custom view" }, { status: 500 });
   }
 }
 
-export async function DELETE(request: Request) {
+export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
     const userId = searchParams.get("userId");
 
     if (!id || !userId) {
-      return Response.json({ error: "ID and userId are required" }, { status: 400 });
+      return NextResponse.json({ error: "ID and userId are required" }, { status: 400 });
     }
 
     const db = getDb();
     db.prepare("DELETE FROM custom_views WHERE id = ? AND user_id = ?").run(Number(id), Number(userId));
 
-    return Response.json({ success: true });
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Failed to delete custom view:", error);
-    return Response.json({ error: "Failed to delete custom view" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to delete custom view" }, { status: 500 });
   }
 }
