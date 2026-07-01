@@ -18,10 +18,10 @@ import {
   Settings,
   BarChart3,
   Bot,
-  CalendarPlus,
   Focus,
 } from "lucide-react";
 import { useTheme } from "next-themes";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,7 +45,7 @@ import {
   generateRecurringTasks,
 } from "@/lib/actions/tasks";
 import { toast } from "sonner";
-import { NotificationSettings } from "@/components/task/notification-settings";
+import { WorkspaceSelector } from "@/components/workspace/workspace-selector";
 
 interface AppSidebarProps {
   lists: List[];
@@ -56,6 +56,9 @@ interface AppSidebarProps {
   onViewChange: (view: string, listId?: number) => void;
   onRefresh: () => void;
   onSearch: (query: string) => void;
+  workspaces?: Array<{ id: number; name: string; description: string | null }>;
+  currentWorkspace?: { id: number; name: string; description: string | null } | null;
+  onWorkspaceChange?: (workspace: { id: number; name: string; description: string | null } | null) => void;
 }
 
 const views = [
@@ -63,13 +66,13 @@ const views = [
   { id: "next7", name: "Next 7 Days", icon: CalendarDays },
   { id: "upcoming", name: "Upcoming", icon: CalendarRange },
   { id: "kanban", name: "Kanban", icon: LayoutGrid },
-  { id: "all", name: "All", icon: LayoutGrid },
+  { id: "all", name: "All Tasks", icon: LayoutGrid },
   { id: "focus", name: "Focus Mode", icon: Focus },
   { id: "graph", name: "Dependencies", icon: LayoutGrid },
   { id: "matrix", name: "Priority Matrix", icon: LayoutGrid },
   { id: "gantt", name: "Gantt Chart", icon: BarChart3 },
   { id: "ai", name: "AI Assistant", icon: Bot },
-  { id: "calendar_sync", name: "Calendar Sync", icon: CalendarPlus },
+  { id: "calendar", name: "Calendar", icon: Calendar },
   { id: "analytics", name: "Analytics", icon: BarChart3 },
 ];
 
@@ -84,6 +87,7 @@ export function AppSidebar({
   onSearch,
 }: AppSidebarProps) {
   const { theme, setTheme } = useTheme();
+  const router = useRouter();
   const [searchOpen, setSearchOpen] = useState(false);
   const [newListOpen, setNewListOpen] = useState(false);
   const [newLabelOpen, setNewLabelOpen] = useState(false);
@@ -193,6 +197,15 @@ export function AppSidebar({
 
       <TooltipProvider delay={0}>
         <div className="flex h-full flex-col border-r bg-sidebar transition-transform duration-300 w-72">
+          {/* Workspace Selector */}
+          <div className="px-4 py-3 border-b">
+            <WorkspaceSelector
+              workspaces={workspaces || []}
+              currentWorkspace={currentWorkspace || null}
+              onWorkspaceChange={onWorkspaceChange || (() => {})}
+              onCreateWorkspace={() => {}}
+            />
+          </div>
           <div className="flex items-center justify-between px-4 py-3 border-b">
             <div className="flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-lg">
@@ -222,13 +235,15 @@ export function AppSidebar({
           </div>
 
           <div className="mt-auto pt-2">
-            <NotificationSettings
-              trigger={
-                <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Settings">
-                  <Settings className="h-4 w-4" />
-                </Button>
-              }
-            />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start gap-2 text-sm"
+              onClick={() => router.push("/settings")}
+            >
+              <Settings className="h-4 w-4" />
+              Settings
+            </Button>
           </div>
 
           <div className="px-3 pb-2">
