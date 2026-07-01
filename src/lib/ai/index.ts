@@ -148,4 +148,4 @@ export async function generateTasksFromNotes(
 }
 
 // Re-export types from providers
-export { type AIProvider } from "./providers";
+export { type AIProvider, getAIManager } from "./providers";
