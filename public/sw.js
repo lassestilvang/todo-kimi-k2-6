@@ -4,6 +4,7 @@
 const CACHE_NAME = "taskflow-v1";
 const urlsToCache = [
   "/",
+  "/offline.html",
   "/manifest.json",
   "/favicon.ico",
   "/icons/icon-16x16.png",
@@ -38,6 +39,27 @@ self.addEventListener("activate", (event) => {
 
 // Fetch event - serve from cache, fallback to network
 self.addEventListener("fetch", (event) => {
+  // API requests - network first, fallback to cache
+  if (event.request.url.includes("/api/")) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          // Cache successful API responses
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
+          return response;
+        })
+        .catch(() => {
+          // Return cached API response if available
+          return caches.match(event.request);
+        })
+    );
+    return;
+  }
+
+  // Static assets - cache first, fallback to network
   event.respondWith(
     caches.match(event.request).then((response) => {
       // Return cached response or fetch from network
@@ -92,3 +114,38 @@ function openDB() {
     };
   });
 }
+
+// Push notification handler
+self.addEventListener("push", (event) => {
+  const data = event.data?.json();
+
+  self.registration.showNotification(data?.title || "TaskFlow", {
+    body: data?.body || "You have a new notification",
+    icon: "/icons/icon-192x192.png",
+    badge: "/icons/icon-192x192.png",
+    data: {
+      url: data?.url || "/",
+    },
+  });
+});
+
+// Notification click handler
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+
+  event.waitUntil(
+    clients.matchAll({ type: "window" }).then((clientList) => {
+      const url = event.notification.data?.url || "/";
+
+      return clientList.forEach((client) => {
+        if (client.url === url && client.focus()) {
+          return client.focus();
+        }
+      });
+
+      if (clients.matchAll({ type: "window" })) {
+        return clients.openWindow(url);
+      }
+    })
+  );
+});
