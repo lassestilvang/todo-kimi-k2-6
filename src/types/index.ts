@@ -352,3 +352,27 @@ export interface UserSettings {
   created_at: string;
   updated_at: string;
 }
+
+// Workspace Types
+export interface Workspace {
+  id: number;
+  name: string;
+  description: string | null;
+  created_by: number | null;
+  created_at: string;
+}
+
+export interface WorkspaceUser {
+  id: number;
+  workspace_id: number;
+  user_id: number;
+  role: "owner" | "admin" | "member" | "viewer";
+  joined_at: string;
+}
+
+export interface CreateWorkspaceInput {
+  name: string;
+  description?: string;
+}
+
+export type WorkspaceRole = "owner" | "admin" | "member" | "viewer";
