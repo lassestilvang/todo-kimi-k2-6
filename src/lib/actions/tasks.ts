@@ -698,11 +698,59 @@ export async function generateRecurringTasks(): Promise<number> {
 // Task Dependencies (Blockers)
 // ============================================
 
+/**
+ * Check if adding a dependency would create a circular dependency
+ */
+async function wouldCreateCircularDependency(
+  taskId: number,
+  dependsOnTaskId: number,
+  db: ReturnType<typeof getDb>
+): Promise<boolean> {
+  // Cannot depend on itself
+  if (taskId === dependsOnTaskId) {
+    return true;
+  }
+
+  // Use recursive CTE to find all tasks that depend on dependsOnTaskId
+  // If taskId is in that set, adding the dependency would create a cycle
+  const result = db.prepare(`
+    WITH RECURSIVE dependent_tasks AS (
+      SELECT task_id FROM task_dependencies WHERE depends_on_task_id = ?
+      UNION ALL
+      SELECT td.task_id
+      FROM task_dependencies td
+      INNER JOIN dependent_tasks dt ON td.depends_on_task_id = dt.task_id
+    )
+    SELECT 1 FROM dependent_tasks WHERE task_id = ?
+  `).get(dependsOnTaskId, taskId);
+
+  return !!result;
+}
+
 export async function addTaskDependency(taskId: number, dependsOnTaskId: number): Promise<TaskDependency> {
   const db = getDb();
+
+  // Check for circular dependency
+  const isCircular = await wouldCreateCircularDependency(taskId, dependsOnTaskId, db);
+  if (isCircular) {
+    throw new Error("This dependency would create a circular reference");
+  }
+
+  // Check if dependency already exists
+  const existing = db.prepare(
+    "SELECT id FROM task_dependencies WHERE task_id = ? AND depends_on_task_id = ?"
+  ).get(taskId, dependsOnTaskId);
+
+  if (existing) {
+    throw new Error("Dependency already exists");
+  }
+
   const result = db
     .prepare("INSERT INTO task_dependencies (task_id, depends_on_task_id) VALUES (?, ?)")
     .run(taskId, dependsOnTaskId);
+
+  logTaskAction(taskId, "dependency_added", `Task now blocked by task ${dependsOnTaskId}`);
+
   return {
     id: Number(result.lastInsertRowid),
     task_id: taskId,
