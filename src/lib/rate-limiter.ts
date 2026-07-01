@@ -61,9 +61,8 @@ export const rateLimits = {
 
 // Middleware helper
 export function getClientKey(request: Request): string {
-  // Get IP from headers (X-Forwarded-For for proxied requests)
-  const headers = new Headers();
-  const ip = headers.get("x-forwarded-for") || "127.0.0.1";
-  const userId = headers.get("x-user-id") || "anonymous";
+  // Get IP from request headers (X-Forwarded-For for proxied requests)
+  const ip = request.headers.get("x-forwarded-for") || "127.0.0.1";
+  const userId = request.headers.get("x-user-id") || "anonymous";
   return `${ip}:${userId}`;
 }
