@@ -11,6 +11,8 @@ interface TaskRow {
   deadline: string | null;
   date: string | null;
   user_email: string;
+  priority?: string;
+  completed?: boolean;
 }
 
 /**
@@ -29,7 +31,35 @@ export async function POST(request: Request) {
       const user = db.prepare("SELECT email FROM users WHERE id = ?").get(userId) as { email: string } | null;
 
       if (task && user) {
-        await sendTaskReminderEmail(user.email, task as Task);
+        const taskWithRelations: Task = {
+          id: task.id ?? 0,
+          name: task.name ?? "Unnamed Task",
+          description: task.description ?? null,
+          notes: task.notes ?? null,
+          list_id: task.list_id ?? 1,
+          date: task.date ?? null,
+          deadline: task.deadline ?? null,
+          estimate: task.estimate ?? null,
+          actual_time: task.actual_time ?? null,
+          priority: task.priority ?? "none",
+          recurring: task.recurring ?? "none",
+          recurring_config: task.recurring_config ?? null,
+          completed: task.completed ?? false,
+          completed_at: task.completed_at ?? null,
+          created_at: task.created_at ?? "",
+          updated_at: task.updated_at ?? "",
+          sort_order: task.sort_order ?? 0,
+          labels: [],
+          subtasks: [],
+          reminders: [],
+          logs: [],
+          comments: [],
+          attachments: [],
+          blockers: [],
+          blocked_by: [],
+          time_entries: [],
+        };
+        await sendTaskReminderEmail(user.email, taskWithRelations);
       }
     }
 
@@ -38,7 +68,35 @@ export async function POST(request: Request) {
       const user = db.prepare("SELECT email FROM users WHERE id = ?").get(userId) as { email: string } | null;
 
       if (task && user) {
-        await sendDueSoonEmail(user.email, task as Task);
+        const taskWithRelations: Task = {
+          id: task.id ?? 0,
+          name: task.name ?? "Unnamed Task",
+          description: task.description ?? null,
+          notes: task.notes ?? null,
+          list_id: task.list_id ?? 1,
+          date: task.date ?? null,
+          deadline: task.deadline ?? null,
+          estimate: task.estimate ?? null,
+          actual_time: task.actual_time ?? null,
+          priority: task.priority ?? "none",
+          recurring: task.recurring ?? "none",
+          recurring_config: task.recurring_config ?? null,
+          completed: task.completed ?? false,
+          completed_at: task.completed_at ?? null,
+          created_at: task.created_at ?? "",
+          updated_at: task.updated_at ?? "",
+          sort_order: task.sort_order ?? 0,
+          labels: [],
+          subtasks: [],
+          reminders: [],
+          logs: [],
+          comments: [],
+          attachments: [],
+          blockers: [],
+          blocked_by: [],
+          time_entries: [],
+        };
+        await sendDueSoonEmail(user.email, taskWithRelations);
       }
     }
 
@@ -81,11 +139,11 @@ export async function GET() {
       const taskData: Task = {
         id: task.id,
         name: task.name,
-        description: task.description,
+        description: task.description ?? null,
         notes: null,
         list_id: 1,
-        date: task.date,
-        deadline: task.deadline,
+        date: task.date ?? null,
+        deadline: task.deadline ?? null,
         estimate: null,
         actual_time: null,
         priority: "medium",
@@ -96,6 +154,15 @@ export async function GET() {
         created_at: "",
         updated_at: "",
         sort_order: 0,
+        labels: [],
+        subtasks: [],
+        reminders: [],
+        logs: [],
+        comments: [],
+        attachments: [],
+        blockers: [],
+        blocked_by: [],
+        time_entries: [],
       };
       await sendDueSoonEmail(task.user_email, taskData);
       sentCount++;
