@@ -342,29 +342,65 @@ export class KeywordParser implements AIProvider {
     const suggestions: string[] = [];
     const trends: string[] = [];
 
-    // Productivity tips
-    if (completionRate < 50) {
+    // Productivity tips based on completion rate
+    if (completionRate < 30) {
+      tips.push("Your completion rate is quite low. Try breaking large tasks into smaller, actionable steps.");
+    } else if (completionRate < 50) {
       tips.push("Focus on completing high-priority tasks first to improve your completion rate.");
     } else if (completionRate >= 80) {
       tips.push("Great job! Your completion rate is excellent. Consider taking on more challenging tasks.");
+    } else if (completionRate >= 60) {
+      tips.push("Good progress! Keep focusing on consistency to reach the next level.");
     }
 
+    // Priority-based suggestions
     const criticalTasks = tasks.filter(t => t.priority === "critical" && !t.completed);
+    const highPriorityTasks = tasks.filter(t => t.priority === "high" && !t.completed);
+
     if (criticalTasks.length > 3) {
       suggestions.push(`You have ${criticalTasks.length} critical tasks pending. Consider breaking them into smaller steps.`);
+    } else if (criticalTasks.length === 1) {
+      suggestions.push(`Focus on completing "${criticalTasks[0].name}" - your only critical task.`);
     }
 
+    if (highPriorityTasks.length > 5) {
+      suggestions.push(`${highPriorityTasks.length} high-priority tasks could be rescheduled if not urgent.`);
+    }
+
+    // Overdue analysis
     const overdueTasks = tasks.filter(t => t.deadline && new Date(t.deadline) < now && !t.completed);
     if (overdueTasks.length > 0) {
+      const oldestOverdue = overdueTasks.reduce((oldest, t) =>
+        t.deadline && (!oldest.deadline || new Date(t.deadline) < new Date(oldest.deadline)) ? t : oldest,
+        { deadline: null as string | null } as typeof tasks[0]
+      );
       suggestions.push(`${overdueTasks.length} task(s) are overdue. Review and update deadlines or prioritize completion.`);
+      if (oldestOverdue.deadline) {
+        const daysOverdue = Math.floor((now.getTime() - new Date(oldestOverdue.deadline).getTime()) / (1000 * 60 * 60 * 24));
+        suggestions.push(`Your oldest overdue task "${oldestOverdue.name}" has been pending for ${daysOverdue} days.`);
+      }
+    }
+
+    // Deadline proximity suggestions
+    const thisWeek = tasks.filter(t => t.deadline && new Date(t.deadline) >= now && new Date(t.deadline) <= new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000) && !t.completed);
+    if (thisWeek.length > 0) {
+      tips.push(`${thisWeek.length} task(s) due this week. Consider blocking dedicated time for them.`);
     }
 
     // Trends analysis
     trends.push(`Current completion rate: ${completionRate}%`);
-    trends.push(`${criticalTasks.length} high-priority tasks in progress`);
+    trends.push(`${criticalTasks.length} critical, ${highPriorityTasks.length} high-priority tasks in progress`);
+    trends.push(`${overdueTasks.length} overdue, ${thisWeek.length} due this week`);
 
-    const thisWeek = tasks.filter(t => t.date && t.date >= now.toISOString().split("T")[0]);
-    trends.push(`${thisWeek.length} tasks scheduled for this week`);
+    // Productivity insights
+    const avgCompletion = tasks.length > 0 ? completed / tasks.length : 0;
+    if (avgCompletion > 0.8) {
+      trends.push("Excellent productivity - consider setting more ambitious goals");
+    } else if (avgCompletion > 0.5) {
+      trends.push("Steady progress - focus on consistency");
+    } else {
+      trends.push("Opportunity to improve task completion habits");
+    }
 
     return { tips, suggestions, trends };
   }
