@@ -23,8 +23,9 @@ import { KeyboardShortcuts } from "@/components/task/keyboard-shortcuts";
 import { TaskAnalytics } from "@/components/task/task-analytics";
 import { MobileSidebar } from "@/components/task/mobile-sidebar";
 import { LoginRequired } from "@/components/task/login-required";
+import { GoalsDashboard } from "@/components/task/goals-dashboard";
 import { useTasks } from "@/hooks/use-tasks";
-import type { TaskWithRelations, FilterPreset, Template } from "@/types";
+import type { TaskWithRelations, FilterPreset, Template, Goal } from "@/types";
 import { toast } from "sonner";
 
 const viewTitles: Record<string, string> = {
@@ -41,11 +42,13 @@ const viewTitles: Record<string, string> = {
   gantt: "Gantt Chart",
   ai: "AI Assistant",
   analytics: "Analytics",
+  goals: "Goals & Habits",
 };
 
 export default function Home() {
   const { data: session, status } = useSession();
   const [templates, setTemplates] = useState<Template[]>([]);
+  const [goals, setGoals] = useState<Goal[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<TaskWithRelations | undefined>();
   const [isLoading, setIsLoading] = useState(true);
@@ -122,18 +125,20 @@ export default function Home() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [listsData, labelsData, , allTasks, templatesData, generatedCount] = await Promise.all([
+      const [listsData, labelsData, , allTasks, templatesData, generatedCount, goalsData] = await Promise.all([
         (await import("@/lib/actions/tasks")).getLists(),
         (await import("@/lib/actions/tasks")).getLabels(),
         (await import("@/lib/actions/tasks")).getOverdueCount(),
         (await import("@/lib/actions/tasks")).getTasks({ includeCompleted: true }),
         (await import("@/lib/actions/tasks")).getTemplates(),
         (await import("@/lib/actions/tasks")).generateRecurringTasks(),
+        (await import("@/lib/actions/goals")).getGoals(),
       ]);
       setLists(listsData);
       setLabels(labelsData);
       setTasks(allTasks);
       setTemplates(templatesData);
+      setGoals(goalsData);
       if (generatedCount > 0) {
         toast.success(`Generated ${generatedCount} recurring task(s)`);
       }
@@ -237,6 +242,11 @@ export default function Home() {
       if (e.key === "a" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         handleViewChange("ai");
+      }
+
+      if (e.key === "g" && e.shiftKey && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        handleViewChange("goals");
       }
 
       // Assignment shortcut (Shift+A) - only when modal is open
@@ -363,6 +373,36 @@ export default function Home() {
           tasks={tasks}
           completedTasks={completedTasks}
         />
+      );
+    }
+
+    if (currentView === "goals") {
+      return (
+        <div className="p-6">
+          <GoalsDashboard
+            goals={goals}
+            onUpdateProgress={(id, increment) => {
+              (async () => {
+                try {
+                  await (await import("@/lib/actions/goals")).updateGoalProgress(id, increment);
+                  loadData();
+                } catch (error) {
+                  toast.error("Failed to update goal progress");
+                }
+              })();
+            }}
+            onResetGoal={(id) => {
+              (async () => {
+                try {
+                  await (await import("@/lib/actions/goals")).resetGoal(id);
+                  loadData();
+                } catch (error) {
+                  toast.error("Failed to reset goal");
+                }
+              })();
+            }}
+          />
+        </div>
       );
     }
 
