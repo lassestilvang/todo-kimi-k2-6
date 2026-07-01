@@ -10,6 +10,7 @@ import type {
   TaskDependency,
   TimeEntry,
   User,
+  RecurringException,
 } from "@/types";
 
 interface LabelWithTaskId extends Label {
@@ -42,6 +43,7 @@ export async function getTaskRelations(
   blocked_by: TaskDependency[];
   assignee: User | undefined;
   time_entries: TimeEntry[];
+  recurring_exceptions: RecurringException[];
 }>> {
   if (taskIds.length === 0) return {};
 
@@ -56,6 +58,7 @@ export async function getTaskRelations(
     assigneesResult,
     attachmentsResult,
     timeEntriesResult,
+    recurringExceptionsResult,
   ] = await Promise.all([
     db
       .prepare(
@@ -89,6 +92,7 @@ export async function getTaskRelations(
       .all(...taskIds) as AssigneeWithTask[],
     db.prepare(`SELECT * FROM task_attachments WHERE task_id IN (${taskIds.map(() => "?").join(",")}) ORDER BY task_id, created_at DESC`).all(...taskIds) as TaskAttachment[],
     db.prepare(`SELECT * FROM time_entries WHERE task_id IN (${taskIds.map(() => "?").join(",")}) ORDER BY task_id, created_at ASC`).all(...taskIds) as TimeEntry[],
+    db.prepare(`SELECT * FROM recurring_exceptions WHERE task_id IN (${taskIds.map(() => "?").join(",")}) ORDER BY task_id, exception_date`).all(...taskIds) as RecurringException[],
   ]);
 
   // Group relations by task_id
@@ -157,6 +161,12 @@ export async function getTaskRelations(
     return acc;
   }, {} as Record<number, TimeEntry[]>);
 
+  const exceptionsByTask = (recurringExceptionsResult || []).reduce((acc, exc) => {
+    if (!acc[exc.task_id]) acc[exc.task_id] = [];
+    acc[exc.task_id].push(exc);
+    return acc;
+  }, {} as Record<number, RecurringException[]>);
+
   // Build the final result
   const result: Record<number, {
     labels: Label[];
@@ -169,6 +179,7 @@ export async function getTaskRelations(
     blocked_by: TaskDependency[];
     assignee: User | undefined;
     time_entries: TimeEntry[];
+    recurring_exceptions: RecurringException[];
   }> = {};
 
   for (const taskId of taskIds) {
@@ -183,6 +194,7 @@ export async function getTaskRelations(
       blocked_by: blockedByTask[taskId] || [],
       assignee: assigneesByTask[taskId]?.[0],
       time_entries: timeEntriesByTask[taskId] || [],
+      recurring_exceptions: exceptionsByTask[taskId] ?? [],
     };
   }
 
