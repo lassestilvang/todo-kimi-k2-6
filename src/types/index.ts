@@ -5,6 +5,14 @@ export type FilterPreset = "needs_attention" | "this_week" | "with_labels" | "wi
 export type SortField = "name" | "date" | "deadline" | "priority" | "created_at" | "updated_at";
 export type SortDirection = "asc" | "desc";
 
+// Recurring task exceptions
+export interface RecurringException {
+  id: number;
+  task_id: number;
+  exception_date: string;
+  created_at: string;
+}
+
 export interface SavedFilterPreset {
   id: number;
   user_id: number;
@@ -168,6 +176,7 @@ export interface Task {
   assignee?: User;
   created_by?: number | null;
   created_by_user?: User;
+  recurring_exceptions?: RecurringException[];
 }
 
 export interface TaskWithRelations extends Task {
@@ -178,6 +187,7 @@ export interface TaskWithRelations extends Task {
   comments: TaskComment[];
   attachments: TaskAttachment[];
   time_entries: TimeEntry[];
+  recurring_exceptions: RecurringException[];
 }
 
 export interface CreateTaskInput {
@@ -195,6 +205,7 @@ export interface CreateTaskInput {
   subtasks?: string[];
   reminders?: string[];
   blocker_ids?: number[];
+  recurring_exception_dates?: string[];
 }
 
 export interface UpdateTaskInput extends Partial<Omit<CreateTaskInput, 'completed'>> {
@@ -265,6 +276,7 @@ export interface TaskComment {
 
 export interface CreateCommentInput {
   content: string;
+  mentions?: number[];
 }
 
 export interface BulkAction {
@@ -323,6 +335,25 @@ export interface Goal {
   created_at: string;
 }
 
+export interface GoalMilestone {
+  id: number;
+  goal_id: number;
+  name: string;
+  target_count: number;
+  current_count: number;
+  due_date: string | null;
+  completed: boolean;
+  created_at: string;
+}
+
+export interface TaskVote {
+  id: number;
+  task_id: number;
+  user_id: number;
+  value: -1 | 1;
+  created_at: string;
+}
+
 export interface CreateGoalInput {
   name: string;
   description?: string;
@@ -376,3 +407,14 @@ export interface CreateWorkspaceInput {
 }
 
 export type WorkspaceRole = "owner" | "admin" | "member" | "viewer";
+
+// Custom View Sharing Types
+export interface CustomViewShare {
+  id: number;
+  view_id: number;
+  shared_by: number;
+  shared_with: number | null;
+  share_token: string | null;
+  permission: "view" | "edit";
+  created_at: string;
+}
