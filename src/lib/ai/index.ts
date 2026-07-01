@@ -149,3 +149,12 @@ export async function generateTasksFromNotes(
 
 // Re-export types from providers
 export { type AIProvider, getAIManager } from "./providers";
+
+// Re-export workload balancing
+export {
+  generateWorkloadSuggestions,
+  calculateWorkloads,
+  getUserWorkloadSummary,
+  type UserWorkload,
+  type WorkloadSuggestion,
+} from "./workload";
