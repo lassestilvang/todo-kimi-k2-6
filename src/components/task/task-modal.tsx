@@ -44,6 +44,8 @@ import { TaskSchedule } from "./modal/task-schedule";
 import { TaskLabels } from "./modal/task-labels";
 import { TaskSubtasks } from "./modal/task-subtasks";
 import { TaskDependencies } from "./modal/task-dependencies";
+import { TaskCollaboration } from "./modal/task-collaboration";
+import { TaskAttachments } from "./modal/task-attachments";
 import { TimeReport } from "./time-report";
 import { PomodoroTimer } from "./pomodoro-timer";
 import { StreakCalendar } from "./streak-calendar";
