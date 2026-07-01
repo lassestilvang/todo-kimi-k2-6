@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getTaskComments, addTaskComment } from "@/lib/actions/tasks";
+import { handleApiError } from "@/lib/middleware/error-handler";
 
 // GET /api/task-comments?taskId=1 - Get all comments for a task
 export async function GET(request: NextRequest) {
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest) {
     const comment = await addTaskComment(body.taskId, body);
     return NextResponse.json({ comment }, { status: 201 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to add comment";
-    return NextResponse.json({ error: message }, { status: 400 });
+    const { message, status } = handleApiError(error);
+    return NextResponse.json({ error: message }, { status });
   }
 }
