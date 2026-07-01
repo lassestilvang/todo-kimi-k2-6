@@ -71,11 +71,13 @@ export function useTasks({
     // Dynamic import for server-side rendering compatibility
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const Fuse = require("fuse.js").default;
-    return new Fuse([], {
-      keys: ["name", "description"],
+    return new Fuse(tasks, {
+      keys: ["name", "description", "notes"],
       threshold: 0.4,
+      minMatchCharLength: 2,
+      shouldSort: true,
     });
-  }, []);
+  }, [tasks]);
 
   // Calculate visible tasks with optimized filtering
   const visibleTasks = useMemo(() => {
