@@ -3,6 +3,9 @@ import {
   calculateWorkloads,
   generateWorkloadSuggestions,
   getUserWorkloadSummary,
+  categorizeWorkload,
+  calculateBalanceScore,
+  calculateWorkloadScore,
   type UserWorkload,
 } from "@/lib/ai/workload";
 
@@ -147,6 +150,54 @@ describe("workload balancing", () => {
 
       const suggestions = await generateWorkloadSuggestions(tasks, mockUsers);
       expect(suggestions.length).toBe(0);
+    });
+  });
+
+  describe("categorizeWorkload", () => {
+    it("should return underloaded for low workload", () => {
+      expect(categorizeWorkload(10, 50)).toBe("underloaded");
+    });
+
+    it("should return overloaded for high workload", () => {
+      expect(categorizeWorkload(80, 50)).toBe("overloaded");
+    });
+
+    it("should return balanced for average workload", () => {
+      expect(categorizeWorkload(50, 50)).toBe("balanced");
+    });
+
+    it("should handle zero average workload", () => {
+      expect(categorizeWorkload(10, 0)).toBe("balanced");
+    });
+  });
+
+  describe("calculateBalanceScore", () => {
+    it("should return 100 for perfect balance", () => {
+      expect(calculateBalanceScore({ workloadScore: 50 } as any, 50)).toBe(100);
+    });
+
+    it("should return 0 for extreme imbalance", () => {
+      expect(calculateBalanceScore({ workloadScore: 0 } as any, 100)).toBe(0);
+    });
+
+    it("should handle zero average", () => {
+      // When avg is 0, the formula uses || 1, so result depends on the score
+      const result = calculateBalanceScore({ workloadScore: 10 } as any, 0);
+      expect(result).toBeGreaterThanOrEqual(0);
+      expect(result).toBeLessThanOrEqual(100);
+    });
+  });
+
+  describe("calculateWorkloadScore", () => {
+    it("should calculate correct workload score", () => {
+      const score = calculateWorkloadScore(10, 2, 3, 25);
+      // 10*1 + 2*3 + 3*2 + 25/60 = 10 + 6 + 6 + 0.42 = 22.42
+      expect(score).toBeCloseTo(22.42, 1);
+    });
+
+    it("should handle zero values", () => {
+      const score = calculateWorkloadScore(0, 0, 0, 0);
+      expect(score).toBe(0);
     });
   });
 });
