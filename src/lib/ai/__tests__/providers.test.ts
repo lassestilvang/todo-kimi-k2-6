@@ -466,10 +466,13 @@ describe('OpenAIProvider', () => {
   });
 
   describe('generateInsights', () => {
-    it('throws error when API key not configured', async () => {
+    it('returns empty arrays when API key not configured', async () => {
       delete process.env.OPENAI_API_KEY;
       const newProvider = new OpenAIProvider();
-      await expect(newProvider.generateInsights([])).rejects.toThrow('OPENAI_API_KEY not configured');
+      const result = await newProvider.generateInsights([]);
+      expect(result.tips).toEqual([]);
+      expect(result.suggestions).toEqual([]);
+      expect(result.trends).toEqual([]);
     });
 
     it('returns empty arrays on network error', async () => {
@@ -542,10 +545,13 @@ describe('ClaudeProvider', () => {
   });
 
   describe('generateInsights', () => {
-    it('throws error when API key not configured', async () => {
+    it('returns empty arrays when API key not configured', async () => {
       delete process.env.ANTHROPIC_API_KEY;
       const newProvider = new ClaudeProvider();
-      await expect(newProvider.generateInsights([])).rejects.toThrow('ANTHROPIC_API_KEY not configured');
+      const result = await newProvider.generateInsights([]);
+      expect(result.tips).toEqual([]);
+      expect(result.suggestions).toEqual([]);
+      expect(result.trends).toEqual([]);
     });
 
     it('returns empty arrays on network error', async () => {
