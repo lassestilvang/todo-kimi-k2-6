@@ -49,20 +49,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    let result: boolean;
-
     switch (type) {
       case "reminder":
-        result = await sendTaskReminderEmail(to, task);
+        await sendTaskReminderEmail(to, task);
         break;
       case "due_soon":
-        result = await sendDueSoonEmail(to, task);
+        await sendDueSoonEmail(to, task);
         break;
       default:
         return NextResponse.json({ error: "Invalid email type" }, { status: 400 });
     }
 
-    return NextResponse.json({ success: result });
+    return NextResponse.json({ success: true });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to send email";
     return NextResponse.json({ error: message }, { status: 500 });
