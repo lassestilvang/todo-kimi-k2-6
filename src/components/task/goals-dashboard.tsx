@@ -1,15 +1,15 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Target, TrendingUp, Calendar, Award, BarChart3, PieChart, Activity, ChevronRight } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Target, Award, BarChart3, Activity, ChevronRight } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import type { Goal, GoalProgress } from "@/types";
-import { format, subDays, startOfDay, endOfDay } from "date-fns";
+import type { Goal } from "@/types";
+import { format } from "date-fns";
 
 interface GoalsDashboardProps {
   goals: Goal[];
@@ -42,9 +42,6 @@ export function GoalsDashboard({ goals, onUpdateProgress, onResetGoal }: GoalsDa
 
   // Get period-specific goals
   const periodGoals = useMemo(() => {
-    const now = new Date();
-    const today = startOfDay(now);
-
     const daily = goals.filter(g => g.period === "daily");
     const weekly = goals.filter(g => g.period === "weekly");
     const monthly = goals.filter(g => g.period === "monthly");
