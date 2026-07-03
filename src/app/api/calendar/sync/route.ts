@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getTasks, getCalendarSync } from "@/lib/actions/tasks";
+import { getTasks } from "@/lib/actions";
+import { getCalendarSync } from "@/lib/actions/calendar";
 import { syncTasksToCalendar, getAuthUrl } from "@/lib/calendar";
 import type { Task } from "@/types";
 
