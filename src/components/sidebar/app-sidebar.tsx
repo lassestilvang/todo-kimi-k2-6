@@ -36,14 +36,14 @@ import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import type { List, Label as LabelType } from "@/types";
+import type { List, Label as LabelType, Workspace } from "@/types";
 import {
   createList,
   deleteList,
   createLabel,
   deleteLabel,
   generateRecurringTasks,
-} from "@/lib/actions/tasks";
+} from "@/lib/actions";
 import { toast } from "sonner";
 import { WorkspaceSelector } from "@/components/workspace/workspace-selector";
 
@@ -51,14 +51,14 @@ interface AppSidebarProps {
   lists: List[];
   labels: LabelType[];
   currentView: string;
-  currentListId?: number;
+  currentListId?: number | undefined;
   overdueCount: number;
-  onViewChange: (view: string, listId?: number) => void;
+  onViewChange: (view: string, listId?: number | undefined) => void;
   onRefresh: () => void;
   onSearch: (query: string) => void;
-  workspaces?: Array<{ id: number; name: string; description: string | null }>;
-  currentWorkspace?: { id: number; name: string; description: string | null } | null;
-  onWorkspaceChange?: (workspace: { id: number; name: string; description: string | null } | null) => void;
+  workspaces?: Workspace[];
+  currentWorkspace?: Workspace | null | undefined;
+  onWorkspaceChange?: ((workspace: Workspace | null) => void) | undefined;
 }
 
 const views = [
@@ -85,6 +85,9 @@ export function AppSidebar({
   onViewChange,
   onRefresh,
   onSearch,
+  workspaces,
+  currentWorkspace,
+  onWorkspaceChange,
 }: AppSidebarProps) {
   const { theme, setTheme } = useTheme();
   const router = useRouter();
