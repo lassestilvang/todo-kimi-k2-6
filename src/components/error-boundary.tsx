@@ -1,12 +1,16 @@
 "use client";
 
 import { Component, type ErrorInfo, type ReactNode } from "react";
-import { AlertCircle, RefreshCw, Bug } from "lucide-react";
+import { RefreshCw, Bug } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { logger } from "@/lib/logger";
 
 interface Props {
+  /** Child components to render */
   children: ReactNode;
+  /** Custom fallback UI when an error occurs */
   fallback?: ReactNode;
+  /** Callback fired when the error boundary resets */
   onReset?: () => void;
 }
 
@@ -15,6 +19,20 @@ interface State {
   error: Error | null;
 }
 
+/**
+ * React Error Boundary component for catching JavaScript errors anywhere in the child component tree.
+ * Logs errors to the logger and provides a user-friendly error UI.
+ *
+ * @example
+ * <ErrorBoundary>
+ *   <App />
+ * </ErrorBoundary>
+ *
+ * @example
+ * <ErrorBoundary fallback={<CustomErrorUI />}>
+ *   <App />
+ * </ErrorBoundary>
+ */
 export class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
@@ -26,9 +44,15 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("Error caught by boundary:", error, errorInfo);
+    // Log error to structured logger
+    logger.error("Error caught by boundary", {
+      errorName: error.name,
+      errorMessage: error.message,
+      componentStack: errorInfo.componentStack,
+    });
+
     // In production, send to error tracking service
-    if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
+    if (process.env["NEXT_PUBLIC_SENTRY_DSN"]) {
       // Sentry.captureException(error, { contexts: { react: errorInfo } });
     }
   }
