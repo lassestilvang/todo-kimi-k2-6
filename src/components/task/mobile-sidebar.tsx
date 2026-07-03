@@ -31,31 +31,16 @@ import {
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import type { List as ListType, Label as LabelType } from "@/types";
+import type { List as ListType, Label as LabelType, Workspace } from "@/types";
 import {
   createList,
   deleteList,
   createLabel,
   deleteLabel,
   generateRecurringTasks,
-} from "@/lib/actions/tasks";
+} from "@/lib/actions";
 import { toast } from "sonner";
 import { WorkspaceSelector } from "@/components/workspace/workspace-selector";
-
-interface MobileSidebarProps {
-  lists: ListType[];
-  labels: LabelType[];
-  currentView: string;
-  currentListId?: number;
-  overdueCount: number;
-  onViewChange: (view: string, listId?: number) => void;
-  onRefresh: () => void;
-  onSearch: (query: string) => void;
-  onNewTask: () => void;
-  workspaces?: Array<{ id: number; name: string; description: string | null }>;
-  currentWorkspace?: { id: number; name: string; description: string | null } | null;
-  onWorkspaceChange?: (workspace: { id: number; name: string; description: string | null } | null) => void;
-}
 
 const views = [
   { id: "today", name: "Today", icon: Calendar },
