@@ -1,10 +1,10 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { NextRequest } from "next/server";
 
 // Mock the database
 vi.mock("@/lib/db", () => ({
   getDb: () => ({
-    prepare: (sql: string) => ({
+    prepare: (_sql: string) => ({
       all: () => [],
       get: () => undefined,
       run: () => ({ lastInsertRowid: 1 }),
