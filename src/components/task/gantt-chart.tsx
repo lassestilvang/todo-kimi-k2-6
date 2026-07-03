@@ -1,10 +1,9 @@
 "use client";
 
 import { useMemo } from "react";
-import { format, parseISO, addDays, startOfWeek, endOfWeek, eachDayOfInterval } from "date-fns";
-import { BarChart3, Calendar, Clock, Link, Unlink } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BarChart3 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { format, parseISO, addDays, startOfWeek, endOfWeek, eachDayOfInterval } from "date-fns";
 import type { TaskWithRelations } from "@/types";
 
 interface GanttChartProps {
@@ -93,9 +92,9 @@ export function GanttChart({ tasks, onTaskClick }: GanttChartProps) {
     }
   };
 
-  // Calculate dependency lines for visualization
-  const dependencyLines = useMemo(() => {
-    const lines: Array<{ from: { x: number; y: number }; to: { x: number; y: number }; taskId: number }> = [];
+  // Calculate dependency lines for visualization (placeholder for future use)
+  // const dependencyLines = useMemo(() => {
+  //   const lines: Array<{ from: { x: number; y: number }; to: { x: number; y: number }; taskId: number }> = [];
 
     ganttTasks.forEach((task) => {
       if (task.blockers && task.blockers.length > 0) {
