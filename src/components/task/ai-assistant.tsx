@@ -1,12 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Bot, Send, Sparkles, Lightbulb, Clock, Target, Copy, Check, Calendar, List as ListIcon, Mic, MicOff } from "lucide-react";
+import { Bot, Send, Sparkles, Clock, Target, Copy, Check, List as ListIcon, Mic, MicOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type { TaskWithRelations, List } from "@/types";
@@ -41,9 +39,8 @@ export function AIAssistant({ tasks, lists, onAddTask, className }: AIAssistantP
   const [isLoading, setIsLoading] = useState(false);
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const [insights, setInsights] = useState<{ tips: string[]; suggestions: string[]; trends: string[]; provider: string } | null>(null);
-  const [showSuggestions, setShowSuggestions] = useState(true);
+  const [showSuggestions, _setShowSuggestions] = useState(true);
   const [aiStatus, setAiStatus] = useState<{ openai: boolean; anthropic: boolean; activeProvider: string } | null>(null);
-  const [isTyping, setIsTyping] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
@@ -95,23 +92,25 @@ export function AIAssistant({ tasks, lists, onAddTask, className }: AIAssistantP
 
     // Suggest tasks for today based on incomplete tasks
     const incompleteToday = tasks.filter(t => t.date === today && !t.completed);
-    if (incompleteToday.length > 0) {
+    const firstIncompleteTask = incompleteToday[0];
+    if (firstIncompleteTask) {
       suggestions.push({
         title: "Continue task",
         description: `Pick up where you left off`,
         icon: <Clock className="h-3.5 w-3.5" />,
-        prompt: `Continue working on "${incompleteToday[0].name}"`,
+        prompt: `Continue working on "${firstIncompleteTask.name}"`,
       });
     }
 
     // Suggest based on priority
     const criticalTasks = tasks.filter(t => t.priority === "critical" && !t.completed);
-    if (criticalTasks.length > 0) {
+    const firstCriticalTask = criticalTasks[0];
+    if (firstCriticalTask) {
       suggestions.push({
         title: "Critical task",
         description: `${criticalTasks.length} critical tasks need attention`,
         icon: <Target className="h-3.5 w-3.5" />,
-        prompt: `Focus on "${criticalTasks[0].name}" - it's marked as critical`,
+        prompt: `Focus on "${firstCriticalTask.name}" - it's marked as critical`,
       });
     }
 
@@ -261,23 +260,6 @@ export function AIAssistant({ tasks, lists, onAddTask, className }: AIAssistantP
     }
   };
 
-  const handleAcceptTask = (parsedTask: any) => {
-    if (!parsedTask?.name) return;
-
-    onAddTask({
-      name: parsedTask.name,
-      description: parsedTask.description,
-      priority: parsedTask.priority || "none",
-      date: parsedTask.suggested_date,
-      deadline: parsedTask.deadline,
-      recurring: parsedTask.recurring,
-      list_id: parsedTask.list_id,
-    });
-
-    toast.success(`Task "${parsedTask.name}" added`);
-    setMessages((prev) => prev.slice(0, -1)); // Remove the AI message
-  };
-
   const handleCopyMessage = (content: string, id: number) => {
     navigator.clipboard.writeText(content);
     setCopiedId(id);
@@ -320,9 +302,12 @@ export function AIAssistant({ tasks, lists, onAddTask, className }: AIAssistantP
   }, [smartSuggestions]);
 
   // Generate task suggestions based on patterns
-  const taskSuggestions = useMemo(() => {
+  const formatTime = (date: Date) => {
+  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+};
+
+const taskSuggestions = useMemo(() => {
     const now = new Date();
-    const today = now.toISOString().split("T")[0];
     const suggestions: string[] = [];
 
     // Suggest reviewing overdue tasks
@@ -347,10 +332,6 @@ export function AIAssistant({ tasks, lists, onAddTask, className }: AIAssistantP
 
     return suggestions.slice(0, 3);
   }, [tasks, lists]);
-
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  };
 
   // Generate tasks from notes/bullet points
   const [notesInput, setNotesInput] = useState("");
