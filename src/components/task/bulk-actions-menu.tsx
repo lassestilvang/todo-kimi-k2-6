@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { Move, Tag, Trash2, TrendingUp, ChevronDown, Plus } from "lucide-react";
+import { Move, Tag, Trash2, TrendingUp, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -11,7 +11,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 
