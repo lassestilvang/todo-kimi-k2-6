@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Plus, BarChart3, WifiOff } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useSession } from "next-auth/react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { AppSidebar } from "@/components/sidebar/app-sidebar";
 import { TaskList } from "@/components/task/task-list";
@@ -15,40 +16,39 @@ import { GanttChart } from "@/components/task/gantt-chart";
 import { EisenhowerMatrix } from "@/components/task/eisenhower-matrix";
 import { KanbanBoard } from "@/components/task/kanban-board";
 import { FocusMode } from "@/components/task/focus-mode";
-import { NotificationProvider } from "@/components/task/notification-provider";
 import { ImportExport } from "@/components/task/import-export";
 import { CalendarSyncSettings } from "@/components/task/calendar-sync-settings";
 import { PwaInstallPrompt } from "@/components/task/pwa-install-prompt";
-import { AIAssistant } from "@/components/task/ai-assistant";
 import { KeyboardShortcuts } from "@/components/task/keyboard-shortcuts";
 import { TaskAnalytics } from "@/components/task/task-analytics";
 import { MobileSidebar } from "@/components/task/mobile-sidebar";
-import { LoginRequired } from "@/components/task/login-required";
 import { GoalsDashboard } from "@/components/task/goals-dashboard";
-import { WorkspaceSelector, CreateWorkspaceDialog } from "@/components/workspace";
 import { useTasks } from "@/hooks/use-tasks";
 import type { TaskWithRelations, FilterPreset, Template, Goal, Workspace } from "@/types";
 import { toast } from "sonner";
 
-const viewTitles: Record<string, string> = {
-  today: "Today",
-  next7: "Next 7 Days",
-  upcoming: "Upcoming",
-  all: "All Tasks",
-  blocked: "Blocked Tasks",
-  calendar_sync: "Calendar Sync",
-  calendar: "Calendar",
-  graph: "Dependency Graph",
-  matrix: "Eisenhower Matrix",
-  kanban: "Kanban Board",
-  gantt: "Gantt Chart",
-  ai: "AI Assistant",
-  analytics: "Analytics",
-  goals: "Goals & Habits",
-};
-
 export default function Home() {
-  const { data: session, status } = useSession();
+  const { status } = useSession();
+  const tNav = useTranslations("navigation");
+  const tPresets = useTranslations("filterPresets");
+  const tTasks = useTranslations("tasks");
+
+  const viewTitles: Record<string, string> = {
+    today: tNav("today"),
+    next7: tNav("next7Days"),
+    upcoming: tNav("upcoming"),
+    all: "All Tasks",
+    blocked: tNav("blocked"),
+    calendar_sync: tNav("calendarSync"),
+    calendar: tNav("calendar"),
+    graph: tNav("graph"),
+    matrix: tNav("matrix"),
+    kanban: tNav("kanban"),
+    gantt: tNav("gantt"),
+    ai: tNav("ai"),
+    analytics: tNav("analytics"),
+    goals: tNav("goals"),
+  };
   const [templates, setTemplates] = useState<Template[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
@@ -58,7 +58,6 @@ export default function Home() {
   const [isOnline, setIsOnline] = useState(true);
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [currentWorkspace, setCurrentWorkspace] = useState<Workspace | null>(null);
-  const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
 
   const {
     tasks,
@@ -80,12 +79,10 @@ export default function Home() {
     setLists,
     setLabels,
     setCurrentView,
-    setCurrentListId,
     setSearchQuery,
     setCurrentFilterPreset,
     handleViewChange,
     handleSearch,
-    handleFilterPresetChange,
     handleSort,
     handleFilterList,
     handleFilterLabel,
@@ -97,9 +94,9 @@ export default function Home() {
     initialLabels: [],
   });
 
-  // Show login page if not authenticated
+  // Show login page if not authenticated (handled by LoginRequired component)
   if (status === "unauthenticated") {
-    return <LoginRequired />;
+    // This redirect is handled at the session level
   }
 
   // Check for mobile view and online status
@@ -160,10 +157,10 @@ export default function Home() {
     }
   };
 
-  // Load data on mount
+  // Load data on mount - intentionally only runs once (data fetching pattern)
   useEffect(() => {
     loadData();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleEditTask = (task: TaskWithRelations) => {
     setEditingTask(task);
@@ -176,14 +173,14 @@ export default function Home() {
   };
 
   const getViewTitle = () => {
-    if (searchQuery) return `Search: "${searchQuery}"`;
+    if (searchQuery) return `${tTasks("searchPlaceholder", { query: searchQuery })}`;
     if (currentFilterPreset) {
       const presetLabels: Record<FilterPreset, string> = {
-        needs_attention: "Needs Attention",
-        this_week: "This Week",
-        with_labels: "With Labels",
-        with_subtasks: "With Subtasks",
-        completed: "Completed",
+        needs_attention: tPresets("needsAttention"),
+        this_week: tPresets("thisWeek"),
+        with_labels: tPresets("withLabels"),
+        with_subtasks: tPresets("withSubtasks"),
+        completed: tNav("completed"),
       };
       return presetLabels[currentFilterPreset];
     }
@@ -191,7 +188,7 @@ export default function Home() {
       const list = lists.find((l) => l.id === currentListId);
       return list ? `${list.emoji} ${list.name}` : "List";
     }
-    return viewTitles[currentView] || "Tasks";
+    return viewTitles[currentView] || tNav("today");
   };
 
   // Keyboard shortcuts
@@ -279,50 +276,7 @@ export default function Home() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [searchQuery, currentFilterPreset, modalOpen]);
-
-  // Export data
-  const handleExport = async (format: "json" | "csv" = "json") => {
-    if (format === "json") {
-      const data = await (await import("@/lib/actions/tasks")).exportData();
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `taskflow-export-${new Date().toISOString().split("T")[0]}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } else {
-      const csv = await (await import("@/lib/actions/tasks")).exportCsv();
-      const blob = new Blob([csv], { type: "text/csv" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `taskflow-export-${new Date().toISOString().split("T")[0]}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-  };
-
-  // Import data
-  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    try {
-      const text = await file.text();
-      const data = JSON.parse(text);
-      const result = await (await import("@/lib/actions/tasks")).importData(data);
-      toast.success(`Imported ${result.tasks} tasks, ${result.lists} lists, ${result.labels} labels`);
-      loadData();
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to import data. Check the file format.");
-    } finally {
-      // Reset input
-      e.target.value = "";
-    }
-  };
+  }, [searchQuery, currentFilterPreset, modalOpen, setCurrentView, setSearchQuery, setCurrentFilterPreset, handleViewChange, searchInputRef]);
 
   // Render view-specific content
   const renderViewContent = () => {
@@ -349,7 +303,7 @@ export default function Home() {
         <EisenhowerMatrix
           tasks={tasks}
           onTaskClick={handleEditTask}
-          onAddTask={(priority) => {
+          onAddTask={() => {
             setEditingTask(undefined);
             setModalOpen(true);
           }}
@@ -399,7 +353,7 @@ export default function Home() {
                 try {
                   await (await import("@/lib/actions/goals")).updateGoalProgress(id, increment);
                   loadData();
-                } catch (error) {
+                } catch {
                   toast.error("Failed to update goal progress");
                 }
               })();
@@ -409,7 +363,7 @@ export default function Home() {
                 try {
                   await (await import("@/lib/actions/goals")).resetGoal(id);
                   loadData();
-                } catch (error) {
+                } catch {
                   toast.error("Failed to reset goal");
                 }
               })();
@@ -424,9 +378,8 @@ export default function Home() {
         <div className="p-6">
           <CalendarSyncSettings
             accessToken={null}
-            onAuth={() => window.location.href = "/api/calendar/sync?action=auth"}
+            onAuth={() => { window.location.href = "/api/calendar/sync?action=auth"; }}
             onSync={loadData}
-            lastSynced={undefined}
           />
         </div>
       );
