@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { exchangeCodeForTokens } from "@/lib/calendar";
-import { saveCalendarSync } from "@/lib/actions/tasks";
+import { saveCalendarSync } from "@/lib/actions/calendar";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
