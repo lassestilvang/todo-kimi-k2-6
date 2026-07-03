@@ -1,25 +1,35 @@
 "use server";
 
+import { NextRequest } from "next/server";
 import { parseTaskInput, generateTaskInsights, generateTasksFromNotes, getAIManager } from "@/lib/ai";
 import type { AITaskInput } from "@/lib/ai";
 import { getAIConfigStatus } from "@/lib/ai/config";
-import { rateLimits, getClientKey } from "@/lib/rate-limiter";
+import { getClientKey, checkRateLimit } from "@/lib/rate-limiter";
+import { logError } from "@/lib/logger";
+import { applyMiddleware, errorResponse } from "@/lib/api-middleware";
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  // Apply middleware with authentication
+  const middlewareResult = await applyMiddleware(request, { requireAuth: true });
+  if (middlewareResult.error) {
+    return middlewareResult.error;
+  }
+
   // Rate limiting
   const clientKey = getClientKey(request);
-  const { allowed, remaining } = rateLimits.ai.isAllowed(clientKey);
+  const rateResult = await checkRateLimit(clientKey, { windowMs: 60000, max: 20 });
+  const { allowed, remaining } = rateResult;
 
   if (!allowed) {
-    return Response.json(
-      { error: "Rate limit exceeded. Please try again later." },
-      { status: 429 }
-    );
+    return errorResponse("Rate limit exceeded. Please try again later.", 429);
   }
 
   try {
     const body = await request.json();
-    const { type, input, stream } = body as { type: string; input: any; stream?: boolean };
+    const { type, input } = body as {
+      type: string;
+      input: AITaskInput | { tasks?: unknown[]; notes?: string; context?: unknown };
+    };
 
     if (type === "parse") {
       const result = await parseTaskInput(input as AITaskInput);
@@ -35,7 +45,7 @@ export async function POST(request: Request) {
             const result = await aiManager.parseTask(input as AITaskInput);
             controller.enqueue(encoder.encode(JSON.stringify(result) + "\n"));
             controller.close();
-          } catch (error) {
+          } catch {
             controller.enqueue(encoder.encode(JSON.stringify({ error: "Streaming failed" }) + "\n"));
             controller.close();
           }
@@ -47,18 +57,27 @@ export async function POST(request: Request) {
     }
 
     if (type === "insights") {
-      const result = await generateTaskInsights(input.tasks);
+      const insightsInput = input as { tasks?: unknown[] };
+      const tasks = insightsInput.tasks ?? [];
+      const result = await generateTaskInsights(tasks as Array<{
+        name: string;
+        completed: boolean;
+        priority: string;
+        date?: string | null;
+        deadline?: string | null;
+      }>);
       return Response.json({ ...result, _rateLimit: remaining });
     }
 
     if (type === "generateTasks") {
-      const result = await generateTasksFromNotes(input.notes, input.context);
+      const notesInput = input as { notes?: string; context?: { lists?: Array<{ id: number; name: string; emoji: string }> } };
+      const result = await generateTasksFromNotes(notesInput.notes ?? "", notesInput.context);
       return Response.json({ ...result, _rateLimit: remaining });
     }
 
     return Response.json({ error: "Invalid request type" }, { status: 400 });
   } catch (error) {
-    console.error("AI API error:", error);
+    logError("AI API error", undefined, error instanceof Error ? error : new Error(String(error)));
     return Response.json(
       { error: "Failed to process AI request" },
       { status: 500 }
