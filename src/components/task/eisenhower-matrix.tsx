@@ -2,9 +2,8 @@
 
 import { useMemo } from "react";
 import { TaskWithRelations } from "@/types";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Plus, Minus, Clock, CheckCircle2 } from "lucide-react";
+import { Plus } from "lucide-react";
 
 interface EisenhowerMatrixProps {
   tasks: TaskWithRelations[];
@@ -14,9 +13,6 @@ interface EisenhowerMatrixProps {
 
 export function EisenhowerMatrix({ tasks, onTaskClick, onAddTask }: EisenhowerMatrixProps) {
   const quadrants = useMemo(() => {
-    const now = new Date();
-    const today = now.toISOString().split("T")[0];
-
     return [
       {
         title: "Urgent & Important",
