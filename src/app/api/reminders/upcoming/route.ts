@@ -1,7 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getDueReminders } from '@/lib/actions/reminders';
+import { NextRequest } from 'next/server';
+import { getDb } from '@/lib/db';
+import { applyMiddleware, errorResponse, jsonResponse } from '@/lib/api-middleware';
 
 export async function GET(request: NextRequest) {
+  const middlewareResult = await applyMiddleware(request);
+  if (middlewareResult.error) {
+    return middlewareResult.error;
+  }
+
   try {
     const { searchParams } = new URL(request.url);
     const before = searchParams.get('before');
@@ -11,7 +17,7 @@ export async function GET(request: NextRequest) {
     const now = new Date().toISOString();
     const cutoff = before || now;
 
-    const db = require('@/lib/db').getDb();
+    const db = getDb();
     const reminders = db
       .prepare(
         `SELECT r.*, t.name as task_name, t.completed as task_completed
@@ -30,12 +36,9 @@ export async function GET(request: NextRequest) {
         task_completed: number;
       }>;
 
-    return NextResponse.json(reminders);
+    return jsonResponse(reminders, 200, middlewareResult.headers);
   } catch (error) {
     console.error('Error fetching upcoming reminders:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch upcoming reminders' },
-      { status: 500 }
-    );
+    return errorResponse('Failed to fetch upcoming reminders', 500);
   }
 }
