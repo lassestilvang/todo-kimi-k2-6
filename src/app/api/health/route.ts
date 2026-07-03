@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 
 /**
@@ -17,7 +17,7 @@ import { getDb } from "@/lib/db";
  *   }
  * }
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   const timestamp = new Date().toISOString();
   const checks: {
     database: "ok" | "error";
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
 
   // Check AI providers (optional)
   try {
-    const hasAiConfig = !!(process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY);
+    const hasAiConfig = !!(process.env['OPENAI_API_KEY'] || process.env['ANTHROPIC_API_KEY']);
     checks.ai_providers = hasAiConfig ? "ok" : "degraded";
   } catch (error) {
     checks.ai_providers = "error";
