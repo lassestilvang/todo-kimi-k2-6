@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { toggleSubtask } from "@/lib/actions/tasks";
+import { toggleSubtask } from "@/lib/actions";
 
 // PATCH /api/subtasks/[id] - Toggle subtask completion
-export async function PATCH(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+export async function PATCH(_: NextRequest, context: { params: Promise<{ id: string }> }) {
   const params = await context.params;
   try {
     const id = parseInt(params.id, 10);
