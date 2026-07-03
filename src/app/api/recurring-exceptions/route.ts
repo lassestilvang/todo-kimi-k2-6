@@ -3,6 +3,17 @@ import { getDb } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/config";
 
+interface TaskRecord {
+  id: number;
+}
+
+interface RecurringException {
+  id: number;
+  task_id: number;
+  exception_date: string;
+  created_at: string;
+}
+
 // GET /api/recurring-exceptions?taskId=123 - Get exceptions for a task
 export async function GET(request: NextRequest) {
   const searchParams = new URL(request.url).searchParams;
@@ -16,7 +27,7 @@ export async function GET(request: NextRequest) {
     const db = getDb();
     const exceptions = db.prepare(
       "SELECT * FROM recurring_exceptions WHERE task_id = ? ORDER BY exception_date ASC"
-    ).all(parseInt(taskId, 10));
+    ).all(parseInt(taskId, 10)) as RecurringException[];
 
     return NextResponse.json(exceptions);
   } catch (error) {
@@ -44,20 +55,20 @@ export async function POST(request: NextRequest) {
 
     // Verify task belongs to user
     const task = db.prepare("SELECT id FROM tasks WHERE id = ? AND (created_by = ? OR assignee_id = ?)")
-      .get(task_id, session.user.id, session.user.id) as any;
+      .get(task_id, session.user.id, session.user.id) as TaskRecord | undefined;
 
     if (!task) {
       return NextResponse.json({ error: "Task not found or access denied" }, { status: 404 });
     }
 
     // Add exception (ignore if already exists)
-    const result = db.prepare(
+    db.prepare(
       "INSERT OR IGNORE INTO recurring_exceptions (task_id, exception_date) VALUES (?, ?)"
     ).run(task_id, exception_date);
 
     const exception = db.prepare(
       "SELECT * FROM recurring_exceptions WHERE task_id = ? AND exception_date = ?"
-    ).get(task_id, exception_date);
+    ).get(task_id, exception_date) as RecurringException | undefined;
 
     return NextResponse.json(exception, { status: 201 });
   } catch (error) {
@@ -88,7 +99,7 @@ export async function DELETE(request: NextRequest) {
       SELECT re.* FROM recurring_exceptions re
       INNER JOIN tasks t ON re.task_id = t.id
       WHERE re.id = ? AND (t.created_by = ? OR t.assignee_id = ?)
-    `).get(parseInt(id, 10), session.user.id, session.user.id) as any;
+    `).get(parseInt(id, 10), session.user.id, session.user.id) as RecurringException | undefined;
 
     if (!exception) {
       return NextResponse.json({ error: "Exception not found or access denied" }, { status: 404 });
