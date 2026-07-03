@@ -2,6 +2,7 @@
 
 import { getDb } from "@/lib/db";
 import { hashPassword } from "@/lib/auth";
+import { logError } from "@/lib/logger";
 import { z } from "zod";
 
 const registerSchema = z.object({
@@ -45,7 +46,7 @@ export async function POST(request: Request) {
       { status: 201 }
     );
   } catch (error) {
-    console.error("Registration error:", error);
+    logError("Registration error", undefined, error instanceof Error ? error : new Error(String(error)));
     return Response.json(
       { error: "Registration failed" },
       { status: 500 }
