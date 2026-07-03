@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, useRef } from "react";
-import { wsClient, type WSMessage } from "@/lib/ws";
+import { wsClient } from "@/lib/ws";
 import type { TaskWithRelations } from "@/types";
 
 interface PresenceUser {
@@ -34,17 +34,17 @@ export function CollaborationProvider({
 }) {
   const [connected, setConnected] = useState(false);
   const [presence, setPresence] = useState<PresenceUser[]>([]);
-  const [activeTask, setActiveTask] = useState<number | null>(null);
-  const [typingUsers, setTypingUsers] = useState<Set<number>>(new Set());
+  // activeTask and typingUsers are placeholders for future real-time collaboration features
+  const activeTask = null;
+  const typingUsers = new Set<number>();
   const wsRef = useRef(wsClient);
 
   useEffect(() => {
-    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:3001";
+    const wsUrl = process.env["NEXT_PUBLIC_WS_URL"] || "ws://localhost:3001";
     wsRef.current.connect(wsUrl);
 
-    wsRef.current.subscribe("task_update", (data) => {
-      // Handle task update - will be processed by parent
-    });
+    // Task update handler - placeholder for future real-time collaboration
+    wsRef.current.subscribe("task_update", () => {});
 
     wsRef.current.subscribe("presence_change", (data) => {
       setPresence((prev) => {
