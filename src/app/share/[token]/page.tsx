@@ -1,5 +1,5 @@
 import { getShareByToken } from "@/lib/actions/sharing";
-import { getTaskById } from "@/lib/actions/tasks";
+import { getTaskById } from "@/lib/actions";
 import { notFound } from "next/navigation";
 
 interface SharePageProps {
