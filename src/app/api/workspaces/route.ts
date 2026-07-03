@@ -1,5 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getDb } from "@/lib/db";
+
+import { applyMiddleware, jsonResponse, errorResponse } from "@/lib/api-middleware";
 
 /**
  * Workspaces API routes.
@@ -8,6 +10,11 @@ import { getDb } from "@/lib/db";
  * POST /api/workspaces - Create a new workspace
  */
 export async function GET(request: NextRequest) {
+  const middlewareResult = await applyMiddleware(request, { requireAuth: true });
+  if (middlewareResult.error) {
+    return middlewareResult.error;
+  }
+
   try {
     const db = getDb();
     const workspaces = db.prepare(`
@@ -17,20 +24,25 @@ export async function GET(request: NextRequest) {
       ORDER BY w.created_at DESC
     `).all();
 
-    return NextResponse.json(workspaces);
+    return jsonResponse(workspaces, 200, middlewareResult.headers);
   } catch (error) {
     console.error("Error fetching workspaces:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return errorResponse("Internal server error", 500);
   }
 }
 
 export async function POST(request: NextRequest) {
+  const middlewareResult = await applyMiddleware(request, { requireAuth: true });
+  if (middlewareResult.error) {
+    return middlewareResult.error;
+  }
+
   try {
     const body = await request.json();
     const { name, description } = body;
 
     if (!name) {
-      return NextResponse.json({ error: "Name is required" }, { status: 400 });
+      return errorResponse("Name is required", 400);
     }
 
     const db = getDb();
@@ -46,9 +58,9 @@ export async function POST(request: NextRequest) {
     db.prepare("INSERT INTO workspace_users (workspace_id, user_id, role) VALUES (?, 1, 'owner')")
       .run(result.lastInsertRowid);
 
-    return NextResponse.json(workspace, { status: 201 });
+    return jsonResponse(workspace, 201, middlewareResult.headers);
   } catch (error) {
     console.error("Error creating workspace:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return errorResponse("Internal server error", 500);
   }
 }
