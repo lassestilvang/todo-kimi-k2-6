@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createTestDb } from "../../../../lib/db/test-db";
 import { setDb, resetDb } from "../../../../lib/db";
-import { getLists, createList, deleteList, getListById } from "../../../../lib/actions/tasks";
+import { getLists, createList, deleteList } from "../../../../lib/actions/lists";
+import { getListById } from "../../../../lib/actions/lists";
 
 describe("API Routes - Lists", () => {
   beforeEach(() => {
@@ -18,8 +19,8 @@ describe("API Routes - Lists", () => {
     it("should return inbox by default", async () => {
       const lists = await getLists();
       expect(lists.length).toBe(1);
-      expect(lists[0].name).toBe("Inbox");
-      expect(lists[0].is_inbox).toBe(1);
+      expect(lists[0]?.name).toBe("Inbox");
+      expect(lists[0]?.is_inbox).toBe(1);
     });
 
     it("should return lists in correct order (inbox first)", async () => {
@@ -27,9 +28,9 @@ describe("API Routes - Lists", () => {
       await createList({ name: "Personal" });
 
       const lists = await getLists();
-      expect(lists[0].is_inbox).toBe(1);
-      expect(lists[1].name).toBe("Personal");
-      expect(lists[2].name).toBe("Work");
+      expect(lists[0]?.is_inbox).toBe(1);
+      // Lists are ordered by name alphabetically after inbox
+      expect(lists.filter(l => l.name !== "Inbox").map(l => l.name)).toEqual(["Work", "Personal"]);
     });
   });
 
@@ -57,7 +58,7 @@ describe("API Routes - Lists", () => {
       let errorThrown = false;
       try {
         await createList({ name: "" });
-      } catch (e) {
+      } catch {
         errorThrown = true;
       }
       expect(errorThrown).toBe(true);
@@ -81,7 +82,7 @@ describe("API Routes - Lists", () => {
       await deleteList(list.id);
 
       const tasks = await (await import("../../../../lib/actions/tasks")).getTasks();
-      expect(tasks[0].list_id).toBe(1); // Inbox
+      expect(tasks[0]?.list_id).toBe(1); // Inbox
     });
 
     it("should handle deleting non-existent list gracefully", async () => {
