@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createTestDb } from '../../../../lib/db/test-db';
 import { setDb, resetDb } from '../../../../lib/db';
@@ -10,40 +10,6 @@ import {
   updateTask,
   deleteTask,
 } from '../../../../lib/actions/tasks';
-
-// Mock NextRequest
-class MockNextRequest {
-  private url: string;
-  private body: any;
-
-  constructor(url: string, body?: any) {
-    this.url = url;
-    this.body = body;
-  }
-
-  get nextUrl() {
-    return { searchParams: new URLSearchParams(this.url.split('?')[1] || '') };
-  }
-
-  json() {
-    return Promise.resolve(this.body);
-  }
-}
-
-// Mock NextResponse
-class MockNextResponse {
-  status: number;
-  private data: any;
-
-  constructor(data: any, status = 200) {
-    this.data = data;
-    this.status = status;
-  }
-
-  json() {
-    return Promise.resolve(this.data);
-  }
-}
 
 describe('API Routes - Tasks', () => {
   beforeEach(() => {
