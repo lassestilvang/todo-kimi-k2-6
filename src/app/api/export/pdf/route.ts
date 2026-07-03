@@ -1,19 +1,19 @@
 "use server";
 
 import { getDb } from "@/lib/db";
+import { logError } from "@/lib/logger";
 import type { TaskWithRelations } from "@/types";
 
 /**
- * Generate a proper PDF export of tasks
- * Note: This uses jsPDF which is already installed
+ * Generate a text-based export of tasks
+ * For PDF export, use the client-side Export component with jsPDF
  */
 export async function GET() {
   try {
     const db = getDb();
     const tasks = db.prepare("SELECT * FROM tasks ORDER BY created_at DESC").all() as TaskWithRelations[];
 
-    // Create simple text-based export (PDF generation would require jsPDF in server context)
-    // For full PDF, use the client-side Export component with jsPDF
+    // Create simple text-based export
     const lines: string[] = [];
     lines.push("TaskFlow Export");
     lines.push(`Generated: ${new Date().toISOString().split("T")[0]}`);
@@ -39,7 +39,7 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error("Export error:", error);
+    logError("Export error", undefined, error instanceof Error ? error : new Error(String(error)));
     return new Response("Export failed", { status: 500 });
   }
 }
