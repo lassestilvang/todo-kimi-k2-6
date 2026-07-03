@@ -1,10 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getDb } from "@/lib/db";
 import {
   generateWorkloadSuggestions,
   getUserWorkloadSummary,
   type UserWorkload,
 } from "@/lib/ai/workload";
+import { applyMiddleware, errorResponse, jsonResponse } from "@/lib/api-middleware";
 
 /**
  * Workload API routes.
@@ -12,7 +13,12 @@ import {
  * GET /api/workload - Get workload balancing suggestions
  */
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const middlewareResult = await applyMiddleware(request);
+  if (middlewareResult.error) {
+    return middlewareResult.error;
+  }
+
   try {
     const db = getDb();
 
@@ -61,14 +67,14 @@ export async function GET() {
       enrichedUsers
     );
 
-    return NextResponse.json({
+    return jsonResponse({
       workloads: enrichedUsers,
       suggestions,
       averageWorkload: enrichedUsers.reduce((sum, u) => sum + u.totalTasks, 0) /
         (enrichedUsers.length || 1),
-    });
+    }, 200, middlewareResult.headers);
   } catch (error) {
     console.error("Error fetching workload:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return errorResponse("Internal server error", 500);
   }
 }
