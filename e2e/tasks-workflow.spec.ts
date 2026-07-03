@@ -22,13 +22,6 @@ async function registerUser(page: Page, user: typeof TEST_USER) {
   await page.click('button[type="submit"]');
 }
 
-async function loginUser(page: Page, email: string, password: string) {
-  await page.goto("/login");
-  await page.fill('input[type="email"]', email);
-  await page.fill('input[type="password"]', password);
-  await page.click('button:has-text("Sign In")');
-}
-
 test.describe("Task Management Workflow", () => {
   test.beforeEach(async ({ page }) => {
     // Register a new user for each test
