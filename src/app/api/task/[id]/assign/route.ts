@@ -1,7 +1,6 @@
 "use server";
 
-import { getDb } from "@/lib/db";
-import { assignTask, unassignTask, getTaskAssignments } from "@/lib/actions/tasks";
+import { assignTask, unassignTask, getTaskAssignments } from "@/lib/actions/assignments";
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
