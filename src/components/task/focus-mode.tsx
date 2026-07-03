@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Focus, Minimize2, Play, Pause } from "lucide-react";
+import { X, Focus, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { PomodoroTimer } from "./pomodoro-timer";
