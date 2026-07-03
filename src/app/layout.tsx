@@ -9,6 +9,7 @@ import { KeyboardShortcutsHandler } from "@/components/task/keyboard-shortcuts-h
 import { QueryProvider } from "@/components/query-provider";
 import { SessionProvider } from "next-auth/react";
 import { WebVitalsTracker } from "@/components/web-vitals";
+import { initSentry } from "@/lib/sentry";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -16,6 +17,11 @@ export const metadata: Metadata = {
   title: "TaskFlow - Daily Planner",
   description: "A modern daily task planner with drag-and-drop, dependencies, and templates",
 };
+
+// Initialize Sentry in production
+if (process.env.NODE_ENV === "production") {
+  initSentry();
+}
 
 export default function RootLayout({
   children,
@@ -46,6 +52,13 @@ export default function RootLayout({
         </ThemeProvider>
         <KeyboardShortcutsHandler />
         <WebVitalsTracker />
+        {/* Screen reader announcer for accessibility */}
+        <div
+          id="aria-live-announcer"
+          aria-live="polite"
+          aria-atomic="true"
+          className="sr-only"
+        />
       </body>
     </html>
   );
