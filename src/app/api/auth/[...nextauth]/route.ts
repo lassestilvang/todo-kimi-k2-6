@@ -7,24 +7,24 @@ import jwt from "jsonwebtoken";
 
 const JWT_SECRET = process.env.NEXTAUTH_SECRET || "your-secret-here-change-in-production";
 
+// Warn in development if using default secret
+if (!process.env.NEXTAUTH_SECRET && process.env.NODE_ENV === "development") {
+  console.warn("[Auth Warning] NEXTAUTH_SECRET not set. Using default secret for development.");
+}
+
+// Never allow default secret in production
+if (!process.env.NEXTAUTH_SECRET && process.env.NODE_ENV === "production") {
+  throw new Error("NEXTAUTH_SECRET must be set in production");
+}
+
 // Generate JWT token
 function generateToken(userId: number, email: string) {
   return jwt.sign({ id: userId, email }, JWT_SECRET, { expiresIn: "30d" });
 }
 
-// Verify JWT token
-function verifyToken(token: string) {
-  try {
-    return jwt.verify(token, JWT_SECRET) as { id: number; email: string };
-  } catch {
-    return null;
-  }
-}
-
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const provider = searchParams.get("provider");
-  const callbackUrl = searchParams.get("callbackUrl");
 
   if (provider === "credentials") {
     return NextResponse.json({ message: "Use POST to sign in" });
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, action } = body;
+    const { email } = body;
 
     if (!email) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
@@ -74,6 +74,6 @@ export async function POST(request: NextRequest) {
 
 // Export for NextAuth compatibility
 export const auth = async () => null;
-export const signIn = async (provider: string) => null;
+export const signIn = async (_provider: string) => null;
 export const signOut = async () => null;
 export const handlers = { GET, POST };
