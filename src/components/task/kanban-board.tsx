@@ -24,7 +24,7 @@ import {
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { TaskWithRelations, List, Priority } from "@/types";
-import { updateTask } from "@/lib/actions/tasks";
+import { updateTask } from "@/lib/actions";
 import { toast } from "sonner";
 
 interface KanbanBoardProps {
