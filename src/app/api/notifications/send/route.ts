@@ -2,6 +2,7 @@
 
 import { getDb } from "@/lib/db";
 import { sendTaskReminderEmail, sendDueSoonEmail } from "@/lib/email";
+import { logError } from "@/lib/logger";
 import type { Task } from "@/types";
 
 interface TaskRow {
@@ -102,7 +103,7 @@ export async function POST(request: Request) {
 
     return Response.json({ success: true });
   } catch (error) {
-    console.error("Notification error:", error);
+    logError("Notification error", undefined, error instanceof Error ? error : new Error(String(error)));
     return Response.json(
       { error: "Failed to send notification" },
       { status: 500 }
