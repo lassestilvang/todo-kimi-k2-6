@@ -30,14 +30,13 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const id = searchParams.get("id");
-  const userId = searchParams.get("userId");
 
-  if (!id || !userId) {
-    return NextResponse.json({ error: "id and userId are required" }, { status: 400 });
+  if (!id) {
+    return NextResponse.json({ error: "id is required" }, { status: 400 });
   }
 
   try {
-    await deleteFilterPreset(Number(id), Number(userId));
+    await deleteFilterPreset(Number(id));
     return NextResponse.json({ success: true });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to delete filter preset";
