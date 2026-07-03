@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Calendar, CalendarPlus, RefreshCw, ExternalLink, CheckCircle2, AlertCircle } from "lucide-react";
+import { useState } from "react";
+import { Calendar, CalendarPlus, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { useTheme } from "next-themes";
 
 interface CalendarSyncSettingsProps {
   accessToken?: string | null;
@@ -35,7 +34,6 @@ export function CalendarSyncSettings({
     error: null,
   });
   const [isSyncing, setIsSyncing] = useState(false);
-  const { theme } = useTheme();
 
   const handleConnect = () => {
     if (onAuth) {
@@ -65,7 +63,7 @@ export function CalendarSyncSettings({
         throw new Error(await response.text());
       }
 
-      const result = await response.json();
+      await response.json();
       setStatus((prev) => ({
         ...prev,
         lastSync: new Date().toISOString(),
