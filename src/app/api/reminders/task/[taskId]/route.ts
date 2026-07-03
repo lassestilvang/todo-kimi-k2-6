@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getReminders, deleteRemindersForTask } from '@/lib/actions/reminders';
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ taskId: string }> }) {
+export async function GET(_: NextRequest, { params }: { params: Promise<{ taskId: string }> }) {
   const { taskId } = await params;
   try {
     const id = parseInt(taskId);
@@ -23,7 +24,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: Promise<{ taskId: string }> }) {
+export async function DELETE(_: NextRequest, { params }: { params: Promise<{ taskId: string }> }) {
   const { taskId } = await params;
   try {
     const id = parseInt(taskId);
