@@ -25,9 +25,9 @@ describe("API Routes - Labels", () => {
 
       const labels = await getLabels();
       expect(labels.length).toBe(1);
-      expect(labels[0].name).toBe("Work");
-      expect(labels[0].color).toBe("#3b82f6");
-      expect(labels[0].icon).toBe("💼");
+      expect(labels[0]?.name).toBe("Work");
+      expect(labels[0]?.color).toBe("#3b82f6");
+      expect(labels[0]?.icon).toBe("💼");
     });
 
     it("should return labels in alphabetical order", async () => {
@@ -36,9 +36,9 @@ describe("API Routes - Labels", () => {
       await createLabel({ name: "Beta" });
 
       const labels = await getLabels();
-      expect(labels[0].name).toBe("Alpha");
-      expect(labels[1].name).toBe("Beta");
-      expect(labels[2].name).toBe("Zebra");
+      expect(labels[0]?.name).toBe("Alpha");
+      expect(labels[1]?.name).toBe("Beta");
+      expect(labels[2]?.name).toBe("Zebra");
     });
   });
 
@@ -66,7 +66,7 @@ describe("API Routes - Labels", () => {
       let errorThrown = false;
       try {
         await createLabel({ name: "" });
-      } catch (e) {
+      } catch {
         errorThrown = true;
       }
       expect(errorThrown).toBe(true);
