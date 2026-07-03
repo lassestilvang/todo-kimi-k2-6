@@ -34,7 +34,7 @@ import { TaskPreview } from "@/components/task/task-preview";
 import { BulkActionsMenu } from "@/components/task/bulk-actions-menu";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import type { TaskWithRelations, List, SortField, SortDirection, Label, Priority } from "@/types";
-import { updateTask, deleteTask, toggleSubtask, bulkDeleteTasks, bulkUpdateTasks } from "@/lib/actions/tasks";
+import { updateTask, deleteTask, toggleSubtask, bulkDeleteTasks, bulkUpdateTasks } from "@/lib/actions";
 import { toast } from "sonner";
 
 interface TaskListProps {
@@ -47,9 +47,9 @@ interface TaskListProps {
   sortBy?: SortField;
   sortDirection?: SortDirection;
   onSort?: (field: SortField) => void;
-  filterListId?: number;
+  filterListId?: number | undefined;
   filterLabelIds?: number[];
-  filterPriority?: Priority;
+  filterPriority?: Priority | undefined;
   onFilterList?: (listId: number | undefined) => void;
   onFilterLabel?: (labelId: number) => void;
   onFilterPriority?: (priority: Priority | undefined) => void;
