@@ -1,45 +1,50 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { rateLimits, getClientKey } from "@/lib/rate-limiter";
+import { rateLimits, getClientKey, checkRateLimit } from "@/lib/rate-limiter";
 
 export async function rateLimitMiddleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const clientKey = getClientKey(request);
 
   // Determine which rate limiter to use
-  let limiter = rateLimits.api;
+  let limiterConfig = rateLimits.api;
   if (pathname.startsWith("/api/auth")) {
-    limiter = rateLimits.auth;
+    limiterConfig = rateLimits.auth;
   } else if (pathname.startsWith("/api/ai")) {
-    limiter = rateLimits.ai;
+    limiterConfig = rateLimits.ai;
   }
 
-  const { allowed, remaining, resetTime } = limiter.isAllowed(clientKey);
+  const result = await checkRateLimit(clientKey, limiterConfig);
 
-  if (!allowed) {
-    return new NextResponse(
-      JSON.stringify({
-        error: "Too many requests",
-        message: "Rate limit exceeded. Please try again later.",
-      }),
-      {
-        status: 429,
-        headers: {
-          "Content-Type": "application/json",
-          "Retry-After": Math.ceil((resetTime - Date.now()) / 1000).toString(),
-          "X-RateLimit-Limit": limiter["config"].max.toString(),
-          "X-RateLimit-Remaining": "0",
-          "X-RateLimit-Reset": resetTime.toString(),
+  if (!result.allowed) {
+    return {
+      allowed: false,
+      error: "Rate limit exceeded",
+      response: NextResponse.json(
+        {
+          error: "Too many requests",
+          message: "Rate limit exceeded. Please try again later.",
+          code: "RATE_LIMITED",
         },
-      }
-    );
+        {
+          status: 429,
+          headers: {
+            "Content-Type": "application/json",
+            "Retry-After": Math.ceil((result.resetTime - Date.now()) / 1000).toString(),
+            "X-RateLimit-Limit": limiterConfig.max.toString(),
+            "X-RateLimit-Remaining": "0",
+            "X-RateLimit-Reset": result.resetTime.toString(),
+          },
+        }
+      ),
+    };
   }
 
   // Add rate limit headers to response
   const headers = {
-    "X-RateLimit-Limit": limiter["config"].max.toString(),
-    "X-RateLimit-Remaining": remaining.toString(),
-    "X-RateLimit-Reset": resetTime.toString(),
+    "X-RateLimit-Limit": limiterConfig.max.toString(),
+    "X-RateLimit-Remaining": result.remaining.toString(),
+    "X-RateLimit-Reset": result.resetTime.toString(),
   };
 
   return { allowed: true, headers };
