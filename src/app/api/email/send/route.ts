@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
 import { generateDailySummary, generateWeeklySummary } from "@/lib/email/summaries";
+import { getDb } from "@/lib/db";
 
 /**
  * Email API routes.
