@@ -7,7 +7,7 @@ import { getDb } from "@/lib/db";
  * GET /api/habits - List all habits (tasks with recurring patterns)
  * POST /api/habits - Create a new habit from a recurring task
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const db = getDb();
     const habits = db.prepare(`
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     }
 
     const db = getDb();
-    const result = db
+    db
       .prepare(`
         INSERT INTO habit_streaks (task_id, streak_count, last_completed)
         VALUES (?, ?, ?)
