@@ -66,17 +66,29 @@ export function useTasks({
   const priorityOrder = { critical: 0, high: 1, medium: 2, low: 3, none: 4 };
 
   // Cache the Fuse instance to avoid recreating it on every render
+  // Use dynamic import for SSR compatibility
   const fuseInstance = useMemo(() => {
-    if (typeof window === "undefined") return null;
-    // Dynamic import for server-side rendering compatibility
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const Fuse = require("fuse.js").default;
-    return new Fuse(tasks, {
-      keys: ["name", "description", "notes"],
-      threshold: 0.4,
-      minMatchCharLength: 2,
-      shouldSort: true,
-    });
+    let Fuse: typeof import("fuse.js").default | null = null;
+
+    // Only initialize in browser environment
+    if (typeof window !== "undefined") {
+      try {
+        Fuse = require("fuse.js").default;
+      } catch {
+        // Fuse.js not available, will fall back to simple filtering
+        return null;
+      }
+
+      if (Fuse) {
+        return new Fuse(tasks, {
+          keys: ["name", "description", "notes"],
+          threshold: 0.4,
+          minMatchCharLength: 2,
+          shouldSort: true,
+        });
+      }
+    }
+    return null;
   }, [tasks]);
 
   // Calculate visible tasks with optimized filtering
