@@ -128,9 +128,10 @@ describe("Collaboration utilities", () => {
       updated_at: new Date(),
     };
 
-    it("should return false for null user", () => {
+    it("should return true for view action when user is null (demo mode)", () => {
       const result = canPerformAction(null, mockTask);
-      expect(result).toBe(false);
+      // In demo mode, null user can view tasks
+      expect(result).toBe(true);
     });
 
     it("should return true for task owner", () => {
