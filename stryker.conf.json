@@ -1,16 +1,21 @@
 {
-  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
   "packageManager": "npm",
-  "testRunner": "jest",
-  "testRunner_comment": "Jest test runner is used for mutation testing",
-  "mutate": [
-    "src/lib/actions/tasks.ts",
-    "src/lib/db/driver.ts",
-    "src/lib/validation.ts"
-  ],
+  "testRunner": "vitest",
+  "mutate": ["src/lib/actions/tasks.ts", "src/lib/db/driver.ts", "src/lib/validation.ts", "src/lib/rate-limiter.ts", "src/lib/ai/providers.ts", "src/components/task/keyboard-shortcuts.tsx"],
   "coverageAnalysis": "perTest",
-  "jestOptions": ["--config", "jest.config.js"],
+  "vitestRunner": "^5.0.0",
+  "vitestOptions": {
+    "configFile": "vitest.config.ts"
+  },
   "timeoutMS": 60000,
   "concurrency": 1,
-  "sandbox": ["prompter"]
+  "sandbox": ["prompter"],
+  "tsconfigFile": "tsconfig.json",
+  "reporters": ["html", "clear-text", "progress"],
+  "htmlReporter": {
+    "fileName": "reports/mutation/html/index.html"
+  },
+  "logLevel": ["info", "error"],
+  "mutationTesting": true
 }
