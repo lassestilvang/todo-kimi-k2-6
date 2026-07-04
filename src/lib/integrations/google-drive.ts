@@ -33,7 +33,7 @@ export async function getDriveFiles(
   }
 
   const data = await response.json();
-  return data.files.map((file: any) => ({
+  return (data.files as DriveFile[]).map((file) => ({
     id: file.id,
     name: file.name,
     mimeType: file.mimeType,
