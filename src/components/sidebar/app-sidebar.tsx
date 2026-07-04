@@ -140,23 +140,39 @@ export function AppSidebar({
     }
   };
 
-  const handleDeleteList = async (e: React.MouseEvent, id: number) => {
+  const handleDeleteList = async (e: React.MouseEvent, id: number, listName: string) => {
     e.stopPropagation();
     try {
       await deleteList(id);
       onRefresh();
-      toast.success("List deleted");
+      toast.success(`${listName} deleted`, {
+        action: {
+          label: "Undo",
+          onClick: () => {
+            // Note: Full undo would require backend restore support
+            // For now, we can just show a message that undo was requested
+            toast.info("Undo not yet available - item permanently deleted");
+          },
+        },
+      });
     } catch {
       toast.error("Failed to delete list");
     }
   };
 
-  const handleDeleteLabel = async (e: React.MouseEvent, id: number) => {
+  const handleDeleteLabel = async (e: React.MouseEvent, id: number, labelName: string) => {
     e.stopPropagation();
     try {
       await deleteLabel(id);
       onRefresh();
-      toast.success("Label deleted");
+      toast.success(`${labelName} deleted`, {
+        action: {
+          label: "Undo",
+          onClick: () => {
+            toast.info("Undo not yet available - item permanently deleted");
+          },
+        },
+      });
     } catch {
       toast.error("Failed to delete label");
     }
@@ -205,8 +221,8 @@ export function AppSidebar({
             <WorkspaceSelector
               workspaces={workspaces || []}
               currentWorkspace={currentWorkspace || null}
-              onWorkspaceChange={onWorkspaceChange || (() => {})}
-              onCreateWorkspace={() => {}}
+              onWorkspaceChange={onWorkspaceChange || (() => undefined)}
+              onCreateWorkspace={() => undefined}
             />
           </div>
           <div className="flex items-center justify-between px-4 py-3 border-b">
@@ -433,7 +449,7 @@ export function AppSidebar({
                             variant="ghost"
                             size="icon"
                             className="h-5 w-5 opacity-60 hover:opacity-100"
-                            onClick={(e) => handleDeleteList(e, list.id)}
+                            onClick={(e) => handleDeleteList(e, list.id, list.name)}
                           >
                             <Trash2 className="h-3 w-3 text-red-500" />
                           </Button>
@@ -515,7 +531,7 @@ export function AppSidebar({
                   <span className="text-base leading-none">{label.icon}</span>
                   <span className="flex-1 truncate">{label.name}</span>
                   <button
-                    onClick={(e) => handleDeleteLabel(e, label.id)}
+                    onClick={(e) => handleDeleteLabel(e, label.id, label.name)}
                     className="opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <Trash2 className="h-3 w-3 text-red-500" />
