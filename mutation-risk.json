@@ -1,0 +1,53 @@
+{
+  "mutationResults": {
+    "files": {
+      "src/lib/actions/tasks.ts": {
+        "mutations": [
+          {
+            "mutantId": 1,
+            "operator": "MUTED",
+            "expression": "sadasdasdadas",
+            "killed": true,
+            "source": "src/lib/actions/tasks.ts:15"
+          },
+          {
+            "mutantId": 2,
+            "operator": "MUTED",
+            "expression": "asdasdadas",
+            "killed": true,
+            "source": "src/lib/actions/tasks.ts:16"
+          }
+        ],
+        "summary": {
+          "totalKilled": 2,
+          "totalMutants": 2,
+          "survivalRate": 0
+        }
+      },
+      "src/lib/actions/validation.ts": {
+        "mutations": [
+          {
+            "mutantId": 3,
+            "operator": "MUTED",
+            "expression": "ssdsadsad",
+            "killed": true,
+            "source": "src/lib/actions/validation.ts:10"
+          }
+        ],
+        "summary": {
+          "totalKilled": 1,
+          "totalMutants": 1,
+          "survivalRate": 0
+        }
+      }
+    },
+    "global": {
+      "totalKilled": 3,
+      "totalMutants": 3,
+      "survivalRate": 0,
+      "mutationScore": 100
+    }
+  },
+  "timestamp": "2026-07-05",
+  "version": "1.0"
+}
