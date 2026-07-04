@@ -49,7 +49,7 @@ export const authOptions = {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials: Credentials | undefined) {
+      authorize: async (credentials: Credentials | undefined) => {
         return authorize(credentials);
       },
     }),
@@ -62,13 +62,13 @@ export const authOptions = {
   callbacks: {
     async jwt({ token, user }: { token: any; user: any }) {
       if (user) {
-        token.id = String(user.id);
+        token.id = user.id;
       }
       return token;
     },
     async session({ session, token }: { session: any; token: any }) {
-      if (token) {
-        session.user.id = String(token.id);
+      if (token?.id) {
+        session.user.id = token.id;
       }
       return session;
     },
