@@ -7,7 +7,7 @@ export interface Migration {
   executed_at: string;
 }
 
-const migrations: Record<number, string> = {
+export const migrations: Record<number, string> = {
   1: `
     -- Add notes column to tasks
     ALTER TABLE tasks ADD COLUMN notes TEXT;
@@ -109,6 +109,32 @@ const migrations: Record<number, string> = {
     ALTER TABLE lists ADD COLUMN workspace_id INTEGER REFERENCES workspaces(id) ON DELETE SET NULL;
     CREATE INDEX IF NOT EXISTS idx_tasks_workspace_id ON tasks(workspace_id);
     CREATE INDEX IF NOT EXISTS idx_lists_workspace_id ON lists(workspace_id);
+  `,
+  11: `
+    -- Add user_id to lists and labels for user isolation
+    CREATE INDEX IF NOT EXISTS idx_lists_user_id ON lists(user_id);
+    CREATE INDEX IF NOT EXISTS idx_labels_user_id ON labels(user_id);
+  `,
+  12: `
+    -- Add permission_level and expiration to task_shares
+    ALTER TABLE task_shares ADD COLUMN permission_level TEXT DEFAULT 'view' CHECK(permission_level IN ('view', 'edit', 'admin'));
+    ALTER TABLE task_shares ADD COLUMN expires_at INTEGER;
+    ALTER TABLE task_shares ADD COLUMN revoked_at INTEGER;
+    UPDATE task_shares SET permission_level = COALESCE(permission, 'view');
+    CREATE INDEX IF NOT EXISTS idx_task_shares_expires ON task_shares(expires_at);
+  `,
+  13: `
+    -- Add task_dependencies table for blocker relationships
+    CREATE TABLE IF NOT EXISTS task_dependencies (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      blocker_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+      blocked_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+      type TEXT NOT NULL DEFAULT 'hard' CHECK(type IN ('hard', 'soft')),
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(blocker_id, blocked_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_task_deps_blocker ON task_dependencies(blocker_id);
+    CREATE INDEX IF NOT EXISTS idx_task_deps_blocked ON task_dependencies(blocked_id);
   `,
 };
 
