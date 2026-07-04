@@ -1,5 +1,7 @@
 # TaskFlow - Task Management Application
 
+[![Auditing](https://github.com/lasse/todo-kimi-k2-6/actions/workflows/test.yaml/badge.svg)](https://github.com/lasse/todo-kimi-k2-6/actions/workflows/test.yaml)
+
 A modern, full-featured task management application built with Next.js, featuring AI-powered task parsing, collaboration tools, and advanced analytics.
 
 ## Features
