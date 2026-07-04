@@ -1,0 +1,48 @@
+# CODEOWNERS file for TaskFlow project
+# This file defines the default reviewers for pull requests
+
+# Core application code
+src/app/                 @lasse
+
+# API routes
+src/app/api/             @lasse
+
+# Server actions
+src/lib/actions/         @lasse
+
+# Database layer
+src/lib/db/              @lasse
+
+# AI integration
+src/lib/ai/              @lasse
+
+# Authentication
+src/lib/auth.ts          @lasse
+src/app/api/auth/        @lasse
+
+# Rate limiting
+src/lib/rate-limiter.ts  @lasse
+
+# Components
+src/components/          @lasse
+
+# Hooks
+src/hooks/               @lasse
+
+# Types
+src/types/               @lasse
+
+# Configuration
+next.config.ts           @lasse
+tsconfig.json            @lasse
+eslint.config.mjs        @lasse
+
+# Tests
+src/**/__tests__/        @lasse
+.e2e/                    @lasse
+
+# Documentation
+*.md                     @lasse
+
+# CI/CD
+.github/                 @lasse
