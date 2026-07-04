@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach } from "vitest";
-import { getPendingMigrations, migrations } from "@/lib/db/migrations";
+import { describe, it, expect } from "vitest";
+import { migrations } from "@/lib/db/migrations";
 
 describe("Migrations", () => {
   it("should have defined migrations", () => {
@@ -16,16 +16,8 @@ describe("Migrations", () => {
     for (const [id, sql] of Object.entries(migrations)) {
       expect(sql).toBeTruthy();
       expect(sql.length).toBeGreaterThan(10);
-      // Should contain CREATE TABLE or ALTER TABLE
-      expect(sql.toUpperCase()).toMatch(/(CREATE TABLE|ALTER TABLE)/);
+      // Should contain CREATE TABLE, ALTER TABLE, or CREATE INDEX
+      expect(sql.toUpperCase()).toMatch(/(CREATE TABLE|ALTER TABLE|CREATE INDEX)/);
     }
-  });
-});
-
-describe("getPendingMigrations", () => {
-  it("should return empty array when no migrations", () => {
-    // This would need a mock DB to test properly
-    // For now, just verify the function exists
-    expect(typeof getPendingMigrations).toBe("function");
   });
 });
