@@ -38,17 +38,19 @@ import type {
   Template,
   TemplateCategory,
 } from "@/types";
-import { createTask as createTaskAction, updateTask as updateTaskAction, addTaskComment, saveTemplateFromTask, getTemplateCategories } from "@/lib/actions/tasks";
-import { TaskBasicInfo } from "./modal/task-basic-info";
-import { TaskSchedule } from "./modal/task-schedule";
-import { TaskLabels } from "./modal/task-labels";
-import { TaskSubtasks } from "./modal/task-subtasks";
-import { TaskDependencies } from "./modal/task-dependencies";
-import { TaskCollaboration } from "./modal/task-collaboration";
-import { TaskAttachments } from "./modal/task-attachments";
+import { createTask as createTaskAction, updateTask as updateTaskAction, addTaskComment, saveTemplateFromTask, getTemplateCategories } from "@/lib/actions";
+import {
+  TaskBasicInfo,
+  TaskSchedule,
+  TaskLabels,
+  TaskSubtasks,
+  TaskDependencies,
+  TaskAttachments,
+  TaskTemplateTab,
+  TaskStreakTab,
+} from "./modal";
 import { TimeReport } from "./time-report";
 import { PomodoroTimer } from "./pomodoro-timer";
-import { StreakCalendar } from "./streak-calendar";
 // Icons
 import {
   Calendar,
@@ -58,18 +60,15 @@ import {
   Trash2,
   X,
   Paperclip,
-  Share2,
-  Flame,
   Flag,
   Repeat,
   ListChecks,
   Link,
   CheckCircle2,
-  Save,
 } from "lucide-react";
 
 interface TaskModalProps {
-  task?: TaskWithRelations;
+  task?: TaskWithRelations | undefined;
   lists: List[];
   labels: LabelType[];
   templates: Template[];
@@ -910,354 +909,50 @@ export function TaskModal({
             </div>
           )}
 
-          {activeTab === "template" && (
-            <div className="space-y-4 pt-4">
-              <h3 className="font-medium">Save as Template</h3>
-              <p className="text-sm text-muted-foreground">
-                Save this task configuration as a reusable template for future tasks.
-              </p>
-
-              {/* Category selection */}
-              {categories.length > 0 && (
-                <div className="space-y-2">
-                  <Label>Category (optional)</Label>
-                  <Select
-                    value={selectedCategory?.toString() || ""}
-                    onValueChange={(v) => setSelectedCategory(v ? Number(v) : null)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a category..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((cat) => (
-                        <SelectItem key={cat.id} value={String(cat.id)}>
-                          {cat.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={async () => {
-                  if (!name.trim()) {
-                    toast.error("Task name is required to save as template");
-                    return;
-                  }
-                  try {
-                    await saveTemplateFromTask(
-                      name,
-                      description || null,
-                      Number(listId) || null,
-                      priority,
-                      selectedLabels,
-                      subtasks,
-                      selectedCategory || undefined
-                    );
-                    onSuccess();
-                    toast.success("Template saved");
-                  } catch {
-                    toast.error("Failed to save template");
-                  }
-                }}
-              >
-                <Save className="h-4 w-4 mr-2" />
-                Save Current as Template
-              </Button>
-
-              <Separator className="my-4" />
-
-              <h4 className="text-sm font-medium">Saved Templates</h4>
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {templates.map((template) => (
-                  <button
-                    key={template.id}
-                    className="w-full text-left text-sm rounded px-2 py-2 hover:bg-accent border"
-                    onClick={() => handleUseTemplate(template)}
-                  >
-                    <div className="font-medium">{template.name}</div>
-                    {template.description && (
-                      <div className="text-xs text-muted-foreground line-clamp-1">
-                        {template.description}
-                      </div>
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
+          {activeTab === "template" && !isEditing && (
+            <TaskTemplateTab
+              name={name}
+              description={description}
+              listId={listId}
+              priority={priority}
+              selectedLabels={selectedLabels}
+              subtasks={subtasks}
+              templates={templates}
+              categories={categories}
+              selectedCategory={selectedCategory}
+              onCategoryChange={setSelectedCategory}
+              onUseTemplate={handleUseTemplate}
+              onSuccess={onSuccess}
+            />
           )}
 
           {activeTab === "comments" && isEditing && task && (
-            <div className="space-y-4 pt-4">
-              <h3 className="font-medium">Comments</h3>
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {task?.comments && task.comments.length > 0 ? (
-                  task.comments.map((comment) => (
-                    <div key={comment.id} className="text-sm">
-                      <div className="flex items-start gap-2">
-                        <div className="bg-muted rounded-full h-8 w-8 flex items-center justify-center text-xs font-medium">
-                          👤
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <span>Comment</span>
-                            <span>•</span>
-                            <span>{format(parseISO(comment.created_at), "MMM d, HH:mm")}</span>
-                          </div>
-                          <p className="mt-1">{comment.content}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-muted-foreground text-center py-4">
-                    No comments yet. Be the first to comment!
-                  </p>
-                )}
-              </div>
-
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Write a comment..."
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleAddComment()}
-                />
-                <Button size="sm" onClick={handleAddComment}>
-                  Send
-                </Button>
-              </div>
-            </div>
+            <TaskCommentsTab
+              task={task}
+              comments={task.comments || []}
+              onCommentsChange={onSuccess}
+            />
           )}
 
           {activeTab === "attachments" && isEditing && task && (
-            <div className="space-y-4 pt-4">
-              <h3 className="font-medium">Attachments</h3>
-              <div className="space-y-2">
-                <Label>Upload Files</Label>
-                <div className="border-2 border-dashed rounded-lg p-4 text-center">
-                  <Input
-                    type="file"
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file || !task) return;
-
-                      try {
-                        const formData = new FormData();
-                        formData.append("file", file);
-                        formData.append("taskId", String(task.id));
-
-                        const response = await fetch("/api/attachments", {
-                          method: "POST",
-                          body: formData,
-                        });
-
-                        if (response.ok) {
-                          onSuccess();
-                          toast.success(`Attached ${file.name}`);
-                        } else {
-                          throw new Error("Upload failed");
-                        }
-                      } catch (error) {
-                        toast.error("Failed to attach file");
-                        console.error(error);
-                      }
-                      e.target.value = "";
-                    }}
-                    className="hidden"
-                    id="file-upload"
-                  />
-                  <Label htmlFor="file-upload" className="cursor-pointer">
-                    <Plus className="h-6 w-6 mx-auto mb-1" />
-                    <span className="text-sm">Click to upload or drag file here</span>
-                  </Label>
-                </div>
-                {task.attachments && task.attachments.length > 0 && (
-                  <div className="space-y-2 mt-4">
-                    {task.attachments.map((att) => (
-                      <div key={att.id} className="flex items-center justify-between p-2 bg-muted rounded">
-                        <div className="flex items-center gap-2">
-                          <span>{att.mime_type.startsWith("image/") ? "🖼️" : "📎"}</span>
-                          <div>
-                            <div className="text-sm font-medium">{att.filename}</div>
-                            <div className="text-xs text-muted-foreground">
-                              {(att.file_size / 1024).toFixed(1)} KB
-                            </div>
-                          </div>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={async () => {
-                            try {
-                              const response = await fetch(`/api/attachments?id=${att.id}`, {
-                                method: "DELETE",
-                              });
-                              if (response.ok) {
-                                onSuccess();
-                                toast.success("Attachment removed");
-                              }
-                            } catch {
-                              toast.error("Failed to remove attachment");
-                            }
-                          }}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
+            <TaskAttachments task={task} onAttachmentsChange={onSuccess} />
           )}
 
-          {activeTab === "collaborate" && isEditing && (
-            <div className="space-y-4 pt-4">
-              <h3 className="font-medium">Collaboration</h3>
-              <p className="text-sm text-muted-foreground">
-                Share this task with team members and collaborate in real-time.
-              </p>
-
-              <div className="space-y-4">
-                <div>
-                  <h4 className="text-sm font-medium mb-2">Share with Users</h4>
-                  <div className="space-y-3">
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder="Enter user email..."
-                        className="flex-1"
-                      />
-                      <Select
-                        value="view"
-                        onValueChange={() => {}}
-                      >
-                        <SelectTrigger className="w-24">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="view">View</SelectItem>
-                          <SelectItem value="edit">Edit</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Button size="sm">Invite</Button>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Current Collaborators</Label>
-                      <div className="flex flex-wrap gap-2">
-                        {task.assignee && (
-                          <Badge variant="secondary" className="flex items-center gap-1">
-                            <span>{task.assignee.name || task.assignee.email}</span>
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-2">
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => {
-                      // Generate share link
-                      const shareLink = `${window.location.origin}/share/${task.id}-${Math.random().toString(36).substr(2, 9)}`;
-                      navigator.clipboard.writeText(shareLink);
-                      toast.success("Share link copied to clipboard!");
-                    }}
-                  >
-                    Generate Share Link
-                  </Button>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Anyone with this link can view the task
-                  </p>
-                </div>
-              </div>
-            </div>
+          {activeTab === "collaborate" && isEditing && task && (
+            <TaskCollaborateTab task={task} />
           )}
 
           {activeTab === "assign" && isEditing && (
-            <div className="space-y-4 pt-4">
-              <h3 className="font-medium">Task Assignment</h3>
-              <p className="text-sm text-muted-foreground">
-                Assign this task to team members. They will receive notifications about this task.
-              </p>
-
-              <div className="space-y-2">
-                <Label>Assignees</Label>
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {assignees.map((assignee) => (
-                    <Badge
-                      key={assignee.user_id}
-                      variant="secondary"
-                      className="flex items-center gap-1"
-                    >
-                      <span>{assignee.user_name || assignee.user_email}</span>
-                      <button
-                        onClick={() => setAssignees(assignees.filter(a => a.user_id !== assignee.user_id))}
-                        className="hover:text-red-500"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-                <Popover>
-                  <PopoverTrigger>
-                    <Button variant="outline" className="w-full justify-start">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add assignee...
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-64">
-                    <div className="space-y-2">
-                      <Input
-                        placeholder="Search users..."
-                        value={assigneeSearchQuery}
-                        onChange={async (e) => {
-                          setAssigneeSearchQuery(e.target.value);
-                          // In a real implementation, this would fetch users
-                          // For now, we show a message that this requires backend integration
-                        }}
-                      />
-                      <div className="max-h-60 overflow-y-auto">
-                        <div className="text-xs text-muted-foreground py-2">
-                          <p>Search is ready - connect to backend API for full functionality.</p>
-                          <p className="mt-1">You can manually add assignees using their user IDs.</p>
-                        </div>
-                      </div>
-                    </div>
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              <div className="text-xs text-muted-foreground">
-                <p>Tip: Assignees with "edit" permission can modify this task.</p>
-              </div>
-            </div>
+            <TaskAssignTab
+              assignees={assignees}
+              assigneeSearchQuery={assigneeSearchQuery}
+              onAssigneeSearchChange={setAssigneeSearchQuery}
+              onAssigneesChange={setAssignees}
+            />
           )}
 
           {activeTab === "streak" && isEditing && task && (
-            <div className="space-y-4 pt-4">
-              <h3 className="font-medium">Habit Streak</h3>
-              <p className="text-sm text-muted-foreground">
-                Track your progress on this recurring task. Mark it complete each day to build your streak!
-              </p>
-              <StreakCalendar
-                taskId={task.id}
-                taskName={task.name}
-                currentDate={task.date || ""}
-                completedDates={task.completed ? [task.date || ""] : []}
-                onDateToggle={async (date) => {
-                  // For now, just show a toast - the actual implementation would call the API
-                  toast.info("Habit tracking will be fully implemented with backend integration");
-                }}
-              />
-            </div>
+            <TaskStreakTab task={task} />
           )}
         </ScrollArea>
 
