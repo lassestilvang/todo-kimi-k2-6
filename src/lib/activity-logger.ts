@@ -1,4 +1,5 @@
 import { getDb } from "./db";
+import { logger } from "./logger";
 
 export interface ActivityLog {
   id: number;
@@ -21,7 +22,7 @@ export interface CreateActivityInput {
 }
 
 /**
- * Creates an activity log entry.
+ * Creates an activity log entry with structured logging.
  */
 export async function createActivityLog(input: CreateActivityInput): Promise<ActivityLog> {
   const db = getDb();
@@ -39,7 +40,7 @@ export async function createActivityLog(input: CreateActivityInput): Promise<Act
       input.details || null
     );
 
-  return {
+  const logEntry: ActivityLog = {
     id: Number(result.lastInsertRowid),
     task_id: input.task_id || null,
     user_id: input.user_id || null,
@@ -49,12 +50,22 @@ export async function createActivityLog(input: CreateActivityInput): Promise<Act
     details: input.details || null,
     created_at: new Date().toISOString(),
   };
+
+  // Log to structured logger
+  logger.info(`Activity: ${input.action}`, {
+    entityType: input.entity_type,
+    entityId: input.entity_id,
+    taskId: input.task_id,
+    userId: input.user_id,
+  });
+
+  return logEntry;
 }
 
 /**
  * Gets activity logs for a task.
  */
-export async function getTaskActivityLogs(taskId: number, limit: number = 50): Promise<ActivityLog[]> {
+export async function getTaskActivityLogs(taskId: number, limit = 50): Promise<ActivityLog[]> {
   const db = getDb();
   return db
     .prepare(
@@ -66,7 +77,7 @@ export async function getTaskActivityLogs(taskId: number, limit: number = 50): P
 /**
  * Gets recent activity logs across all entities.
  */
-export async function getRecentActivityLogs(limit: number = 100): Promise<ActivityLog[]> {
+export async function getRecentActivityLogs(limit = 100): Promise<ActivityLog[]> {
   const db = getDb();
   return db
     .prepare(
