@@ -5,13 +5,13 @@ import * as cacheModule from "@/lib/cache";
 // Since it's a module-level singleton, we'll test through the public API
 
 describe("Cache Module - Comprehensive Tests", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     // Clear the cache before each test
-    cacheModule.clear();
+    await cacheModule.clear();
   });
 
-  afterEach(() => {
-    cacheModule.clear();
+  afterEach(async () => {
+    await cacheModule.clear();
   });
 
   describe("taskCache.tasks", () => {
@@ -20,98 +20,98 @@ describe("Cache Module - Comprehensive Tests", () => {
       expect(cacheModule.taskCache.tasks.key("filters")).toBe("tasks:filters");
     });
 
-    it("should set and get tasks", () => {
+    it("should set and get tasks", async () => {
       const tasks = [{ id: 1, name: "Task 1" }];
-      cacheModule.taskCache.tasks.set("test", tasks);
-      expect(cacheModule.taskCache.tasks.get("test")).toEqual(tasks);
+      await cacheModule.taskCache.tasks.set("test", tasks);
+      expect(await cacheModule.taskCache.tasks.get("test")).toEqual(tasks);
     });
 
-    it("should return null for non-existent tasks", () => {
-      expect(cacheModule.taskCache.tasks.get("nonexistent")).toBeNull();
+    it("should return null for non-existent tasks", async () => {
+      expect(await cacheModule.taskCache.tasks.get("nonexistent")).toBeNull();
     });
 
-    it("should invalidate all task keys", () => {
-      cacheModule.taskCache.tasks.set("filter1", [{ id: 1 }]);
-      cacheModule.taskCache.tasks.set("filter2", [{ id: 2 }]);
-      cacheModule.taskCache.tasks.set("other", "data");
+    it("should invalidate all task keys", async () => {
+      await cacheModule.taskCache.tasks.set("filter1", [{ id: 1 }]);
+      await cacheModule.taskCache.tasks.set("filter2", [{ id: 2 }]);
+      await cacheModule.taskCache.tasks.set("other", "data");
 
-      cacheModule.taskCache.tasks.invalidate();
+      await cacheModule.taskCache.tasks.invalidate();
 
-      expect(cacheModule.taskCache.tasks.get("filter1")).toBeNull();
-      expect(cacheModule.taskCache.tasks.get("filter2")).toBeNull();
+      expect(await cacheModule.taskCache.tasks.get("filter1")).toBeNull();
+      expect(await cacheModule.taskCache.tasks.get("filter2")).toBeNull();
     });
 
-    it("should handle TTL parameter", () => {
+    it("should handle TTL parameter", async () => {
       const tasks = [{ id: 1, name: "Task 1" }];
-      cacheModule.taskCache.tasks.set("test", tasks, 1000);
-      expect(cacheModule.taskCache.tasks.get("test")).toEqual(tasks);
+      await cacheModule.taskCache.tasks.set("test", tasks, 1000);
+      expect(await cacheModule.taskCache.tasks.get("test")).toEqual(tasks);
     });
   });
 
   describe("taskCache.lists", () => {
-    it("should set and get lists", () => {
+    it("should set and get lists", async () => {
       const lists = [{ id: 1, name: "Inbox" }];
-      cacheModule.taskCache.lists.set(lists);
-      expect(cacheModule.taskCache.lists.get()).toEqual(lists);
+      await cacheModule.taskCache.lists.set(lists);
+      expect(await cacheModule.taskCache.lists.get()).toEqual(lists);
     });
 
-    it("should return null for non-existent lists", () => {
-      cacheModule.taskCache.lists.invalidate();
-      expect(cacheModule.taskCache.lists.get()).toBeNull();
+    it("should return null for non-existent lists", async () => {
+      await cacheModule.taskCache.lists.invalidate();
+      expect(await cacheModule.taskCache.lists.get()).toBeNull();
     });
 
-    it("should invalidate lists on demand", () => {
-      cacheModule.taskCache.lists.set([{ id: 1, name: "Inbox" }]);
-      cacheModule.taskCache.lists.invalidate();
-      expect(cacheModule.taskCache.lists.get()).toBeNull();
+    it("should invalidate lists on demand", async () => {
+      await cacheModule.taskCache.lists.set([{ id: 1, name: "Inbox" }]);
+      await cacheModule.taskCache.lists.invalidate();
+      expect(await cacheModule.taskCache.lists.get()).toBeNull();
     });
   });
 
   describe("taskCache.labels", () => {
-    it("should set and get labels", () => {
+    it("should set and get labels", async () => {
       const labels = [{ id: 1, name: "Work" }];
-      cacheModule.taskCache.labels.set(labels);
-      expect(cacheModule.taskCache.labels.get()).toEqual(labels);
+      await cacheModule.taskCache.labels.set(labels);
+      expect(await cacheModule.taskCache.labels.get()).toEqual(labels);
     });
 
-    it("should return null for non-existent labels", () => {
-      cacheModule.taskCache.labels.invalidate();
-      expect(cacheModule.taskCache.labels.get()).toBeNull();
+    it("should return null for non-existent labels", async () => {
+      await cacheModule.taskCache.labels.invalidate();
+      expect(await cacheModule.taskCache.labels.get()).toBeNull();
     });
 
-    it("should invalidate labels on demand", () => {
-      cacheModule.taskCache.labels.set([{ id: 1, name: "Work" }]);
-      cacheModule.taskCache.labels.invalidate();
-      expect(cacheModule.taskCache.labels.get()).toBeNull();
+    it("should invalidate labels on demand", async () => {
+      await cacheModule.taskCache.labels.set([{ id: 1, name: "Work" }]);
+      await cacheModule.taskCache.labels.invalidate();
+      expect(await cacheModule.taskCache.labels.get()).toBeNull();
     });
   });
 
   describe("getCacheStats", () => {
-    it("should return correct stats for empty cache", () => {
+    it("should return correct stats for empty cache", async () => {
       const stats = cacheModule.getCacheStats();
       expect(stats.size).toBe(0);
       expect(stats.keys).toEqual([]);
     });
 
-    it("should return correct stats for populated cache", () => {
-      cacheModule.taskCache.tasks.set("key1", [{ id: 1 }]);
-      cacheModule.taskCache.tasks.set("key2", [{ id: 2 }]);
+    it("should return correct stats for populated cache", async () => {
+      await cacheModule.taskCache.tasks.set("key1", [{ id: 1 }]);
+      await cacheModule.taskCache.tasks.set("key2", [{ id: 2 }]);
       const stats = cacheModule.getCacheStats();
       expect(stats.size).toBeGreaterThanOrEqual(2);
     });
   });
 
   describe("del and clear", () => {
-    it("should delete a specific key", () => {
-      cacheModule.set("key1", "value1");
-      cacheModule.del("key1");
-      expect(cacheModule.get("key1")).toBeNull();
+    it("should delete a specific key", async () => {
+      await cacheModule.set("key1", "value1");
+      await cacheModule.del("key1");
+      expect(await cacheModule.get("key1")).toBeNull();
     });
 
-    it("should clear all keys", () => {
-      cacheModule.set("key1", "value1");
-      cacheModule.set("key2", "value2");
-      cacheModule.clear();
+    it("should clear all keys", async () => {
+      await cacheModule.set("key1", "value1");
+      await cacheModule.set("key2", "value2");
+      await cacheModule.clear();
       const stats = cacheModule.getCacheStats();
       expect(stats.size).toBe(0);
     });
@@ -181,52 +181,52 @@ describe("Cache Module - Comprehensive Tests", () => {
   });
 
   describe("set and get basic operations", () => {
-    it("should store and retrieve primitive values", () => {
-      cacheModule.set("string", "text");
-      cacheModule.set("number", 42);
-      cacheModule.set("boolean", true);
+    it("should store and retrieve primitive values", async () => {
+      await cacheModule.set("string", "text");
+      await cacheModule.set("number", 42);
+      await cacheModule.set("boolean", true);
 
-      expect(cacheModule.get("string")).toBe("text");
-      expect(cacheModule.get("number")).toBe(42);
-      expect(cacheModule.get("boolean")).toBe(true);
+      expect(await cacheModule.get("string")).toBe("text");
+      expect(await cacheModule.get("number")).toBe(42);
+      expect(await cacheModule.get("boolean")).toBe(true);
     });
 
-    it("should store and retrieve complex objects", () => {
+    it("should store and retrieve complex objects", async () => {
       const obj = { nested: { value: 123 }, arr: [1, 2, 3] };
-      cacheModule.set("object", obj);
+      await cacheModule.set("object", obj);
 
-      expect(cacheModule.get("object")).toEqual(obj);
+      expect(await cacheModule.get("object")).toEqual(obj);
     });
 
-    it("should overwrite existing key", () => {
-      cacheModule.set("key", "value1");
-      cacheModule.set("key", "value2");
+    it("should overwrite existing key", async () => {
+      await cacheModule.set("key", "value1");
+      await cacheModule.set("key", "value2");
 
-      expect(cacheModule.get("key")).toBe("value2");
+      expect(await cacheModule.get("key")).toBe("value2");
     });
 
-    it("should return null for non-existent key", () => {
-      expect(cacheModule.get("nonexistent")).toBeNull();
+    it("should return null for non-existent key", async () => {
+      expect(await cacheModule.get("nonexistent")).toBeNull();
     });
   });
 
   describe("TTL expiration", () => {
     it("should expire after custom TTL", async () => {
-      cacheModule.set("key", "value", 50);
-      expect(cacheModule.get("key")).toBe("value");
+      await cacheModule.set("key", "value", 50);
+      expect(await cacheModule.get("key")).toBe("value");
 
       await new Promise(resolve => setTimeout(resolve, 100));
-      expect(cacheModule.get("key")).toBeNull();
+      expect(await cacheModule.get("key")).toBeNull();
     });
 
     it("should not expire immediately with long TTL", async () => {
-      cacheModule.set("key", "value", 1000);
+      await cacheModule.set("key", "value", 1000);
       await new Promise(resolve => setTimeout(resolve, 50));
-      expect(cacheModule.get("key")).toBe("value");
+      expect(await cacheModule.get("key")).toBe("value");
     });
 
-    it("should use default TTL when not specified", () => {
-      cacheModule.set("key", "value");
+    it("should use default TTL when not specified", async () => {
+      await cacheModule.set("key", "value");
       const stats = cacheModule.getCacheStats();
       expect(stats.size).toBe(1);
     });
