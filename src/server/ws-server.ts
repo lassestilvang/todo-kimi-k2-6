@@ -4,7 +4,7 @@
  */
 
 import { WebSocketServer } from "ws";
-import type { TaskWithRelations, User } from "@/types";
+import type { TaskWithRelations } from "@/types";
 
 interface CollaborationEvent {
   type: "task_updated" | "task_created" | "task_deleted" | "comment_added" | "user_joined" | "user_left" | "cursor_position" | "typing_start" | "typing_stop";
@@ -24,7 +24,7 @@ interface ClientData {
 }
 
 const PORT = parseInt(process.env.WS_PORT || "3001");
-const clients = new Map<any, ClientData>();
+const clients = new Map<WebSocket, ClientData>();
 
 export function createWebSocketServer() {
   const wss = new WebSocketServer({ port: PORT });
@@ -56,23 +56,29 @@ export function createWebSocketServer() {
   return wss;
 }
 
-function handleMessage(data: CollaborationEvent, wss: WebSocketServer, ws: any) {
+function handleMessage(data: CollaborationEvent, wss: WebSocketServer, ws: WebSocket) {
   switch (data.type) {
-    case "user_joined":
-      clients.set(ws, { userId: data.userId!, userName: data.userName! });
-      broadcastPresence(data.userId!, data.userName!, true, wss);
+    case "user_joined": {
+      const userId = data.userId ?? 0;
+      const userName = data.userName ?? "Unknown";
+      clients.set(ws, { userId, userName });
+      broadcastPresence(userId, userName, true, wss);
       break;
-    case "cursor_position":
+    }
+    case "cursor_position": {
       const clientData = clients.get(ws);
       if (clientData) {
         clientData.cursor = data.cursor;
         broadcastCursorPosition(clientData.userId, clientData.taskId, data.cursor, wss);
       }
       break;
+    }
     case "typing_start":
-    case "typing_stop":
-      broadcastTyping(data.userId!, data.taskId, data.type === "typing_start", wss);
+    case "typing_stop": {
+      const userId = data.userId ?? 0;
+      broadcastTyping(userId, data.taskId, data.type === "typing_start", wss);
       break;
+    }
     default:
       broadcastMessage(data, wss);
   }
