@@ -1,19 +1,32 @@
 // AI Assistant for task management
 // Supports natural language task creation and suggestions
 
+import { z } from "zod";
 import { getAIManager } from "./providers";
 
-export interface TaskSuggestion {
-  name: string;
-  description?: string;
-  priority?: "critical" | "high" | "medium" | "low" | "none";
-  estimated_duration?: number; // in minutes
-  suggested_date?: string;
-  recurring?: "none" | "daily" | "weekly" | "weekdays" | "monthly" | "yearly" | "custom";
-  list_name?: string;
-  deadline?: string;
-  list_id?: number;
-}
+// Zod schema for validating AI task suggestions
+export const taskSuggestionSchema = z.object({
+  name: z.string().min(1).max(500),
+  description: z.string().nullable().optional(),
+  priority: z.enum(["critical", "high", "medium", "low", "none"]).nullable().optional(),
+  estimated_duration: z.number().int().min(0).nullable().optional(),
+  suggested_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  recurring: z.enum(["none", "daily", "weekly", "weekdays", "monthly", "yearly", "custom"]).nullable().optional(),
+  list_name: z.string().nullable().optional(),
+  deadline: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  list_id: z.number().int().min(1).nullable().optional(),
+});
+
+export type TaskSuggestion = z.infer<typeof taskSuggestionSchema>;
+
+// Schema for AI insights output
+export const aiInsightsSchema = z.object({
+  tips: z.array(z.string()),
+  suggestions: z.array(z.string()),
+  trends: z.array(z.string()),
+});
+
+export type AIInsights = z.infer<typeof aiInsightsSchema>;
 
 export interface AITaskInput {
   text: string;
@@ -158,3 +171,6 @@ export {
   type UserWorkload,
   type WorkloadSuggestion,
 } from "./workload";
+
+// Cache management
+export { aiCache } from "./providers";
