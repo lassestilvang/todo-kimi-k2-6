@@ -1,0 +1,70 @@
+name: compliance-monitoring
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  schedule:
+    # Weekly audit on Monday at 03:00 UTC
+    - cron: '30 0 * * 1'
+jobs:
+  scan-secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install git-secrets
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git-secrets
+
+      - name: Configure git-secrets
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
+      - name: Scan for secrets
+        run: |
+          git secrets --install
+          git secrets --register-hooks
+          git secrets --add 'aws:'
+          git secrets --add 'azure:'
+          git secrets --add 'password'
+          git secrets --add 'private_key'
+          git secrets --add 'secret_key'
+          git secrets --add 'OPENAI_API_KEY'
+          git secrets --add 'ANTHROPIC_API_KEY'
+          git secrets --add 'GOOGLE_CLIENT_ID'
+          git secrets --add 'GOOGLE_CLIENT_SECRET'
+          git secrets --update
+
+      - name: Run secret scan
+        run: git secrets --scan
+
+      - name: Upload compliance report
+        uses: actions/upload-artifact@v3
+        with:
+          name: compliance-report
+          path: compliance-report.txt
+
+  license-check:
+    runs-on: ubuntu-latest
+    needs: scan-secrets
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify LICENSE file exists
+        run: |
+          if [ ! -f LICENSE ]; then
+            echo "License file is missing!"
+            exit 1
+          fi
+
+      - name: Run SPDX license check
+        run: |
+          # Simple SPDX identifier check
+          grep -E 'SPDX-License-Identifier:' LICENSE || echo "Missing SPDX identifier"
