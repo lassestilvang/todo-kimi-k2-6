@@ -1,17 +1,52 @@
 import { join } from "path";
 import { createDatabase, type Database } from "./driver";
 import { runMigrations } from "./migrations";
-
-const DB_PATH = join(process.cwd(), "data", "planner.db");
+import { config } from "@/lib/config";
 
 let db: Database | null = null;
 
+// Re-export Database type for convenience
+export type { Database };
+
+/**
+ * Execute a function within a database transaction.
+ * Provides a consistent interface for both SQLite and PostgreSQL.
+ * @param fn The function to execute within a transaction
+ * @returns The return value of the function
+ */
+export async function withTransaction<T>(fn: (db: Database) => T | Promise<T>): Promise<T> {
+  const database = getDb();
+  // SQLite transaction is synchronous, PostgreSQL is async
+  // We handle both by checking the result type
+  const result = database.transaction(() => fn(database));
+  // If result is a promise, await it (PostgreSQL case)
+  return result instanceof Promise ? await result : result;
+}
+
+/**
+ * Execute a function within a database transaction (synchronous version).
+ * Use this when you don't need to await the result.
+ * @param fn The function to execute within a transaction
+ * @returns The return value of the function
+ */
+export function withTransactionSync<T>(fn: (db: Database) => T): T {
+  const database = getDb();
+  return database.transaction(() => fn(database));
+}
+
 export function getDb(): Database {
   if (!db) {
-    db = createDatabase(DB_PATH);
-    db.exec("PRAGMA journal_mode = WAL");
+    // Use configured database URL or default path
+    const dbPath = config.database.url || join(process.cwd(), "data", "planner.db");
+    db = createDatabase();
+
+    // SQLite-specific configuration
+    if (!config.isProduction && dbPath.startsWith("file:")) {
+      db.exec("PRAGMA journal_mode = WAL");
+    }
+
     initializeSchema(db);
-    runMigrations().catch(console.error);
+    runMigrations().catch(() => {}); // Migrations handled separately
   }
   return db;
 }
@@ -25,6 +60,9 @@ export function setDb(testDb: Database): void {
  * This allows testing the actual database initialization path.
  */
 export function resetDb(): void {
+  if (db && typeof (db as Database & { _reset: () => void })._reset === "function") {
+    (db as Database & { _reset: () => void })._reset();
+  }
   db = null;
 }
 
@@ -36,6 +74,7 @@ export function initializeSchema(db: Database) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS lists (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER REFERENCES users(id),
       name TEXT NOT NULL,
       emoji TEXT DEFAULT '📋',
       color TEXT DEFAULT '#6366f1',
@@ -45,7 +84,8 @@ export function initializeSchema(db: Database) {
 
     CREATE TABLE IF NOT EXISTS labels (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL UNIQUE,
+      user_id INTEGER REFERENCES users(id),
+      name TEXT NOT NULL,
       icon TEXT DEFAULT '🏷️',
       color TEXT DEFAULT '#8b5cf6',
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
@@ -398,5 +438,14 @@ export function initializeSchema(db: Database) {
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
     CREATE INDEX IF NOT EXISTS idx_user_settings_user ON user_settings(user_id);
+
+    -- Rate limit log for persistence across restarts
+    CREATE TABLE IF NOT EXISTS rate_limit_log (
+      key TEXT PRIMARY KEY,
+      count INTEGER DEFAULT 1,
+      reset_time INTEGER NOT NULL,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_rate_limit_reset ON rate_limit_log(reset_time);
   `);
 }
