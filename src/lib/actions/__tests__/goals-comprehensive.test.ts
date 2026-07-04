@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { setDb, resetDb } from "@/lib/db";
 import { createTestDb } from "@/lib/db/test-db";
-import { createGoal, getGoals, getGoalById, updateGoalProgress, resetGoal, deleteGoal, getGoalMilestone, createGoalMilestone, updateMilestoneProgress, deleteGoalMilestone } from "@/lib/actions/goals";
+import { createGoal, getGoals, getGoalById, updateGoalProgress, resetGoal, deleteGoal, getGoalMilestones, createGoalMilestone, updateMilestoneProgress, deleteGoalMilestone } from "@/lib/actions/goals";
 
 describe("Goals Actions - Comprehensive Tests", () => {
   let db: ReturnType<typeof createTestDb>;
@@ -9,14 +9,6 @@ describe("Goals Actions - Comprehensive Tests", () => {
   beforeEach(() => {
     resetDb();
     db = createTestDb();
-    setDb(db);
-  });
-        current_count INTEGER DEFAULT 0,
-        due_date TEXT,
-        completed INTEGER DEFAULT 0,
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
     setDb(db);
   });
 
@@ -108,7 +100,7 @@ describe("Goals Actions - Comprehensive Tests", () => {
       await createGoalMilestone(goal.id, { name: "Milestone 1", target_count: 5 });
       await createGoalMilestone(goal.id, { name: "Milestone 2", target_count: 5 });
 
-      const milestones = await getGoalMilestone(goal.id);
+      const milestones = await getGoalMilestones(goal.id);
       expect(milestones).toHaveLength(2);
     });
 
@@ -124,7 +116,7 @@ describe("Goals Actions - Comprehensive Tests", () => {
       const milestone = await createGoalMilestone(goal.id, { name: "Test", target_count: 5 });
       await deleteGoalMilestone(milestone.id);
 
-      const milestones = await getGoalMilestone(goal.id);
+      const milestones = await getGoalMilestones(goal.id);
       expect(milestones).toHaveLength(0);
     });
   });
