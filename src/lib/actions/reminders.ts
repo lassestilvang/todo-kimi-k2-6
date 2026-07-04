@@ -16,7 +16,7 @@ export async function getReminders(taskId: number): Promise<Reminder[]> {
 /**
  * Get upcoming reminders across all tasks
  */
-export async function getUpcomingReminders(limit: number = 10): Promise<
+export async function getUpcomingReminders(limit = 10): Promise<
   Array<Reminder & { task_name: string; task_completed: number }>
 > {
   const db = getDb();
