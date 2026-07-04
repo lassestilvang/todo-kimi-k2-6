@@ -6,37 +6,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { format, subDays, addDays, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday } from "date-fns";
+import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval, isToday } from "date-fns";
 import type { Task, HabitStreak, HabitCompletion } from "@/types";
 
 interface HabitTrackerProps {
   tasks: Task[];
-  onTaskComplete?: (taskId: number) => void;
   className?: string;
 }
 
 interface HabitWithStreak extends Task {
   streak: HabitStreak | null;
   completions: HabitCompletion[];
-}
-
-// Calculate streak from completions
-function calculateStreak(completions: HabitCompletion[], days: Date[]): number {
-  let streak = 0;
-  const completionMap = new Map(
-    completions.map(c => [c.date, c])
-  );
-
-  // Start from the most recent day and count backwards
-  for (let i = days.length - 1; i >= 0; i--) {
-    const dateStr = format(days[i], "yyyy-MM-dd");
-    if (completionMap.has(dateStr)) {
-      streak++;
-    } else {
-      break;
-    }
-  }
-  return streak;
 }
 
 // Get streak level for badge styling
@@ -51,7 +31,7 @@ function getStreakLevel(streak: number): { level: string; color: string; nextThr
   return { level: "Beginner", color: "bg-gray-500", nextThreshold: 1 };
 }
 
-export function HabitTracker({ tasks, onTaskComplete, className }: HabitTrackerProps) {
+export function HabitTracker({ tasks, className }: HabitTrackerProps) {
   const [streaks, setStreaks] = useState<Record<number, HabitStreak>>({});
   const [completions, setCompletions] = useState<Record<number, HabitCompletion[]>>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -87,7 +67,7 @@ export function HabitTracker({ tasks, onTaskComplete, className }: HabitTrackerP
           if (!completionsMap[c.task_id]) {
             completionsMap[c.task_id] = [];
           }
-          completionsMap[c.task_id].push(c);
+          completionsMap[c.task_id]?.push(c);
         });
         setCompletions(completionsMap);
       }
@@ -153,8 +133,7 @@ export function HabitTracker({ tasks, onTaskComplete, className }: HabitTrackerP
   }, [currentMonth]);
 
   const renderHabitCalendar = (habit: HabitWithStreak) => {
-    const completionsMap = new Map(habit.completions.map(c => [c.date, true]));
-    const today = new Date();
+    const completionsMap = new Map(habit.completions.map((c) => [c.date, true]));
 
     return (
       <Card key={habit.id} className="mb-4">
