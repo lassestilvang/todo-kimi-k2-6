@@ -30,7 +30,7 @@ export async function comparePassword(password: string, hashedPassword: string):
 /**
  * Generate a random password for invited users
  */
-export function generateRandomPassword(length: number = 12): string {
+export function generateRandomPassword(length = 12): string {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%";
   let result = "";
   for (let i = 0; i < length; i++) {
