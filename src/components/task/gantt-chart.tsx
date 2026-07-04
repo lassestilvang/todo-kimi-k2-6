@@ -93,30 +93,11 @@ export function GanttChart({ tasks, onTaskClick }: GanttChartProps) {
   };
 
   // Calculate dependency lines for visualization (placeholder for future use)
+  // TODO: Implement visual dependency arrows between tasks
+   
   // const dependencyLines = useMemo(() => {
-  //   const lines: Array<{ from: { x: number; y: number }; to: { x: number; y: number }; taskId: number }> = [];
-
-    ganttTasks.forEach((task) => {
-      if (task.blockers && task.blockers.length > 0) {
-        const blockerIds = task.blockers.map(b => b.task_id);
-        const blockingTasks = ganttTasks.filter(t => blockerIds.includes(t.id));
-
-        blockingTasks.forEach((blocker) => {
-          // Calculate positions
-          const blockerEndX = blocker.startOffset + blocker.width;
-          const taskStartX = task.startOffset;
-
-          lines.push({
-            from: { x: blockerEndX, y: task.id },
-            to: { x: taskStartX, y: blocker.id },
-            taskId: task.id,
-          });
-        });
-      }
-    });
-
-    return lines;
-  }, [ganttTasks]);
+  //   return [];
+  // }, [ganttTasks]);
 
   return (
     <div className="p-4">
