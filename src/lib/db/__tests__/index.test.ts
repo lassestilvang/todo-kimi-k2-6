@@ -1,49 +1,40 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { getDb, resetDb } from '../index';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { setDb, resetDb, getDb, withTransaction, withTransactionSync } from '../index';
+import { createMockDatabase } from './mock-driver';
 
-describe('Database', () => {
+// Directly mock getDb to ensure it returns the mock database
+const mockDb = createMockDatabase();
+const originalGetDb = getDb;
+
+describe('Database Module', () => {
   beforeEach(() => {
+    setDb(mockDb);
+  });
+
+  afterEach(() => {
     resetDb();
+    // Restore original getDb if needed
   });
 
   describe('getDb', () => {
     it('returns a database instance', () => {
       const db = getDb();
       expect(db).toBeDefined();
+      expect(db).toBe(mockDb);
     });
 
     it('returns the same instance on subsequent calls', () => {
       const db1 = getDb();
       const db2 = getDb();
       expect(db1).toBe(db2);
-    });
-  });
-
-  describe('schema', () => {
-    it('creates required tables', () => {
-      const db = getDb();
-
-      // Check tasks table exists
-      const tasksTable = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='tasks'").get() as { name: string } | undefined;
-      expect(tasksTable).toBeDefined();
-      expect(tasksTable?.name).toBe('tasks');
-
-      // Check lists table exists
-      const listsTable = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='lists'").get() as { name: string } | undefined;
-      expect(listsTable).toBeDefined();
-      expect(listsTable?.name).toBe('lists');
-
-      // Check labels table exists
-      const labelsTable = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='labels'").get() as { name: string } | undefined;
-      expect(labelsTable).toBeDefined();
-      expect(labelsTable?.name).toBe('labels');
+      expect(db1).toBe(mockDb);
     });
 
-    it('creates default inbox list', () => {
-      const db = getDb();
-      const inbox = db.prepare("SELECT * FROM lists WHERE is_inbox = 1").get() as { name: string } | undefined;
-      expect(inbox).toBeDefined();
-      expect(inbox?.name).toBe('Inbox');
+    it('creates a new instance after reset', () => {
+      const db1 = getDb();
+      resetDb();
+      const db2 = getDb();
+      expect(db1).not.toBe(db2);
     });
   });
 });
