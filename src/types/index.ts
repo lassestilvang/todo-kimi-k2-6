@@ -163,6 +163,10 @@ export interface Task {
   created_at: string;
   updated_at: string;
   sort_order: number;
+  assignee_id?: number | null;
+  assignee?: User;
+  created_by?: number | null;
+  created_by_user?: User;
   labels?: Label[];
   subtasks?: Subtask[];
   reminders?: Reminder[];
@@ -172,10 +176,6 @@ export interface Task {
   blockers?: TaskDependency[];
   blocked_by?: TaskDependency[];
   time_entries?: TimeEntry[];
-  assignee_id?: number | null;
-  assignee?: User;
-  created_by?: number | null;
-  created_by_user?: User;
   recurring_exceptions?: RecurringException[];
 }
 
@@ -384,13 +384,15 @@ export interface UserSettings {
   updated_at: string;
 }
 
-// Workspace Types
+// Workspace Types - Basic type for display purposes
+// Note: created_by and created_at may not be present in all contexts
 export interface Workspace {
   id: number;
   name: string;
   description: string | null;
-  created_by: number | null;
-  created_at: string;
+  created_by?: number | null;
+  created_at?: string;
+  role?: string;
 }
 
 export interface WorkspaceUser {
