@@ -11,7 +11,19 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-export async function sendTaskReminderEmail(email: string, task: Task) {
+// Generic task type for emails - can be partial
+interface EmailTask {
+  id: number;
+  name: string;
+  deadline?: string | null;
+  completed?: boolean;
+  assignee_id?: number | null;
+  remind_at?: string;
+  email?: string;
+  description?: string | null;
+}
+
+export async function sendTaskReminderEmail(email: string, task: EmailTask) {
   const mailOptions = {
     from: process.env.EMAIL_FROM || "TaskFlow <noreply@taskflow.app>",
     to: email,
@@ -28,7 +40,7 @@ export async function sendTaskReminderEmail(email: string, task: Task) {
   return transporter.sendMail(mailOptions);
 }
 
-export async function sendDueSoonEmail(email: string, task: Task) {
+export async function sendDueSoonEmail(email: string, task: EmailTask) {
   const mailOptions = {
     from: process.env.EMAIL_FROM || "TaskFlow <noreply@taskflow.app>",
     to: email,
