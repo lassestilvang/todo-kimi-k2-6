@@ -1,0 +1,106 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Mutation Risk Dashboard",
+    "panels": [
+      {
+        "id": 0,
+        "title": "Fragile Files",
+        "type": "barchart",
+        "options": {
+          "legendPlacement": "auto",
+          "orientation": "h",
+          "scaleDistribution": {
+            "type": "linear"
+          },
+          "showTotal": true
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            }
+          }
+        },
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [
+              {
+                "selected": true,
+                "color": {
+                  "mode": "palette-classic"
+                }
+              }
+            ]
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "thresholds": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 20
+              },
+              {
+                "color": "red",
+                "value": 30
+              }
+            }
+          }
+        }
+      },
+      {
+        "id": 1,
+        "title": "Mutation Score Distribution",
+        "type": "singleshotshot",
+        "options": {
+          "colorMode": "paletteCar",
+          "orientation": "auto",
+          "colorArrangement": "gradient",
+          "fill": {
+            "mode": "gradient",
+            "gradientMode": "warm",
+            "showAsStack": true
+          },
+          "detectChanges": false,
+          "colorSuggestionMode": "paletteClass"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [
+              {
+                "selected": true,
+                "color": {
+                  "mode": "paletteClass",
+                  "schema": "mixed"
+                }
+              }
+            ],
+            "thresholds": {
+              "mode": "absolute",
+              "thresholds": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "orange",
+                  "value": 20
+                },
+                {
+                  "color": "red",
+                  "value": 30
+                }
+              ]
+            }
+          }
+        }
+      }
+    ],
+    "schemaVersion": 1,
+    "schemaVersionMajor": 1
+  }
+}
