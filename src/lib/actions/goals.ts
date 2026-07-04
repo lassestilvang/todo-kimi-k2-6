@@ -17,12 +17,13 @@ export async function createGoal(input: CreateGoalInput & { user_id: number }): 
   const db = getDb();
   const result = db
     .prepare(
-      `INSERT INTO goals (user_id, name, description, target_count, target_unit, period)
-       VALUES (?, ?, ?, ?, ?, ?)`
+      `INSERT INTO goals (user_id, name, description, target_count, target_unit, period, current_count, streak_count, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, 0, 0, CURRENT_TIMESTAMP)`
     )
     .run(input.user_id, input.name, input.description || null, input.target_count, input.target_unit, input.period);
 
-  return {
+  const goal = db.prepare("SELECT * FROM goals WHERE id = ?").get(Number(result.lastInsertRowid)) as Goal | undefined;
+  return goal || {
     id: Number(result.lastInsertRowid),
     user_id: input.user_id,
     name: input.name,
@@ -43,7 +44,6 @@ export async function updateGoalProgress(id: number, increment: number): Promise
   if (!goal) throw new Error("Goal not found");
 
   const newCount = Math.min(goal.current_count + increment, goal.target_count);
-  const isCompleted = newCount >= goal.target_count;
 
   db.prepare(
     "UPDATE goals SET current_count = ?, last_updated = CURRENT_TIMESTAMP WHERE id = ?"
@@ -74,7 +74,6 @@ export async function getGoalProgress(goalId: number): Promise<{
   is_completed: boolean;
   days_remaining: number;
 }> {
-  const db = getDb();
   const goal = await getGoalById(goalId);
   if (!goal) throw new Error("Goal not found");
 
@@ -107,7 +106,7 @@ export async function getGoalProgress(goalId: number): Promise<{
 }
 
 // Bulk update goal progress based on task completions
-export async function updateGoalsFromTaskCompletion(taskCount: number = 1) {
+export async function updateGoalsFromTaskCompletion(taskCount = 1) {
   const db = getDb();
 
   // Update daily goals
@@ -162,7 +161,9 @@ export async function updateMilestoneProgress(id: number, increment: number): Pr
   const milestone = db.prepare("SELECT * FROM goal_milestones WHERE id = ?").get(id) as GoalMilestone | undefined;
   if (!milestone) throw new Error("Milestone not found");
 
-  const newCount = Math.min(milestone.current_count + increment, milestone.target_count);
+  // Handle null current_count from database
+  const currentCount = milestone.current_count ?? 0;
+  const newCount = Math.min(currentCount + increment, milestone.target_count);
   const isCompleted = newCount >= milestone.target_count;
 
   db.prepare("UPDATE goal_milestones SET current_count = ?, completed = ? WHERE id = ?").run(
