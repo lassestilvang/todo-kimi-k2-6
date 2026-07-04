@@ -32,7 +32,7 @@ export async function GET() {
   try {
     const db = getDb();
     db.prepare("SELECT 1").get();
-  } catch (error) {
+  } catch {
     checks.database = "error";
     status = "unhealthy";
   }
@@ -41,7 +41,7 @@ export async function GET() {
   try {
     const hasAiConfig = !!(process.env['OPENAI_API_KEY'] || process.env['ANTHROPIC_API_KEY']);
     checks.ai_providers = hasAiConfig ? "ok" : "degraded";
-  } catch (error) {
+  } catch {
     checks.ai_providers = "error";
   }
 
