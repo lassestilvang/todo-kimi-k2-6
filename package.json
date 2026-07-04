@@ -20,7 +20,9 @@
     "test:coverage:report": "vitest run --coverage --coverage-reporter=text --coverage-reporter=html",
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",
-    "stryker": "stryker run"
+    "stryker": "stryker run",
+    "prepare": "husky install",
+    "prepare:husky": "husky add .husky/pre-commit \"npm run test:coverage && npm run stryker && npm run lint:fix\""
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
@@ -86,9 +88,11 @@
     "@vitest/ui": "4.1.9",
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
+    "husky": "^9.0.0",
     "ioredis": "5.11.1",
     "jest-environment-jsdom": "30.4.1",
     "jsdom": "29.1.1",
+    "msw": "^2.0.0",
     "nyc": "18.0.0",
     "pg": "8.22.0",
     "prettier": "^3",
@@ -97,14 +101,5 @@
     "typescript": "^5",
     "vitest": "4.1.9",
     "ws": "8.21.0"
-  },
-  "ignoreScripts": [
-    "sharp",
-    "unrs-resolver"
-  ],
-  "trustedDependencies": [
-    "better-sqlite3",
-    "sharp",
-    "unrs-resolver"
-  ]
+  }
 }
