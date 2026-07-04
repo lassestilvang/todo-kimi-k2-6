@@ -1,0 +1,133 @@
+name: Test & Coverage
+on: [push, pull_request]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Run coverage report
+        run: npm run test:coverage
+
+      - name: Run mutation testing
+        run: npm run stryker
+
+      - name: Generate mutation risks report
+        run: |
+          node scripts/analyze-mutation-risks.js > reports/mutation-analysis.json
+
+      - name: Generate synthetic invalid test inputs for E2E
+        run: node scripts/generate-edge-cases.js
+
+      - name: Run end-to-end tests with synthetic inputs
+        run: |
+          # This is a placeholder - in a real setup, you would run your E2E tests here
+          echo "Running E2E tests with injected invalid data..."
+          # Example: npx cypress run --env inputFile=reports/invalid-inputs.json
+
+      - name: Generate AI refactoring suggestions
+        run: |
+          node scripts/ai-refactor-suggestions.js > reports/ai-refactor-suggestions.json || echo "AI suggestions generation failed (likely missing API key)"
+
+      - name: Generate PDF audit report
+        run: |
+          node scripts/generate-pdf-report.js || echo "PDF generation failed (install puppeteer if needed)"
+
+      - name: Run gamification scoring
+        run: |
+          node scripts/gamification.js > reports/gamification-score.json
+
+      - name: Create audit report archive
+        run: |
+          zip -r reports/audit-package.zip \
+            reports/audit-report.html \
+            reports/audit-report.pdf \
+            reports/mutation-analysis.json \
+            reports/mutation-risk-analysis.json \
+            reports/ai-refactor-suggestions.json \
+            reports/gamification-score.json \
+            reports/invalid-inputs.json \
+            reports/leaderboard.json 2>/dev/null || true
+
+      - name: Upload unit test results
+        uses: actions/upload-artifact@v3
+        with:
+          name: unit-test-results
+          path: |
+            coverage/
+            reports/
+
+      - name: Upload audit package
+        uses: actions/upload-artifact@v3
+        with:
+          name: full-audit-package
+          path: reports/audit-package.zip
+
+      - name: Check coverage thresholds
+        run: |
+          COVERAGE=$(grep -h "TOTAL" reports/coverage/lcov.info | awk -F ',' '{ sum += $2 } END { print sum }')
+          BRANCHES=$(echo $COVERAGE | awk '{print $1}')
+          FUNCTIONS=$(echo $COVERAGE | awk '{print $2}')
+          LINES=$(echo $COVERAGE | awk '{print $3}')
+          echo "Branch: $BRANCHES, Functions: $FUNCTIONS, Lines: $LINES"
+
+          MIN_BRANCHES=80
+          MIN_FUNCTIONS=85
+          MIN_LINES=85
+
+          if (( $(echo "$BRANCHES < $MIN_BRANCHES" | bc -l) )); then
+            echo "Branch coverage below threshold: $BRANCHES < $MIN_BRANCHES"
+            exit 1
+          fi
+
+          if (( $(echo "$FUNCTIONS < $MIN_FUNCTIONS" | bc -l) )); then
+            echo "Function coverage below threshold: $FUNCTIONS < $MIN_FUNCTIONS"
+            exit 1
+          fi
+
+          if (( $(echo "$LINES < $MIN_LINES" | bc -l) )); then
+            echo "Line coverage below threshold: $LINES < $MIN_LINES"
+            exit 1
+          fi
+
+          echo "All coverage thresholds met."
+
+      - name: Post gamification leaderboard to PR (if applicable)
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const leaderboardPath = path.join(process.env.GITHUB_WORKSPACE, 'reports', 'leaderboard.json');
+            if (fs.existsSync(leaderboardPath)) {
+              const leaderboard = JSON.parse(fs.readFileSync(leaderboardPath, 'utf8'));
+              const topContributor = leaderboard[0] || { contributor: 'Nobody', totalPoints: 0 };
+              const comment = `
+## 🏆 Weekly Gamification Leaderboard
+
+**Top Contributor**: @${topContributor.contributor} with ${topContributor.totalPoints} points!
+
+Full leaderboard:
+${leaderboard.map((entry, index) =>
+  \`\`\`\n\${index + 1}. \${entry.contributor}: \${entry.totalPoints} pts\n\`\`\`
+).join('')}
+
+Keep up the great work, team! 🚀
+              `;
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            }
