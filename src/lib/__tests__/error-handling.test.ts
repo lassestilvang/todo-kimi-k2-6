@@ -5,28 +5,28 @@ describe("Cache Operations", () => {
     const { taskCache } = await import("@/lib/cache");
 
     // Set a value
-    taskCache.tasks.set("test-key", [{ id: 1, name: "Test" }] as any, 1000);
-    expect(taskCache.tasks.get("test-key")).toBeDefined();
+    await taskCache.tasks.set("test-key", [{ id: 1, name: "Test" }] as any, 1000);
+    expect(await taskCache.tasks.get("test-key")).toBeDefined();
 
     // Invalidate
-    taskCache.tasks.invalidate();
-    expect(taskCache.tasks.get("test-key")).toBeNull();
+    await taskCache.tasks.invalidate();
+    expect(await taskCache.tasks.get("test-key")).toBeNull();
   });
 
   it("should handle cache TTL expiration", async () => {
     const { taskCache } = await import("@/lib/cache");
 
     // Set with short TTL
-    taskCache.tasks.set("expiring-key", "value", 10);
+    await taskCache.tasks.set("expiring-key", "value", 10);
 
     // Should exist immediately
-    expect(taskCache.tasks.get("expiring-key")).toBe("value");
+    expect(await taskCache.tasks.get("expiring-key")).toBe("value");
 
     // Wait for expiration
     await new Promise(resolve => setTimeout(resolve, 20));
 
     // Should be expired
-    expect(taskCache.tasks.get("expiring-key")).toBeNull();
+    expect(await taskCache.tasks.get("expiring-key")).toBeNull();
   });
 });
 
