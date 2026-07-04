@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Bot, Send, Sparkles, Clock, Target, Copy, Check, List as ListIcon, Mic, MicOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,10 +39,11 @@ export function AIAssistant({ tasks, lists, onAddTask, className }: AIAssistantP
   const [isLoading, setIsLoading] = useState(false);
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const [insights, setInsights] = useState<{ tips: string[]; suggestions: string[]; trends: string[]; provider: string } | null>(null);
-  const [showSuggestions, _setShowSuggestions] = useState(true);
   const [aiStatus, setAiStatus] = useState<{ openai: boolean; anthropic: boolean; activeProvider: string } | null>(null);
   const [isListening, setIsListening] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null);
 
   // Initialize speech recognition
@@ -50,11 +51,13 @@ export function AIAssistant({ tasks, lists, onAddTask, className }: AIAssistantP
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (SpeechRecognition) {
+      setSpeechSupported(true);
       recognitionRef.current = new SpeechRecognition();
       recognitionRef.current.continuous = false;
       recognitionRef.current.lang = "en-US";
       recognitionRef.current.interimResults = false;
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       recognitionRef.current.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
         setInput(transcript);
@@ -135,12 +138,32 @@ export function AIAssistant({ tasks, lists, onAddTask, className }: AIAssistantP
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Load insights on mount
-  useEffect(() => {
-    loadInsights();
-  }, [tasks]);
+  const [workloadSuggestions, setWorkloadSuggestions] = useState<Array<{
+    type: string;
+    taskName: string;
+    reason: string;
+    confidence: number;
+  }>>([]);
 
-  const loadInsights = async () => {
+  // Load workload suggestions on mount
+  useEffect(() => {
+    fetch("/api/workload")
+      .then((r) => r.json())
+      .then((data) => {
+        setWorkloadSuggestions(
+          data.suggestions?.map((s: { type: string; taskName: string; reason: string; confidence: number }) => ({
+            type: s.type,
+            taskName: s.taskName,
+            reason: s.reason,
+            confidence: s.confidence,
+          })) || []
+        );
+      })
+      .catch(console.error);
+  }, []);
+
+  // Load insights on mount
+  const loadInsights = useCallback(async () => {
     try {
       const result = await fetch("/api/ai", {
         method: "POST",
@@ -169,31 +192,11 @@ export function AIAssistant({ tasks, lists, onAddTask, className }: AIAssistantP
     } catch (error) {
       console.error("Failed to load insights:", error);
     }
-  };
+  }, [tasks, aiStatus]);
 
-  const [workloadSuggestions, setWorkloadSuggestions] = useState<Array<{
-    type: string;
-    taskName: string;
-    reason: string;
-    confidence: number;
-  }>>([]);
-
-  // Load workload suggestions on mount
   useEffect(() => {
-    fetch("/api/workload")
-      .then((r) => r.json())
-      .then((data) => {
-        setWorkloadSuggestions(
-          data.suggestions?.map((s: any) => ({
-            type: s.type,
-            taskName: s.taskName,
-            reason: s.reason,
-            confidence: s.confidence,
-          })) || []
-        );
-      })
-      .catch(console.error);
-  }, []);
+    loadInsights();
+  }, [loadInsights]);
 
   const handleSubmit = async () => {
     if (!input.trim()) return;
@@ -246,7 +249,7 @@ export function AIAssistant({ tasks, lists, onAddTask, className }: AIAssistantP
         parsedTask: { ...parsed, provider: aiStatus?.activeProvider || "keyword-parser" },
       };
       setMessages((prev) => [...prev, aiResponse]);
-    } catch (error) {
+    } catch {
       const aiResponse: Message = {
         id: Date.now() + 1,
         role: "assistant",
@@ -302,9 +305,9 @@ export function AIAssistant({ tasks, lists, onAddTask, className }: AIAssistantP
   }, [smartSuggestions]);
 
   // Generate task suggestions based on patterns
-  const formatTime = (date: Date) => {
-  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-};
+  const formatTime = useCallback((date: Date) => {
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  }, []);
 
 const taskSuggestions = useMemo(() => {
     const now = new Date();
@@ -360,7 +363,9 @@ const taskSuggestions = useMemo(() => {
         const generatedTasks = await response.json();
         if (generatedTasks.tasks && generatedTasks.tasks.length > 0) {
           // Add each generated task
-          generatedTasks.tasks.forEach((task: any) => {
+          generatedTasks.tasks.forEach(
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (task: any) => {
             onAddTask({
               name: task.name,
               description: task.description,
@@ -415,7 +420,7 @@ const taskSuggestions = useMemo(() => {
                     </div>
                   </div>
                 )}
-                {showSuggestions && taskSuggestions.length > 0 && (
+                {taskSuggestions.length > 0 && (
                   <div className="mt-3 space-y-1">
                     <div className="text-xs font-medium text-muted-foreground">Smart suggestions:</div>
                     {taskSuggestions.map((suggestion, i) => (
@@ -496,7 +501,7 @@ const taskSuggestions = useMemo(() => {
               variant={isListening ? "destructive" : "outline"}
               size="icon"
               onClick={() => setIsListening(!isListening)}
-              disabled={!recognitionRef.current}
+              disabled={!speechSupported}
               title={isListening ? "Stop listening" : "Start voice input"}
             >
               {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
