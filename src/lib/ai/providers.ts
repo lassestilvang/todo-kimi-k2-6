@@ -4,13 +4,77 @@
  */
 
 import type { TaskSuggestion, AITaskInput } from "./index";
+import { logError, logWarn } from "@/lib/logger";
+import { taskSuggestionSchema, aiInsightsSchema, type AIInsights } from "./index";
 
 export interface AIProvider {
   name: string;
   parseTask(input: AITaskInput): Promise<TaskSuggestion>;
   parseTaskStream?(input: AITaskInput, onChunk: (chunk: string) => void): Promise<TaskSuggestion>;
   generateInsights(tasks: Array<{ name: string; completed: boolean; priority: string; date?: string | null; deadline?: string | null }>): Promise<{ tips: string[]; suggestions: string[]; trends: string[] }>;
+  generateTasksFromNotes?(notes: string, context?: { lists?: Array<{ id: number; name: string; emoji: string }> }): Promise<Array<{ name: string; description?: string; priority?: "critical" | "high" | "medium" | "low" | "none" }>>;
 }
+
+/**
+ * Default timeout for AI API requests (in milliseconds)
+ */
+const DEFAULT_TIMEOUT_MS = 10000;
+
+/**
+ * Cache TTL in milliseconds (5 minutes)
+ */
+const CACHE_TTL_MS = 5 * 60 * 1000;
+
+/**
+ * Helper function to add timeout to a promise
+ */
+async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout>;
+  const timeoutPromise = new Promise<T>((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error(`Request timed out after ${ms}ms`)), ms);
+  });
+
+  try {
+    const result = await Promise.race([promise, timeoutPromise]);
+    return result;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+/**
+ * Simple in-memory cache for AI responses
+ */
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+}
+
+class AICache {
+  private cache = new Map<string, CacheEntry<any>>();
+
+  get<T>(key: string): T | null {
+    const entry = this.cache.get(key);
+    if (!entry) return null;
+
+    if (Date.now() - entry.timestamp > CACHE_TTL_MS) {
+      this.cache.delete(key);
+      return null;
+    }
+
+    return entry.data;
+  }
+
+  set<T>(key: string, data: T): void {
+    this.cache.set(key, { data, timestamp: Date.now() });
+  }
+
+  clear(): void {
+    this.cache.clear();
+  }
+}
+
+const aiCache = new AICache();
 
 /**
  * Keyword-based fallback parser (no API required)
@@ -152,13 +216,28 @@ export class KeywordParser implements AIProvider {
     }
 
     // Enhanced date parsing: "in X days/weeks"
-    const inMatch = text.match(/in\s+(\d+)\s+(day|week|month)s?/);
+    const inMatch = text.match(/in\s+(\d+)\s+(day|week|month|year)s?/);
     if (inMatch && !suggested_date) {
       const num = parseInt(inMatch[1]);
       const unit = inMatch[2];
-      const ms = num * (unit === "day" ? 24 : unit === "week" ? 24 * 7 : 30 * 24) * 60 * 60 * 1000;
-      const futureDate = new Date(Date.now() + ms);
+      const multiplier = unit === "day" ? 1 : unit === "week" ? 7 : unit === "month" ? 30 : 365;
+      const futureDate = new Date(Date.now() + num * multiplier * 24 * 60 * 60 * 1000);
       suggested_date = futureDate.toISOString().split("T")[0];
+    }
+
+    // Parse "every X day/week/month" patterns for custom recurring
+    const everyMatch = text.match(/every\s+(\d+)?\s*(day|week|weekday|month|year)s?/i);
+    if (everyMatch && recurring === "none") {
+      const num = parseInt(everyMatch[1] || "1");
+      const unit = everyMatch[2];
+      if (unit === "day") recurring = "daily";
+      else if (unit === "week") recurring = "weekly";
+      else if (unit === "weekday") recurring = "weekdays";
+      else if (unit === "month") recurring = "monthly";
+      else if (unit === "year") recurring = "yearly";
+      if (num > 1 || unit === "day") {
+        recurring = "custom";
+      }
     }
 
     // Enhanced deadline parsing
@@ -305,6 +384,44 @@ export class KeywordParser implements AIProvider {
     const daysAhead = (targetDay - currentDay + 7) % 7 || 7;
     const nextDay = new Date(today.getTime() + daysAhead * 24 * 60 * 60 * 1000);
     return nextDay;
+  }
+
+  /**
+   * Parse "January 15" or "Feb 3rd" style dates
+   */
+  private parseMonthDayDate(text: string): Date | null {
+    const monthMap: Record<string, number> = {
+      "january": 0, "february": 1, "march": 2, "april": 3,
+      "may": 4, "june": 5, "july": 6, "august": 7,
+      "september": 8, "october": 9, "november": 10, "december": 11
+    };
+
+    const shortMonthMap: Record<string, number> = {
+      "jan": 0, "feb": 1, "mar": 2, "apr": 3,
+      "jun": 4, "jul": 5, "aug": 6, "sep": 7,
+      "oct": 8, "nov": 9, "dec": 10
+    };
+
+    for (const [monthName, monthNum] of Object.entries({ ...monthMap, ...shortMonthMap })) {
+      if (text.toLowerCase().includes(monthName)) {
+        const dayMatch = text.match(/(\d{1,2})(?:st|nd|rd|th)?/);
+        if (dayMatch) {
+          const day = parseInt(dayMatch[1]);
+          const now = new Date();
+          const year = now.getFullYear();
+          let date = new Date(year, monthNum, day);
+
+          // If date has passed, move to next year
+          if (date < now) {
+            date = new Date(year + 1, monthNum, day);
+          }
+
+          return date;
+        }
+      }
+    }
+
+    return null;
   }
 
   /**
@@ -463,32 +580,41 @@ Output format:
 
     try {
       return await this.withRetry(async () => {
-        const response = await fetch(`${this.baseURL}/chat/completions`, {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: this.model,
-            messages: [{ role: "user", content: prompt }],
-            temperature: 0.3,
-            stream: false,
+        const response = await withTimeout(
+          fetch(`${this.baseURL}/chat/completions`, {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: this.model,
+              messages: [{ role: "user", content: prompt }],
+              temperature: 0.3,
+              stream: false,
+            }),
           }),
-        });
+          DEFAULT_TIMEOUT_MS
+        );
 
         if (!response.ok) {
           const errorBody = await response.text();
-          console.error("OpenAI API error:", response.status, errorBody);
+          logError("OpenAI API error", { status: response.status, body: errorBody });
           throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
         }
 
         const data = await response.json();
-        const content = data.choices[0]?.message?.content || "{}";
-        return JSON.parse(content) as TaskSuggestion;
+        const content = data.choices[0]?.message?.content ?? "{}";
+        const parsed = taskSuggestionSchema.safeParse(JSON.parse(content));
+        if (!parsed.success) {
+          logWarn("OpenAI response validation failed, using fallback", { issues: parsed.error.issues });
+          // Fallback to keyword parser on validation failure
+          return new KeywordParser().parseTask(input);
+        }
+        return parsed.data;
       });
     } catch (error) {
-      console.error("OpenAI parsing failed:", error);
+      logError("OpenAI parsing failed", undefined, error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -620,11 +746,64 @@ Return JSON:
         }
 
         const data = await response.json();
-        return JSON.parse(data.choices[0]?.message?.content || '{"tips":[],"suggestions":[],"trends":[]}');
+        const content = data.choices[0]?.message?.content ?? '{"tips":[],"suggestions":[],"trends":[]}';
+        const parsed = aiInsightsSchema.safeParse(JSON.parse(content));
+        if (!parsed.success) {
+          logWarn("OpenAI insights validation failed", { issues: parsed.error.issues });
+          return { tips: [], suggestions: [], trends: [] };
+        }
+        return parsed.data;
       });
     } catch (error) {
-      console.error("OpenAI insights failed:", error);
+      logError("OpenAI insights failed", undefined, error instanceof Error ? error : new Error(String(error)));
       return { tips: [], suggestions: [], trends: [] };
+    }
+  }
+
+  async generateTasksFromNotes(notes: string): Promise<Array<{
+    name: string;
+    description?: string;
+    priority?: "critical" | "high" | "medium" | "low" | "none";
+  }>> {
+    if (!process.env.OPENAI_API_KEY) {
+      return [];
+    }
+
+    const prompt = `
+Extract actionable tasks from the following notes/bullet points. Return JSON array only:
+
+"${notes}"
+
+Format:
+[
+  {"name": "Task 1", "description": "optional description", "priority": "medium"},
+  {"name": "Task 2", "priority": "high"}
+]
+Only return valid JSON.
+`;
+
+    try {
+      const response = await fetch(`${this.baseURL}/chat/completions`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: this.model,
+          messages: [{ role: "user", content: prompt }],
+          temperature: 0.3,
+        }),
+      });
+
+      if (!response.ok) {
+        return [];
+      }
+
+      const data = await response.json();
+      return JSON.parse(data.choices[0]?.message?.content || "[]");
+    } catch {
+      return [];
     }
   }
 }
@@ -683,32 +862,41 @@ Return only JSON with these fields:
 
     try {
       return await this.withRetry(async () => {
-        const response = await fetch(`${this.baseURL}/v1/messages`, {
-          method: "POST",
-          headers: {
-            "x-api-key": process.env.ANTHROPIC_API_KEY!,
-            "Content-Type": "application/json",
-            "anthropic-version": "2023-06-01",
-          },
-          body: JSON.stringify({
-            model: this.model,
-            max_tokens: 500,
-            messages: [{ role: "user", content: prompt }],
+        const response = await withTimeout(
+          fetch(`${this.baseURL}/v1/messages`, {
+            method: "POST",
+            headers: {
+              "x-api-key": process.env.ANTHROPIC_API_KEY!,
+              "Content-Type": "application/json",
+              "anthropic-version": "2023-06-01",
+            },
+            body: JSON.stringify({
+              model: this.model,
+              max_tokens: 500,
+              messages: [{ role: "user", content: prompt }],
+            }),
           }),
-        });
+          DEFAULT_TIMEOUT_MS
+        );
 
         if (!response.ok) {
           const errorBody = await response.text();
-          console.error("Claude API error:", response.status, errorBody);
+          logError("Claude API error", { status: response.status, body: errorBody });
           throw new Error(`Claude API error: ${response.status} ${response.statusText}`);
         }
 
         const data = await response.json();
-        const content = data.content[0]?.text || "{}";
-        return JSON.parse(content) as TaskSuggestion;
+        const content = data.content[0]?.text ?? "{}";
+        const parsed = taskSuggestionSchema.safeParse(JSON.parse(content));
+        if (!parsed.success) {
+          logWarn("Claude response validation failed, using fallback", { issues: parsed.error.issues });
+          // Fallback to keyword parser on validation failure
+          return new KeywordParser().parseTask(input);
+        }
+        return parsed.data;
       });
     } catch (error) {
-      console.error("Claude parsing failed:", error);
+      logError("Claude parsing failed", undefined, error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -747,11 +935,65 @@ Return JSON: {"tips":["..."],"suggestions":["..."],"trends":["..."]}
         }
 
         const data = await response.json();
-        return JSON.parse(data.content[0]?.text || '{"tips":[],"suggestions":[],"trends":[]}');
+        const content = data.content[0]?.text ?? '{"tips":[],"suggestions":[],"trends":[]}';
+        const parsed = aiInsightsSchema.safeParse(JSON.parse(content));
+        if (!parsed.success) {
+          logWarn("Claude insights validation failed", { issues: parsed.error.issues });
+          return { tips: [], suggestions: [], trends: [] };
+        }
+        return parsed.data;
       });
     } catch (error) {
-      console.error("Claude insights failed:", error);
+      logError("Claude insights failed", undefined, error instanceof Error ? error : new Error(String(error)));
       return { tips: [], suggestions: [], trends: [] };
+    }
+  }
+
+  async generateTasksFromNotes(notes: string): Promise<Array<{
+    name: string;
+    description?: string;
+    priority?: "critical" | "high" | "medium" | "low" | "none";
+  }>> {
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return [];
+    }
+
+    const prompt = `
+Extract actionable tasks from the following notes/bullet points. Return JSON array:
+
+"${notes}"
+
+Format:
+[
+  {"name": "Task 1", "description": "optional description", "priority": "medium"},
+  {"name": "Task 2", "priority": "high"}
+]
+Only return valid JSON.
+`;
+
+    try {
+      const response = await fetch(`${this.baseURL}/v1/messages`, {
+        method: "POST",
+        headers: {
+          "x-api-key": process.env.ANTHROPIC_API_KEY!,
+          "Content-Type": "application/json",
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model: this.model,
+          max_tokens: 1000,
+          messages: [{ role: "user", content: prompt }],
+        }),
+      });
+
+      if (!response.ok) {
+        return [];
+      }
+
+      const data = await response.json();
+      return JSON.parse(data.content[0]?.text ?? "[]");
+    } catch {
+      return [];
     }
   }
 }
@@ -779,12 +1021,26 @@ export class AIManager {
   }
 
   async parseTask(input: AITaskInput): Promise<TaskSuggestion & { provider: string }> {
+    // Check cache first (only for keyword parser to avoid stale AI results)
+    const cacheKey = `parse:${input.text}`;
+    const cachedResult = aiCache.get<TaskSuggestion & { provider: string }>(cacheKey);
+    if (cachedResult) {
+      return cachedResult;
+    }
+
     for (const provider of this.providers) {
       try {
         const result = await provider.parseTask(input);
-        return { ...result, provider: provider.name };
+        const resultWithProvider = { ...result, provider: provider.name };
+
+        // Cache keyword parser results
+        if (provider.name === "keyword-parser") {
+          aiCache.set(cacheKey, resultWithProvider);
+        }
+
+        return resultWithProvider;
       } catch (error) {
-        console.warn(`${provider.name} failed, trying next provider`);
+        logWarn(`${provider.name} failed, trying next provider`, { error: error instanceof Error ? error.message : String(error) });
         continue;
       }
     }
@@ -802,7 +1058,7 @@ export class AIManager {
           const result = await provider.generateInsights(tasks);
           return { ...result, provider: provider.name };
         } catch (error) {
-          console.warn(`${provider.name} insights failed`);
+          logWarn(`${provider.name} insights failed`, { error: error instanceof Error ? error.message : String(error) });
         }
       }
     }
@@ -817,13 +1073,34 @@ export class AIManager {
       lists?: Array<{ id: number; name: string; emoji: string }>;
     }
   ): Promise<Array<TaskSuggestion & { provider: string }>> {
-    // Always use keyword parser for this since it has the implementation
+    // Try AI providers first (skip keyword-parser since we want to use it as fallback)
+    for (const provider of this.providers) {
+      if (provider.name !== "keyword-parser" && typeof (provider as any).generateTasksFromNotes === "function") {
+        try {
+          const result = await (provider as any).generateTasksFromNotes(notes, context);
+          if (result && result.length > 0) {
+            return result.map((task: TaskSuggestion) => ({
+              ...task,
+              provider: provider.name,
+            }));
+          }
+        } catch (error) {
+          logWarn(`${provider.name} notes generation failed, trying next provider`, { error: error instanceof Error ? error.message : String(error) });
+        }
+      }
+    }
+
+    // Fallback to keyword parser
     const parser = new KeywordParser();
     const result = await parser.generateTasksFromNotes(notes);
     return result.map(task => ({
       ...task,
       provider: "keyword-parser",
     }));
+  }
+
+  clearCache(): void {
+    aiCache.clear();
   }
 }
 
