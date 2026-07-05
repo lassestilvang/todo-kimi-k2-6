@@ -1,0 +1,49 @@
+{
+  "app": {
+    "title": "TaskFlow",
+    "tagline": "Daily Planner & Task Manager"
+  },
+  "navigation": {
+    "today": "Today",
+    "next7Days": "Next 7 Days",
+    "upcoming": "Upcoming",
+    "completed": "Completed",
+    "kanban": "Kanban",
+    "gantt": "Gantt",
+    "analytics": "Analytics",
+    "settings": "Settings",
+    "calendarSync": "Calendar Sync",
+    "calendar": "Calendar",
+    "graph": "Dependency Graph",
+    "matrix": "Eisenhower Matrix",
+    "ai": "AI Assistant",
+    "goals": "Goals & Habits",
+    "blocked": "Blocked Tasks"
+  },
+  "filterPresets": {
+    "needsAttention": "Needs Attention",
+    "thisWeek": "This Week",
+    "withLabels": "With Labels",
+    "withSubtasks": "With Subtasks"
+  },
+  "tasks": {
+    "addTask": "Add Task",
+    "editTask": "Edit Task",
+    "deleteTask": "Delete Task",
+    "complete": "Complete",
+    "pending": "Pending",
+    "noTasks": "No tasks found",
+    "searchTasks": "Search tasks...",
+    "searchPlaceholder": "Search: \"{query}\"",
+    "loading": "Loading your tasks..."
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "success": "Operation successful"
+  }
+}
