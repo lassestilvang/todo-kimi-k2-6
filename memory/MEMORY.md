@@ -1,0 +1,2 @@
+- [Project Analysis](project-analysis.md) — codebase review with improvement recommendations
+- [Implementation Summary](implementation-summary.md) — completed fixes and remaining work
