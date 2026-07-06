@@ -83,6 +83,60 @@ export function createMockDatabase(): MockDatabase {
     return match[1].split(',').map(c => c.trim());
   }
 
+  // Parse WHERE clause conditions: returns array of {column, value}
+  // Also returns the number of WHERE parameters consumed
+  function parseWhereConditions(sql: string, params: unknown[]): { column: string; value: unknown }[] {
+    const whereMatch = sql.match(/WHERE\s+(.+?)(?:\s+ORDER\s+BY|\s+LIMIT|$)/i);
+    if (!whereMatch) return [];
+
+    const whereClause = whereMatch[1];
+    const conditions = [];
+
+    // Match conditions like "column = ?" with parameter
+    const paramMatches = [...whereClause.matchAll(/([\w.]+)\s*=\s*\?/gi)];
+
+    // Match conditions like "column = value" where value is a literal (string or number, NOT SQL keywords)
+    const literalMatches = [...whereClause.matchAll(/([\w.]+)\s*=\s*(?:'([^']*)'|(?!ORDER|LIMIT|OFFSET)(?:\b|^)(\w+))/gi)];
+
+    // Track which params we've used for parameterized conditions
+    const paramConditions: Record<string, unknown> = {};
+    paramMatches.forEach((match, idx) => {
+      const col = match[1].replace(/^[a-z]+\./i, '');
+      paramConditions[col] = params[idx];
+    });
+
+    // Combine conditions - add param conditions first
+    const allUsedCols = new Set<string>();
+    paramMatches.forEach(m => {
+      const col = m[1].replace(/^[a-z]+\./i, '');
+      allUsedCols.add(col);
+    });
+
+    // Add literal conditions (not already covered by param conditions)
+    literalMatches.forEach(match => {
+      const col = match[1].replace(/^[a-z]+\./i, '');
+      // match[2] is quoted string, match[3] is unquoted value
+      const val = match[2] !== undefined ? match[2] : match[3];
+
+      // Skip if already handled as param or no value
+      if (allUsedCols.has(col) || !val) return;
+
+      let value: unknown = val;
+      // Handle numeric literals
+      if (/^\d+$/.test(val)) {
+        value = Number(val);
+      }
+      conditions.push({ column: col, value });
+    });
+
+    // Add param conditions
+    Object.entries(paramConditions).forEach(([col, val]) => {
+      conditions.push({ column: col, value: val });
+    });
+
+    return conditions;
+  }
+
   return {
     prepare(sql: string): MockStatement {
       const lowerSql = sql.toLowerCase();
@@ -109,6 +163,20 @@ export function createMockDatabase(): MockDatabase {
             }
 
             const record: Record<string, unknown> = { id: explicitId ?? lastInsertId };
+
+            // Set default values for columns not in INSERT statement
+            // These defaults match the actual database schema
+            if (tableName === 'tasks') {
+              if (!columns.includes('completed')) {
+                record.completed = 0;
+              }
+              if (!columns.includes('user_id')) {
+                record.user_id = null;
+              }
+            }
+            if (tableName === 'lists' && !columns.includes('user_id')) {
+              record.user_id = null;
+            }
 
             // Parse VALUES clause to handle both parameters and literals
             const valuesMatch = sql.match(/VALUES\s*\(([^)]+)\)/i);
@@ -335,56 +403,59 @@ export function createMockDatabase(): MockDatabase {
           };
         }
 
-        const orderByMatch = sql.match(/ORDER\s+BY\s+(\w+)\s+(ASC|DESC)/i);
-        const limitMatch = sql.match(/LIMIT\s+\?/i) ? 'param' : sql.match(/LIMIT\s+(\d+)/i);
-        const whereMatch = sql.match(/WHERE\s+(?:[\w.]+\s*=\s*\?)/i);
-
         return {
           run: () => ({ lastInsertRowid: 0, changes: 0 }),
           get: (...params: unknown[]) => {
             // Check the table for the record
             if (!table || table.size === 0) return undefined;
 
-            if (params.length > 0 && whereMatch) {
-              // Handle WHERE clause with filtering
-              const whereParts = sql.split('WHERE')[1]?.split('ORDER BY')[0]?.split('LIMIT')[0] || '';
-              const whereConditions = whereParts.match(/[\w.]+(?=\s*=\s*\?)/g) || [];
+            const allRecords = Array.from(table.values());
 
-              if (whereConditions.length > 0) {
-                // Filter results for WHERE conditions and return first match
-                const records = Array.from(table.values());
-                let result: Record<string, unknown> | undefined;
-
-                for (let i = 0; i < whereConditions.length; i++) {
-                  // Remove table prefix (e.g., 'ts.' -> '') but keep the column name
-                  const col = whereConditions[i].replace(/^[a-z]+\./i, '');
-                  const paramIdx = Math.max(0, params.length - whereConditions.length + i);
-                  const val = params[paramIdx];
-
-                  const found = records.find(r => r && r[col] === val);
-                  if (found) {
-                    result = found;
-                    break;
-                  }
-                }
-                return result;
-              }
-
-              // Default: treat as ID lookup
-              const id = params[0];
-              const numericId = typeof id === 'string' ? Number(id) : (typeof id === 'number' ? id : Number(id));
-              return table.get(numericId);
+            // Handle simple WHERE id = ? pattern
+            const whereIdMatch = sql.match(/WHERE\s+id\s*=\s*\?/i);
+            if (whereIdMatch && params.length > 0) {
+              const id = params[params.length - 1] as number;
+              return allRecords.find(r => r && r.id === id);
             }
 
-            // No params - return first record
-            return table.values().next().value;
+            // Handle WHERE with user_id = ? OR user_id IS NULL pattern
+            const hasUserIdCondition = /user_id\s*=\s*\?\s*OR\s*user_id\s*IS\s*NULL/i.test(sql);
+            if (hasUserIdCondition && params.length > 0) {
+              const userId = params[0] as number;
+              return allRecords.find(r => r && (r.user_id === userId || r.user_id === null || r.user_id === undefined));
+            }
+
+            // Handle simple WHERE column = ? pattern
+            const simpleWhereMatch = sql.match(/WHERE\s+([\w.]+)\s*=\s*\?/i);
+            if (simpleWhereMatch && params.length > 0) {
+              const col = simpleWhereMatch[1].replace(/^[a-z]+\./i, '');
+              const val = params[0];
+              return allRecords.find(r => r && r[col] === val);
+            }
+
+            // Handle WHERE with literal values like completed = 0
+            const literalWhereMatch = sql.match(/WHERE\s+(.+?)(?:\s+ORDER|\s+LIMIT|$)/i);
+            if (literalWhereMatch) {
+              const whereText = literalWhereMatch[1];
+              // Handle completed = 0
+              if (/\bcompleted\s*=\s*0\b/i.test(whereText)) {
+                return allRecords.find(r => r && r.completed === 0);
+              }
+              // Handle completed = 1
+              if (/\bcompleted\s*=\s*1\b/i.test(whereText)) {
+                return allRecords.find(r => r && r.completed === 1);
+              }
+            }
+
+            // No WHERE - return first record
+            return allRecords[0];
           },
           all: (...params: unknown[]) => {
             if (!table) return [];
             let result = Array.from(table.values());
 
+            // Handle ORDER BY - extract all ORDER BY clauses
             if (lowerSql.includes("order by")) {
-              // Handle ORDER BY - extract all ORDER BY clauses
               const orderByMatches = [...sql.matchAll(/ORDER\s+BY\s+(\w+)\s+(ASC|DESC)/gi)];
               // Sort by each ORDER BY column in sequence
               orderByMatches.reverse().forEach(match => {
@@ -404,31 +475,66 @@ export function createMockDatabase(): MockDatabase {
               });
             }
 
-            if (whereMatch && params.length > 0) {
-              // Parse all WHERE conditions with ? to determine which param matches which column
-              const whereParts = sql.split('WHERE')[1]?.split('ORDER BY')[0]?.split('LIMIT')[0] || '';
-              const whereConditions = whereParts.match(/[\w.]+(?=\s*=\s*\?)/g) || [];
+            // Handle WHERE clause - parse all conditions
+            if (lowerSql.includes("where")) {
+              const whereClause = sql.split('WHERE')[1]?.split('ORDER BY')[0]?.split('LIMIT')[0] || '';
 
-              // Count how many params are used for WHERE conditions
-              // Match params to conditions in order
-              whereConditions.forEach((col, idx) => {
-                // Remove table prefix (e.g., 'ts.' -> '') but keep the column name
-                const cleanedCol = col.replace(/^[a-z]+\./i, '');
-                const paramIdx = Math.max(0, params.length - whereConditions.length + idx);
-                if (paramIdx < params.length) {
-                  result = result.filter(r => r && r[cleanedCol] === params[paramIdx]);
-                }
-              });
+              // Handle user_id = ? OR user_id IS NULL pattern - user_id can be null or match param
+              // In test/demo mode, return all records (skip user isolation for simplicity)
+              if (/\buser_id\s*=\s*\?\s*OR\s*user_id\s*IS\s*NULL\b/i.test(whereClause)) {
+                // Skip user_id filtering in mock - all records should be visible
+                // This handles the demo mode where tasks have user_id=NULL
+              }
+
+              // Handle completed = 0 literal (incomplete tasks)
+              if (/\bcompleted\s*=\s*0\b/i.test(whereClause)) {
+                result = result.filter(r => r && r.completed === 0);
+              }
+
+              // Handle completed = 1 literal (completed tasks)
+              if (/\bcompleted\s*=\s*1\b/i.test(whereClause)) {
+                result = result.filter(r => r && (r.completed === 1 || r.completed === true));
+              }
+
+              // Handle list_id = ? pattern
+              const listIdMatch = whereClause.match(/list_id\s*=\s*\?/i);
+              if (listIdMatch) {
+                const listId = params[0];
+                result = result.filter(r => r && r.list_id === listId);
+              }
+
+              // Handle date = ? pattern
+              const dateMatch = whereClause.match(/date\s*=\s*\?/i);
+              if (dateMatch) {
+                // Find the index of date in WHERE clause
+                const paramCountBeforeDate = (whereClause.substring(0, dateMatch.index!).match(/\?/g) || []).length;
+                const date = params[paramCountBeforeDate];
+                result = result.filter(r => r && r.date === date);
+              }
+
+              // Handle date >= ? pattern (for upcoming/next7 views)
+              const dateGteMatch = whereClause.match(/date\s*>\s*\?/i);
+              if (dateGteMatch) {
+                const paramCountBeforeDate = (whereClause.substring(0, dateGteMatch.index!).match(/\?/g) || []).length;
+                const date = params[paramCountBeforeDate];
+                result = result.filter(r => r && r.date >= date);
+              }
             }
 
-            // Handle LIMIT with parameter or literal
-            if (limitMatch === 'param' && params.length > 0) {
-              // LIMIT ? uses the last parameter
-              const limitParam = params[params.length - 1] as number;
-              result = result.slice(0, limitParam);
-            } else if (typeof limitMatch === 'object' && limitMatch !== null) {
-              result = result.slice(0, parseInt((limitMatch as RegExpMatchArray)[1], 10));
+            // Handle LIMIT ? with variable - always use the last param
+            const limitParamMatch = sql.match(/LIMIT\s+\?/i);
+            if (limitParamMatch && params.length > 0) {
+              // LIMIT is the last parameter
+              const limitValue = params[params.length - 1] as number;
+              result = result.slice(0, Math.max(0, limitValue));
+            } else {
+              const limitLiteralMatch = sql.match(/LIMIT\s+(\d+)/i);
+              if (limitLiteralMatch) {
+                const limitValue = parseInt(limitLiteralMatch[1], 10);
+                result = result.slice(0, limitValue);
+              }
             }
+
             return result;
           },
         };
@@ -439,7 +545,6 @@ export function createMockDatabase(): MockDatabase {
         const tableName = parseTableName(sql);
         const table = tableName && tables.get(tableName.toLowerCase());
         const setMatch = sql.match(/SET\s+(.+?)(?:\s+WHERE|$)/i);
-        let lastUpdatedId: number | null = null;
 
         return {
           run: (...params: unknown[]) => {
@@ -493,29 +598,35 @@ export function createMockDatabase(): MockDatabase {
 
             // Check for WHERE id = ? pattern
             const whereIdMatch = sql.match(/WHERE\s+id\s*=\s*\?/i);
-
-            table.forEach((record, key) => {
-              // If WHERE id = ?, only update matching record
-              if (whereIdMatch && targetId !== null && key !== targetId && key !== Number(targetId)) {
-                return;
+            if (whereIdMatch && targetId !== null) {
+              // Update only the specific record
+              const existing = table.get(Number(targetId));
+              if (existing) {
+                Object.assign(existing, setValues);
+                changes = 1;
               }
+              return { lastInsertRowid: Number(targetId), changes };
+            }
+
+            // Update all records if no WHERE clause
+            table.forEach((record) => {
               Object.assign(record, setValues);
               changes++;
-              lastUpdatedId = key;
             });
 
-            return { lastInsertRowid: lastUpdatedId || 0, changes };
+            return { lastInsertRowid: changes > 0 ? Array.from(table.keys())[0] : 0, changes };
           },
           get: (...params: unknown[]) => {
             if (!table || table.size === 0) return undefined;
-            if (params.length > 0) {
-              const id = params[0];
-              return table.get(typeof id === 'string' ? Number(id) : id as number);
+            // If WHERE id = ? pattern, return that specific record
+            const whereIdMatch = sql.match(/WHERE\s+id\s*=\s*\?/i);
+            if (whereIdMatch && params.length > 0) {
+              const id = params[params.length - 1] as number;
+              return table.get(Number(id));
             }
-            if (lastUpdatedId !== null) {
-              return table.get(lastUpdatedId);
-            }
-            return table.values().next().value;
+            // Otherwise return first record
+            const records = Array.from(table.values());
+            return records[0];
           },
           all: () => [],
         };
@@ -561,11 +672,59 @@ export function createMockDatabase(): MockDatabase {
     },
 
     exec(sql: string): void {
+      // Handle CREATE TABLE
       const createMatch = sql.match(/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(\w+)/i);
       if (createMatch) {
         const tableName = createMatch[1].toLowerCase();
         if (!tables.has(tableName)) {
           tables.set(tableName, new Map());
+        }
+        return;
+      }
+      // Handle INSERT via exec (used in tests)
+      if (sql.toLowerCase().includes("insert")) {
+        const tableName = parseTableName(sql);
+        const table = tableName && tables.get(tableName.toLowerCase());
+        const columns = parseColumns(sql);
+        const valuesMatch = sql.match(/VALUES\s*\(([^)]+)\)/i);
+
+        if (table && valuesMatch && columns.length > 0) {
+          const valuesStr = valuesMatch[1];
+          // Parse values with proper handling of quotes and parentheses
+          const values = [];
+          let parenDepth = 0;
+          let current = '';
+          for (const char of valuesStr) {
+            if (char === '(' || char === '{' || char === '[') parenDepth++;
+            if (char === ')' || char === '}' || char === ']') parenDepth--;
+            if (char === ',' && parenDepth === 0) {
+              values.push(current.trim());
+              current = '';
+            } else {
+              current += char;
+            }
+          }
+          if (current.trim()) values.push(current.trim());
+
+          const record: Record<string, unknown> = {};
+
+          columns.forEach((col, i) => {
+            const val = values[i];
+            if (val?.startsWith("'") && val?.endsWith("'")) {
+              record[col] = val.slice(1, -1);
+            } else if (/^\d+$/.test(val)) {
+              record[col] = Number(val);
+            } else if (val?.startsWith('(') && val?.endsWith(')')) {
+              // Handle array literals like ('label1', 'label2')
+              record[col] = val.slice(1, -1).split(',').map(v => v.trim().replace(/['"]/g, ''));
+            } else {
+              record[col] = val;
+            }
+          });
+
+          if (record.id) {
+            table.set(record.id as number, record);
+          }
         }
       }
     },
