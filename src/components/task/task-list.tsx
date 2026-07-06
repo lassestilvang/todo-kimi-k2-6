@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, useMemo, memo, useRef } from "react";
+import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   CheckCircle2,
   Clock,
   Calendar,
-  Flag,
   Repeat,
   Trash2,
   ChevronDown,
@@ -14,11 +13,7 @@ import {
   ArrowUpDown,
   CheckSquare,
   Square,
-  Move,
-  Tag,
   Filter,
-  MoreVertical,
-  TrendingUp,
   Paperclip,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
@@ -143,10 +138,48 @@ export function TaskList({
     onRefresh();
   };
 
-  const handleDelete = async (taskId: number) => {
-    if (!confirm("Are you sure you want to delete this task?")) return;
-    await deleteTask(taskId);
-    onRefresh();
+  const handleDelete = async (task: TaskWithRelations) => {
+    // Store task for potential undo
+    const taskToDelete = { ...task };
+
+    // Actually delete first
+    try {
+      await deleteTask(task.id);
+      onRefresh();
+    } catch {
+      toast.error("Failed to delete task");
+      return;
+    }
+
+    // Show toast with undo
+    toast.success("Task deleted", {
+      action: {
+        label: "Undo",
+        onClick: async () => {
+          try {
+            // Restore task by recreating (casting to avoid exactOptionalPropertyTypes issues)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const restoreData: any = {
+              name: taskToDelete.name,
+              priority: taskToDelete.priority,
+            };
+            if (taskToDelete.description) restoreData.description = taskToDelete.description;
+            if (taskToDelete.notes) restoreData.notes = taskToDelete.notes;
+            if (taskToDelete.list_id) restoreData.list_id = taskToDelete.list_id;
+            if (taskToDelete.date) restoreData.date = taskToDelete.date;
+            if (taskToDelete.deadline) restoreData.deadline = taskToDelete.deadline;
+            if (taskToDelete.recurring_config) restoreData.recurring_config = taskToDelete.recurring_config;
+            restoreData.recurring = taskToDelete.recurring;
+
+            await (await import("@/lib/actions")).createTask(restoreData);
+            onRefresh();
+            toast.success("Task restored");
+          } catch {
+            toast.error("Failed to restore task");
+          }
+        },
+      },
+    });
   };
 
   // Separate pending and completed tasks for display
@@ -573,7 +606,7 @@ export function TaskList({
                         className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleDelete(task.id);
+                          handleDelete(task);
                         }}
                         aria-label={`Delete "${task.name}"`}
                       >
