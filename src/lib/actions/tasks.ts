@@ -210,6 +210,8 @@ export interface GetTasksOptions {
   includeCompleted?: boolean;
   searchQuery?: string | undefined;
   filterPreset?: FilterPreset;
+  limit?: number;
+  offset?: number;
 }
 
 export async function getTasks(options?: GetTasksOptions): Promise<TaskWithRelations[]> {
@@ -292,7 +294,13 @@ export async function getTasks(options?: GetTasksOptions): Promise<TaskWithRelat
   // Validate sort field and direction to prevent SQL injection
   const safeOrderBy = orderBy; // Already validated as hardcoded strings above
 
-  const tasks = db.prepare(`SELECT * FROM tasks ${where} ORDER BY ${safeOrderBy}`).all(...params) as Task[];
+  // Default limit to prevent excessive data loads
+  const limit = Math.min(options?.limit || 100, 100);
+  const offset = options?.offset || 0;
+
+  const tasks = db.prepare(
+    `SELECT * FROM tasks ${where} ORDER BY ${safeOrderBy} LIMIT ? OFFSET ?`
+  ).all(...params, limit, offset) as Task[];
   const taskIds = tasks.map((t) => t.id);
 
   // Batch fetch all relations in parallel
