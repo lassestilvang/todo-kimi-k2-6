@@ -1,17 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { HelpCircle, Command, Plus, Search, Calendar, List, BarChart3, Bot, Filter } from "lucide-react";
+import { useEffect } from "react";
+import { HelpCircle, Command, Search, Calendar, List, BarChart3, Bot, Filter } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 
 interface KeyboardCheatsheetProps {
   open: boolean;
