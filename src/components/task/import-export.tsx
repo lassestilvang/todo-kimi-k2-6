@@ -35,8 +35,6 @@ export function ImportExport({ onRefresh }: ImportExportProps) {
   const [activeTab, setActiveTab] = useState<"export" | "import">("export");
   const [exportFormat, setExportFormat] = useState<ExportFormat>("json");
   const [importSource, setImportSource] = useState<ImportSource>("file");
-  const [templateName, setTemplateName] = useState("");
-  const [templateDescription, setTemplateDescription] = useState("");
 
   const handleExport = async () => {
     setIsExporting(true);
@@ -104,23 +102,6 @@ export function ImportExport({ onRefresh }: ImportExportProps) {
       console.error(error);
     } finally {
       setIsImporting(false);
-    }
-  };
-
-  const handleTemplateExport = async (templateId: number) => {
-    // Export a single template
-    try {
-      const response = await fetch(`/api/templates/${templateId}/export`);
-      if (!response.ok) throw new Error("Failed to export template");
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `template-${templateId}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      toast.error("Template export failed");
     }
   };
 
