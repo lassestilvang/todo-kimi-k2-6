@@ -1,23 +1,34 @@
-import { NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getDb } from "@/lib/db";
+import { applyMiddleware, errorResponse, jsonResponse } from "@/lib/api-middleware";
 
 // Helper to convert TEXT time strings to Date objects (SQLite stores them as TEXT)
 function parseIsoDate(isoString: string): Date {
   return new Date(isoString);
 }
 
-export async function GET(_request: Request) {
+export async function GET(request: NextRequest) {
+  const middlewareResult = await applyMiddleware(request, { requireAuth: true });
+  if (middlewareResult.error) {
+    return middlewareResult.error;
+  }
+
   try {
     const db = getDb();
-
     // Get all tasks with status and timing info
     // all() returns an array directly for SQLite
-    const tasks = db.prepare("SELECT * FROM tasks").all() as any[];
+    const tasks = db.prepare("SELECT * FROM tasks").all() as Array<{
+      id: number;
+      completed: number | boolean;
+      deadline: string | null;
+      priority: string;
+      estimated_duration: number;
+    }>;
 
     // Calculate completion rate
     const totalTasks = tasks.length;
     const completedTasks = tasks.filter(t => t.completed === 1 || t.completed === true);
-    const completionRate = totalTasks > 0 ?completedTasks.length / totalTasks : 0;
+    const completionRate = totalTasks > 0 ? completedTasks.length / totalTasks : 0;
 
     // Calculate overdue tasks (assuming deadline is stored in ISO format)
     const now = new Date();
@@ -55,9 +66,9 @@ export async function GET(_request: Request) {
       },
     };
 
-    return NextResponse.json(analytics);
-  } catch (error: unknown) {
+    return jsonResponse(analytics, 200, middlewareResult.headers);
+  } catch (error) {
     console.error("Analytics error:", error);
-    return new NextResponse("Internal Server Error", { status: 500 });
+    return errorResponse("Internal Server Error", 500);
   }
 }
