@@ -195,7 +195,7 @@ export function HabitTracker({ tasks, className }: HabitTrackerProps) {
             {/* Calendar grid */}
             <div className="grid grid-cols-7 gap-1">
               {/* Empty cells for days before month start */}
-              {Array.from({ length: calendarDays[0].getDay() }).map((_, i) => (
+              {calendarDays.length > 0 && calendarDays[0] && Array.from({ length: calendarDays[0].getDay() }).map((_, i) => (
                 <div key={`empty-${i}`} className="aspect-square" />
               ))}
 
