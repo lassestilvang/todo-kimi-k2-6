@@ -1,7 +1,7 @@
 "use server";
 
 import { getDb } from "@/lib/db";
-import { type Goal, type CreateGoalInput } from "@/types";
+import type { Goal, CreateGoalInput, GoalMilestone } from "@/types";
 
 export async function getGoals(): Promise<Goal[]> {
   const db = getDb();
@@ -124,8 +124,6 @@ export async function updateGoalsFromTaskCompletion(taskCount = 1) {
 // Goal Milestones
 // ============================================
 
-import { type GoalMilestone } from "@/types";
-
 export async function getGoalMilestones(goalId: number): Promise<GoalMilestone[]> {
   const db = getDb();
   return db
@@ -179,4 +177,26 @@ export async function updateMilestoneProgress(id: number, increment: number): Pr
 export async function deleteGoalMilestone(id: number): Promise<void> {
   const db = getDb();
   db.prepare("DELETE FROM goal_milestones WHERE id = ?").run(id);
+}
+
+export async function skipGoalMilestone(id: number): Promise<GoalMilestone> {
+  const db = getDb();
+  const milestone = db.prepare("SELECT * FROM goal_milestones WHERE id = ?").get(id) as GoalMilestone | undefined;
+  if (!milestone) throw new Error("Milestone not found");
+
+  db.prepare("UPDATE goal_milestones SET completed = 1, current_count = target_count WHERE id = ?").run(id);
+
+  const updated = db.prepare("SELECT * FROM goal_milestones WHERE id = ?").get(id) as GoalMilestone;
+  return updated;
+}
+
+export async function completeGoalMilestone(id: number): Promise<GoalMilestone> {
+  const db = getDb();
+  const milestone = db.prepare("SELECT * FROM goal_milestones WHERE id = ?").get(id) as GoalMilestone | undefined;
+  if (!milestone) throw new Error("Milestone not found");
+
+  db.prepare("UPDATE goal_milestones SET completed = 1, current_count = target_count WHERE id = ?").run(id);
+
+  const updated = db.prepare("SELECT * FROM goal_milestones WHERE id = ?").get(id) as GoalMilestone;
+  return updated;
 }
