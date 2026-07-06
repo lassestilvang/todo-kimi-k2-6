@@ -1,5 +1,5 @@
 // Server Component - fetches data on the server
-import { getTasks } from "@/lib/actions/tasks-impl";
+import { getTasks } from "@/lib/actions/tasks";
 import { getLists } from "@/lib/actions/lists";
 import { getLabels } from "@/lib/actions/labels";
 
@@ -12,11 +12,10 @@ interface TaskListServerProps {
 // This component fetches tasks on the server
 // Reduces client-side data fetching and improves SEO
 export async function TaskListServer({ view, listId, searchQuery }: TaskListServerProps) {
-  const [tasks, lists, labels] = await Promise.all([
-    getTasks({ view, listId, searchQuery }),
-    getLists(),
-    getLabels(),
-  ]);
+  const tasks = await getTasks({ view, listId, searchQuery });
+  // Note: lists and labels can be fetched if needed in the future
+  await getLists();
+  await getLabels();
 
   return (
     <div>
