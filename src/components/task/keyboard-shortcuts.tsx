@@ -1,23 +1,19 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { HelpCircle, Search, Plus, X, Edit3, Trash2, Shield, Timer, MessageCircle, FileText, BookOpen, Share, Settings, Save, RefreshCw, Check } from "lucide-react";
+import { HelpCircle, Search, Plus, X, Edit3, Shield, RefreshCw, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
+import { Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
 
 interface Shortcut {
   id: string;
@@ -194,8 +190,8 @@ export function KeyboardShortcuts({ settings, onSaveSettings }: KeyboardShortcut
                 return (
                   <div key={category} className="space-y-2">
                     <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                      {categoryLabels[category].icon}
-                      {categoryLabels[category].title}
+                      {categoryLabels[category]?.icon}
+                      {categoryLabels[category]?.title}
                     </h3>
                     <div className="space-y-1">
                       {items.map((shortcut) => (
@@ -229,8 +225,9 @@ interface ShortcutItemProps {
 }
 
 function ShortcutItem({ shortcut, onSave, formatKey }: ShortcutItemProps) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isEditing, setIsEditing] = useState(false);
-  const [editKey, setEditKey] = useState(shortcut.key);
+  const [editKey, setEditKey] = useState(shortcut.key ?? "");
   const [editMeta, setEditMeta] = useState(shortcut.meta ?? false);
   const [editShift, setEditShift] = useState(shortcut.shift ?? false);
 
@@ -259,7 +256,7 @@ function ShortcutItem({ shortcut, onSave, formatKey }: ShortcutItemProps) {
   if (isEditing) {
     return (
       <div className="flex items-center gap-2 px-2 py-1.5 rounded bg-accent/50">
-        <Select value={editKey} onValueChange={setEditKey}>
+        <Select value={editKey} onValueChange={(v) => setEditKey(v ?? "")}>
           <SelectTrigger className="h-7 w-[120px]">
             <SelectValue />
           </SelectTrigger>
