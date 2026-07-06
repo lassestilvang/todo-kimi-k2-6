@@ -2,10 +2,9 @@
 
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, GripVertical, Clock, Calendar, Tag } from "lucide-react";
+import { GripVertical, Clock, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   DndContext,
@@ -33,15 +32,6 @@ interface KanbanBoardProps {
   onTaskClick: (task: TaskWithRelations) => void;
   onTaskCreate: (task: Partial<TaskWithRelations>) => void;
 }
-
-// Kanban columns based on task status and priority
-const COLUMNS = [
-  { id: "backlog", title: "Backlog", status: null, priority: null },
-  { id: "todo", title: "To Do", status: "todo", priority: null },
-  { id: "in-progress", title: "In Progress", status: "in-progress", priority: null },
-  { id: "review", title: "Review", status: "review", priority: null },
-  { id: "done", title: "Done", status: "done", priority: null },
-];
 
 // For now, we'll use priority-based columns as a simpler approach
 const PRIORITY_COLUMNS = [
@@ -155,7 +145,9 @@ function SortableTask({
   );
 }
 
-export function KanbanBoard({ tasks, lists, onTaskClick, onTaskCreate }: KanbanBoardProps) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function KanbanBoard({ tasks, lists: _lists, onTaskClick, onTaskCreate: _onTaskCreate }: KanbanBoardProps) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [activeId, setActiveId] = useState<number | null>(null);
 
   const sensors = useSensors(
@@ -227,7 +219,7 @@ export function KanbanBoard({ tasks, lists, onTaskClick, onTaskCreate }: KanbanB
       >
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 auto-rows-max">
           {PRIORITY_COLUMNS.map((column) => {
-            const columnTasks = tasksByPriority[column.id];
+            const columnTasks = tasksByPriority[column.id] ?? [];
 
             return (
               <SortableContext
