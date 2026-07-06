@@ -11,6 +11,14 @@ import type { TaskWithRelations, List } from "@/types";
 import type { TaskSuggestion } from "@/lib/ai";
 import { toast } from "sonner";
 
+// Type for workload suggestions
+interface WorkloadSuggestion {
+  type: string;
+  taskName: string;
+  reason: string;
+  confidence: number;
+}
+
 interface AIAssistantProps {
   tasks: TaskWithRelations[];
   lists: List[];
@@ -138,12 +146,7 @@ export function AIAssistant({ tasks, lists, onAddTask, className }: AIAssistantP
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const [workloadSuggestions, setWorkloadSuggestions] = useState<Array<{
-    type: string;
-    taskName: string;
-    reason: string;
-    confidence: number;
-  }>>([]);
+  const [workloadSuggestions, setWorkloadSuggestions] = useState<WorkloadSuggestion[]>([]);
 
   // Load workload suggestions on mount
   useEffect(() => {
@@ -151,12 +154,7 @@ export function AIAssistant({ tasks, lists, onAddTask, className }: AIAssistantP
       .then((r) => r.json())
       .then((data) => {
         setWorkloadSuggestions(
-          data.suggestions?.map((s: { type: string; taskName: string; reason: string; confidence: number }) => ({
-            type: s.type,
-            taskName: s.taskName,
-            reason: s.reason,
-            confidence: s.confidence,
-          })) || []
+          data.suggestions?.map((s: WorkloadSuggestion) => s) || []
         );
       })
       .catch(console.error);
@@ -250,6 +248,7 @@ export function AIAssistant({ tasks, lists, onAddTask, className }: AIAssistantP
       };
       setMessages((prev) => [...prev, aiResponse]);
     } catch {
+      // API error - use fallback response
       const aiResponse: Message = {
         id: Date.now() + 1,
         role: "assistant",
@@ -368,10 +367,10 @@ const taskSuggestions = useMemo(() => {
             (task: any) => {
             onAddTask({
               name: task.name,
-              description: task.description,
+              description: task.description ?? null,
               priority: task.priority || "medium",
-              date: task.suggested_date,
-              list_id: task.list_id,
+              date: task.suggested_date ?? null,
+              list_id: task.list_id ?? null,
             });
           });
           toast.success(`Generated ${generatedTasks.tasks.length} task(s)`);
