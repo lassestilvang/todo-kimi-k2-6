@@ -71,7 +71,16 @@ const nextConfig: NextConfig = withPWA(pwaConfig)({
   output: "standalone",
   turbopack: {},
   images: {
-    domains: ["fonts.gstatic.com", "fonts.googleapis.com"],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "*.gstatic.com",
+      },
+      {
+        protocol: "https",
+        hostname: "*.googleapis.com",
+      },
+    ],
     formats: ["image/avif", "image/webp"],
   },
   async headers() {
