@@ -3,7 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { getDb } from "@/lib/db";
 import { comparePassword } from "@/lib/auth";
 import { config } from "@/lib/config";
-import type { User } from "@/types";
+import type { User as AppUser } from "@/types";
 
 interface Credentials {
   email?: string;
@@ -22,7 +22,7 @@ async function authorize(credentials: Credentials | undefined) {
 
   const user = db
     .prepare("SELECT * FROM users WHERE email = ?")
-    .get(email) as User & { password_hash: string };
+    .get(email) as AppUser & { password_hash: string };
 
   if (!user || !user.password_hash) {
     return null;
@@ -60,15 +60,17 @@ export const authOptions = {
     error: "/auth/error",
   },
   callbacks: {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     async jwt({ token, user }: { token: any; user: any }) {
       if (user) {
         token.id = user.id;
       }
       return token;
     },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     async session({ session, token }: { session: any; token: any }) {
-      if (token?.id) {
-        session.user.id = token.id;
+      if (token?.id && session.user) {
+        session.user.id = String(token.id);
       }
       return session;
     },
