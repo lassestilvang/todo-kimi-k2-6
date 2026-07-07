@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createTestDb } from "../../../../lib/db/test-db";
 import { setDb, resetDb } from "../../../../lib/db";
-import { getLabels, createLabel, deleteLabel } from "../../../../lib/actions/tasks";
+import { getLabels, createLabel, deleteLabel } from "../../../../lib/actions/labels";
 
 describe("API Routes - Labels", () => {
   beforeEach(() => {
