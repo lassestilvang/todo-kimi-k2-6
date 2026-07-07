@@ -6,8 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 interface BeforeInstallPromptEvent extends Event {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  promise: Promise<any>;
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
 }
