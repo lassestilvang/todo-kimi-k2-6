@@ -4,6 +4,7 @@ import { getDb } from "@/lib/db";
 import { comparePassword } from "@/lib/auth";
 import { config } from "@/lib/config";
 import type { User as AppUser } from "@/types";
+import type { Session } from "next-auth";
 
 interface Credentials {
   email?: string;
@@ -60,18 +61,15 @@ export const authOptions = {
     error: "/auth/error",
   },
   callbacks: {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    async jwt({ token, user }: { token: any; user: any }) {
+    async jwt({ token, user }: { token: { id?: string }; user?: { id: string } }) {
       if (user) {
         token.id = user.id;
       }
       return token;
     },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    async session({ session, token }: { session: any; token: any }) {
-      if (token?.id && session.user) {
-        session.user.id = String(token.id);
-      }
+    async session({ session, token }: { session: { user?: { id?: string } }; token: { id?: string } }) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      session.user.id = token?.id ? String(token.id) : undefined;
       return session;
     },
   },
