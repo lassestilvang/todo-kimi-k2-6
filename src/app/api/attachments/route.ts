@@ -63,7 +63,7 @@ function validateFile(file: File): { valid: boolean; error?: string } {
 
 // GET /api/attachments - Get attachments for a task
 export async function GET(request: NextRequest) {
-  const middlewareResult = await applyMiddleware(request);
+  const middlewareResult = await applyMiddleware(request, { requireAuth: true });
   if (middlewareResult.error) {
     return middlewareResult.error;
   }
@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
 
 // POST /api/attachments - Upload a new attachment
 export async function POST(request: NextRequest) {
-  const middlewareResult = await applyMiddleware(request);
+  const middlewareResult = await applyMiddleware(request, { requireAuth: true });
   if (middlewareResult.error) {
     return middlewareResult.error;
   }
@@ -147,7 +147,7 @@ export async function POST(request: NextRequest) {
 
 // DELETE /api/attachments - Delete an attachment
 export async function DELETE(request: NextRequest) {
-  const middlewareResult = await applyMiddleware(request);
+  const middlewareResult = await applyMiddleware(request, { requireAuth: true });
   if (middlewareResult.error) {
     return middlewareResult.error;
   }
