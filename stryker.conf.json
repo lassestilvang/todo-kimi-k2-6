@@ -2,7 +2,18 @@
   "schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
   "packageManager": "npm",
   "testRunner": "vitest",
-  "mutate": ["src/lib/actions/tasks.ts", "src/lib/db/driver.ts", "src/lib/validation.ts", "src/lib/rate-limiter.ts", "src/lib/ai/providers.ts", "src/components/task/keyboard-shortcuts.tsx"],
+  "mutate": [
+    "src/lib/actions/tasks.ts",
+    "src/lib/db/driver.ts",
+    "src/lib/validation.ts",
+    "src/lib/rate-limiter.ts",
+    "src/lib/ai/providers.ts",
+    "src/components/task/keyboard-shortcuts.tsx",
+    "src/lib/offline-storage.ts",
+    "src/lib/email/index.ts",
+    "src/hooks/use-tasks.ts",
+    "src/app/api/task-votes/route.ts"
+  ],
   "coverageAnalysis": "perTest",
   "vitestRunner": "^5.0.0",
   "vitestOptions": {
@@ -17,5 +28,10 @@
     "fileName": "reports/mutation/html/index.html"
   },
   "logLevel": ["info", "error"],
-  "mutationTesting": true
+  "mutationTesting": true,
+  "thresholds": {
+    "high": 80,
+    "low": 60,
+    "break": 60
+  }
 }
