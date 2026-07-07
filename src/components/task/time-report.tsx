@@ -5,7 +5,7 @@ import { BarChart3, Clock, TrendingUp, CalendarDays, Tag } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import type { TaskWithRelations, TimeEntry } from "@/types";
-import { format, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 
 interface TimeReportProps {
   tasks: TaskWithRelations[];
