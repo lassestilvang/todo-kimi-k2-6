@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { setDb, resetDb } from "@/lib/db";
 import { createTestDb } from "@/lib/db/test-db";
 
-// Import all the action functions
+// Import task actions
 import {
   getLists,
   createList,
@@ -21,21 +21,37 @@ import {
   toggleSubtask,
   getOverdueCount,
   generateRecurringTasks,
+} from "@/lib/actions/tasks";
+
+// Import dependency actions
+import {
   addTaskDependency,
   removeTaskDependency,
   getBlockedTasks,
+} from "@/lib/actions/dependencies";
+
+// Import template actions
+import {
   getTemplates,
   createTemplate,
   deleteTemplate,
+} from "@/lib/actions/templates";
+
+// Import comment actions
+import {
   getTaskComments,
   addTaskComment,
+} from "@/lib/actions/comments";
+
+// Import export actions
+import {
   exportData,
   exportCsv,
   exportJson,
   exportIcal,
   exportPdf,
   importData,
-} from "@/lib/actions/tasks";
+} from "@/lib/actions/export";
 
 describe("Task Actions - Comprehensive Tests", () => {
   let db: ReturnType<typeof createTestDb>;
