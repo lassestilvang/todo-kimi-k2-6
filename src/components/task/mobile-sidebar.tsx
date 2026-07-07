@@ -45,15 +45,15 @@ import { WorkspaceSelector } from "@/components/workspace/workspace-selector";
 interface MobileSidebarProps {
   lists: ListType[];
   labels: LabelType[];
-  currentView: ViewType;
+  currentView: string;
   currentListId?: number;
   overdueCount?: number;
-  onViewChange: (view: ViewType) => void;
+  onViewChange: (view: string, listId?: number) => void;
   onRefresh?: () => void;
   onSearch?: (query: string) => void;
   onNewTask?: () => void;
   workspaces: Workspace[];
-  currentWorkspace?: Workspace | null;
+  currentWorkspace: Workspace | null;
   onWorkspaceChange?: (workspace: Workspace | null) => void;
 }
 
