@@ -9,7 +9,7 @@ interface DbTask {
   id: number;
   name: string;
   deadline: string | null;
-  completed: number;
+  completed: number; // 0 or 1
   email?: string;
   remind_at?: string;
   assignee_id?: number | null;
@@ -54,9 +54,31 @@ export async function GET() {
         await sendTaskReminderEmail(task.email, {
           id: task.id,
           name: task.name,
-          deadline: task.deadline ?? null,
-          completed: task.completed === 1,
           description: task.description ?? null,
+          notes: null,
+          list_id: null,
+          date: null,
+          deadline: task.deadline ?? null,
+          estimate: null,
+          actual_time: null,
+          priority: (task.priority as "critical" | "high" | "medium" | "low" | "none") ?? "none",
+          recurring: "none",
+          recurring_config: null,
+          completed: task.completed === 1,
+          completed_at: null,
+          created_at: "",
+          updated_at: "",
+          sort_order: 0,
+          labels: [],
+          subtasks: [],
+          reminders: [],
+          logs: [],
+          comments: [],
+          attachments: [],
+          blockers: [],
+          blocked_by: [],
+          time_entries: [],
+          recurring_exceptions: [],
         });
         sentCount++;
       }
@@ -78,8 +100,31 @@ export async function GET() {
         await sendDueSoonEmail(task.email, {
           id: task.id,
           name: task.name,
+          description: null,
+          notes: null,
+          list_id: null,
+          date: null,
           deadline: task.deadline ?? null,
+          estimate: null,
+          actual_time: null,
+          priority: (task.priority as "critical" | "high" | "medium" | "low" | "none") ?? "none",
+          recurring: "none",
+          recurring_config: null,
           completed: task.completed === 1,
+          completed_at: null,
+          created_at: "",
+          updated_at: "",
+          sort_order: 0,
+          labels: [],
+          subtasks: [],
+          reminders: [],
+          logs: [],
+          comments: [],
+          attachments: [],
+          blockers: [],
+          blocked_by: [],
+          time_entries: [],
+          recurring_exceptions: [],
         });
         sentCount++;
       }
