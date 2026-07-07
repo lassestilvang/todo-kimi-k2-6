@@ -15,7 +15,7 @@ interface IntegrationConfig {
   enabled: boolean;
 }
 
-export async function GET() {
+export async function GET(_request: NextRequest) {
   try {
     const db = getDb();
     const integrations = db
