@@ -74,9 +74,44 @@ export function BulkActionsMenu({ selectedTasks, onAction, onRefresh }: BulkActi
   const handleDelete = async () => {
     if (!confirm(`Delete ${selectedTasks.length} task(s)?`)) return;
     try {
-      const { bulkDeleteTasks } = await import("@/lib/actions/tasks");
+      const { bulkDeleteTasks, getTasksByIds } = await import("@/lib/actions/tasks");
+      // Store tasks for potential undo
+      const tasksToDelete = await getTasksByIds(selectedTasks);
       await bulkDeleteTasks(selectedTasks);
-      toast.success(`Deleted ${selectedTasks.length} task(s)`);
+      toast.success(`Deleted ${selectedTasks.length} task(s)`, {
+        action: {
+          label: "Undo",
+          onClick: async () => {
+            try {
+              const { createTask } = await import("@/lib/actions/tasks");
+              // Recreate all tasks
+              for (const task of tasksToDelete) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const restoreData: any = {
+                  name: task.name,
+                  priority: task.priority,
+                };
+                if (task.description) restoreData.description = task.description;
+                if (task.notes) restoreData.notes = task.notes;
+                if (task.list_id) restoreData.list_id = task.list_id;
+                if (task.date) restoreData.date = task.date;
+                if (task.deadline) restoreData.deadline = task.deadline;
+                if (task.recurring) restoreData.recurring = task.recurring;
+                if (task.recurring_config) restoreData.recurring_config = task.recurring_config;
+                // Recreate subtasks
+                if (task.subtasks?.length) {
+                  restoreData.subtasks = task.subtasks.map((s) => s.name);
+                }
+                await createTask(restoreData);
+              }
+              onRefresh();
+              toast.success("Tasks restored");
+            } catch {
+              toast.error("Failed to restore tasks");
+            }
+          },
+        },
+      });
       onAction();
       onRefresh();
     } catch {
