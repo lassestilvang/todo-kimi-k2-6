@@ -224,6 +224,23 @@ export function TaskModal({
   const handleSubmit = async () => {
     if (!name.trim()) return;
 
+    // Check for similar tasks before creating new one
+    if (!isEditing && !task) {
+      try {
+        const similarTasks = await (await import("@/lib/actions/tasks")).findSimilarTasks(name);
+        if (similarTasks.length > 0) {
+          const shouldContinue = confirm(
+            `Found ${similarTasks.length} similar task(s): "${similarTasks[0].name}"\n\nDo you still want to create this task?`
+          );
+          if (!shouldContinue) {
+            return;
+          }
+        }
+      } catch (error) {
+        console.error("Failed to check for similar tasks:", error);
+      }
+    }
+
     // Validate form data
     const formData: TaskFormData = {
       name,
