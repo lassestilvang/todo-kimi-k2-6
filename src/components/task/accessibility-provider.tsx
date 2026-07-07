@@ -20,7 +20,7 @@ export function AccessibilityProvider({ children }: { children: React.ReactNode 
 
   // Load preferences from localStorage on mount
   useEffect(() => {
-    const savedFontSize = localStorage.getItem("font-size") as any;
+    const savedFontSize = localStorage.getItem("font-size") as "small" | "medium" | "large" | null;
     const savedReducedMotion = localStorage.getItem("reduced-motion") === "true";
     const savedHighContrast = localStorage.getItem("high-contrast") === "true";
 
