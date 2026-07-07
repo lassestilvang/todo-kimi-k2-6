@@ -27,12 +27,14 @@ interface Shortcut {
   shift?: boolean;
 }
 
+interface ShortcutSettings {
+  customShortcuts?: Record<string, string>;
+  enableCustomShortcuts?: boolean;
+}
+
 interface KeyboardShortcutsProps {
-  settings?: {
-    customShortcuts?: Record<string, string>;
-    enableCustomShortcuts?: boolean;
-  };
-  onSaveSettings?: (settings: any) => void;
+  settings?: ShortcutSettings;
+  onSaveSettings?: (settings: ShortcutSettings) => void;
 }
 
 const defaultShortcuts: Shortcut[] = [
@@ -72,7 +74,7 @@ const availableKeys = [
   "arrowup", "arrowdown", "arrowleft", "arrowright",
 ];
 
-export function KeyboardShortcuts({ settings, onSaveSettings }: KeyboardShortcutsProps) {
+export function KeyboardShortcuts({ settings: _settings, onSaveSettings: _onSaveSettings }: KeyboardShortcutsProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [shortcuts, setShortcuts] = useState<Shortcut[]>(() => {
     const saved = localStorage.getItem("keyboard-shortcuts");
@@ -225,7 +227,7 @@ interface ShortcutItemProps {
 }
 
 function ShortcutItem({ shortcut, onSave, formatKey }: ShortcutItemProps) {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   const [isEditing, setIsEditing] = useState(false);
   const [editKey, setEditKey] = useState(shortcut.key ?? "");
   const [editMeta, setEditMeta] = useState(shortcut.meta ?? false);
