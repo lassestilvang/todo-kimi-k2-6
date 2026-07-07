@@ -1,18 +1,29 @@
-import { NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getDb } from "@/lib/db";
+import { applyMiddleware, errorResponse, jsonResponse } from "@/lib/api-middleware";
 import type { UserSettings } from "@/types";
 
 // Get user settings
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const middlewareResult = await applyMiddleware(request, { requireAuth: true });
+  if (middlewareResult.error) {
+    return middlewareResult.error;
+  }
+
   const db = getDb();
-  // In a real app, get user_id from session
+  const userId = middlewareResult.auth?.userId;
+
+  if (!userId) {
+    return errorResponse("Authentication required", 401);
+  }
+
   const settings = db
     .prepare("SELECT * FROM user_settings WHERE user_id = ?")
-    .get(1) as UserSettings | undefined;
+    .get(userId) as UserSettings | undefined;
 
   if (!settings) {
     // Return defaults
-    return NextResponse.json({
+    return jsonResponse({
       work_start_hour: 9,
       work_end_hour: 17,
       preferred_pomodoro_minutes: 25,
@@ -20,10 +31,10 @@ export async function GET() {
       theme: "system",
       language: "en",
       timezone: "UTC",
-    });
+    }, 200, middlewareResult.headers);
   }
 
-  return NextResponse.json(settings);
+  return jsonResponse({ settings }, 200, middlewareResult.headers);
 }
 
 // Update user settings
