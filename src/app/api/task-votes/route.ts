@@ -61,8 +61,7 @@ export async function GET(request: NextRequest) {
       JOIN tasks t ON tv.task_id = t.id
       JOIN users u ON tv.user_id = u.id
     `;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const params: any[] = [];
+    const params: number[] = [];
 
     if (userIdParam) {
       query += " WHERE tv.user_id = ?";
