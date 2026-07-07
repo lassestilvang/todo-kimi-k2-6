@@ -5,6 +5,7 @@ import type { TaskAttachment, CreateAttachmentInput } from "@/types";
 
 export async function getTaskAttachments(taskId: number): Promise<TaskAttachment[]> {
   const db = getDb();
+  // Note: Task ownership is verified in the API route
   return db
     .prepare("SELECT * FROM task_attachments WHERE task_id = ? ORDER BY created_at DESC")
     .all(taskId) as TaskAttachment[];
