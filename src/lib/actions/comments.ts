@@ -1,6 +1,7 @@
 "use server";
 
 import { getDb } from "@/lib/db";
+import { getCurrentUser } from "@/lib/session";
 import type { TaskComment, CreateCommentInput } from "@/types";
 
 export async function addTaskComment(taskId: number, input: CreateCommentInput): Promise<TaskComment> {
@@ -29,6 +30,16 @@ export async function addTaskComment(taskId: number, input: CreateCommentInput):
 
 export async function getTaskComments(taskId: number): Promise<TaskComment[]> {
   const db = getDb();
+  const user = await getCurrentUser();
+
+  // User isolation: verify task ownership before returning comments
+  if (user?.id) {
+    const task = db.prepare("SELECT user_id FROM tasks WHERE id = ?").get(taskId) as { user_id: number } | undefined;
+    if (!task || task.user_id !== user.id) {
+      return []; // No access to this task's comments
+    }
+  }
+
   return db
     .prepare("SELECT * FROM task_comments WHERE task_id = ? ORDER BY created_at ASC")
     .all(taskId) as TaskComment[];
