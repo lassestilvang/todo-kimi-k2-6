@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createTestDb } from "../../../../lib/db/test-db";
 import { setDb, resetDb } from "../../../../lib/db";
-import { getTemplates, createTemplate, deleteTemplate } from "../../../../lib/actions/tasks";
+import { getTemplates, createTemplate, deleteTemplate } from "../../../../lib/actions/templates";
 
 describe("API Routes - Templates", () => {
   beforeEach(() => {
