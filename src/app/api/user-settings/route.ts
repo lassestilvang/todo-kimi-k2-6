@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { applyMiddleware, errorResponse, jsonResponse } from "@/lib/api-middleware";
 import type { UserSettings } from "@/types";
@@ -53,7 +53,7 @@ export async function PUT(request: Request) {
 
     const db = getDb();
 
-    // Check if settings exist
+    // Check if settings exist - use user ID 1 for now (demo mode)
     const existing = db.prepare("SELECT id FROM user_settings WHERE user_id = ?").get(1);
 
     let settings: UserSettings;
