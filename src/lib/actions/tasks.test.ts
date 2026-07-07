@@ -9,10 +9,6 @@ import {
   createList,
   updateList,
   deleteList,
-  getLabels,
-  getLabelById,
-  createLabel,
-  deleteLabel,
   getTasks,
   getTaskById,
   createTask,
@@ -21,25 +17,34 @@ import {
   toggleSubtask,
   getOverdueCount,
   generateRecurringTasks,
+  reorderTasks,
+  bulkUpdateTasks,
+  bulkDeleteTasks,
+} from "./tasks";
+import { getLabels, getLabelById, createLabel, deleteLabel } from "./labels";
+import { getTimeReport } from "./time-tracking";
+import {
   addTaskDependency,
   removeTaskDependency,
   getBlockedTasks,
+} from "./dependencies";
+import {
   createTemplate,
   getTemplates,
   deleteTemplate,
   saveTemplateFromTask,
+} from "./templates";
+import {
   addTaskComment,
   getTaskComments,
+} from "./comments";
+import {
   exportData,
   importData,
   exportCsv,
   exportJson,
   exportIcal,
-  reorderTasks,
-  bulkUpdateTasks,
-  bulkDeleteTasks,
-} from "./tasks";
-import { getTimeReport } from "./time-tracking";
+} from "./export";
 
 describe("Task Actions", () => {
   beforeEach(() => {
