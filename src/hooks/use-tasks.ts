@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useMemo } from "react";
-import type { TaskWithRelations, List, Label, FilterPreset, Priority } from "@/types";
+import type { TaskWithRelations, List, Label, FilterPreset, Priority, ViewType } from "@/types";
 
 interface UseTasksOptions {
   initialTasks: TaskWithRelations[];
@@ -51,7 +51,7 @@ export function useTasks({
   const [tasks, setTasks] = useState<TaskWithRelations[]>(initialTasks);
   const [lists, setLists] = useState<List[]>(initialLists);
   const [labels, setLabels] = useState<Label[]>(initialLabels);
-  const [currentView, setCurrentView] = useState("today");
+  const [currentView, setCurrentView] = useState<string>("today");
   const [currentListId, setCurrentListId] = useState<number | undefined>();
   const [searchQuery, setSearchQuery] = useState("");
   const [currentFilterPreset, setCurrentFilterPreset] = useState<FilterPreset | undefined>();
