@@ -1,6 +1,6 @@
 export type Priority = "critical" | "high" | "medium" | "low" | "none";
 export type Recurring = "none" | "daily" | "weekly" | "weekdays" | "monthly" | "yearly" | "custom";
-export type ViewType = "today" | "next7" | "upcoming" | "all" | "list" | "blocked";
+export type ViewType = "today" | "next7" | "upcoming" | "all" | "list" | "blocked" | "kanban" | "gantt" | "matrix" | "calendar" | "graph" | "analytics" | "ai" | "goals" | "focus" | "calendar_sync";
 export type FilterPreset = "needs_attention" | "this_week" | "with_labels" | "with_subtasks" | "completed";
 export type SortField = "name" | "date" | "deadline" | "priority" | "created_at" | "updated_at";
 export type SortDirection = "asc" | "desc";
