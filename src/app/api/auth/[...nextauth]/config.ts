@@ -42,7 +42,8 @@ async function authorize(credentials: Credentials | undefined) {
   };
 }
 
-export const authOptions = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const authOptions: any = {
   providers: [
     CredentialsProvider({
       name: "Email",
@@ -61,15 +62,16 @@ export const authOptions = {
     error: "/auth/error",
   },
   callbacks: {
-    async jwt({ token, user }: { token: { id?: string }; user?: { id: string } }) {
+    async jwt({ token, user }: any) {
       if (user) {
         token.id = user.id;
       }
       return token;
     },
-    async session({ session, token }: { session: { user?: { id?: string } }; token: { id?: string } }) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      session.user.id = token?.id ? String(token.id) : undefined;
+    async session({ session, token }: any) {
+      if (session.user && token.id) {
+        session.user.id = String(token.id);
+      }
       return session;
     },
   },
