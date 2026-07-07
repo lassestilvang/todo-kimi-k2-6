@@ -1,6 +1,51 @@
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 
+interface JwtToken {
+  accessToken?: string;
+  refreshToken?: string;
+  expiresAt?: number | null;
+  provider?: string;
+  user?: {
+    id?: string | number;
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+  };
+}
+
+interface JwtCallback {
+  token: JwtToken;
+  account?: {
+    access_token?: string;
+    refresh_token?: string;
+    expires_at?: number;
+    provider?: string;
+  };
+  user?: {
+    id?: string | number;
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+  };
+}
+
+interface SessionCallback {
+  session: {
+    accessToken?: string;
+    refreshToken?: string;
+    expiresAt?: number | null;
+    provider?: string;
+    user: {
+      id?: string | number;
+      name?: string | null;
+      email?: string | null;
+      image?: string | null;
+    };
+  };
+  token: JwtToken;
+}
+
 const handler = NextAuth({
   providers: [
     GoogleProvider({
@@ -21,14 +66,14 @@ const handler = NextAuth({
   },
   secret: process.env["NEXTAUTH_SECRET"] || "fallback-secret-for-development",
   callbacks: {
-    async jwt({ token, account, user }: any) {
+    async jwt({ token, account, user }: JwtCallback) {
       if (account?.access_token && user?.id) {
         token.accessToken = account.access_token;
         token.refreshToken = account.refresh_token;
         token.expiresAt = account.expires_at ? account.expires_at * 1000 : null;
         token.provider = account.provider;
         token.user = {
-          id: user.id,
+          id: String(user.id),
           name: user.name,
           email: user.email,
           image: user.image,
@@ -36,7 +81,7 @@ const handler = NextAuth({
       }
       return token;
     },
-    async session({ session, token }: any) {
+    async session({ session, token }: SessionCallback) {
       if (token?.accessToken) session.accessToken = token.accessToken;
       if (token?.refreshToken) session.refreshToken = token.refreshToken;
       if (token?.expiresAt) session.expiresAt = token.expiresAt;
