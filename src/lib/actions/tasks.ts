@@ -2,30 +2,23 @@
 
 import { getDb } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
-import {
-  type Task,
-  type TaskWithRelations,
-  type List,
-  type Label,
-  type Subtask,
-  type Reminder,
-  type TaskLog,
-  type CreateTaskInput,
-  type UpdateTaskInput,
-  type CreateListInput,
-  type CreateLabelInput,
-  type TaskDependency,
-  type Template,
-  type CreateTemplateInput,
-  type TaskComment,
-  type CreateCommentInput,
-  type FilterPreset,
-  type TimeEntry,
-  type Priority,
-  type TaskAttachment,
-  type CreateAttachmentInput,
+import type {
+  Task,
+  TaskWithRelations,
+  List,
+  Label,
+  Subtask,
+  Reminder,
+  TaskLog,
+  CreateTaskInput,
+  UpdateTaskInput,
+  CreateListInput,
+  CreateLabelInput,
+  FilterPreset,
+  Priority,
 } from "@/types";
 import { listSchema, labelSchema, sanitizeString } from "@/lib/validation";
+import { logTaskAction } from "@/lib/actions/task-helpers";
 
 /**
  * Check for potential duplicate tasks by comparing names.
@@ -76,26 +69,36 @@ export async function getLists(): Promise<List[]> {
   const db = getDb();
   const user = await getCurrentUser();
 
-  // If user is authenticated, filter by user_id
-  // Otherwise return all lists (demo mode or unauthenticated)
-  if (user) {
-    const result = db.prepare(
-      "SELECT * FROM lists WHERE user_id = ? OR user_id IS NULL ORDER BY is_inbox DESC, name ASC"
+  // User isolation: only show lists owned by the user
+  // In production, unauthenticated users should not see any lists
+  if (user?.id) {
+    return db.prepare(
+      "SELECT * FROM lists WHERE user_id = ? ORDER BY is_inbox DESC, name ASC"
     ).all(user.id) as List[];
-    return result.length > 0 ? result : db.prepare("SELECT * FROM lists ORDER BY is_inbox DESC, name ASC").all() as List[];
   }
-  return db.prepare("SELECT * FROM lists ORDER BY is_inbox DESC, name ASC").all() as List[];
+
+  // In demo mode, show all lists (including inbox with is_inbox=1 which has no user_id)
+  // DEPRECATED: This should not be used in production
+  if (process.env.NODE_ENV !== "production") {
+    return db.prepare("SELECT * FROM lists ORDER BY is_inbox DESC, name ASC").all() as List[];
+  }
+
+  return [];
 }
 
 export async function getListById(id: number): Promise<List | undefined> {
   const db = getDb();
   const user = await getCurrentUser();
 
-  // In demo mode or if user exists, filter by user_id
+  // User isolation: only show lists owned by the user
   if (user?.id) {
     return db
-      .prepare("SELECT * FROM lists WHERE id = ? AND (user_id = ? OR user_id IS NULL)")
+      .prepare("SELECT * FROM lists WHERE id = ? AND user_id = ?")
       .get(id, user.id) as List | undefined;
+  }
+  // In production, unauthenticated users can only see inbox
+  if (process.env.NODE_ENV === "production") {
+    return db.prepare("SELECT * FROM lists WHERE id = ? AND is_inbox = 1").get(id) as List | undefined;
   }
   return db.prepare("SELECT * FROM lists WHERE id = ?").get(id) as List | undefined;
 }
@@ -152,11 +155,15 @@ export async function getLabels(): Promise<Label[]> {
   const db = getDb();
   const user = await getCurrentUser();
 
-  // User isolation: filter by user_id
+  // User isolation: only show labels owned by the user
   if (user?.id) {
     return db.prepare(
-      "SELECT * FROM labels WHERE user_id = ? OR user_id IS NULL ORDER BY name ASC"
+      "SELECT * FROM labels WHERE user_id = ? ORDER BY name ASC"
     ).all(user.id) as Label[];
+  }
+  // In production, unauthenticated users get empty results
+  if (process.env.NODE_ENV === "production") {
+    return [];
   }
   return db.prepare("SELECT * FROM labels ORDER BY name ASC").all() as Label[];
 }
@@ -165,11 +172,15 @@ export async function getLabelById(id: number): Promise<Label | undefined> {
   const db = getDb();
   const user = await getCurrentUser();
 
-  // User isolation: filter by user_id
+  // User isolation: only show labels owned by the user
   if (user?.id) {
     return db.prepare(
-      "SELECT * FROM labels WHERE id = ? AND (user_id = ? OR user_id IS NULL)"
+      "SELECT * FROM labels WHERE id = ? AND user_id = ?"
     ).get(id, user.id) as Label | undefined;
+  }
+  // In production, unauthenticated users get no labels
+  if (process.env.NODE_ENV === "production") {
+    return undefined;
   }
   return db.prepare("SELECT * FROM labels WHERE id = ?").get(id) as Label | undefined;
 }
@@ -203,7 +214,15 @@ export async function deleteLabel(id: number): Promise<void> {
 
 export async function getTaskById(id: number): Promise<TaskWithRelations | undefined> {
   const db = getDb();
-  const task = db.prepare("SELECT * FROM tasks WHERE id = ?").get(id) as Task | undefined;
+  const user = await getCurrentUser();
+
+  // User isolation: only allow access to user's own tasks
+  const task = user?.id
+    ? db.prepare("SELECT * FROM tasks WHERE id = ? AND user_id = ?").get(id, user.id) as Task | undefined
+    : (process.env.NODE_ENV === "production"
+        ? undefined
+        : db.prepare("SELECT * FROM tasks WHERE id = ?").get(id) as Task | undefined);
+
   if (!task) return undefined;
 
   // Batch fetch all relations
@@ -257,10 +276,19 @@ export async function getTasks(options?: GetTasksOptions): Promise<TaskWithRelat
   const params: unknown[] = [];
   const today = new Date().toISOString().split("T")[0];
 
-  // User isolation: filter by user_id for authenticated users
+  // User isolation: only show tasks owned by the user
+  // In production, unauthenticated users get empty results
   if (user?.id) {
-    whereClauses.push("(user_id = ? OR user_id IS NULL)");
+    whereClauses.push("user_id = ?");
     params.push(user.id);
+  } else if (process.env.NODE_ENV !== "production") {
+    // Demo mode: show tasks without user_id (legacy behavior)
+    whereClauses.push("user_id IS NULL");
+  }
+
+  // If no user in production, return empty array immediately
+  if (!user?.id && process.env.NODE_ENV === "production") {
+    return [];
   }
 
   if (!options?.includeCompleted) {
@@ -955,441 +983,11 @@ export async function generateRecurringTasks(): Promise<number> {
   return generatedCount;
 }
 
-// ============================================
-// Task Dependencies (Blockers)
-// ============================================
-
-export async function addTaskDependency(taskId: number, dependsOnTaskId: number): Promise<TaskDependency> {
-  const db = getDb();
-  const result = db
-    .prepare("INSERT INTO task_dependencies (task_id, depends_on_task_id) VALUES (?, ?)")
-    .run(taskId, dependsOnTaskId);
-  return {
-    id: Number(result.lastInsertRowid),
-    task_id: taskId,
-    depends_on_task_id: dependsOnTaskId,
-    created_at: new Date().toISOString(),
-  };
-}
-
-export async function removeTaskDependency(taskId: number, dependsOnTaskId: number): Promise<void> {
-  const db = getDb();
-  db.prepare("DELETE FROM task_dependencies WHERE task_id = ? AND depends_on_task_id = ?").run(taskId, dependsOnTaskId);
-}
-
-export async function getBlockedTasks(): Promise<TaskWithRelations[]> {
-  const db = getDb();
-  // Get all tasks that have dependencies
-  const blockedTaskIds = db
-    .prepare(`SELECT DISTINCT task_id FROM task_dependencies`)
-    .all()
-    .map((r: { task_id: number }) => r.task_id);
-
-  if (blockedTaskIds.length === 0) return [];
-
-  const tasks = await getTasks({ includeCompleted: true });
-  return tasks.filter((t) => blockedTaskIds.includes(t.id));
-}
-
-// ============================================
-// Templates
-// ============================================
-
-export async function getTemplates(): Promise<Template[]> {
-  const db = getDb();
-  return db.prepare("SELECT * FROM templates ORDER BY name ASC").all() as Template[];
-}
-
-export async function createTemplate(input: CreateTemplateInput & { subtasks?: string[]; label_ids?: number[] }): Promise<Template> {
-  const db = getDb();
-  const result = db
-    .prepare(
-      "INSERT INTO templates (name, description, list_id, priority, label_ids, subtasks) VALUES (?, ?, ?, ?, ?, ?)"
-    )
-    .run(
-      input.name,
-      input.description || null,
-      input.list_id || null,
-      input.priority || "none",
-      input.label_ids ? JSON.stringify(input.label_ids) : null,
-      input.subtasks ? JSON.stringify(input.subtasks) : null
-    );
-  return {
-    id: Number(result.lastInsertRowid),
-    name: input.name,
-    description: input.description || null,
-    list_id: input.list_id || null,
-    priority: input.priority || "none",
-    label_ids: input.label_ids || [],
-    subtasks: input.subtasks || [],
-    created_at: new Date().toISOString(),
-  };
-}
-
-export async function deleteTemplate(id: number): Promise<void> {
-  const db = getDb();
-  db.prepare("DELETE FROM templates WHERE id = ?").run(id);
-}
-
-/**
- * Saves the current task configuration as a template.
- */
-export async function saveTemplateFromTask(
-  name: string,
-  description: string | null,
-  listId: number | null,
-  priority: Priority,
-  labelIds: number[],
-  subtasks: string[]
-): Promise<Template> {
-  const db = getDb();
-  const result = db
-    .prepare(
-      "INSERT INTO templates (name, description, list_id, priority, label_ids, subtasks) VALUES (?, ?, ?, ?, ?, ?)"
-    )
-    .run(
-      name,
-      description,
-      listId,
-      priority,
-      JSON.stringify(labelIds),
-      JSON.stringify(subtasks)
-    );
-  return {
-    id: Number(result.lastInsertRowid),
-    name,
-    description,
-    list_id: listId,
-    priority,
-    label_ids: labelIds,
-    subtasks,
-    created_at: new Date().toISOString(),
-  };
-}
-
-// ============================================
-// Task Comments
-// ============================================
-
-export async function addTaskComment(taskId: number, input: CreateCommentInput): Promise<TaskComment> {
-  const db = getDb();
-  const result = db
-    .prepare("INSERT INTO task_comments (task_id, content) VALUES (?, ?)")
-    .run(taskId, input.content);
-  return {
-    id: Number(result.lastInsertRowid),
-    task_id: taskId,
-    content: input.content,
-    created_at: new Date().toISOString(),
-  };
-}
-
-export async function getTaskComments(taskId: number): Promise<TaskComment[]> {
-  const db = getDb();
-  return db
-    .prepare("SELECT * FROM task_comments WHERE task_id = ? ORDER BY created_at ASC")
-    .all(taskId) as TaskComment[];
-}
-
-// ============================================
-// Import/Export
-// ============================================
-
-export interface ExportData {
-  lists: List[];
-  labels: Label[];
-  tasks: TaskWithRelations[];
-  templates: Template[];
-  time_entries: TimeEntry[];
-}
-
-// CSV export helpers
-function taskToCsvRow(task: TaskWithRelations): string {
-  const escape = (val: string | number | null | undefined) => {
-    if (val === null || val === undefined) return "";
-    const str = String(val);
-    return str.includes(",") || str.includes('"') ? `"${str.replace(/"/g, '""')}"` : str;
-  };
-
-  return [
-    escape(task.id),
-    escape(task.name),
-    escape(task.description),
-    escape(task.date),
-    escape(task.deadline),
-    escape(task.priority),
-    escape(task.completed ? "true" : "false"),
-    escape(task.list_id),
-  ].join(",");
-}
-
-export async function exportData(): Promise<ExportData> {
-  const db = getDb();
-  const lists = await getLists();
-  const labels = await getLabels();
-  const tasks = await getTasks({ includeCompleted: true });
-  const templates = await getTemplates();
-  const time_entries = db
-    .prepare("SELECT * FROM time_entries ORDER BY created_at DESC")
-    .all() as TimeEntry[];
-  return { lists, labels, tasks, templates, time_entries };
-}
-
-export async function exportCsv(): Promise<string> {
-  const tasks = await getTasks({ includeCompleted: true });
-  const header = "id,name,description,date,deadline,priority,completed,list_id";
-  const rows = tasks.map(taskToCsvRow);
-  return [header, ...rows].join("\n");
-}
-
-/**
- * Exports data as a JSON blob.
- */
-export async function exportJson(): Promise<Blob> {
-  const data = await exportData();
-  return new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-}
-
-/**
- * Exports data as an iCal blob.
- */
-export async function exportIcal(): Promise<Blob> {
-  const tasks = await getTasks({ includeCompleted: true });
-  const lines: string[] = [];
-
-  lines.push("BEGIN:VCALENDAR");
-  lines.push("VERSION:2.0");
-  lines.push("PRODID:-//TaskFlow//EN");
-
-  for (const task of tasks) {
-    lines.push("BEGIN:VEVENT");
-    lines.push(`UID:${task.id}@taskflow.app`);
-    lines.push(`SUMMARY:${task.name}`);
-    if (task.description) {
-      lines.push(`DESCRIPTION:${task.description.replace(/\n/g, "\\n")}`);
-    }
-    if (task.deadline) {
-      lines.push(`DUE:${task.deadline.replace(/-/g, "")}`);
-    }
-    lines.push("END:VEVENT");
-  }
-
-  lines.push("END:VCALENDAR");
-
-  return new Blob([lines.join("\n")], { type: "text/calendar" });
-}
-
-/**
- * Generates a simple text-based export of tasks.
- * Returns a blob that can be downloaded.
- */
-export async function exportPdf(): Promise<Blob> {
-  const data = await exportData();
-
-  // Create a simple text-based export
-  const lines: string[] = [];
-  lines.push("TaskFlow Export");
-  lines.push(`Generated: ${new Date().toISOString().split("T")[0]}`);
-  lines.push(`Total Tasks: ${data.tasks.length}`);
-  lines.push(`Completed: ${data.tasks.filter(t => t.completed).length}`);
-  lines.push("");
-  lines.push("Tasks:");
-  lines.push("-".repeat(50));
-
-  data.tasks.forEach(task => {
-    const status = task.completed ? "[✓]" : "[○]";
-    lines.push(`${status} ${task.name}`);
-    if (task.description) lines.push(`  Description: ${task.description}`);
-    if (task.date) lines.push(`  Date: ${task.date}`);
-    if (task.priority !== "none") lines.push(`  Priority: ${task.priority}`);
-  });
-
-  lines.push("");
-  lines.push("Lists:");
-  lines.push("-".repeat(50));
-  data.lists.forEach(list => {
-    lines.push(`${list.emoji} ${list.name}`);
-  });
-
-  const content = lines.join("\n");
-  return new Blob([content], { type: "text/plain" });
-}
-
-export async function importData(data: ExportData): Promise<{ lists: number; labels: number; tasks: number; templates: number; time_entries: number }> {
-  const db = getDb();
-
-  // Validate imported data before clearing existing data
-  if (!data || typeof data !== "object") {
-    throw new Error("Invalid import data: expected an object");
-  }
-
-  // Validate arrays exist
-  if (!Array.isArray(data.lists)) {
-    throw new Error("Invalid import data: 'lists' must be an array");
-  }
-  if (!Array.isArray(data.labels)) {
-    throw new Error("Invalid import data: 'labels' must be an array");
-  }
-  if (!Array.isArray(data.tasks)) {
-    throw new Error("Invalid import data: 'tasks' must be an array");
-  }
-  if (!Array.isArray(data.templates)) {
-    throw new Error("Invalid import data: 'templates' must be an array");
-  }
-  if (!Array.isArray(data.time_entries)) {
-    throw new Error("Invalid import data: 'time_entries' must be an array");
-  }
-
-  // Validate task structure
-  for (const task of data.tasks) {
-    if (!task.name || typeof task.name !== "string") {
-      throw new Error("Invalid task: missing or invalid 'name' field");
-    }
-    if (task.priority && !["critical", "high", "medium", "low", "none"].includes(task.priority)) {
-      throw new Error(`Invalid task priority: ${task.priority}`);
-    }
-  }
-
-  // Validate list structure
-  for (const list of data.lists) {
-    if (!list.name || typeof list.name !== "string") {
-      throw new Error("Invalid list: missing or invalid 'name' field");
-    }
-  }
-
-  // Clear existing data only after validation passes
-  db.exec("DELETE FROM time_entries");
-  db.exec("DELETE FROM task_comments");
-  db.exec("DELETE FROM task_dependencies");
-  db.exec("DELETE FROM task_logs");
-  db.exec("DELETE FROM reminders");
-  db.exec("DELETE FROM subtasks");
-  db.exec("DELETE FROM task_labels");
-  db.exec("DELETE FROM tasks");
-  db.exec("DELETE FROM templates");
-  db.exec("DELETE FROM labels");
-  db.exec("DELETE FROM lists");
-
-  let listCount = 0;
-  let labelCount = 0;
-  let taskCount = 0;
-  let templateCount = 0;
-  let timeEntriesCount = 0;
-
-  // Import lists
-  for (const list of data.lists) {
-    db.prepare("INSERT INTO lists (id, name, emoji, color, is_inbox, created_at) VALUES (?, ?, ?, ?, ?, ?)")
-      .run(list.id, list.name, list.emoji, list.color, list.is_inbox, list.created_at);
-    listCount++;
-  }
-
-  // Import labels
-  for (const label of data.labels) {
-    db.prepare("INSERT INTO labels (id, name, icon, color, created_at) VALUES (?, ?, ?, ?, ?)")
-      .run(label.id, label.name, label.icon, label.color, label.created_at);
-    labelCount++;
-  }
-
-  // Import tasks with relations
-  for (const task of data.tasks) {
-    db.prepare(
-      `INSERT INTO tasks (id, name, description, list_id, date, deadline, estimate, actual_time, priority, recurring, recurring_config, completed, completed_at, created_at, updated_at, sort_order)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    ).run(
-        task.id,
-        task.name,
-        task.description,
-        task.list_id,
-        task.date,
-        task.deadline,
-        task.estimate,
-        task.actual_time,
-        task.priority,
-        task.recurring,
-        task.recurring_config,
-        task.completed ? 1 : 0,
-        task.completed_at,
-        task.created_at,
-        task.updated_at,
-        task.sort_order || 0
-      );
-
-    // Import task labels
-    for (const label of task.labels || []) {
-      db.prepare("INSERT INTO task_labels (task_id, label_id) VALUES (?, ?)").run(task.id, label.id);
-    }
-
-    // Import subtasks
-    for (const subtask of task.subtasks || []) {
-      db.prepare("INSERT INTO subtasks (id, task_id, name, completed, created_at) VALUES (?, ?, ?, ?, ?)")
-        .run(subtask.id, task.id, subtask.name, subtask.completed ? 1 : 0, subtask.created_at);
-    }
-
-    // Import reminders
-    for (const reminder of task.reminders || []) {
-      db.prepare("INSERT INTO reminders (id, task_id, remind_at, created_at) VALUES (?, ?, ?, ?)")
-        .run(reminder.id, task.id, reminder.remind_at, reminder.created_at);
-    }
-
-    taskCount++;
-  }
-
-  // Import templates
-  for (const template of data.templates) {
-    db.prepare("INSERT INTO templates (id, name, description, list_id, priority, label_ids, subtasks, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
-      .run(template.id, template.name, template.description, template.list_id, template.priority, JSON.stringify(template.label_ids), JSON.stringify(template.subtasks), template.created_at);
-    templateCount++;
-  }
-
-  // Import time entries
-  for (const entry of data.time_entries || []) {
-    db.prepare(
-      "INSERT INTO time_entries (id, task_id, start_time, end_time, duration_seconds, description, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)"
-    ).run(
-      entry.id,
-      entry.task_id,
-      entry.start_time,
-      entry.end_time,
-      entry.duration_seconds,
-      entry.description,
-      entry.created_at
-    );
-    timeEntriesCount++;
-  }
-
-  return { lists: listCount, labels: labelCount, tasks: taskCount, templates: templateCount, time_entries: timeEntriesCount };
-}
-
-// ============================================
-// Task Attachments
-// ============================================
-
-export async function getTaskAttachments(taskId: number): Promise<TaskAttachment[]> {
-  const db = getDb();
-  return db
-    .prepare("SELECT * FROM task_attachments WHERE task_id = ? ORDER BY created_at DESC")
-    .all(taskId) as TaskAttachment[];
-}
-
-export async function addTaskAttachment(input: CreateAttachmentInput): Promise<TaskAttachment> {
-  const db = getDb();
-  const result = db
-    .prepare(
-      "INSERT INTO task_attachments (task_id, filename, file_size, mime_type, url) VALUES (?, ?, ?, ?, ?)"
-    )
-    .run(input.task_id, input.filename, input.file_size, input.mime_type, input.url);
-  return {
-    id: Number(result.lastInsertRowid),
-    task_id: input.task_id,
-    filename: input.filename,
-    file_size: input.file_size,
-    mime_type: input.mime_type,
-    url: input.url,
-    created_at: new Date().toISOString(),
-  };
-}
-
-export async function deleteTaskAttachment(id: number): Promise<void> {
-  const db = getDb();
-  db.prepare("DELETE FROM task_attachments WHERE id = ?").run(id);
-}
+// Note: Task Dependencies, Templates, Comments, Import/Export, and Attachments
+// have been moved to their respective modules for better maintainability.
+// See:
+// - dependencies.ts for task dependency functions
+// - templates.ts for template functions
+// - comments.ts for task comment functions
+// - export.ts for import/export functions
+// - attachments.ts for attachment functions
