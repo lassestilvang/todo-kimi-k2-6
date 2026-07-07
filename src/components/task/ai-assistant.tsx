@@ -9,6 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type { TaskWithRelations, List } from "@/types";
 import type { TaskSuggestion } from "@/lib/ai";
+import type { SpeechRecognition } from "@/types/speech";
 import { toast } from "sonner";
 
 // Type for workload suggestions
@@ -51,13 +52,11 @@ export function AIAssistant({ tasks, lists, onAddTask, className }: AIAssistantP
   const [isListening, setIsListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   // Initialize speech recognition
   useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
       setSpeechSupported(true);
       recognitionRef.current = new SpeechRecognition();
@@ -65,8 +64,7 @@ export function AIAssistant({ tasks, lists, onAddTask, className }: AIAssistantP
       recognitionRef.current.lang = "en-US";
       recognitionRef.current.interimResults = false;
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      recognitionRef.current.onresult = (event: any) => {
+      recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
         const transcript = event.results[0][0].transcript;
         setInput(transcript);
         setIsListening(false);
