@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import { HelpCircle, Command, Search, Calendar, List, BarChart3, Bot, Filter } from "lucide-react";
 import {
   Dialog,
   DialogContent,
