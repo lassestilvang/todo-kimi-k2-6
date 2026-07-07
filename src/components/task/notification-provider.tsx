@@ -35,51 +35,6 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
     }
   }, []);
 
-  // Set up periodic reminder checking
-  useEffect(() => {
-    if (!isEnabled || permission !== "granted") return;
-
-    // Check every 5 minutes
-    const interval = setInterval(checkReminders, 5 * 60 * 1000);
-    checkReminders(); // Check immediately
-
-    return () => clearInterval(interval);
-  }, [isEnabled, permission]);
-
-  const checkReminders = useCallback(async () => {
-    const now = new Date();
-    const currentTimestamp = now.getTime();
-
-    // Only check every 5 minutes to avoid spam
-    if (currentTimestamp - lastCheckRef.current < 5 * 60 * 1000) {
-      return;
-    }
-    lastCheckRef.current = currentTimestamp;
-
-    try {
-      const response = await fetch("/api/reminders/upcoming");
-      if (!response.ok) return;
-
-      const reminders: ReminderWithTask[] = await response.json();
-
-      for (const reminder of reminders) {
-        // Skip if already notified
-        const notificationKey = `${reminder.task_id}-${reminder.id}`;
-        if (shownNotifications.has(notificationKey)) continue;
-
-        shownNotifications.add(notificationKey);
-
-        // Show notification
-        const title = `📅 Reminder: ${reminder.task_name}`;
-        const body = `Task was due at ${new Date(reminder.remind_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-
-        showBrowserNotification(title, body, `task-${reminder.task_id}`);
-      }
-    } catch (error) {
-      console.error("Error checking reminders:", error);
-    }
-  }, []);
-
   const showBrowserNotification = (title: string, body: string, tag: string) => {
     if (!("Notification" in window)) return;
 
@@ -107,6 +62,52 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
       duration: 10000,
     });
   };
+
+  const checkReminders = useCallback(async () => {
+    const now = new Date();
+    const currentTimestamp = now.getTime();
+
+    // Only check every 5 minutes to avoid spam
+    if (currentTimestamp - lastCheckRef.current < 5 * 60 * 1000) {
+      return;
+    }
+    lastCheckRef.current = currentTimestamp;
+
+    try {
+      const response = await fetch("/api/reminders/upcoming");
+      if (!response.ok) return;
+
+      const reminders: ReminderWithTask[] = await response.json();
+
+      for (const reminder of reminders) {
+        // Skip if already notified
+        const notificationKey = `${reminder.task_id}-${reminder.id}`;
+        if (shownNotifications.has(notificationKey)) continue;
+
+        shownNotifications.add(notificationKey);
+
+        // Show notification
+        const title = `Reminder: ${reminder.task_name}`;
+        const body = `Task was due at ${new Date(reminder.remind_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+
+        showBrowserNotification(title, body, `task-${reminder.task_id}`);
+      }
+    } catch (error) {
+      console.error("Error checking reminders:", error);
+    }
+    // lastCheckRef is intentionally omitted from deps - we only want to run when button clicked
+  }, [showBrowserNotification]);
+
+  // Set up periodic reminder checking
+  useEffect(() => {
+    if (!isEnabled || permission !== "granted") return;
+
+    // Check every 5 minutes
+    const interval = setInterval(checkReminders, 5 * 60 * 1000);
+    checkReminders(); // Check immediately
+
+    return () => clearInterval(interval);
+  }, [isEnabled, permission, checkReminders]);
 
   const enableNotifications = async () => {
     if (typeof window !== "undefined" && "Notification" in window) {
