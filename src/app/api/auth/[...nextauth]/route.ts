@@ -1,51 +1,6 @@
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 
-interface JwtToken {
-  accessToken?: string;
-  refreshToken?: string;
-  expiresAt?: number | null;
-  provider?: string;
-  user?: {
-    id?: string | number;
-    name?: string | null;
-    email?: string | null;
-    image?: string | null;
-  };
-}
-
-interface JwtCallback {
-  token: JwtToken;
-  account?: {
-    access_token?: string;
-    refresh_token?: string;
-    expires_at?: number;
-    provider?: string;
-  };
-  user?: {
-    id?: string | number;
-    name?: string | null;
-    email?: string | null;
-    image?: string | null;
-  };
-}
-
-interface SessionCallback {
-  session: {
-    accessToken?: string;
-    refreshToken?: string;
-    expiresAt?: number | null;
-    provider?: string;
-    user: {
-      id?: string | number;
-      name?: string | null;
-      email?: string | null;
-      image?: string | null;
-    };
-  };
-  token: JwtToken;
-}
-
 const handler = NextAuth({
   providers: [
     GoogleProvider({
@@ -66,13 +21,13 @@ const handler = NextAuth({
   },
   secret: process.env["NEXTAUTH_SECRET"] || "fallback-secret-for-development",
   callbacks: {
-    async jwt({ token, account, user }: JwtCallback) {
+    async jwt({ token, account, user }: any) {
       if (account?.access_token && user?.id) {
-        token.accessToken = account.access_token;
-        token.refreshToken = account.refresh_token;
-        token.expiresAt = account.expires_at ? account.expires_at * 1000 : null;
-        token.provider = account.provider;
-        token.user = {
+        (token as any).accessToken = account.access_token;
+        (token as any).refreshToken = account.refresh_token;
+        (token as any).expiresAt = account.expires_at ? account.expires_at * 1000 : null;
+        (token as any).provider = account.provider;
+        (token as any).user = {
           id: String(user.id),
           name: user.name,
           email: user.email,
@@ -81,16 +36,18 @@ const handler = NextAuth({
       }
       return token;
     },
-    async session({ session, token }: SessionCallback) {
-      if (token?.accessToken) session.accessToken = token.accessToken;
-      if (token?.refreshToken) session.refreshToken = token.refreshToken;
-      if (token?.expiresAt) session.expiresAt = token.expiresAt;
-      if (token?.provider) session.provider = token.provider;
-      if (token?.user) {
-        session.user.id = token.user?.id;
-        session.user.name = token.user?.name;
-        session.user.email = token.user?.email;
-        session.user.image = token.user?.image;
+    async session({ session, token }: any) {
+      const t = token as any;
+      if (t.accessToken) (session as any).accessToken = t.accessToken;
+      if (t.refreshToken) (session as any).refreshToken = t.refreshToken;
+      if (t.expiresAt) (session as any).expiresAt = t.expiresAt;
+      if (t.provider) (session as any).provider = t.provider;
+      if (t.user && (session as any).user) {
+        const user = t.user as any;
+        ((session as any).user as any).id = user?.id;
+        ((session as any).user as any).name = user?.name;
+        ((session as any).user as any).email = user?.email;
+        ((session as any).user as any).image = user?.image;
       }
       return session;
     },
