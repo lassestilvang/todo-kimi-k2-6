@@ -1,4 +1,3 @@
-import { render } from "@testing-library/react";
 import { TaskModal } from "@/components/task/task-modal";
 
 // Note: Snapshot testing disabled due to complex dependencies
