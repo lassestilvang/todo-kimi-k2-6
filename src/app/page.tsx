@@ -139,7 +139,7 @@ export default function Home() {
           }
         })(),
         (await import("@/lib/actions/tasks")).getTasks({ includeCompleted: true }),
-        (await import("@/lib/actions/tasks")).getTemplates(),
+        (await import("@/lib/actions/templates")).getTemplates(),
         (await import("@/lib/actions/tasks")).generateRecurringTasks(),
         (await import("@/lib/actions/goals")).getGoals(),
       ]);
