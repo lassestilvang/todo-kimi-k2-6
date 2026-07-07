@@ -662,16 +662,15 @@ Output format:
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
-    let buffer = "";
+    let accumulatedContent = "";
 
     try {
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split("\n");
 
         for (const line of lines) {
           if (line.startsWith("data: ")) {
@@ -681,10 +680,11 @@ Output format:
               const parsed = JSON.parse(data);
               const content = parsed.choices[0]?.delta?.content || "";
               if (content) {
+                accumulatedContent += content;
                 await onChunk(content);
               }
             } catch {
-              // Skip invalid JSON
+              // Skip invalid JSON - streaming chunks may be partial
             }
           }
         }
@@ -695,14 +695,12 @@ Output format:
 
     // Return parsed result from the accumulated content
     try {
-      const lastLine = buffer.split("\n").pop();
-      if (lastLine?.startsWith("data: ")) {
-        const data = JSON.parse(lastLine.slice(6));
-        const content = data.choices[0]?.delta?.content || "{}";
-        return JSON.parse(content) as TaskSuggestion;
+      const parsed = taskSuggestionSchema.safeParse(JSON.parse(accumulatedContent || "{}"));
+      if (parsed.success) {
+        return parsed.data;
       }
     } catch {
-      // Fall back to keyword parser
+      // Fall back to keyword parser on parse error
     }
 
     return new KeywordParser().parseTask(input);
