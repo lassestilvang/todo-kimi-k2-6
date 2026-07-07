@@ -175,7 +175,7 @@ export class KeywordParser implements AIProvider {
     let priority: "critical" | "high" | "medium" | "low" | "none" = "none";
     for (const [p, keywords] of Object.entries(this.priorityKeywords)) {
       if (keywords.some((k) => text.includes(k))) {
-        priority = p as any;
+        priority = p as "critical" | "high" | "medium" | "low" | "none";
         break;
       }
     }
@@ -260,7 +260,7 @@ export class KeywordParser implements AIProvider {
     let recurring: "none" | "daily" | "weekly" | "weekdays" | "monthly" | "yearly" | "custom" = "none";
     for (const [rec, keywords] of Object.entries(this.recurringKeywords)) {
       if (keywords.some((k) => text.includes(k))) {
-        recurring = rec as any;
+        recurring = rec as "none" | "daily" | "weekly" | "weekdays" | "monthly" | "yearly" | "custom";
         break;
       }
     }
