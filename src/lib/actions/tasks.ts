@@ -27,6 +27,42 @@ import {
 } from "@/types";
 import { listSchema, labelSchema, sanitizeString } from "@/lib/validation";
 
+/**
+ * Check for potential duplicate tasks by comparing names.
+ * Returns similar tasks with similarity score > 0.7
+ */
+export async function findSimilarTasks(name: string, excludeTaskId?: number): Promise<Array<{ id: number; name: string; date: string | null; similarity: number }>> {
+  const db = getDb();
+  const user = await getCurrentUser();
+
+  const whereClause = user?.id ? "WHERE user_id = ? OR user_id IS NULL" : "WHERE 1=1";
+  const tasks = db
+    .prepare(`SELECT id, name, date FROM tasks ${whereClause.replace("WHERE 1=1", "")}`)
+    .all(user?.id ?? null) as Array<{ id: number; name: string; date: string | null }>;
+
+  const normalizedInput = name.toLowerCase().trim();
+
+  return tasks
+    .filter(t => t.id !== excludeTaskId)
+    .map(t => {
+      const normalizedExisting = t.name.toLowerCase().trim();
+      // Simple similarity: check if one contains the other or they share significant words
+      const words = normalizedInput.split(/\s+/);
+      const existingWords = normalizedExisting.split(/\s+/);
+
+      const commonWords = words.filter(w => existingWords.includes(w));
+      const similarity = words.length > 0 ? commonWords.length / words.length : 0;
+
+      // Also check for substring matches
+      const containsMatch = normalizedExisting.includes(normalizedInput) || normalizedInput.includes(normalizedExisting) ? 0.8 : 0;
+
+      return { ...t, similarity: Math.max(similarity, containsMatch) };
+    })
+    .filter(t => t.similarity > 0.5)
+    .sort((a, b) => b.similarity - a.similarity)
+    .slice(0, 5);
+}
+
 function logTaskAction(taskId: number, action: string, details?: string) {
   const db = getDb();
   db.prepare("INSERT INTO task_logs (task_id, action, details) VALUES (?, ?, ?)").run(
