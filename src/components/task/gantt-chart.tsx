@@ -53,8 +53,8 @@ export function GanttChart({ tasks, onTaskClick }: GanttChartProps) {
     return tasks
       .filter((t) => t.date && !t.completed)
       .map((task) => {
-        const startDate = parseISO(task.date!);
-        const endDate = task.deadline ? parseISO(task.deadline!) : startDate;
+        const startDate = parseISO(task.date as string);
+        const endDate = task.deadline ? parseISO(task.deadline as string) : startDate;
         const duration = Math.ceil(
           (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
         );
