@@ -1,8 +1,5 @@
 import { z } from "zod";
 
-// Input sanitization helpers
-// NOTE: For client-side sanitization with DOMPurify, use: import DOMPurify from 'dompurify'
-
 /**
  * Maximum request body size (1MB) to prevent DoS attacks
  */
@@ -21,12 +18,12 @@ export const DEFAULT_LIMIT = 20;
 /**
  * Server-side sanitization using regex-based cleaning.
  * This is a defense-in-depth measure - use with parameterized queries for SQL safety.
+ * Note: For production, consider using DOMPurify with jsdom for proper HTML sanitization.
  */
 export function sanitizeString(input: string | null | undefined): string | null {
   if (!input) return null;
 
   // Remove potential XSS patterns - basic sanitization
-  // For production, consider using DOMPurify on the server or client
   return input
     .replace(/<script[^>]*>.*?<\/script>/gi, "")
     .replace(/<script/gi, "")
@@ -40,7 +37,7 @@ export function sanitizeString(input: string | null | undefined): string | null 
 
 /**
  * Sanitizes HTML content while preserving safe formatting.
- * Uses regex-based sanitization. For production, prefer DOMPurify.
+ * Uses regex-based sanitization. For production, prefer DOMPurify with jsdom.
  */
 export function sanitizeHtml(input: string | null | undefined): string | null {
   if (!input) return null;
@@ -49,9 +46,9 @@ export function sanitizeHtml(input: string | null | undefined): string | null {
     .replace(/<script[^>]*>.*?<\/script>/gi, "[removed]")
     .replace(/<script/gi, "[removed]")
     .replace(/<\/script>/gi, "")
+    .replace(/on\w+=/gi, "")
     .replace(/javascript:/gi, "")
     .replace(/vbscript:/gi, "")
-    .replace(/on\w+=/gi, "")
     .replace(/data:text\/html/gi, "")
     .trim();
 
