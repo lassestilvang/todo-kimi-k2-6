@@ -1,7 +1,7 @@
 "use server";
 
 import { NextRequest } from "next/server";
-import { parseTaskInput, generateTaskInsights, generateTasksFromNotes, getAIManager } from "@/lib/ai";
+import { parseTaskInput, generateTaskInsights, generateTasksFromNotes, parseEditCommand, getAIManager } from "@/lib/ai";
 import type { AITaskInput } from "@/lib/ai";
 import { getAIConfigStatus } from "@/lib/ai/config";
 import { getClientKey, checkRateLimit } from "@/lib/rate-limiter";
@@ -72,6 +72,12 @@ export async function POST(request: NextRequest) {
     if (type === "generateTasks") {
       const notesInput = input as { notes?: string; context?: { lists?: Array<{ id: number; name: string; emoji: string }> } };
       const result = await generateTasksFromNotes(notesInput.notes ?? "", notesInput.context);
+      return Response.json({ ...result, _rateLimit: remaining });
+    }
+
+    if (type === "edit") {
+      const editInput = input as { text: string; tasks: Array<{ id: number; name: string; completed: boolean; priority: string }> };
+      const result = await parseEditCommand(editInput.text, editInput);
       return Response.json({ ...result, _rateLimit: remaining });
     }
 
