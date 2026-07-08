@@ -152,6 +152,7 @@ export function initializeSchema(db: Database) {
     CREATE INDEX IF NOT EXISTS idx_tasks_assignee ON tasks(assignee_id);
     CREATE INDEX IF NOT EXISTS idx_tasks_deadline_completed ON tasks(deadline, completed);
     CREATE INDEX IF NOT EXISTS idx_tasks_priority_deadline ON tasks(priority, deadline);
+    CREATE INDEX IF NOT EXISTS idx_tasks_recurring ON tasks(recurring);
     CREATE INDEX IF NOT EXISTS idx_subtasks_task ON subtasks(task_id);
     CREATE INDEX IF NOT EXISTS idx_logs_task ON task_logs(task_id);
     CREATE INDEX IF NOT EXISTS idx_reminders_task ON reminders(task_id);
