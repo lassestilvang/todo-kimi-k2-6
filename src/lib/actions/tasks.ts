@@ -30,10 +30,14 @@ export async function findSimilarTasks(name: string, excludeTaskId?: number): Pr
   const db = getDb();
   const user = await getCurrentUser();
 
-  const whereClause = user?.id ? "WHERE user_id = ? OR user_id IS NULL" : "WHERE 1=1";
+  // Only search within user's own tasks for privacy
+  if (!user?.id) {
+    return [];
+  }
+
   const tasks = db
-    .prepare(`SELECT id, name, date FROM tasks ${whereClause.replace("WHERE 1=1", "")}`)
-    .all(user?.id ?? null) as Array<{ id: number; name: string; date: string | null }>;
+    .prepare("SELECT id, name, date FROM tasks WHERE user_id = ?")
+    .all(user.id) as Array<{ id: number; name: string; date: string | null }>;
 
   const normalizedInput = name.toLowerCase().trim();
 
@@ -404,6 +408,7 @@ export async function getTasks(options?: GetTasksOptions): Promise<TaskWithRelat
 export async function createTask(input: CreateTaskInput & { sort_order?: number }): Promise<TaskWithRelations> {
   const db = getDb();
   const user = await getCurrentUser();
+  const userId = user?.id ?? null;
 
   // Sanitize input to prevent XSS
   const sanitizedInput = {
@@ -422,17 +427,18 @@ export async function createTask(input: CreateTaskInput & { sort_order?: number 
     } else {
       // Get max sort_order for the list or default to 0
       const maxResult = sanitizedInput.list_id
-        ? db.prepare("SELECT MAX(sort_order) as max FROM tasks WHERE list_id = ?").get(sanitizedInput.list_id) as { max: number }
-        : db.prepare("SELECT MAX(sort_order) as max FROM tasks").get() as { max: number };
+        ? db.prepare("SELECT MAX(sort_order) as max FROM tasks WHERE list_id = ? AND user_id = ?").get(sanitizedInput.list_id, userId) as { max: number }
+        : db.prepare("SELECT MAX(sort_order) as max FROM tasks WHERE user_id = ?").get(userId) as { max: number };
       sortOrder = (maxResult?.max ?? -1) + 1;
     }
     const insertResult = db
       .prepare(
         `INSERT INTO tasks
-         (name, description, list_id, date, deadline, estimate, actual_time, priority, recurring, recurring_config, sort_order)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+         (user_id, name, description, list_id, date, deadline, estimate, actual_time, priority, recurring, recurring_config, sort_order)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .run(
+        userId,
         sanitizedInput.name,
         sanitizedInput.description || null,
         sanitizedInput.list_id || 1,
