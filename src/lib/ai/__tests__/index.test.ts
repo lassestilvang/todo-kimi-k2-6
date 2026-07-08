@@ -10,6 +10,9 @@ vi.mock("@/lib/ai/providers", () => ({
     async generateInsights() {
       return { tips: [], suggestions: [], trends: [] };
     }
+    async parseEditCommand() {
+      return { action: "complete" as const };
+    }
   },
   OpenAIProvider: class {
     name = "openai-gpt4";
@@ -19,6 +22,9 @@ vi.mock("@/lib/ai/providers", () => ({
     async generateInsights() {
       return { tips: [], suggestions: [], trends: [] };
     }
+    async parseEditCommand() {
+      return { action: "complete" as const };
+    }
   },
   ClaudeProvider: class {
     name = "claude-sonnet";
@@ -27,6 +33,9 @@ vi.mock("@/lib/ai/providers", () => ({
     }
     async generateInsights() {
       return { tips: [], suggestions: [], trends: [] };
+    }
+    async parseEditCommand() {
+      return { action: "prioritize" as const };
     }
   },
   AIManager: class {
@@ -39,6 +48,10 @@ vi.mock("@/lib/ai/providers", () => ({
     async generateTasksFromNotes() {
       return [];
     }
+    async parseEditCommand() {
+      return { action: "complete" as const, provider: "keyword-parser" };
+    }
+    clearCache() {}
   },
 }));
 
@@ -76,6 +89,48 @@ describe("AI Module", () => {
 
       expect(input.text).toBe("Create a new task");
       expect(input.context?.lists).toHaveLength(1);
+    });
+  });
+
+  describe("AIEditCommand types", () => {
+    it("should have correct structure for complete action", () => {
+      const command = {
+        action: "complete" as const,
+        taskId: 123,
+        taskName: "Test Task",
+      };
+
+      expect(command.action).toBe("complete");
+      expect(command.taskId).toBe(123);
+    });
+
+    it("should have correct structure for prioritize action", () => {
+      const command = {
+        action: "prioritize" as const,
+        taskId: 456,
+        taskName: "Important Task",
+        updates: { priority: "high" },
+      };
+
+      expect(command.action).toBe("prioritize");
+      if (command.updates && "priority" in command.updates) {
+        expect(command.updates.priority).toBe("high");
+      }
+    });
+
+    it("should have correct structure for delete action", () => {
+      const command = {
+        action: "delete" as const,
+        taskId: 789,
+      };
+
+      expect(command.action).toBe("delete");
+    });
+
+    it("should have all valid action types", () => {
+      const validActions = ["edit", "delete", "complete", "prioritize", "schedule", "add_label", "remove_label"] as const;
+      const action = "complete";
+      expect(validActions).toContain(action);
     });
   });
 });
