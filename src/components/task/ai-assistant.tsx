@@ -1,15 +1,14 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { Bot, Send, Sparkles, Clock, Target, Copy, Check, List as ListIcon, Mic, MicOff } from "lucide-react";
+import { Bot, Send, Sparkles, Clock, Target, Copy, Check, List as ListIcon, Mic, MicOff, CheckCircle2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type { TaskWithRelations, List } from "@/types";
-import type { TaskSuggestion } from "@/lib/ai";
-import type { SpeechRecognition } from "@/types/speech";
+import type { TaskSuggestion, AIEditCommand } from "@/lib/ai";
 import { toast } from "sonner";
 
 // Type for workload suggestions
@@ -52,7 +51,9 @@ export function AIAssistant({ tasks, lists, onAddTask, className }: AIAssistantP
   const [isListening, setIsListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  // SpeechRecognition is defined globally in speech.d.ts
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recognitionRef = useRef<any>(null);
 
   // Initialize speech recognition
   useEffect(() => {
@@ -64,7 +65,8 @@ export function AIAssistant({ tasks, lists, onAddTask, className }: AIAssistantP
       recognitionRef.current.lang = "en-US";
       recognitionRef.current.interimResults = false;
 
-      recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      recognitionRef.current.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
         setInput(transcript);
         setIsListening(false);
@@ -209,6 +211,67 @@ export function AIAssistant({ tasks, lists, onAddTask, className }: AIAssistantP
     setIsLoading(true);
 
     try {
+      // Try to parse as an edit command first if we have existing tasks
+      const editCommand = await fetch("/api/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "edit",
+          input: {
+            text: input,
+            tasks: tasks.map(t => ({
+              id: t.id,
+              name: t.name,
+              completed: t.completed,
+              priority: t.priority,
+            })),
+          },
+        }),
+      });
+
+      const editResult = await editCommand.json();
+
+      // If we got a valid edit command, execute it
+      if (editResult.action && editResult.taskId) {
+        const task = tasks.find(t => t.id === editResult.taskId);
+        if (task) {
+          let responseContent = "";
+          try {
+            switch (editResult.action) {
+              case "complete":
+                await (await import("@/lib/actions/tasks")).updateTask(task.id, { completed: true });
+                responseContent = `✅ Marked "${task.name}" as completed!`;
+                break;
+              case "delete":
+                await (await import("@/lib/actions/tasks")).deleteTask(task.id);
+                responseContent = `🗑️ Deleted "${task.name}"`;
+                break;
+              case "prioritize":
+                await (await import("@/lib/actions/tasks")).updateTask(task.id, { priority: editResult.updates?.priority });
+                responseContent = `📌 Changed priority of "${task.name}" to ${(editResult.updates as any)?.priority}`;
+                break;
+              default:
+                throw new Error("Unknown action");
+            }
+            // Refresh tasks to reflect changes
+            window.location.reload();
+          } catch {
+            responseContent = `Failed to execute ${editResult.action} command`;
+          }
+          const aiResponse: Message = {
+            id: Date.now() + 1,
+            role: "assistant",
+            content: responseContent,
+            timestamp: new Date(),
+            parsedTask: undefined,
+          };
+          setMessages((prev) => [...prev, aiResponse]);
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      // Fall back to task creation parsing
       const result = await fetch("/api/ai", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -298,8 +361,30 @@ export function AIAssistant({ tasks, lists, onAddTask, className }: AIAssistantP
         prompt: "Set up a reminder for the client presentation next week",
       },
     ];
-    return [...smartSuggestions, ...staticActions];
-  }, [smartSuggestions]);
+
+    // Add edit actions if we have incomplete tasks
+    const editActions: QuickAction[] = [];
+    const incompleteTasks = tasks.filter(t => !t.completed);
+    if (incompleteTasks.length > 0) {
+      const firstTask = incompleteTasks[0];
+      editActions.push(
+        {
+          title: "Complete task",
+          description: `Mark "${firstTask.name.slice(0, 20)}..." as done`,
+          icon: <CheckCircle2 className="h-3.5 w-3.5" />,
+          prompt: `Complete task: ${firstTask.name}`,
+        },
+        {
+          title: "Delete task",
+          description: "Remove a task you no longer need",
+          icon: <Trash2 className="h-3.5 w-3.5" />,
+          prompt: `Delete the task "${firstTask.name}"`,
+        }
+      );
+    }
+
+    return [...editActions, ...smartSuggestions, ...staticActions];
+  }, [smartSuggestions, tasks]);
 
   // Generate task suggestions based on patterns
   const formatTime = useCallback((date: Date) => {
