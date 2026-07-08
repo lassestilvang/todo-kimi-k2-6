@@ -135,7 +135,7 @@ export function TemplateGallery({
           </div>
           <Select
             value={selectedCategory?.toString() || "all"}
-            onValueChange={(value) => setSelectedCategory(value === "all" ? null : parseInt(value))}
+            onValueChange={(value) => setSelectedCategory(value === "all" ? null : Number(value))}
           >
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Category" />
@@ -308,7 +308,7 @@ function CreateTemplateForm({ onSubmit, onCancel, lists, categories }: CreateTem
           <label className="text-sm font-medium">List</label>
           <Select
             value={selectedList?.toString() || "none"}
-            onValueChange={(value) => setSelectedList(value === "none" ? null : parseInt(value))}
+            onValueChange={(value) => setSelectedList(value === "none" ? null : Number(value))}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select list" />
@@ -328,7 +328,7 @@ function CreateTemplateForm({ onSubmit, onCancel, lists, categories }: CreateTem
         <label className="text-sm font-medium">Category</label>
         <Select
           value={selectedCategory?.toString() || "none"}
-          onValueChange={(value) => setSelectedCategory(value === "none" ? null : parseInt(value))}
+          onValueChange={(value) => setSelectedCategory(value === "none" ? null : Number(value))}
         >
           <SelectTrigger>
             <SelectValue placeholder="Select category" />
