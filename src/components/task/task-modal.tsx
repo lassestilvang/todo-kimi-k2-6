@@ -46,6 +46,9 @@ import {
   TaskSubtasks,
   TaskDependencies,
   TaskAttachments,
+  TaskCommentsTab,
+  TaskCollaborateTab,
+  TaskAssignTab,
   TaskTemplateTab,
   TaskStreakTab,
 } from "./modal";
@@ -65,6 +68,8 @@ import {
   ListChecks,
   Link,
   CheckCircle2,
+  Share2,
+  Flame,
 } from "lucide-react";
 
 interface TaskModalProps {
@@ -219,6 +224,7 @@ export function TaskModal({
       return () => clearTimeout(timer);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
+    return undefined;
   }, [open]);
 
   const handleSubmit = async () => {
