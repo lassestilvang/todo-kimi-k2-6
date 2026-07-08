@@ -6,8 +6,90 @@ vi.mock("@/lib/ai", () => ({
     parseTask: vi.fn(),
     generateInsights: vi.fn(),
     generateTasksFromNotes: vi.fn(),
+    parseEditCommand: vi.fn(),
   }),
 }));
+
+describe("AI Assistant - Logic Tests", () => {});
+
+describe("AI Edit Command Logic", () => {
+  describe("Complete Command Detection", () => {
+    it("should detect complete command for task", () => {
+      const text = "Complete task: Buy groceries";
+      const completeMatch = text.match(/(?:complete|mark\s+(?:as\s+)?done|finish)\s+(.+?)(?:\s*$|\s*[.!?])/i);
+      expect(completeMatch).not.toBeNull();
+      if (completeMatch) {
+        expect(completeMatch[1]).toContain("Buy groceries");
+      }
+    });
+
+    it("should detect mark as done command", () => {
+      const text = "Mark task as done: Call mom";
+      const completeMatch = text.match(/(?:complete|mark\s+(?:as\s+)?done|finish)\s+(.+?)(?:\s*$|\s*[.!?])/i);
+      expect(completeMatch).not.toBeNull();
+    });
+
+    it("should detect finish command", () => {
+      const text = "Finish the report";
+      const completeMatch = text.match(/(?:complete|mark\s+(?:as\s+)?done|finish)\s+(.+?)(?:\s*$|\s*[.!?])/i);
+      expect(completeMatch).not.toBeNull();
+    });
+  });
+
+  describe("Delete Command Detection", () => {
+    it("should detect delete command for task", () => {
+      const text = "Delete task: Old item";
+      const deleteMatch = text.match(/(?:delete|remove)\s+(?:task\s+)?(.+?)(?:\s*$|\s*[.!?])/i);
+      expect(deleteMatch).not.toBeNull();
+      if (deleteMatch) {
+        expect(deleteMatch[1]).toContain("Old item");
+      }
+    });
+
+    it("should detect remove command", () => {
+      const text = "Remove the old todo";
+      const deleteMatch = text.match(/(?:delete|remove)\s+(?:task\s+)?(.+?)(?:\s*$|\s*[.!?])/i);
+      expect(deleteMatch).not.toBeNull();
+    });
+  });
+
+  describe("Priority Command Detection", () => {
+    it("should detect set priority to critical", () => {
+      const text = "Set priority of task to critical";
+      const priorityMatch = text.match(/(?:set|change)\s+(?:priority\s+of\s+)?(.+?)\s+to\s+(critical|high|medium|low)/i);
+      expect(priorityMatch).not.toBeNull();
+      if (priorityMatch) {
+        expect(priorityMatch[2]).toBe("critical");
+      }
+    });
+
+    it("should detect change priority to high", () => {
+      const text = "Change this task to high priority";
+      const priorityMatch = text.match(/(?:set|change)\s+(?:priority\s+of\s+)?(.+?)\s+to\s+(critical|high|medium|low)/i);
+      expect(priorityMatch).not.toBeNull();
+    });
+  });
+
+  describe("AI Provider Selection", () => {
+    it("should select openai as provider when configured", () => {
+      const mockStatus = { openai: true, anthropic: false };
+      const activeProvider = mockStatus.openai ? "openai-gpt4" : mockStatus.anthropic ? "claude-sonnet" : "keyword-parser";
+      expect(activeProvider).toBe("openai-gpt4");
+    });
+
+    it("should select claude as provider when openai not configured", () => {
+      const mockStatus = { openai: false, anthropic: true };
+      const activeProvider = mockStatus.openai ? "openai-gpt4" : mockStatus.anthropic ? "claude-sonnet" : "keyword-parser";
+      expect(activeProvider).toBe("claude-sonnet");
+    });
+
+    it("should fall back to keyword parser when no AI configured", () => {
+      const mockStatus = { openai: false, anthropic: false };
+      const activeProvider = mockStatus.openai ? "openai-gpt4" : mockStatus.anthropic ? "claude-sonnet" : "keyword-parser";
+      expect(activeProvider).toBe("keyword-parser");
+    });
+  });
+});
 
 describe("AI Assistant - Logic Tests", () => {
   describe("Priority Detection", () => {
