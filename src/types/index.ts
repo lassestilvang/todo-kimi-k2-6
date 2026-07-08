@@ -147,6 +147,7 @@ export interface CalendarSync {
 
 export interface Task {
   id: number;
+  user_id: number | null;
   name: string;
   description: string | null;
   notes: string | null;
@@ -163,6 +164,7 @@ export interface Task {
   created_at: string;
   updated_at: string;
   sort_order: number;
+  workspace_id?: number | null;
   assignee_id?: number | null;
   assignee?: User;
   created_by?: number | null;
@@ -188,6 +190,7 @@ export interface TaskWithRelations extends Task {
   attachments: TaskAttachment[];
   time_entries: TimeEntry[];
   recurring_exceptions: RecurringException[];
+  workspace_id?: number | null;
 }
 
 export interface CreateTaskInput {
