@@ -1,7 +1,7 @@
 "use server";
 
 import { getDb } from "@/lib/db";
-import { getCurrentUser } from "@/lib/session";
+import { getCurrentUser, requireUserId } from "@/lib/session";
 import type {
   Task,
   TaskWithRelations,
@@ -16,9 +16,11 @@ import type {
   CreateLabelInput,
   FilterPreset,
   Priority,
+  TaskDependency,
 } from "@/types";
 import { listSchema, labelSchema, sanitizeString } from "@/lib/validation";
 import { logTaskAction } from "@/lib/actions/task-helpers";
+import { getTaskRelations } from "@/lib/db/relations";
 
 /**
  * Check for potential duplicate tasks by comparing names.
@@ -54,15 +56,6 @@ export async function findSimilarTasks(name: string, excludeTaskId?: number): Pr
     .filter(t => t.similarity > 0.5)
     .sort((a, b) => b.similarity - a.similarity)
     .slice(0, 5);
-}
-
-function logTaskAction(taskId: number, action: string, details?: string) {
-  const db = getDb();
-  db.prepare("INSERT INTO task_logs (task_id, action, details) VALUES (?, ?, ?)").run(
-    taskId,
-    action,
-    details ? sanitizeString(details) : null
-  );
 }
 
 export async function getLists(): Promise<List[]> {
@@ -225,37 +218,34 @@ export async function getTaskById(id: number): Promise<TaskWithRelations | undef
 
   if (!task) return undefined;
 
-  // Batch fetch all relations
-  const [labels, subtasks, reminders, logs, blockers, blockedBy] = await Promise.all([
-    db.prepare(
-      `SELECT l.* FROM labels l
-       JOIN task_labels tl ON l.id = tl.label_id
-       WHERE tl.task_id = ?
-       ORDER BY l.name`
-    ).all(id) as Label[],
-    db.prepare("SELECT * FROM subtasks WHERE task_id = ? ORDER BY id").all(id) as Subtask[],
-    db.prepare("SELECT * FROM reminders WHERE task_id = ? ORDER BY remind_at").all(id) as Reminder[],
-    db.prepare("SELECT * FROM task_logs WHERE task_id = ? ORDER BY created_at DESC").all(id) as TaskLog[],
-    // Tasks that this task blocks (this task has dependencies pointing to them)
-    db.prepare(
-      `SELECT td.* FROM task_dependencies td
-       WHERE td.depends_on_task_id = ?`
-    ).all(id) as TaskDependency[],
-    // Tasks that block this task
-    db.prepare(
-      `SELECT td.* FROM task_dependencies td
-       WHERE td.task_id = ?`
-    ).all(id) as TaskDependency[],
-  ]);
+  // Fetch relations using shared utility
+  const relationsMap = await getTaskRelations(db, [task.id]);
+  const relations = relationsMap[task.id] || {
+    labels: [],
+    subtasks: [],
+    reminders: [],
+    logs: [],
+    comments: [],
+    attachments: [],
+    blockers: [],
+    blocked_by: [],
+    assignee: undefined,
+    time_entries: [],
+    recurring_exceptions: [],
+  };
 
   return {
     ...task,
-    labels,
-    subtasks,
-    reminders,
-    logs,
-    blockers,
-    blocked_by: blockedBy,
+    labels: relations.labels,
+    subtasks: relations.subtasks,
+    reminders: relations.reminders,
+    logs: relations.logs,
+    comments: relations.comments,
+    attachments: relations.attachments,
+    blockers: relations.blockers,
+    blocked_by: relations.blocked_by,
+    time_entries: relations.time_entries,
+    recurring_exceptions: relations.recurring_exceptions,
   };
 }
 
@@ -367,102 +357,37 @@ export async function getTasks(options?: GetTasksOptions): Promise<TaskWithRelat
   ).all(...params, limit, offset) as Task[];
   const taskIds = tasks.map((t) => t.id);
 
-  // Batch fetch all relations in parallel
-  const [labelsResult, subtasksResult, remindersResult, logsResult, commentsResult, blockersResult, blockedByResult] = await Promise.all([
-    taskIds.length > 0
-      ? db
-          .prepare(
-            `SELECT l.*, tl.task_id FROM labels l
-             JOIN task_labels tl ON l.id = tl.label_id
-             WHERE tl.task_id IN (${taskIds.map(() => "?").join(",")})`
-          )
-          .all(...taskIds)
-      : [],
-    taskIds.length > 0
-      ? db.prepare(`SELECT * FROM subtasks WHERE task_id IN (${taskIds.map(() => "?").join(",")}) ORDER BY task_id, id`).all(...taskIds)
-      : [],
-    taskIds.length > 0
-      ? db
-          .prepare(`SELECT * FROM reminders WHERE task_id IN (${taskIds.map(() => "?").join(",")}) ORDER BY task_id, remind_at`)
-          .all(...taskIds)
-      : [],
-    taskIds.length > 0
-      ? db
-          .prepare(`SELECT * FROM task_logs WHERE task_id IN (${taskIds.map(() => "?").join(",")}) ORDER BY task_id, created_at DESC`)
-          .all(...taskIds)
-      : [],
-    taskIds.length > 0
-      ? db.prepare(`SELECT * FROM task_comments WHERE task_id IN (${taskIds.map(() => "?").join(",")}) ORDER BY task_id, created_at ASC`).all(...taskIds)
-      : [],
-    taskIds.length > 0
-      ? db
-          .prepare(`SELECT td.*, t.name as blocked_task_name FROM task_dependencies td JOIN tasks t ON td.task_id = t.id WHERE td.depends_on_task_id IN (${taskIds.map(() => "?").join(",")})`)
-          .all(...taskIds)
-      : [],
-    taskIds.length > 0
-      ? db
-          .prepare(`SELECT td.*, t.name as blocking_task_name FROM task_dependencies td JOIN tasks t ON td.depends_on_task_id = t.id WHERE td.task_id IN (${taskIds.map(() => "?").join(",")})`)
-          .all(...taskIds)
-      : [],
-  ]);
+  // Batch fetch all relations using shared utility
+  const relationsMap = await getTaskRelations(db, taskIds);
 
-  // Group relations by task_id
-  // Labels need special handling since they don't have task_id in the result
-  interface LabelWithTaskId extends Label {
-    task_id: number;
-  }
-  const labelsByTask = (labelsResult as LabelWithTaskId[]).reduce((acc, label) => {
-    if (!acc[label.task_id]) acc[label.task_id] = [];
-    acc[label.task_id].push(label);
-    return acc;
-  }, {} as Record<number, Label[]>);
-
-  const subtasksByTask = (subtasksResult as Subtask[]).reduce((acc, subtask) => {
-    if (!acc[subtask.task_id]) acc[subtask.task_id] = [];
-    acc[subtask.task_id].push(subtask);
-    return acc;
-  }, {} as Record<number, Subtask[]>);
-
-  const remindersByTask = (remindersResult as Reminder[]).reduce((acc, reminder) => {
-    if (!acc[reminder.task_id]) acc[reminder.task_id] = [];
-    acc[reminder.task_id].push(reminder);
-    return acc;
-  }, {} as Record<number, Reminder[]>);
-
-  const logsByTask = (logsResult as TaskLog[]).reduce((acc, log) => {
-    if (!acc[log.task_id]) acc[log.task_id] = [];
-    acc[log.task_id].push(log);
-    return acc;
-  }, {} as Record<number, TaskLog[]>);
-
-  const commentsByTask = (commentsResult as TaskComment[]).reduce((acc, comment) => {
-    if (!acc[comment.task_id]) acc[comment.task_id] = [];
-    acc[comment.task_id].push(comment);
-    return acc;
-  }, {} as Record<number, TaskComment[]>);
-
-  const blockersByTask = (blockersResult as TaskDependency[]).reduce((acc, dep) => {
-    if (!acc[dep.depends_on_task_id]) acc[dep.depends_on_task_id] = [];
-    acc[dep.depends_on_task_id].push(dep);
-    return acc;
-  }, {} as Record<number, TaskDependency[]>);
-
-  const blockedByTask = (blockedByResult as TaskDependency[]).reduce((acc, dep) => {
-    if (!acc[dep.task_id]) acc[dep.task_id] = [];
-    acc[dep.task_id].push(dep);
-    return acc;
-  }, {} as Record<number, TaskDependency[]>);
-
-  const result: TaskWithRelations[] = tasks.map((task) => ({
-    ...task,
-    labels: labelsByTask[task.id] || [],
-    subtasks: subtasksByTask[task.id] || [],
-    reminders: remindersByTask[task.id] || [],
-    logs: logsByTask[task.id] || [],
-    comments: commentsByTask[task.id] || [],
-    blockers: blockersByTask[task.id] || [],
-    blocked_by: blockedByTask[task.id] || [],
-  }));
+  const result: TaskWithRelations[] = tasks.map((task) => {
+    const relations = relationsMap[task.id] || {
+      labels: [],
+      subtasks: [],
+      reminders: [],
+      logs: [],
+      comments: [],
+      attachments: [],
+      blockers: [],
+      blocked_by: [],
+      assignee: undefined,
+      time_entries: [],
+      recurring_exceptions: [],
+    };
+    return {
+      ...task,
+      labels: relations.labels,
+      subtasks: relations.subtasks,
+      reminders: relations.reminders,
+      logs: relations.logs,
+      comments: relations.comments,
+      attachments: relations.attachments,
+      blockers: relations.blockers,
+      blocked_by: relations.blocked_by,
+      time_entries: relations.time_entries,
+      recurring_exceptions: relations.recurring_exceptions,
+    };
+  });
 
   if (options?.searchQuery) {
     const Fuse = (await import("fuse.js")).default;
@@ -562,8 +487,11 @@ export async function createTask(input: CreateTaskInput & { sort_order?: number 
 
 export async function updateTask(id: number, input: UpdateTaskInput): Promise<TaskWithRelations> {
   const db = getDb();
-  const existing = db.prepare("SELECT * FROM tasks WHERE id = ?").get(id) as Task | undefined;
-  if (!existing) throw new Error("Task not found");
+  const user = await getCurrentUser();
+  const existing = user?.id
+    ? db.prepare("SELECT * FROM tasks WHERE id = ? AND user_id = ?").get(id, user.id) as Task | undefined
+    : db.prepare("SELECT * FROM tasks WHERE id = ?").get(id) as Task | undefined;
+  if (!existing) throw new Error("Task not found or access denied");
 
   const fields: string[] = [];
   const values: unknown[] = [];
@@ -672,7 +600,18 @@ export async function updateTask(id: number, input: UpdateTaskInput): Promise<Ta
 
 export async function deleteTask(id: number): Promise<void> {
   const db = getDb();
-  db.prepare("DELETE FROM tasks WHERE id = ?").run(id);
+  const user = await getCurrentUser();
+
+  // Verify user ownership before deleting
+  if (user?.id) {
+    const existing = db.prepare("SELECT id FROM tasks WHERE id = ? AND user_id = ?").get(id, user.id);
+    if (!existing) {
+      throw new Error("Task not found or access denied");
+    }
+    db.prepare("DELETE FROM tasks WHERE id = ? AND user_id = ?").run(id, user.id);
+  } else {
+    db.prepare("DELETE FROM tasks WHERE id = ?").run(id);
+  }
 }
 
 export async function bulkUpdateTasks(
@@ -685,39 +624,63 @@ export async function bulkUpdateTasks(
   }
 ): Promise<void> {
   const db = getDb();
+  const user = await getCurrentUser();
 
-  for (const taskId of taskIds) {
-    const fields: string[] = [];
-    const values: unknown[] = [];
+  if (taskIds.length === 0) return;
 
-    if (updates.list_id !== undefined) {
-      fields.push("list_id = ?");
-      values.push(updates.list_id);
+  const placeholders = taskIds.map(() => "?").join(",");
+
+  // Build UPDATE SET clause
+  const fields: string[] = [];
+  const values: unknown[] = [];
+
+  if (updates.list_id !== undefined) {
+    fields.push("list_id = ?");
+    values.push(updates.list_id);
+  }
+  if (updates.priority !== undefined) {
+    fields.push("priority = ?");
+    values.push(updates.priority);
+  }
+  if (updates.completed !== undefined) {
+    fields.push("completed = ?, completed_at = ?");
+    values.push(updates.completed ? 1 : 0, updates.completed ? new Date().toISOString() : null);
+  }
+
+  if (fields.length > 0) {
+    fields.push("updated_at = CURRENT_TIMESTAMP");
+
+    // Batch update all tasks at once
+    const allValues = [...values, ...taskIds];
+    if (user?.id) {
+      // Filter to only update tasks owned by user
+      db.prepare(`UPDATE tasks SET ${fields.join(", ")} WHERE id IN (${placeholders}) AND user_id = ?`).run(...allValues, user.id);
+    } else {
+      db.prepare(`UPDATE tasks SET ${fields.join(", ")} WHERE id IN (${placeholders})`).run(...allValues);
     }
-    if (updates.priority !== undefined) {
-      fields.push("priority = ?");
-      values.push(updates.priority);
-    }
-    if (updates.completed !== undefined) {
-      fields.push("completed = ?, completed_at = ?");
-      values.push(updates.completed ? 1 : 0, updates.completed ? new Date().toISOString() : null);
-    }
 
-    if (fields.length > 0) {
-      fields.push("updated_at = CURRENT_TIMESTAMP");
-      values.push(taskId);
-      db.prepare(`UPDATE tasks SET ${fields.join(", ")} WHERE id = ?`).run(...values);
-
-      if (updates.completed !== undefined && updates.completed) {
+    // Log completion for completed tasks
+    if (updates.completed) {
+      const ownedTaskIds = taskIds;
+      for (const taskId of ownedTaskIds) {
         logTaskAction(taskId, "completed", "Task marked as completed (bulk)");
       }
     }
+  }
 
-    // Handle label updates separately
-    if (updates.label_ids !== undefined) {
-      db.prepare("DELETE FROM task_labels WHERE task_id = ?").run(taskId);
-      if (updates.label_ids.length > 0) {
-        const stmt = db.prepare("INSERT INTO task_labels (task_id, label_id) VALUES (?, ?)");
+  // Handle label updates in batch
+  if (updates.label_ids !== undefined) {
+    // Delete all existing labels for the affected tasks
+    if (user?.id) {
+      db.prepare(`DELETE FROM task_labels WHERE task_id IN (${placeholders}) AND task_id IN (SELECT id FROM tasks WHERE user_id = ?)`).run(...taskIds, user.id);
+    } else {
+      db.prepare(`DELETE FROM task_labels WHERE task_id IN (${placeholders})`).run(...taskIds);
+    }
+
+    // Insert new labels
+    if (updates.label_ids.length > 0) {
+      const stmt = db.prepare("INSERT INTO task_labels (task_id, label_id) VALUES (?, ?)");
+      for (const taskId of taskIds) {
         for (const labelId of updates.label_ids) {
           stmt.run(taskId, labelId);
         }
@@ -728,17 +691,32 @@ export async function bulkUpdateTasks(
 
 export async function bulkDeleteTasks(taskIds: number[]): Promise<void> {
   const db = getDb();
-  const stmt = db.prepare("DELETE FROM tasks WHERE id = ?");
-  for (const taskId of taskIds) {
-    stmt.run(taskId);
+  const user = await getCurrentUser();
+
+  if (taskIds.length === 0) return;
+
+  // Batch delete using IN clause for better performance
+  const placeholders = taskIds.map(() => "?").join(",");
+
+  if (user?.id) {
+    // Only delete tasks owned by user
+    db.prepare(`DELETE FROM tasks WHERE id IN (${placeholders}) AND user_id = ?`).run(...taskIds, user.id);
+  } else {
+    db.prepare(`DELETE FROM tasks WHERE id IN (${placeholders})`).run(...taskIds);
   }
 }
 
 export async function reorderTasks(taskOrders: { id: number; sort_order: number }[]): Promise<void> {
   const db = getDb();
-  const stmt = db.prepare("UPDATE tasks SET sort_order = ? WHERE id = ?");
+  const user = await getCurrentUser();
+  const stmt = db.prepare("UPDATE tasks SET sort_order = ? WHERE id = ? AND user_id = ?");
   for (const task of taskOrders) {
-    stmt.run(task.sort_order, task.id);
+    // Only update if user owns the task
+    if (user?.id) {
+      stmt.run(task.sort_order, task.id, user.id);
+    } else {
+      db.prepare("UPDATE tasks SET sort_order = ? WHERE id = ?").run(task.sort_order, task.id);
+    }
   }
 }
 
@@ -757,104 +735,37 @@ export async function getTasksByIds(ids: number[]): Promise<TaskWithRelations[]>
 
   const taskIds = tasks.map((t) => t.id);
 
-  // Batch fetch all relations in parallel (same pattern as getTasks)
-  const [labelsResult, subtasksResult, remindersResult, logsResult, commentsResult, blockersResult, blockedByResult] = await Promise.all([
-    taskIds.length > 0
-      ? db
-          .prepare(
-            `SELECT l.*, tl.task_id FROM labels l
-             JOIN task_labels tl ON l.id = tl.label_id
-             WHERE tl.task_id IN (${taskIds.map(() => "?").join(",")})`
-          )
-          .all(...taskIds)
-      : [],
-    taskIds.length > 0
-      ? db.prepare(`SELECT * FROM subtasks WHERE task_id IN (${taskIds.map(() => "?").join(",")}) ORDER BY task_id, id`).all(...taskIds)
-      : [],
-    taskIds.length > 0
-      ? db
-          .prepare(`SELECT * FROM reminders WHERE task_id IN (${taskIds.map(() => "?").join(",")}) ORDER BY task_id, remind_at`)
-          .all(...taskIds)
-      : [],
-    taskIds.length > 0
-      ? db
-          .prepare(`SELECT * FROM task_logs WHERE task_id IN (${taskIds.map(() => "?").join(",")}) ORDER BY task_id, created_at DESC`)
-          .all(...taskIds)
-      : [],
-    taskIds.length > 0
-      ? db.prepare(`SELECT * FROM task_comments WHERE task_id IN (${taskIds.map(() => "?").join(",")}) ORDER BY task_id, created_at ASC`).all(...taskIds)
-      : [],
-    taskIds.length > 0
-      ? db
-          .prepare(`SELECT td.*, t.name as blocked_task_name FROM task_dependencies td JOIN tasks t ON td.task_id = t.id WHERE td.depends_on_task_id IN (${taskIds.map(() => "?").join(",")})`)
-          .all(...taskIds)
-      : [],
-    taskIds.length > 0
-      ? db
-          .prepare(`SELECT td.*, t.name as blocking_task_name FROM task_dependencies td JOIN tasks t ON td.depends_on_task_id = t.id WHERE td.task_id IN (${taskIds.map(() => "?").join(",")})`)
-          .all(...taskIds)
-      : [],
-  ]);
+  // Batch fetch all relations using shared utility
+  const relationsMap = await getTaskRelations(db, taskIds);
 
-  // Group relations by task_id
-  interface LabelWithTaskId extends Label {
-    task_id: number;
-  }
-  const labelsByTask = (labelsResult as LabelWithTaskId[]).reduce((acc, label) => {
-    if (!acc[label.task_id]) acc[label.task_id] = [];
-    acc[label.task_id].push(label);
-    return acc;
-  }, {} as Record<number, Label[]>);
-
-  const subtasksByTask = (subtasksResult as Subtask[]).reduce((acc, subtask) => {
-    if (!acc[subtask.task_id]) acc[subtask.task_id] = [];
-    acc[subtask.task_id].push(subtask);
-    return acc;
-  }, {} as Record<number, Subtask[]>);
-
-  const remindersByTask = (remindersResult as Reminder[]).reduce((acc, reminder) => {
-    if (!acc[reminder.task_id]) acc[reminder.task_id] = [];
-    acc[reminder.task_id].push(reminder);
-    return acc;
-  }, {} as Record<number, Reminder[]>);
-
-  const logsByTask = (logsResult as TaskLog[]).reduce((acc, log) => {
-    if (!acc[log.task_id]) acc[log.task_id] = [];
-    acc[log.task_id].push(log);
-    return acc;
-  }, {} as Record<number, TaskLog[]>);
-
-  const commentsByTask = (commentsResult as TaskComment[]).reduce((acc, comment) => {
-    if (!acc[comment.task_id]) acc[comment.task_id] = [];
-    acc[comment.task_id].push(comment);
-    return acc;
-  }, {} as Record<number, TaskComment[]>);
-
-  const blockersByTask = (blockersResult as TaskDependency[]).reduce((acc, dep) => {
-    if (!acc[dep.depends_on_task_id]) acc[dep.depends_on_task_id] = [];
-    acc[dep.depends_on_task_id].push(dep);
-    return acc;
-  }, {} as Record<number, TaskDependency[]>);
-
-  const blockedByTask = (blockedByResult as TaskDependency[]).reduce((acc, dep) => {
-    if (!acc[dep.task_id]) acc[dep.task_id] = [];
-    acc[dep.task_id].push(dep);
-    return acc;
-  }, {} as Record<number, TaskDependency[]>);
-
-  // Build result with relations (note: missing time_entries and habit-related data for now)
-  const result: TaskWithRelations[] = tasks.map((task) => ({
-    ...task,
-    labels: labelsByTask[task.id] || [],
-    subtasks: subtasksByTask[task.id] || [],
-    reminders: remindersByTask[task.id] || [],
-    logs: logsByTask[task.id] || [],
-    comments: commentsByTask[task.id] || [],
-    blockers: blockersByTask[task.id] || [],
-    blocked_by: blockedByTask[task.id] || [],
-    time_entries: [],
-    recurring_exceptions: [],
-  }));
+  const result: TaskWithRelations[] = tasks.map((task) => {
+    const relations = relationsMap[task.id] || {
+      labels: [],
+      subtasks: [],
+      reminders: [],
+      logs: [],
+      comments: [],
+      attachments: [],
+      blockers: [],
+      blocked_by: [],
+      assignee: undefined,
+      time_entries: [],
+      recurring_exceptions: [],
+    };
+    return {
+      ...task,
+      labels: relations.labels,
+      subtasks: relations.subtasks,
+      reminders: relations.reminders,
+      logs: relations.logs,
+      comments: relations.comments,
+      attachments: relations.attachments,
+      blockers: relations.blockers,
+      blocked_by: relations.blocked_by,
+      time_entries: relations.time_entries,
+      recurring_exceptions: relations.recurring_exceptions,
+    };
+  });
 
   return result;
 }
