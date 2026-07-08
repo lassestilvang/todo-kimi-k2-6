@@ -76,7 +76,7 @@ export function TaskCollaboration({ task, onUpdate }: TaskCollaborationProps) {
             />
             <Select
               value={newAssigneePermission}
-              onValueChange={(v: "view" | "edit") => setNewAssigneePermission(v)}
+              onValueChange={(v) => setNewAssigneePermission(v as "view" | "edit")}
             >
               <SelectTrigger className="w-20">
                 <SelectValue />
