@@ -56,3 +56,66 @@ export async function deleteTemplate(id: number): Promise<void> {
   const db = getDb();
   db.prepare("DELETE FROM templates WHERE id = ?").run(id);
 }
+
+/**
+ * Save a task as a template
+ */
+export async function saveTemplateFromTask(
+  taskId: number,
+  options?: {
+    name?: string;
+    category_id?: number;
+    include_subtasks?: boolean;
+  }
+): Promise<Template> {
+  const db = getDb();
+
+  // Get the task
+  const task = db.prepare("SELECT * FROM tasks WHERE id = ?").get(taskId) as {
+    id: number;
+    name: string;
+    description: string | null;
+    list_id: number | null;
+    priority: string;
+  } | undefined;
+
+  if (!task) {
+    throw new Error("Task not found");
+  }
+
+  // Get subtasks if needed
+  let subtasks: string[] = [];
+  if (options?.include_subtasks) {
+    const taskSubtasks = db
+      .prepare("SELECT name FROM subtasks WHERE task_id = ?")
+      .all(taskId) as Array<{ name: string }>;
+    subtasks = taskSubtasks.map((s) => s.name);
+  }
+
+  // Create the template
+  const result = db
+    .prepare(
+      "INSERT INTO templates (name, description, list_id, priority, label_ids, subtasks, category_id) VALUES (?, ?, ?, ?, ?, ?, ?)"
+    )
+    .run(
+      options?.name || task.name,
+      task.description,
+      task.list_id || null,
+      task.priority || "none",
+      null, // No labels by default
+      subtasks.length > 0 ? JSON.stringify(subtasks) : null,
+      options?.category_id || null
+    );
+
+  return {
+    id: Number(result.lastInsertRowid),
+    name: options?.name || task.name,
+    description: task.description,
+    list_id: task.list_id || null,
+    priority: task.priority || "none",
+    label_ids: [],
+    subtasks,
+    category_id: options?.category_id || null,
+    created_at: new Date().toISOString(),
+  };
+}
