@@ -26,6 +26,8 @@ interface WorkloadDashboardProps {
 interface ExtendedUserWorkload extends UserWorkload {
   balanceScore: number;
   completionRate: number;
+  workloadScore: number;
+  balanceCategory: "underloaded" | "balanced" | "overloaded";
 }
 
 // Simple bar chart component for workload visualization
@@ -121,11 +123,8 @@ export function WorkloadDashboard({ tasks, users, suggestions = [], className }:
       completedTasks: userCompletedCounts[user.id] || 0,
       overdueTasks: userOverdueCounts[user.id] || 0,
       highPriorityTasks: userHighPriorityCounts[user.id] || 0,
-      totalEstimatedTime: userEstimatedTimes[user.id] || 0,
       avgEstimatedTime: 0,
-      workloadScore: 0,
-      completionRate: 0,
-      balanceCategory: 'balanced',
+      totalEstimatedTime: userEstimatedTimes[user.id] || 0,
     }));
 
     // Calculate scores
