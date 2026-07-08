@@ -84,7 +84,7 @@ export function TaskComments({
     const { mentions: mentionUsernames } = parseMentions(newComment);
     const mentionIds = mentionUsernames
       .map((username) => users.find((u) => u.name?.toLowerCase() === username.toLowerCase())?.id)
-      .filter((id): number | undefined => id !== undefined) as number[];
+      .filter((id): id is number => id !== undefined) as number[];
 
     setIsSubmitting(true);
     try {
@@ -181,7 +181,7 @@ export function TaskComments({
       <div className="border-t pt-3">
         <div className="flex gap-2 mb-2">
           <Popover open={showMentions} onOpenChange={setShowMentions}>
-            <PopoverTrigger asChild>
+            <PopoverTrigger>
               <Button
                 variant="ghost"
                 size="sm"
