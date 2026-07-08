@@ -271,6 +271,153 @@ export function createMockDatabase(): MockDatabase {
           // Parse the JOIN types
           const hasRemindersJoin = lowerSql.includes("join tasks t on r.task_id = t.id");
           const hasTaskSharesJoin = lowerSql.includes("left join users u on");
+          // Check for task_labels join (for getTaskRelations)
+          const hasTaskLabelsJoin = lowerSql.includes("join task_labels tl on");
+          const hasTaskDependenciesJoin = lowerSql.includes("join tasks t on");
+
+          if (hasTaskLabelsJoin) {
+            // Handle task_labels join for getTaskRelations
+            // SELECT l.*, tl.task_id FROM labels l JOIN task_labels tl ON l.id = tl.label_id WHERE tl.task_id IN (...)
+            return {
+              run: () => ({ lastInsertRowid: 0, changes: 0 }),
+              get: () => undefined,
+              all: (...params: unknown[]) => {
+                const labelsTable = tables.get("labels");
+                const taskLabelsTable = tables.get("task_labels");
+                const labels = labelsTable ? Array.from(labelsTable.values()) : [];
+                const taskLabels = taskLabelsTable ? Array.from(taskLabelsTable.values()) : [];
+
+                return labels
+                  .map((label: Record<string, unknown>) => {
+                    // Find matching task_labels entries
+                    const matchingLabels = taskLabels.filter((tl: Record<string, unknown>) =>
+                      tl.label_id === label.id && params.includes(tl.task_id)
+                    );
+                    return matchingLabels.map((tl: Record<string, unknown>) => ({
+                      ...label,
+                      task_id: tl.task_id,
+                    }));
+                  })
+                  .flat();
+              },
+            };
+          }
+
+          if (hasTaskDependenciesJoin && lowerSql.includes("task_dependencies")) {
+            // Handle task_dependencies joins for getTaskRelations
+            return {
+              run: () => ({ lastInsertRowid: 0, changes: 0 }),
+              get: () => undefined,
+              all: (...params: unknown[]) => {
+                const depsTable = tables.get("task_dependencies");
+                const tasksTable = tables.get("tasks");
+                const deps = depsTable ? Array.from(depsTable.values()) : [];
+
+                return deps
+                  .filter((dep: Record<string, unknown>) => params.includes(dep.depends_on_task_id) || params.includes(dep.task_id))
+                  .map((dep: Record<string, unknown>) => {
+                    const task = tasksTable?.get(dep.task_id as number);
+                    return {
+                      ...dep,
+                      blocked_task_name: task?.name,
+                      blocking_task_name: tasksTable?.get(dep.depends_on_task_id as number)?.name,
+                    };
+                  });
+              },
+            };
+          }
+
+          // Handle IN clause queries for task_logs, task_comments, etc. (from getTaskRelations)
+          // These don't have JOIN, they're simple SELECTs with IN clause
+          if (lowerSql.includes("in (") && !hasTaskLabelsJoin && !hasTaskDependenciesJoin) {
+            // Determine which table to query based on FROM clause
+            let tableKey: string | null = null;
+            if (lowerSql.includes("from task_logs")) tableKey = "task_logs";
+            else if (lowerSql.includes("from task_comments")) tableKey = "task_comments";
+            else if (lowerSql.includes("from subtasks where task_id in")) tableKey = "subtasks";
+            else if (lowerSql.includes("from reminders where task_id in")) tableKey = "reminders";
+            else if (lowerSql.includes("from task_attachments")) tableKey = "task_attachments";
+            else if (lowerSql.includes("from time_entries")) tableKey = "time_entries";
+            else if (lowerSql.includes("from recurring_exceptions")) tableKey = "recurring_exceptions";
+
+            if (tableKey) {
+              return {
+                run: () => ({ lastInsertRowid: 0, changes: 0 }),
+                get: () => undefined,
+                all: (...params: unknown[]) => {
+                  const targetTable = tables.get(tableKey);
+                  if (!targetTable) return [];
+                  let result = Array.from(targetTable.values());
+                  // Filter by task_id IN (...) - params are all task IDs
+                  // For single task_id queries, params[0] is the task_id
+                  const taskIds = params.filter((p): p is number => typeof p === 'number');
+                  if (taskIds.length > 0) {
+                    result = result.filter((r: Record<string, unknown>) => taskIds.includes(r.task_id as number));
+                  }
+                  // Handle ORDER BY if present
+                  const orderByMatch = sql.match(/ORDER\s+BY\s+(\w+)/i);
+                  if (orderByMatch) {
+                    const col = orderByMatch[1];
+                    result.sort((a, b) => {
+                      const aVal = a?.[col];
+                      const bVal = b?.[col];
+                      if (aVal == null && bVal == null) return 0;
+                      if (aVal == null) return -1;
+                      if (bVal == null) return 1;
+                      if (typeof aVal === 'string' && typeof bVal === 'string') {
+                        return aVal.localeCompare(bVal);
+                      }
+                      return (Number(aVal) - Number(bVal));
+                    });
+                  }
+                  return result;
+                },
+              };
+            }
+          }
+
+          if (hasRemindersJoin) {
+            // Determine which table to query based on FROM clause
+            let tableKey: string | null = null;
+            if (lowerSql.includes("from subtasks where task_id in")) tableKey = "subtasks";
+            else if (lowerSql.includes("from reminders where task_id in")) tableKey = "reminders";
+            else if (lowerSql.includes("from task_logs where task_id in")) tableKey = "task_logs";
+            else if (lowerSql.includes("from task_comments where task_id in")) tableKey = "task_comments";
+            else if (lowerSql.includes("from task_attachments where task_id in")) tableKey = "task_attachments";
+            else if (lowerSql.includes("from time_entries where task_id in")) tableKey = "time_entries";
+            else if (lowerSql.includes("from recurring_exceptions where task_id in")) tableKey = "recurring_exceptions";
+
+            if (tableKey) {
+              return {
+                run: () => ({ lastInsertRowid: 0, changes: 0 }),
+                get: () => undefined,
+                all: (...params: unknown[]) => {
+                  const targetTable = tables.get(tableKey);
+                  if (!targetTable) return [];
+                  let result = Array.from(targetTable.values());
+                  // Filter by task_id IN (...) - params are all task IDs
+                  result = result.filter((r: Record<string, unknown>) => params.includes(r.task_id));
+                  // Handle ORDER BY if present
+                  const orderByMatch = sql.match(/ORDER\s+BY\s+(\w+)/i);
+                  if (orderByMatch) {
+                    const col = orderByMatch[1];
+                    result.sort((a, b) => {
+                      const aVal = a?.[col];
+                      const bVal = b?.[col];
+                      if (aVal == null && bVal == null) return 0;
+                      if (aVal == null) return -1;
+                      if (bVal == null) return 1;
+                      if (typeof aVal === 'string' && typeof bVal === 'string') {
+                        return aVal.localeCompare(bVal);
+                      }
+                      return (Number(aVal) - Number(bVal));
+                    });
+                  }
+                  return result;
+                },
+              };
+            }
+          }
 
           if (hasRemindersJoin) {
             // Handle getDueReminders and getUpcomingReminders
@@ -479,45 +626,52 @@ export function createMockDatabase(): MockDatabase {
             if (lowerSql.includes("where")) {
               const whereClause = sql.split('WHERE')[1]?.split('ORDER BY')[0]?.split('LIMIT')[0] || '';
 
-              // Handle user_id = ? OR user_id IS NULL pattern - user_id can be null or match param
-              // In test/demo mode, return all records (skip user isolation for simplicity)
-              if (/\buser_id\s*=\s*\?\s*OR\s*user_id\s*IS\s*NULL\b/i.test(whereClause)) {
-                // Skip user_id filtering in mock - all records should be visible
-                // This handles the demo mode where tasks have user_id=NULL
-              }
+              // Handle task_id IN (...) pattern - params are task IDs to match
+              const inMatch = whereClause.match(/task_id\s+in\s*\(/i);
+              if (inMatch && params.length > 0) {
+                result = result.filter(r => r && params.includes(r.task_id));
+              } else {
+                // Handle other WHERE patterns
+                // Handle user_id = ? OR user_id IS NULL pattern - user_id can be null or match param
+                // In test/demo mode, return all records (skip user isolation for simplicity)
+                if (/\buser_id\s*=\s*\?\s*OR\s*user_id\s*IS\s*NULL\b/i.test(whereClause)) {
+                  // Skip user_id filtering in mock - all records should be visible
+                  // This handles the demo mode where tasks have user_id=NULL
+                }
 
-              // Handle completed = 0 literal (incomplete tasks)
-              if (/\bcompleted\s*=\s*0\b/i.test(whereClause)) {
-                result = result.filter(r => r && r.completed === 0);
-              }
+                // Handle completed = 0 literal (incomplete tasks)
+                if (/\bcompleted\s*=\s*0\b/i.test(whereClause)) {
+                  result = result.filter(r => r && r.completed === 0);
+                }
 
-              // Handle completed = 1 literal (completed tasks)
-              if (/\bcompleted\s*=\s*1\b/i.test(whereClause)) {
-                result = result.filter(r => r && (r.completed === 1 || r.completed === true));
-              }
+                // Handle completed = 1 literal (completed tasks)
+                if (/\bcompleted\s*=\s*1\b/i.test(whereClause)) {
+                  result = result.filter(r => r && (r.completed === 1 || r.completed === true));
+                }
 
-              // Handle list_id = ? pattern
-              const listIdMatch = whereClause.match(/list_id\s*=\s*\?/i);
-              if (listIdMatch) {
-                const listId = params[0];
-                result = result.filter(r => r && r.list_id === listId);
-              }
+                // Handle list_id = ? pattern
+                const listIdMatch = whereClause.match(/list_id\s*=\s*\?/i);
+                if (listIdMatch) {
+                  const listId = params[0];
+                  result = result.filter(r => r && r.list_id === listId);
+                }
 
-              // Handle date = ? pattern
-              const dateMatch = whereClause.match(/date\s*=\s*\?/i);
-              if (dateMatch) {
-                // Find the index of date in WHERE clause
-                const paramCountBeforeDate = (whereClause.substring(0, dateMatch.index!).match(/\?/g) || []).length;
-                const date = params[paramCountBeforeDate];
-                result = result.filter(r => r && r.date === date);
-              }
+                // Handle date = ? pattern
+                const dateMatch = whereClause.match(/date\s*=\s*\?/i);
+                if (dateMatch) {
+                  // Find the index of date in WHERE clause
+                  const paramCountBeforeDate = (whereClause.substring(0, dateMatch.index!).match(/\?/g) || []).length;
+                  const date = params[paramCountBeforeDate];
+                  result = result.filter(r => r && r.date === date);
+                }
 
-              // Handle date >= ? pattern (for upcoming/next7 views)
-              const dateGteMatch = whereClause.match(/date\s*>\s*\?/i);
-              if (dateGteMatch) {
-                const paramCountBeforeDate = (whereClause.substring(0, dateGteMatch.index!).match(/\?/g) || []).length;
-                const date = params[paramCountBeforeDate];
-                result = result.filter(r => r && r.date >= date);
+                // Handle date >= ? pattern (for upcoming/next7 views)
+                const dateGteMatch = whereClause.match(/date\s*>\s*\?/i);
+                if (dateGteMatch) {
+                  const paramCountBeforeDate = (whereClause.substring(0, dateGteMatch.index!).match(/\?/g) || []).length;
+                  const date = params[paramCountBeforeDate];
+                  result = result.filter(r => r && r.date >= date);
+                }
               }
             }
 
