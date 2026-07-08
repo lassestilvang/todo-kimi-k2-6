@@ -254,7 +254,9 @@ export class OfflineDataManager {
       request.onsuccess = () => resolve(request.result);
 
       request.onupgradeneeded = (event) => {
-        const db = (event.target as IDBOpenDBEvent).result;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const target = event.target as any;
+        const db = target.result;
         db.createObjectStore("tasks", { keyPath: "id" });
         db.createObjectStore("sync-queue", { keyPath: "id", autoIncrement: true });
       };
