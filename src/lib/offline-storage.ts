@@ -238,3 +238,66 @@ function updateSyncStatus(isSyncing: boolean, error?: string): void {
 export function hasPendingOfflineTasks(): boolean {
   return getPendingOfflineTasks().length > 0;
 }
+
+/**
+ * Offline conflict resolution strategies
+ */
+export type ConflictResolution = "server-wins" | "client-wins" | "merge" | "prompt";
+
+/**
+ * Resolve conflicts when syncing offline changes
+ */
+export async function resolveConflicts(
+  serverTask: Record<string, unknown>,
+  offlineTask: OfflineTask,
+  resolution: ConflictResolution = "server-wins"
+): Promise<Record<string, unknown>> {
+  switch (resolution) {
+    case "server-wins":
+      return serverTask;
+    case "client-wins":
+      return { ...serverTask, ...offlineTask.data };
+    case "merge": {
+      // Merge strategy: prefer offline changes for non-conflicting fields
+      const merged = { ...serverTask };
+      if (typeof offlineTask.data === "object" && offlineTask.data !== null) {
+        for (const [key, value] of Object.entries(offlineTask.data)) {
+          if (key !== "id" && value !== undefined) {
+            merged[key] = value;
+          }
+        }
+      }
+      return merged;
+    }
+    case "prompt":
+      // In a real implementation, this would trigger a UI prompt
+      // For now, default to merge
+      return { ...serverTask, ...offlineTask.data };
+    default:
+      return serverTask;
+  }
+}
+
+/**
+ * Clear all offline tasks (use with caution)
+ */
+export function clearAllOfflineTasks(): void {
+  const ls = getLocalStorage();
+  if (!ls) return;
+  ls.removeItem(OFFLINE_TASKS_KEY);
+  ls.removeItem(SYNC_STATUS_KEY);
+}
+
+/**
+ * Get offline task count by action type
+ */
+export function getOfflineTaskCounts(): { create: number; update: number; delete: number } {
+  const pending = getPendingOfflineTasks();
+  return pending.reduce(
+    (acc, task) => {
+      acc[task.action] = (acc[task.action] || 0) + 1;
+      return acc;
+    },
+    { create: 0, update: 0, delete: 0 }
+  );
+}
