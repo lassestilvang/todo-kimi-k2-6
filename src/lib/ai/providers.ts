@@ -180,6 +180,15 @@ export class KeywordParser implements AIProvider {
       }
     }
 
+    // Extract recurring pattern FIRST (before everyMatch check)
+    let recurring: "none" | "daily" | "weekly" | "weekdays" | "monthly" | "yearly" | "custom" = "none";
+    for (const [rec, keywords] of Object.entries(this.recurringKeywords)) {
+      if (keywords.some((k) => text.includes(k))) {
+        recurring = rec as "none" | "daily" | "weekly" | "weekdays" | "monthly" | "yearly" | "custom";
+        break;
+      }
+    }
+
     // Extract duration
     let estimated_duration: number | undefined;
     for (const [keyword, duration] of Object.entries(this.durationKeywords)) {
@@ -230,13 +239,16 @@ export class KeywordParser implements AIProvider {
     if (everyMatch && recurring === "none") {
       const num = parseInt(everyMatch[1] || "1");
       const unit = everyMatch[2];
-      if (unit === "day") recurring = "daily";
-      else if (unit === "week") recurring = "weekly";
-      else if (unit === "weekday") recurring = "weekdays";
-      else if (unit === "month") recurring = "monthly";
-      else if (unit === "year") recurring = "yearly";
-      if (num > 1 || unit === "day") {
-        recurring = "custom";
+      if (unit === "day") {
+        recurring = num > 1 ? "custom" : "daily";
+      } else if (unit === "week") {
+        recurring = "weekly";
+      } else if (unit === "weekday") {
+        recurring = "weekdays";
+      } else if (unit === "month") {
+        recurring = "monthly";
+      } else if (unit === "year") {
+        recurring = "yearly";
       }
     }
 
@@ -252,15 +264,6 @@ export class KeywordParser implements AIProvider {
       const match = text.match(pattern);
       if (match) {
         deadline = parse(match);
-        break;
-      }
-    }
-
-    // Extract recurring pattern
-    let recurring: "none" | "daily" | "weekly" | "weekdays" | "monthly" | "yearly" | "custom" = "none";
-    for (const [rec, keywords] of Object.entries(this.recurringKeywords)) {
-      if (keywords.some((k) => text.includes(k))) {
-        recurring = rec as "none" | "daily" | "weekly" | "weekdays" | "monthly" | "yearly" | "custom";
         break;
       }
     }
@@ -534,7 +537,7 @@ export class OpenAIProvider implements AIProvider {
   private readonly maxRetries: number;
 
   constructor() {
-    this.model = process.env.OPENAI_MODEL || "gpt-4o-mini";
+    this.model = process.env.OPENAI_MODEL || "gpt-4o";
     this.baseURL = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
     this.maxRetries = 3;
   }
@@ -817,7 +820,7 @@ export class ClaudeProvider implements AIProvider {
   private readonly maxRetries: number;
 
   constructor() {
-    this.model = process.env.CLAUDE_MODEL || "claude-3-5-sonnet-20241022";
+    this.model = process.env.CLAUDE_MODEL || "claude-3-5-sonnet-latest";
     this.baseURL = process.env.CLAUDE_BASE_URL || "https://api.anthropic.com";
     this.maxRetries = 3;
   }
