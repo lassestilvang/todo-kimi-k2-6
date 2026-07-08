@@ -93,6 +93,7 @@ export function initializeSchema(db: Database) {
 
     CREATE TABLE IF NOT EXISTS tasks (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
       name TEXT NOT NULL,
       description TEXT,
       notes TEXT,
@@ -110,7 +111,8 @@ export function initializeSchema(db: Database) {
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
       sort_order INTEGER DEFAULT 0,
       assignee_id INTEGER REFERENCES users(id),
-      created_by INTEGER REFERENCES users(id)
+      created_by INTEGER REFERENCES users(id),
+      workspace_id INTEGER REFERENCES workspaces(id) ON DELETE SET NULL
     );
 
     CREATE TABLE IF NOT EXISTS task_labels (
@@ -153,6 +155,7 @@ export function initializeSchema(db: Database) {
     CREATE INDEX IF NOT EXISTS idx_tasks_deadline_completed ON tasks(deadline, completed);
     CREATE INDEX IF NOT EXISTS idx_tasks_priority_deadline ON tasks(priority, deadline);
     CREATE INDEX IF NOT EXISTS idx_tasks_recurring ON tasks(recurring);
+    CREATE INDEX IF NOT EXISTS idx_tasks_user_id ON tasks(user_id);
     CREATE INDEX IF NOT EXISTS idx_subtasks_task ON subtasks(task_id);
     CREATE INDEX IF NOT EXISTS idx_logs_task ON task_logs(task_id);
     CREATE INDEX IF NOT EXISTS idx_reminders_task ON reminders(task_id);
