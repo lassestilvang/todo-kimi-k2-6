@@ -28,6 +28,17 @@ export const aiInsightsSchema = z.object({
 
 export type AIInsights = z.infer<typeof aiInsightsSchema>;
 
+// Schema for AI task editing commands
+export const aiEditCommandSchema = z.object({
+  action: z.enum(["edit", "delete", "complete", "prioritize", "schedule", "add_label", "remove_label"]),
+  taskId: z.number().optional(),
+  taskName: z.string().optional(),
+  updates: z.record(z.unknown()).optional(),
+  searchQuery: z.string().optional(),
+});
+
+export type AIEditCommand = z.infer<typeof aiEditCommandSchema>;
+
 export interface AITaskInput {
   text: string;
   context?: {
@@ -174,3 +185,12 @@ export {
 
 // Cache management
 export { aiCache } from "./providers";
+
+// AI-powered task editing
+export async function parseEditCommand(
+  text: string,
+  context: { tasks: Array<{ id: number; name: string; completed: boolean; priority: string }> }
+): Promise<AIEditCommand & { provider: string }> {
+  const ai = getAIManager();
+  return ai.parseEditCommand(text, context);
+}
