@@ -5,6 +5,24 @@
 
 import { getAIManager } from "./providers";
 
+/**
+ * Categorize workload levels
+ */
+export function categorizeWorkload(score: number, avg: number): "underloaded" | "balanced" | "overloaded" {
+  if (score < avg * 0.7) return "underloaded";
+  if (score > avg * 1.3) return "overloaded";
+  return "balanced";
+}
+
+/**
+ * Calculate balance score for a user
+ */
+export function calculateBalanceScore(workload: UserWorkload, avgWorkload: number): number {
+  const { totalTasks, overdueTasks, highPriorityTasks, totalEstimatedTime } = workload;
+  const score = totalTasks * 1 + overdueTasks * 3 + highPriorityTasks * 2 + totalEstimatedTime / 60;
+  return Math.max(0, 100 - (score / avgWorkload) * 50);
+}
+
 export interface UserWorkload {
   userId: number;
   userName: string;
