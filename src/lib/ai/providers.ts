@@ -300,18 +300,23 @@ export class KeywordParser implements AIProvider {
       }
     }
 
-    return {
-      name: this.cleanTaskName(input.text),
-      description: this.generateDescription(input.text, priority, estimated_duration),
-      priority,
-      estimated_duration,
-      suggested_date,
-      recurring,
-      list_name,
-      list_id,
-      deadline,
-    };
-  }
+    // Parse time range for start/end times
+  const timeRange = this.parseTimeRange(text);
+
+  return {
+    name: this.cleanTaskName(input.text),
+    description: this.generateDescription(input.text, priority, estimated_duration),
+    priority,
+    estimated_duration,
+    suggested_date,
+    recurring,
+    list_name,
+    list_id,
+    deadline,
+    start_time: timeRange?.start_time,
+    end_time: timeRange?.end_time,
+  };
+}
 
   private cleanTaskName(text: string): string {
     // Remove common prefixes and keywords
@@ -388,6 +393,75 @@ export class KeywordParser implements AIProvider {
     const daysAhead = (targetDay - currentDay + 7) % 7 || 7;
     const nextDay = new Date(today.getTime() + daysAhead * 24 * 60 * 60 * 1000);
     return nextDay;
+  }
+
+  /**
+   * Parse time range from text (e.g., "from 2pm to 4pm", "9am-11am")
+   */
+  private parseTimeRange(text: string): { start_time?: string; end_time?: string } | null {
+    // Match "from X to Y" pattern
+    const fromToMatch = text.match(/from\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\s+to\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)/i);
+    if (fromToMatch) {
+      const startHour = this.parseTimeToMinutes(fromToMatch[1]);
+      const endHour = this.parseTimeToMinutes(fromToMatch[2]);
+      if (startHour !== null && endHour !== null) {
+        return {
+          start_time: this.formatMinutesToTime(startHour),
+          end_time: this.formatMinutesToTime(endHour),
+        };
+      }
+    }
+
+    // Match "X-Y" time range pattern (e.g., "2-4pm", "9am-11am")
+    const rangeMatch = text.match(/(\d{1,2})(?::(\d{2}))?\s*-\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
+    if (rangeMatch) {
+      const startHour = parseInt(rangeMatch[1]);
+      const startMin = parseInt(rangeMatch[2] || "0");
+      const endHour = parseInt(rangeMatch[3]);
+      const endMin = parseInt(rangeMatch[4] || "0");
+      const period = rangeMatch[5]?.toLowerCase();
+
+      let startTotal = startHour * 60 + startMin;
+      let endTotal = endHour * 60 + endMin;
+
+      if (period === "pm" && startHour !== 12) startTotal += 12 * 60;
+      if (period === "pm" && endHour !== 12) endTotal += 12 * 60;
+      if (period === "am" && startHour === 12) startTotal = 0;
+      if (period === "am" && endHour === 12) endTotal = 0;
+
+      return {
+        start_time: this.formatMinutesToTime(startTotal),
+        end_time: this.formatMinutesToTime(endTotal),
+      };
+    }
+
+    return null;
+  }
+
+  /**
+   * Convert time string to minutes from midnight
+   */
+  private parseTimeToMinutes(timeStr: string): number | null {
+    const match = timeStr.match(/(\d{1,2})(?:[:.]?(\d{2}))?\s*(am|pm)?/i);
+    if (!match) return null;
+
+    let hours = parseInt(match[1]);
+    const minutes = parseInt(match[2] || "0");
+    const period = match[3]?.toLowerCase();
+
+    if (period === "pm" && hours !== 12) hours += 12;
+    if (period === "am" && hours === 12) hours = 0;
+
+    return hours * 60 + minutes;
+  }
+
+  /**
+   * Convert minutes from midnight to time string (HH:mm)
+   */
+  private formatMinutesToTime(minutes: number): string {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return `${hours.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}`;
   }
 
   /**
@@ -1152,7 +1226,7 @@ export class AIManager {
     context: { tasks: Array<{ id: number; name: string; completed: boolean; priority: string }> }
   ): AIEditCommand | null {
     // Pattern: "complete/mark done [task name]" or "mark [task] as complete"
-    const completeMatch = text.match(/(?:complete|mark\s+(?:as\s+)?done|finish)\s+(.+?)(?:\s*$|\s*[.!?])/i);
+    const completeMatch = text.match(/(?:complete|mark\s+(?:as\s+)?done|finish|done)[:\s]+(.+?)(?:\s*$|\s*[.!?])/i);
     if (completeMatch) {
       const taskName = completeMatch[1].trim();
       const task = context.tasks.find((t) => t.name.toLowerCase().includes(taskName.toLowerCase()));
@@ -1162,7 +1236,7 @@ export class AIManager {
     }
 
     // Pattern: "delete/remove [task name]"
-    const deleteMatch = text.match(/(?:delete|remove)\s+(?:task\s+)?(.+?)(?:\s*$|\s*[.!?])/i);
+    const deleteMatch = text.match(/(?:delete|remove)[:\s]+(?:task\s+)?(.+?)(?:\s*$|\s*[.!?])/i);
     if (deleteMatch) {
       const taskName = deleteMatch[1].trim();
       const task = context.tasks.find((t) => t.name.toLowerCase().includes(taskName.toLowerCase()));
