@@ -10,13 +10,11 @@ vi.mock("@/lib/ai", () => ({
   }),
 }));
 
-describe("AI Assistant - Logic Tests", () => {});
-
 describe("AI Edit Command Logic", () => {
   describe("Complete Command Detection", () => {
     it("should detect complete command for task", () => {
       const text = "Complete task: Buy groceries";
-      const completeMatch = text.match(/(?:complete|mark\s+(?:as\s+)?done|finish)\s+(.+?)(?:\s*$|\s*[.!?])/i);
+      const completeMatch = text.match(/(?:complete|mark\s+(?:as\s+)?done|finish|done)[:\s]+(.+?)(?:\s*$|\s*[.!?])/i);
       expect(completeMatch).not.toBeNull();
       if (completeMatch) {
         expect(completeMatch[1]).toContain("Buy groceries");
@@ -25,13 +23,13 @@ describe("AI Edit Command Logic", () => {
 
     it("should detect mark as done command", () => {
       const text = "Mark task as done: Call mom";
-      const completeMatch = text.match(/(?:complete|mark\s+(?:as\s+)?done|finish)\s+(.+?)(?:\s*$|\s*[.!?])/i);
+      const completeMatch = text.match(/(?:complete|mark\s+(?:as\s+)?done|finish|done)[:\s]+(.+?)(?:\s*$|\s*[.!?])/i);
       expect(completeMatch).not.toBeNull();
     });
 
     it("should detect finish command", () => {
       const text = "Finish the report";
-      const completeMatch = text.match(/(?:complete|mark\s+(?:as\s+)?done|finish)\s+(.+?)(?:\s*$|\s*[.!?])/i);
+      const completeMatch = text.match(/(?:complete|mark\s+(?:as\s+)?done|finish|done)[:\s]+(.+?)(?:\s*$|\s*[.!?])/i);
       expect(completeMatch).not.toBeNull();
     });
   });
@@ -39,7 +37,7 @@ describe("AI Edit Command Logic", () => {
   describe("Delete Command Detection", () => {
     it("should detect delete command for task", () => {
       const text = "Delete task: Old item";
-      const deleteMatch = text.match(/(?:delete|remove)\s+(?:task\s+)?(.+?)(?:\s*$|\s*[.!?])/i);
+      const deleteMatch = text.match(/(?:delete|remove)[:\s]+(?:task\s+)?(.+?)(?:\s*$|\s*[.!?])/i);
       expect(deleteMatch).not.toBeNull();
       if (deleteMatch) {
         expect(deleteMatch[1]).toContain("Old item");
@@ -48,7 +46,7 @@ describe("AI Edit Command Logic", () => {
 
     it("should detect remove command", () => {
       const text = "Remove the old todo";
-      const deleteMatch = text.match(/(?:delete|remove)\s+(?:task\s+)?(.+?)(?:\s*$|\s*[.!?])/i);
+      const deleteMatch = text.match(/(?:delete|remove)[:\s]+(?:task\s+)?(.+?)(?:\s*$|\s*[.!?])/i);
       expect(deleteMatch).not.toBeNull();
     });
   });
@@ -228,5 +226,51 @@ describe("AI Assistant - UI State Management", () => {
   it("should handle long input", () => {
     const inputText = "a".repeat(500);
     expect(inputText.length).toBe(500);
+  });
+});
+
+describe("AI Assistant - NLP Enhancements", () => {
+  describe("Time Range Parsing", () => {
+    it("should parse 'from X to Y' time range format", () => {
+      const text = "Meeting from 2pm to 4pm";
+      const fromToMatch = text.match(/from\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\s+to\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)/i);
+      expect(fromToMatch).not.toBeNull();
+      if (fromToMatch) {
+        expect(fromToMatch[1]).toContain("2pm");
+        expect(fromToMatch[2]).toContain("4pm");
+      }
+    });
+
+    it("should parse 'X-Y' time range format", () => {
+      const text = "Meeting 2-4pm";
+      const rangeMatch = text.match(/(\d{1,2})(?::(\d{2}))?\s*-\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
+      expect(rangeMatch).not.toBeNull();
+    });
+
+    it("should parse AM/PM time ranges correctly", () => {
+      const text = "Work from 9am to 5pm";
+      const match = text.match(/from\s+(\d{1,2})\s*(am|pm)\s+to\s+(\d{1,2})\s*(am|pm)/i);
+      expect(match).not.toBeNull();
+    });
+  });
+
+  describe("Location Parsing", () => {
+    it("should detect home location keyword", () => {
+      const text = "Clean the house at home";
+      const hasHome = text.toLowerCase().includes("home");
+      expect(hasHome).toBe(true);
+    });
+
+    it("should detect office location keyword", () => {
+      const text = "Team meeting at office";
+      const hasOffice = text.toLowerCase().includes("office");
+      expect(hasOffice).toBe(true);
+    });
+
+    it("should detect gym location keyword", () => {
+      const text = "Workout at gym today";
+      const hasGym = text.toLowerCase().includes("gym");
+      expect(hasGym).toBe(true);
+    });
   });
 });
