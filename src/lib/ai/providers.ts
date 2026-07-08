@@ -3,9 +3,9 @@
  * Supports multiple AI providers with fallback
  */
 
-import type { TaskSuggestion, AITaskInput } from "./index";
+import type { TaskSuggestion, AITaskInput, AIEditCommand } from "./index";
 import { logError, logWarn } from "@/lib/logger";
-import { taskSuggestionSchema, aiInsightsSchema, type AIInsights } from "./index";
+import { taskSuggestionSchema, aiInsightsSchema } from "./index";
 
 export interface AIProvider {
   name: string;
@@ -13,6 +13,7 @@ export interface AIProvider {
   parseTaskStream?(input: AITaskInput, onChunk: (chunk: string) => void): Promise<TaskSuggestion>;
   generateInsights(tasks: Array<{ name: string; completed: boolean; priority: string; date?: string | null; deadline?: string | null }>): Promise<{ tips: string[]; suggestions: string[]; trends: string[] }>;
   generateTasksFromNotes?(notes: string, context?: { lists?: Array<{ id: number; name: string; emoji: string }> }): Promise<Array<{ name: string; description?: string; priority?: "critical" | "high" | "medium" | "low" | "none" }>>;
+  parseEditCommand?(text: string, context: { tasks: Array<{ id: number; name: string; completed: boolean; priority: string }> }): Promise<AIEditCommand>;
 }
 
 /**
@@ -1102,6 +1103,97 @@ export class AIManager {
 
   clearCache(): void {
     aiCache.clear();
+  }
+
+  /**
+   * Parse natural language edit commands for existing tasks
+   */
+  async parseEditCommand(
+    text: string,
+    context: { tasks: Array<{ id: number; name: string; completed: boolean; priority: string }> }
+  ): Promise<AIEditCommand & { provider: string }> {
+    const cacheKey = `edit:${text}`;
+    const cachedResult = aiCache.get<AIEditCommand & { provider: string }>(cacheKey);
+    if (cachedResult) {
+      return cachedResult;
+    }
+
+    // Check for simple keyword patterns first
+    const simpleResult = this.trySimpleEditCommand(text, context);
+    if (simpleResult) {
+      aiCache.set(cacheKey, { ...simpleResult, provider: "keyword-parser" });
+      return { ...simpleResult, provider: "keyword-parser" };
+    }
+
+    // Try AI providers
+    for (const provider of this.providers) {
+      try {
+        if (provider.name !== "keyword-parser" && typeof (provider as any).parseEditCommand === "function") {
+          const result = await (provider as any).parseEditCommand(text, context);
+          if (result) {
+            return { ...result, provider: provider.name };
+          }
+        }
+      } catch (error) {
+        logWarn(`${provider.name} edit command failed`, { error: error instanceof Error ? error.message : String(error) });
+        continue;
+      }
+    }
+
+    // Fallback: return a safe command that won't modify anything
+    return { action: "edit" as const, provider: "keyword-parser" };
+  }
+
+  /**
+   * Try to parse using simple keyword patterns
+   */
+  private trySimpleEditCommand(
+    text: string,
+    context: { tasks: Array<{ id: number; name: string; completed: boolean; priority: string }> }
+  ): AIEditCommand | null {
+    // Pattern: "complete/mark done [task name]" or "mark [task] as complete"
+    const completeMatch = text.match(/(?:complete|mark\s+(?:as\s+)?done|finish)\s+(.+?)(?:\s*$|\s*[.!?])/i);
+    if (completeMatch) {
+      const taskName = completeMatch[1].trim();
+      const task = context.tasks.find((t) => t.name.toLowerCase().includes(taskName.toLowerCase()));
+      if (task) {
+        return { action: "complete", taskId: task.id };
+      }
+    }
+
+    // Pattern: "delete/remove [task name]"
+    const deleteMatch = text.match(/(?:delete|remove)\s+(?:task\s+)?(.+?)(?:\s*$|\s*[.!?])/i);
+    if (deleteMatch) {
+      const taskName = deleteMatch[1].trim();
+      const task = context.tasks.find((t) => t.name.toLowerCase().includes(taskName.toLowerCase()));
+      if (task) {
+        return { action: "delete", taskId: task.id };
+      }
+    }
+
+    // Pattern: "change priority of [task] to [level]"
+    const priorityMatch = text.match(/(?:set|change)\s+(?:priority\s+of\s+)?(.+?)\s+to\s+(critical|high|medium|low)/i);
+    if (priorityMatch) {
+      const taskName = priorityMatch[1].trim();
+      const priority = priorityMatch[2].toLowerCase();
+      const task = context.tasks.find((t) => t.name.toLowerCase().includes(taskName.toLowerCase()));
+      if (task) {
+        return { action: "prioritize", taskId: task.id, updates: { priority } };
+      }
+    }
+
+    // Pattern: "add label [label] to [task]"
+    const labelMatch = text.match(/(?:add|assign)\s+(?:label\s+)?(\w+)\s+to\s+(.+)/i);
+    if (labelMatch) {
+      const labelName = labelMatch[1];
+      const taskName = labelMatch[2].replace(/[.!?]$/, "").trim();
+      const task = context.tasks.find((t) => t.name.toLowerCase().includes(taskName.toLowerCase()));
+      if (task) {
+        return { action: "add_label", taskId: task.id, updates: { labelName } };
+      }
+    }
+
+    return null;
   }
 }
 
