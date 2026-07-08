@@ -442,7 +442,7 @@ export function TaskAnalytics({ tasks, completedTasks }: TaskAnalyticsProps) {
 
       {/* Productivity Heatmap */}
       <div className="mt-4 pt-4 border-t">
-        <ProductivityHeatmap tasks={tasks} completedTasks={completedTasks} />
+        <ProductivityHeatmap tasks={tasks} completedTasks={completedTasks || []} />
       </div>
 
       {/* AI-Powered Insights */}
