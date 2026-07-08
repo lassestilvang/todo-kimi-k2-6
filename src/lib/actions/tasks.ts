@@ -772,7 +772,24 @@ export async function getTasksByIds(ids: number[]): Promise<TaskWithRelations[]>
 
 export async function toggleSubtask(id: number): Promise<Subtask> {
   const db = getDb();
+  const user = await getCurrentUser();
+
+  // Verify user ownership of the parent task before allowing modification
   const subtask = db.prepare("SELECT * FROM subtasks WHERE id = ?").get(id) as Subtask;
+  if (!subtask) {
+    throw new Error("Subtask not found");
+  }
+
+  // Check if user owns the parent task
+  if (user?.id) {
+    const task = db.prepare("SELECT id FROM tasks WHERE id = ? AND user_id = ?").get(subtask.task_id, user.id);
+    if (!task) {
+      throw new Error("Task not found or access denied");
+    }
+  } else if (process.env.NODE_ENV === "production") {
+    throw new Error("Authentication required");
+  }
+
   db.prepare("UPDATE subtasks SET completed = ? WHERE id = ?").run(
     subtask.completed ? 0 : 1,
     id
