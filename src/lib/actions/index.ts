@@ -42,6 +42,7 @@ export {
   getTemplates,
   createTemplate,
   deleteTemplate,
+  saveTemplateFromTask,
 } from "./templates";
 
 // Template categories
