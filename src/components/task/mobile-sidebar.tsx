@@ -112,7 +112,7 @@ export function MobileSidebar({
       await createList({ name: listName, emoji: listEmoji, color: listColor });
       setListName("");
       setNewListDialogOpen(false);
-      onRefresh();
+      onRefresh?.();
       toast.success("List created");
     } catch {
       toast.error("Failed to create list");
@@ -125,7 +125,7 @@ export function MobileSidebar({
       await createLabel({ name: labelName, icon: labelIcon, color: labelColor });
       setLabelName("");
       setNewLabelDialogOpen(false);
-      onRefresh();
+      onRefresh?.();
       toast.success("Label created");
     } catch {
       toast.error("Failed to create label");
@@ -136,7 +136,7 @@ export function MobileSidebar({
     e.stopPropagation();
     try {
       await deleteList(id);
-      onRefresh();
+      onRefresh?.();
       toast.success("List deleted");
     } catch {
       toast.error("Failed to delete list");
@@ -147,7 +147,7 @@ export function MobileSidebar({
     e.stopPropagation();
     try {
       await deleteLabel(id);
-      onRefresh();
+      onRefresh?.();
       toast.success("Label deleted");
     } catch {
       toast.error("Failed to delete label");
@@ -160,7 +160,7 @@ export function MobileSidebar({
   };
 
   const handleNewTask = () => {
-    onNewTask();
+    onNewTask?.();
     setIsOpen(false);
   };
 
@@ -260,7 +260,7 @@ export function MobileSidebar({
                         >
                           <Icon className="h-4 w-4" />
                           <span className="flex-1 text-left">{view.name}</span>
-                          {view.id === "today" && overdueCount > 0 && (
+                          {view.id === "today" && (overdueCount ?? 0) > 0 && (
                             <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-medium text-white">
                               {overdueCount}
                             </span>
@@ -279,7 +279,7 @@ export function MobileSidebar({
                           if (count > 0) {
                             toast.success(`Generated ${count} recurring task(s)`);
                           }
-                          onRefresh();
+                          onRefresh?.();
                         }}
                       >
                         <Repeat className="h-3.5 w-3.5" />
