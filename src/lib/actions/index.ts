@@ -27,7 +27,6 @@ export {
   toggleSubtask,
   bulkUpdateTasks,
   bulkDeleteTasks,
-  saveTemplateFromTask,
 } from "./tasks";
 
 // Task dependencies
