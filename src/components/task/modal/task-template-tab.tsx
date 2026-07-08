@@ -8,7 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { Save } from "lucide-react";
 import type { Template, TemplateCategory } from "@/types";
-import { saveTemplateFromTask as saveTemplateAction, getTemplateCategories as getTemplateCategoriesAction } from "@/lib/actions";
+import { createTemplate as createTemplateAction, getTemplateCategories as getTemplateCategoriesAction } from "@/lib/actions";
 
 interface TaskTemplateTabProps {
   name: string;
@@ -45,15 +45,15 @@ export function TaskTemplateTab({
       return;
     }
     try {
-      await saveTemplateAction(
+      await createTemplateAction({
         name,
-        description || null,
-        Number(listId) || null,
-        priority as any,
-        selectedLabels,
+        description,
+        list_id: listId ? Number(listId) : undefined,
+        priority: priority as "critical" | "high" | "medium" | "low" | "none",
+        label_ids: selectedLabels,
         subtasks,
-        selectedCategory || undefined
-      );
+        category_id: selectedCategory || undefined,
+      });
       onSuccess();
       toast.success("Template saved");
     } catch {
