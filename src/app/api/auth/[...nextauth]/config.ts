@@ -4,7 +4,7 @@ import { getDb } from "@/lib/db";
 import { comparePassword } from "@/lib/auth";
 import { config } from "@/lib/config";
 import type { User as AppUser } from "@/types";
-import type { Session } from "next-auth";
+import type { Session, JWT, User } from "next-auth";
 
 interface Credentials {
   email?: string;
@@ -42,8 +42,7 @@ async function authorize(credentials: Credentials | undefined) {
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const authOptions: any = {
+export const authOptions = {
   providers: [
     CredentialsProvider({
       name: "Email",
@@ -62,13 +61,13 @@ export const authOptions: any = {
     error: "/auth/error",
   },
   callbacks: {
-    async jwt({ token, user }: any) {
+    async jwt({ token, user }: { token: JWT; user: User | undefined }) {
       if (user) {
         token.id = user.id;
       }
       return token;
     },
-    async session({ session, token }: any) {
+    async session({ session, token }: { session: Session; token: JWT }) {
       if (session.user && token.id) {
         session.user.id = String(token.id);
       }
