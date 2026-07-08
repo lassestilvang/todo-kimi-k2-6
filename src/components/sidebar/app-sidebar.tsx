@@ -298,18 +298,6 @@ export function AppSidebar({
             </AnimatePresence>
           </div>
 
-          <div className="px-3 py-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full justify-start gap-2 text-sm"
-              onClick={() => window.location.href = "/settings"}
-            >
-              <Settings className="h-4 w-4" />
-              Settings
-            </Button>
-          </div>
-
           <ScrollArea className="flex-1 px-2">
             <div className="space-y-1 py-2">
               <p className="px-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
