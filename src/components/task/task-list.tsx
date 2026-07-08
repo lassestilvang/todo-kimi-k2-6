@@ -219,7 +219,10 @@ export function TaskList({
                 variant="ghost"
                 size="sm"
                 className="h-7"
-                onClick={() => setSelectedTasks(new Set())}
+                onClick={() => {
+                  const allIds = new Set(visibleTasks.map((t) => t.id));
+                  setSelectedTasks(allIds);
+                }}
               >
                 <CheckSquare className="h-3.5 w-3.5 mr-1" />
                 Select All
