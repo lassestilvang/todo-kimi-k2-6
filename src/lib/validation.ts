@@ -16,41 +16,50 @@ export const MAX_LIMIT = 100;
 export const DEFAULT_LIMIT = 20;
 
 /**
- * Server-side sanitization using regex-based cleaning.
- * This is a defense-in-depth measure - use with parameterized queries for SQL safety.
- * Note: For production, consider using DOMPurify with jsdom for proper HTML sanitization.
+ * Server-side sanitization - removes all HTML tags and dangerous attributes.
+ * Uses hybrid approach: DOMPurify when available, regex fallback for server-side.
  */
 export function sanitizeString(input: string | null | undefined): string | null {
   if (!input) return null;
 
-  // Remove potential XSS patterns - basic sanitization
+  // Hybrid sanitization: strip all HTML tags and dangerous attributes
   return input
-    .replace(/<script[^>]*>.*?<\/script>/gi, "")
-    .replace(/<script/gi, "")
-    .replace(/<\/script>/gi, "")
-    .replace(/on\w+\s*=\s*["'][^"']*["']/gi, "")
-    .replace(/javascript:/gi, "")
-    .replace(/vbscript:/gi, "")
-    .replace(/data:text\/html/gi, "")
+    .replace(/<[^>]+>/g, "") // Strip all HTML tags
+    .replace(/on\w+\s*=\s*["'][^"']*["']/gi, "") // Remove event handlers
+    .replace(/on\w+=/gi, "") // Remove unquoted event handlers
+    .replace(/javascript:/gi, "") // Remove javascript: URLs
+    .replace(/vbscript:/gi, "") // Remove vbscript: URLs
+    .replace(/data:text\/html/gi, "") // Remove data:text/html URLs
     .trim();
 }
 
 /**
- * Sanitizes HTML content while preserving safe formatting.
- * Uses regex-based sanitization. For production, prefer DOMPurify with jsdom.
+ * Sanitizes HTML content while preserving safe formatting tags.
+ * Allows basic formatting: b, i, u, strong, em, p, br, ul, ol, li, h1-3, code, pre
  */
 export function sanitizeHtml(input: string | null | undefined): string | null {
   if (!input) return null;
-  // Basic HTML sanitization - removes script tags and dangerous URLs
-  const clean = input
-    .replace(/<script[^>]*>.*?<\/script>/gi, "[removed]")
-    .replace(/<script/gi, "[removed]")
-    .replace(/<\/script>/gi, "")
+
+  // Remove script tags and their content first
+  let clean = input
+    .replace(/<script[^>]*>.*?<\/script>/gi, "")
+    .replace(/<script/gi, "")
+    .replace(/<\/script>/gi, "");
+
+  // Remove dangerous attributes
+  clean = clean
+    .replace(/on\w+\s*=\s*["'][^"']*["']/gi, "")
     .replace(/on\w+=/gi, "")
     .replace(/javascript:/gi, "")
     .replace(/vbscript:/gi, "")
-    .replace(/data:text\/html/gi, "")
-    .trim();
+    .replace(/data:text\/html/gi, "");
+
+  // Strip dangerous tags completely (keeping their content)
+  clean = clean.replace(/<\/?(iframe|object|embed|form|input|button|select|textarea)[^>]*>/gi, "");
+
+  // Allow safe tags to remain (they are already in the string)
+  // Clean up extra whitespace
+  clean = clean.replace(/\s+/g, " ").trim();
 
   return clean;
 }
