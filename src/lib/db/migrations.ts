@@ -140,6 +140,11 @@ export const migrations: Record<number, string> = {
     -- Add index on recurring column for generateRecurringTasks performance
     CREATE INDEX IF NOT EXISTS idx_tasks_recurring ON tasks(recurring);
   `,
+  15: `
+    -- Add user_id to tasks for proper user isolation
+    ALTER TABLE tasks ADD COLUMN user_id INTEGER REFERENCES users(id) ON DELETE CASCADE;
+    CREATE INDEX IF NOT EXISTS idx_tasks_user_id ON tasks(user_id);
+  `,
 };
 
 export async function runMigrations(): Promise<void> {
