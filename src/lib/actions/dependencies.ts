@@ -1,6 +1,7 @@
 "use server";
 
 import { getDb } from "@/lib/db";
+import { getCurrentUser } from "@/lib/session";
 import { logTaskAction } from "@/lib/actions/task-helpers";
 
 interface TaskDependency {
@@ -38,6 +39,16 @@ async function wouldCreateCircularDependency(
 
 export async function addTaskDependency(taskId: number, dependsOnTaskId: number): Promise<TaskDependency> {
   const db = getDb();
+  const user = await getCurrentUser();
+
+  // Verify user owns both tasks
+  if (user?.id) {
+    const task1 = db.prepare("SELECT id FROM tasks WHERE id = ? AND user_id = ?").get(taskId, user.id);
+    const task2 = db.prepare("SELECT id FROM tasks WHERE id = ? AND user_id = ?").get(dependsOnTaskId, user.id);
+    if (!task1 || !task2) {
+      throw new Error("Access denied - cannot add dependency to task you don't own");
+    }
+  }
 
   const isCircular = await wouldCreateCircularDependency(taskId, dependsOnTaskId, db);
   if (isCircular) {
@@ -68,7 +79,18 @@ export async function addTaskDependency(taskId: number, dependsOnTaskId: number)
 
 export async function removeTaskDependency(taskId: number, dependsOnTaskId: number): Promise<void> {
   const db = getDb();
-  db.prepare("DELETE FROM task_dependencies WHERE task_id = ? AND depends_on_task_id = ?").run(taskId, dependsOnTaskId);
+  const user = await getCurrentUser();
+
+  // Only remove dependency if user owns the task
+  if (user?.id) {
+    db.prepare(`
+      DELETE FROM task_dependencies
+      WHERE task_id = ? AND depends_on_task_id = ?
+      AND task_id IN (SELECT id FROM tasks WHERE user_id = ?)
+    `).run(taskId, dependsOnTaskId, user.id);
+  } else {
+    db.prepare("DELETE FROM task_dependencies WHERE task_id = ? AND depends_on_task_id = ?").run(taskId, dependsOnTaskId);
+  }
 }
 
 export async function getBlockedTasks() {
