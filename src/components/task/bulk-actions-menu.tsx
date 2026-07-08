@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { Move, Tag, Trash2, TrendingUp, ChevronDown } from "lucide-react";
+import { CheckCircle2, Move, Tag, Trash2, TrendingUp, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -119,6 +119,18 @@ export function BulkActionsMenu({ selectedTasks, onAction, onRefresh }: BulkActi
     }
   };
 
+  const handleComplete = async () => {
+    try {
+      const { bulkUpdateTasks } = await import("@/lib/actions/tasks");
+      await bulkUpdateTasks(selectedTasks, { completed: true });
+      toast.success(`Completed ${selectedTasks.length} task(s)`);
+      onAction();
+      onRefresh();
+    } catch {
+      toast.error("Failed to complete tasks");
+    }
+  };
+
   const handlePriorityChange = async (priority: "critical" | "high" | "medium" | "low") => {
     try {
       const { bulkUpdateTasks } = await import("@/lib/actions/tasks");
@@ -180,6 +192,10 @@ export function BulkActionsMenu({ selectedTasks, onAction, onRefresh }: BulkActi
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
+        <DropdownMenuItem onClick={handleComplete}>
+          <CheckCircle2 className="h-3.5 w-3.5 mr-2 text-green-500" />
+          Complete All
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setIsMoving(true)}>
           <Move className="h-3.5 w-3.5 mr-2" />
           Move
