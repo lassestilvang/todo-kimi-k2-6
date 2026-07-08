@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { addTaskAttachment, getTaskAttachments, deleteTaskAttachment } from "@/lib/actions";
+import { getDb } from "@/lib/db";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { v4 as uuidv4 } from "uuid";
@@ -74,7 +75,19 @@ export async function GET(request: NextRequest) {
     if (!taskId) {
       return errorResponse("Task ID required", 400);
     }
-    const attachments = await getTaskAttachments(Number(taskId));
+
+    // Validate task ID
+    const taskIdNum = Number(taskId);
+    if (isNaN(taskIdNum) || taskIdNum <= 0) {
+      return errorResponse("Invalid task ID", 400);
+    }
+
+    // Verify auth result has user
+    if (!middlewareResult.auth?.isAuthenticated || !middlewareResult.auth.userId) {
+      return errorResponse("Authentication required", 401);
+    }
+
+    const attachments = await getTaskAttachments(taskIdNum, middlewareResult.auth.userId);
     return jsonResponse({ attachments }, 200, middlewareResult.headers);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to fetch attachments";
@@ -88,6 +101,13 @@ export async function POST(request: NextRequest) {
   if (middlewareResult.error) {
     return middlewareResult.error;
   }
+
+  // Verify auth
+  if (!middlewareResult.auth?.isAuthenticated || !middlewareResult.auth.userId) {
+    return errorResponse("Authentication required", 401);
+  }
+
+  const userId = middlewareResult.auth.userId;
 
   try {
     // Check content length before processing
@@ -110,10 +130,17 @@ export async function POST(request: NextRequest) {
       return errorResponse(validation.error || "Invalid file", 400);
     }
 
-    // Validate task ID
+    // Validate task ID and verify ownership
     const taskIdNum = Number(taskId);
     if (isNaN(taskIdNum) || taskIdNum <= 0) {
       return errorResponse("Invalid task ID", 400);
+    }
+
+    // Verify task ownership before allowing attachment
+    const db = getDb();
+    const task = db.prepare("SELECT id FROM tasks WHERE id = ? AND user_id = ?").get(taskIdNum, userId);
+    if (!task) {
+      return errorResponse("Task not found or access denied", 403);
     }
 
     // Ensure upload directory exists
@@ -152,6 +179,13 @@ export async function DELETE(request: NextRequest) {
     return middlewareResult.error;
   }
 
+  // Verify auth
+  if (!middlewareResult.auth?.isAuthenticated || !middlewareResult.auth.userId) {
+    return errorResponse("Authentication required", 401);
+  }
+
+  const userId = middlewareResult.auth.userId;
+
   try {
     const searchParams = request.nextUrl.searchParams;
     const id = searchParams.get("id");
@@ -163,6 +197,17 @@ export async function DELETE(request: NextRequest) {
     const attachmentId = Number(id);
     if (isNaN(attachmentId) || attachmentId <= 0) {
       return errorResponse("Invalid attachment ID", 400);
+    }
+
+    // Verify attachment ownership via task
+    const db = getDb();
+    const attachment = db
+      .prepare(
+        "SELECT ta.* FROM task_attachments ta JOIN tasks t ON ta.task_id = t.id WHERE ta.id = ? AND t.user_id = ?"
+      )
+      .get(attachmentId, userId);
+    if (!attachment) {
+      return errorResponse("Attachment not found or access denied", 403);
     }
 
     await deleteTaskAttachment(attachmentId);
