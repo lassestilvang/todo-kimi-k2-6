@@ -136,6 +136,10 @@ export const migrations: Record<number, string> = {
     CREATE INDEX IF NOT EXISTS idx_task_deps_blocker ON task_dependencies(blocker_id);
     CREATE INDEX IF NOT EXISTS idx_task_deps_blocked ON task_dependencies(blocked_id);
   `,
+  14: `
+    -- Add index on recurring column for generateRecurringTasks performance
+    CREATE INDEX IF NOT EXISTS idx_tasks_recurring ON tasks(recurring);
+  `,
 };
 
 export async function runMigrations(): Promise<void> {
