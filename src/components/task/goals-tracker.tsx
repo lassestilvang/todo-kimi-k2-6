@@ -141,7 +141,7 @@ export function GoalsTracker({ goals, onAddGoal, onUpdateProgress, onResetGoal }
               <Label>Period</Label>
               <Select
                 value={newGoal.period}
-                onValueChange={(v: "daily" | "weekly" | "monthly" | "yearly") => setNewGoal({ ...newGoal, period: v })}
+                onValueChange={(v) => setNewGoal({ ...newGoal, period: v as "daily" | "weekly" | "monthly" | "yearly" })}
               >
                 <SelectTrigger>
                   <SelectValue />
