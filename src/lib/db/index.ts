@@ -394,20 +394,7 @@ export function initializeSchema(db: Database) {
     CREATE INDEX IF NOT EXISTS idx_view_shares_view ON custom_view_shares(view_id);
     CREATE INDEX IF NOT EXISTS idx_view_shares_token ON custom_view_shares(share_token);
 
-    -- Goal milestones
-    CREATE TABLE IF NOT EXISTS goal_milestones (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      goal_id INTEGER NOT NULL REFERENCES goals(id) ON DELETE CASCADE,
-      name TEXT NOT NULL,
-      target_count INTEGER NOT NULL,
-      current_count INTEGER DEFAULT 0,
-      due_date TEXT,
-      completed INTEGER DEFAULT 0,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE INDEX IF NOT EXISTS idx_milestones_goal ON goal_milestones(goal_id);
-
-    -- Goal tracking
+    -- Goal tracking (must be created before goal_milestones)
     CREATE TABLE IF NOT EXISTS goals (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -423,6 +410,19 @@ export function initializeSchema(db: Database) {
     );
     CREATE INDEX IF NOT EXISTS idx_goals_user ON goals(user_id);
     CREATE INDEX IF NOT EXISTS idx_goals_period ON goals(period);
+
+    -- Goal milestones
+    CREATE TABLE IF NOT EXISTS goal_milestones (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      goal_id INTEGER NOT NULL REFERENCES goals(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      target_count INTEGER NOT NULL,
+      current_count INTEGER DEFAULT 0,
+      due_date TEXT,
+      completed INTEGER DEFAULT 0,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_milestones_goal ON goal_milestones(goal_id);
 
     -- User settings
     CREATE TABLE IF NOT EXISTS user_settings (
