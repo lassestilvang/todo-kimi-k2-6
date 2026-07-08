@@ -3,9 +3,17 @@
 import { getDb } from "@/lib/db";
 import type { TaskAttachment, CreateAttachmentInput } from "@/types";
 
-export async function getTaskAttachments(taskId: number): Promise<TaskAttachment[]> {
+export async function getTaskAttachments(taskId: number, userId?: number): Promise<TaskAttachment[]> {
   const db = getDb();
-  // Note: Task ownership is verified in the API route
+
+  // Verify task ownership if userId provided
+  if (userId) {
+    const task = db.prepare("SELECT id FROM tasks WHERE id = ? AND user_id = ?").get(taskId, userId);
+    if (!task) {
+      throw new Error("Task not found or access denied");
+    }
+  }
+
   return db
     .prepare("SELECT * FROM task_attachments WHERE task_id = ? ORDER BY created_at DESC")
     .all(taskId) as TaskAttachment[];
