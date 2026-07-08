@@ -15,6 +15,9 @@ export const taskSuggestionSchema = z.object({
   list_name: z.string().nullable().optional(),
   deadline: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
   list_id: z.number().int().min(1).nullable().optional(),
+  start_time: z.string().regex(/^\d{2}:\d{2}$/).nullable().optional(),
+  end_time: z.string().regex(/^\d{2}:\d{2}$/).nullable().optional(),
+  location: z.string().nullable().optional(),
 });
 
 export type TaskSuggestion = z.infer<typeof taskSuggestionSchema>;
@@ -46,9 +49,20 @@ export interface AITaskInput {
     preferences?: {
       workHours?: { start: number; end: number };
       preferredTimes?: string[];
+      locations?: Array<{ name: string; keywords: string[] }>;
     };
     lists?: Array<{ id: number; name: string; emoji: string }>;
   };
+}
+
+/**
+ * Enhanced task suggestion with time range and location support
+ */
+export interface EnhancedTaskSuggestion extends TaskSuggestion {
+  start_time?: string;
+  end_time?: string;
+  location?: string;
+  location_keywords?: string[];
 }
 
 // Parse natural language input into task structure
@@ -114,7 +128,7 @@ function getPriorityScore(priority: string): number {
 }
 
 // Helper function to calculate confidence score
-function calculateScheduleConfidence(task: any, priorityScore: number, duration: number): number {
+function calculateScheduleConfidence(task: { estimated_duration?: number | null; deadline?: string | null; priority?: string }, priorityScore: number, duration: number): number {
   let confidence = 0.7; // Base confidence
 
   // Higher confidence for tasks with more info
@@ -126,6 +140,109 @@ function calculateScheduleConfidence(task: any, priorityScore: number, duration:
   if (duration > 120) confidence -= 0.1;
 
   return Math.max(0.1, Math.min(0.95, confidence));
+}
+
+/**
+ * Parse time range from text (e.g., "from 2pm to 4pm", "9am-11am")
+ */
+export function parseTimeRange(text: string): { start_time?: string; end_time?: string } | null {
+  // Match "from X to Y" pattern
+  const fromToMatch = text.match(/from\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\s+to\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)/i);
+  if (fromToMatch) {
+    const startHour = parseTimeToMinutes(fromToMatch[1]);
+    const endHour = parseTimeToMinutes(fromToMatch[2]);
+    if (startHour !== null && endHour !== null) {
+      return {
+        start_time: formatMinutesToTime(startHour),
+        end_time: formatMinutesToTime(endHour),
+      };
+    }
+  }
+
+  // Match "X-Y" time range pattern
+  const rangeMatch = text.match(/(\d{1,2})(?::(\d{2}))?\s*-\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
+  if (rangeMatch) {
+    const startHour = parseInt(rangeMatch[1]);
+    const startMin = parseInt(rangeMatch[2] || "0");
+    const endHour = parseInt(rangeMatch[3]);
+    const endMin = parseInt(rangeMatch[4] || "0");
+    const period = rangeMatch[5]?.toLowerCase();
+
+    let startTotal = startHour * 60 + startMin;
+    let endTotal = endHour * 60 + endMin;
+
+    // Handle AM/PM
+    if (period === "pm" && startHour !== 12) startTotal += 12 * 60;
+    if (period === "pm" && endHour !== 12) endTotal += 12 * 60;
+    if (period === "am" && startHour === 12) startTotal = 0;
+    if (period === "am" && endHour === 12) endTotal = 0;
+
+    return {
+      start_time: formatMinutesToTime(startTotal),
+      end_time: formatMinutesToTime(endTotal),
+    };
+  }
+
+  return null;
+}
+
+/**
+ * Parse location context from task text
+ */
+export function parseLocation(text: string, locations?: Array<{ name: string; keywords: string[] }>): string | null {
+  if (!locations) return null;
+
+  const normalizedText = text.toLowerCase();
+  for (const location of locations) {
+    if (location.keywords.some((k) => normalizedText.includes(k.toLowerCase()))) {
+      return location.name;
+    }
+  }
+
+  // Default location keywords
+  const defaultLocations: Record<string, string> = {
+    "home": "Home Office",
+    "office": "Work Office",
+    "gym": "Gym",
+    "doctor": "Doctor's Office",
+    "store": "Store",
+    "restaurant": "Restaurant",
+    "meeting": "Meeting Room",
+  };
+
+  for (const [keyword, name] of Object.entries(defaultLocations)) {
+    if (normalizedText.includes(keyword)) {
+      return name;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Convert time string to minutes from midnight
+ */
+function parseTimeToMinutes(timeStr: string): number | null {
+  const match = timeStr.match(/(\d{1,2})(?:[:.]?(\d{2}))?\s*(am|pm)?/i);
+  if (!match) return null;
+
+  let hours = parseInt(match[1]);
+  const minutes = parseInt(match[2] || "0");
+  const period = match[3]?.toLowerCase();
+
+  if (period === "pm" && hours !== 12) hours += 12;
+  if (period === "am" && hours === 12) hours = 0;
+
+  return hours * 60 + minutes;
+}
+
+/**
+ * Convert minutes from midnight to time string (HH:mm)
+ */
+function formatMinutesToTime(minutes: number): string {
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return `${hours.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}`;
 }
 
 // Generate task insights and recommendations
@@ -181,6 +298,12 @@ export {
   getUserWorkloadSummary,
   type UserWorkload,
   type WorkloadSuggestion,
+  detectScheduleConflicts,
+  analyzeProductivityPatterns,
+  suggestOptimalRescheduling,
+  type ScheduleConflict,
+  type ProductivityPattern,
+  type ScheduleAnalysis,
 } from "./workload";
 
 // Cache management
