@@ -6,6 +6,7 @@
 import type { TaskSuggestion, AITaskInput, AIEditCommand } from "./index";
 import { logError, logWarn } from "@/lib/logger";
 import { taskSuggestionSchema, aiInsightsSchema } from "./index";
+import { formatMinutesToTime, parseTimeToMinutes, getNextDay, parseTimeRange, parseTime } from "../time-utils";
 
 export interface AIProvider {
   name: string;
@@ -30,7 +31,7 @@ const CACHE_TTL_MS = 5 * 60 * 1000;
  * Helper function to add timeout to a promise
  */
 async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
-  let timeoutId: ReturnType<typeof setTimeout>;
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
   const timeoutPromise = new Promise<T>((_, reject) => {
     timeoutId = setTimeout(() => reject(new Error(`Request timed out after ${ms}ms`)), ms);
   });
@@ -39,7 +40,7 @@ async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
     const result = await Promise.race([promise, timeoutPromise]);
     return result;
   } finally {
-    clearTimeout(timeoutId);
+    if (timeoutId) clearTimeout(timeoutId);
   }
 }
 
@@ -75,7 +76,7 @@ class AICache {
   }
 }
 
-const aiCache = new AICache();
+export const aiCache = new AICache();
 
 /**
  * Keyword-based fallback parser (no API required)
@@ -149,24 +150,6 @@ export class KeywordParser implements AIProvider {
     "vacation": "Travel",
   };
 
-  // Enhanced date/time patterns
-  private readonly timePatterns: Array<{ pattern: RegExp; parse: (match: RegExpMatchArray) => { hours: number; minutes: number } }> = [
-    {
-      pattern: /(\d{1,2})(?::(\d{2}))?\s*(am|pm)/i,
-      parse: (match) => {
-        let hours = parseInt(match[1]);
-        const minutes = parseInt(match[2] || "0");
-        if (match[3]?.toLowerCase() === "pm" && hours !== 12) hours += 12;
-        if (match[3]?.toLowerCase() === "am" && hours === 12) hours = 0;
-        return { hours, minutes };
-      },
-    },
-    {
-      pattern: /(\d{1,2})[:\s](\d{2})/,
-      parse: (match) => ({ hours: parseInt(match[1]), minutes: parseInt(match[2]) }),
-    },
-  ];
-
   private readonly dayKeywords = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
 
   async parseTask(input: AITaskInput): Promise<TaskSuggestion> {
@@ -189,6 +172,9 @@ export class KeywordParser implements AIProvider {
         break;
       }
     }
+
+    // Variable for custom recurring config (set in everyMatch block below)
+    let recurringConfig: string | undefined;
 
     // Extract duration
     let estimated_duration: number | undefined;
@@ -228,28 +214,32 @@ export class KeywordParser implements AIProvider {
     // Enhanced date parsing: "in X days/weeks"
     const inMatch = text.match(/in\s+(\d+)\s+(day|week|month|year)s?/);
     if (inMatch && !suggested_date) {
-      const num = parseInt(inMatch[1]);
-      const unit = inMatch[2];
-      const multiplier = unit === "day" ? 1 : unit === "week" ? 7 : unit === "month" ? 30 : 365;
-      const futureDate = new Date(Date.now() + num * multiplier * 24 * 60 * 60 * 1000);
+      const daysNum = parseInt(inMatch[1]);
+      const daysUnit = inMatch[2];
+      const multiplier = daysUnit === "day" ? 1 : daysUnit === "week" ? 7 : daysUnit === "month" ? 30 : 365;
+      const futureDate = new Date(Date.now() + daysNum * multiplier * 24 * 60 * 60 * 1000);
       suggested_date = futureDate.toISOString().split("T")[0];
     }
 
-    // Parse "every X day/week/month" patterns for custom recurring
-    const everyMatch = text.match(/every\s+(\d+)?\s*(day|week|weekday|month|year)s?/i);
+    // Parse "every X day/week/month/year" patterns for custom recurring
+    // Supports: "every day", "every 3 days", "every week", "every 2 weeks", etc.
+    const everyMatch = text.match(/every\s+(\d+)\s*(day|week|weekday|month|year)s?/i);
     if (everyMatch && recurring === "none") {
-      const num = parseInt(everyMatch[1] || "1");
-      const unit = everyMatch[2];
-      if (unit === "day") {
-        recurring = num > 1 ? "custom" : "daily";
-      } else if (unit === "week") {
-        recurring = "weekly";
-      } else if (unit === "weekday") {
-        recurring = "weekdays";
-      } else if (unit === "month") {
-        recurring = "monthly";
-      } else if (unit === "year") {
-        recurring = "yearly";
+      const recNum = parseInt(everyMatch[1]);
+      const recUnit = everyMatch[2].toLowerCase();
+      const intervalMap: Record<string, { interval: number; unit: "days" | "weeks" | "months" | "years" }> = {
+        "day": { interval: recNum, unit: "days" },
+        "week": { interval: recNum, unit: "weeks" },
+        "weekday": { interval: 1, unit: "days" }, // weekdays treated as daily for config
+        "month": { interval: recNum, unit: "months" },
+        "year": { interval: recNum, unit: "years" },
+      };
+      const interval = intervalMap[recUnit];
+      if (interval) {
+        recurring = "custom";
+        // Store for later use in return
+        // eslint-disable-next-line @typescript-eslint/no-use-before-define
+        recurringConfig = JSON.stringify(interval);
       }
     }
 
@@ -301,22 +291,28 @@ export class KeywordParser implements AIProvider {
     }
 
     // Parse time range for start/end times
-  const timeRange = this.parseTimeRange(text);
+    const timeRange = this.parseTimeRange(text);
 
-  return {
-    name: this.cleanTaskName(input.text),
-    description: this.generateDescription(input.text, priority, estimated_duration),
-    priority,
-    estimated_duration,
-    suggested_date,
-    recurring,
-    list_name,
-    list_id,
-    deadline,
-    start_time: timeRange?.start_time,
-    end_time: timeRange?.end_time,
-  };
-}
+    // Build recurring_config for custom intervals
+    if (recurring === "custom") {
+      // recurringConfig is already set above from the everyMatch block
+    }
+
+    return {
+      name: this.cleanTaskName(input.text),
+      description: this.generateDescription(input.text, priority, estimated_duration),
+      priority,
+      estimated_duration,
+      suggested_date,
+      recurring,
+      recurring_config: recurringConfig,
+      list_name,
+      list_id,
+      deadline,
+      start_time: timeRange?.start_time,
+      end_time: timeRange?.end_time,
+    };
+  }
 
   private cleanTaskName(text: string): string {
     // Remove common prefixes and keywords
@@ -345,13 +341,6 @@ export class KeywordParser implements AIProvider {
     return name.trim().charAt(0).toUpperCase() + name.slice(1);
   }
 
-  /**
-   * Parse time from text (e.g., "at 2pm", "2:30", "14:00")
-   */
-  private parseTimeFromText(text: string): { hours: number; minutes: number } | null {
-    return this.parseTime(text);
-  }
-
   private generateDescription(text: string, priority: string, duration?: number): string | undefined {
     const desc: string[] = [];
 
@@ -367,139 +356,24 @@ export class KeywordParser implements AIProvider {
   }
 
   /**
-   * Parse time from text (e.g., "at 2pm", "2:30", "14:00")
+   * Parse time from text - using shared utility
    */
   private parseTime(text: string): { hours: number; minutes: number } | null {
-    for (const { pattern, parse } of this.timePatterns) {
-      const match = text.match(pattern);
-      if (match) {
-        return parse(match);
-      }
-    }
-    return null;
+    return parseTime(text);
   }
 
   /**
-   * Find the next occurrence of a specific day
-   */
-  private getNextDay(dayName: string): Date {
-    const dayMap: Record<string, number> = {
-      "monday": 1, "tuesday": 2, "wednesday": 3, "thursday": 4,
-      "friday": 5, "saturday": 6, "sunday": 0
-    };
-    const targetDay = dayMap[dayName.toLowerCase()] ?? 1;
-    const today = new Date();
-    const currentDay = today.getDay();
-    const daysAhead = (targetDay - currentDay + 7) % 7 || 7;
-    const nextDay = new Date(today.getTime() + daysAhead * 24 * 60 * 60 * 1000);
-    return nextDay;
-  }
-
-  /**
-   * Parse time range from text (e.g., "from 2pm to 4pm", "9am-11am")
+   * Parse time range - using shared utility
    */
   private parseTimeRange(text: string): { start_time?: string; end_time?: string } | null {
-    // Match "from X to Y" pattern
-    const fromToMatch = text.match(/from\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\s+to\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)/i);
-    if (fromToMatch) {
-      const startHour = this.parseTimeToMinutes(fromToMatch[1]);
-      const endHour = this.parseTimeToMinutes(fromToMatch[2]);
-      if (startHour !== null && endHour !== null) {
-        return {
-          start_time: this.formatMinutesToTime(startHour),
-          end_time: this.formatMinutesToTime(endHour),
-        };
-      }
-    }
-
-    // Match "X-Y" time range pattern (e.g., "2-4pm", "9am-11am")
-    const rangeMatch = text.match(/(\d{1,2})(?::(\d{2}))?\s*-\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
-    if (rangeMatch) {
-      const startHour = parseInt(rangeMatch[1]);
-      const startMin = parseInt(rangeMatch[2] || "0");
-      const endHour = parseInt(rangeMatch[3]);
-      const endMin = parseInt(rangeMatch[4] || "0");
-      const period = rangeMatch[5]?.toLowerCase();
-
-      let startTotal = startHour * 60 + startMin;
-      let endTotal = endHour * 60 + endMin;
-
-      if (period === "pm" && startHour !== 12) startTotal += 12 * 60;
-      if (period === "pm" && endHour !== 12) endTotal += 12 * 60;
-      if (period === "am" && startHour === 12) startTotal = 0;
-      if (period === "am" && endHour === 12) endTotal = 0;
-
-      return {
-        start_time: this.formatMinutesToTime(startTotal),
-        end_time: this.formatMinutesToTime(endTotal),
-      };
-    }
-
-    return null;
+    return parseTimeRange(text);
   }
 
   /**
-   * Convert time string to minutes from midnight
+   * Find the next occurrence of a specific day - using shared utility
    */
-  private parseTimeToMinutes(timeStr: string): number | null {
-    const match = timeStr.match(/(\d{1,2})(?:[:.]?(\d{2}))?\s*(am|pm)?/i);
-    if (!match) return null;
-
-    let hours = parseInt(match[1]);
-    const minutes = parseInt(match[2] || "0");
-    const period = match[3]?.toLowerCase();
-
-    if (period === "pm" && hours !== 12) hours += 12;
-    if (period === "am" && hours === 12) hours = 0;
-
-    return hours * 60 + minutes;
-  }
-
-  /**
-   * Convert minutes from midnight to time string (HH:mm)
-   */
-  private formatMinutesToTime(minutes: number): string {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return `${hours.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}`;
-  }
-
-  /**
-   * Parse "January 15" or "Feb 3rd" style dates
-   */
-  private parseMonthDayDate(text: string): Date | null {
-    const monthMap: Record<string, number> = {
-      "january": 0, "february": 1, "march": 2, "april": 3,
-      "may": 4, "june": 5, "july": 6, "august": 7,
-      "september": 8, "october": 9, "november": 10, "december": 11
-    };
-
-    const shortMonthMap: Record<string, number> = {
-      "jan": 0, "feb": 1, "mar": 2, "apr": 3,
-      "jun": 4, "jul": 5, "aug": 6, "sep": 7,
-      "oct": 8, "nov": 9, "dec": 10
-    };
-
-    for (const [monthName, monthNum] of Object.entries({ ...monthMap, ...shortMonthMap })) {
-      if (text.toLowerCase().includes(monthName)) {
-        const dayMatch = text.match(/(\d{1,2})(?:st|nd|rd|th)?/);
-        if (dayMatch) {
-          const day = parseInt(dayMatch[1]);
-          const now = new Date();
-          const year = now.getFullYear();
-          let date = new Date(year, monthNum, day);
-
-          // If date has passed, move to next year
-          if (date < now) {
-            date = new Date(year + 1, monthNum, day);
-          }
-
-          return date;
-        }
-      }
-    }
-
-    return null;
+  private getNextDay(dayName: string): Date {
+    return getNextDay(dayName);
   }
 
   /**
