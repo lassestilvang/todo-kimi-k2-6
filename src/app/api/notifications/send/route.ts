@@ -1,9 +1,14 @@
-"use server";
-
 import { getDb } from "@/lib/db";
-import { sendTaskReminderEmail, sendDueSoonEmail } from "@/lib/email";
+import { sendTaskReminderEmail, sendDueSoonEmail, EmailTask } from "@/lib/email";
 import { logError } from "@/lib/logger";
-import type { Task } from "@/types";
+import { applyMiddleware, jsonResponse, errorResponse } from "@/lib/api-middleware";
+
+interface DbTaskRow {
+  id?: number;
+  name?: string;
+  description?: string | null;
+  deadline?: string | null;
+}
 
 interface TaskRow {
   id: number;
@@ -21,93 +26,69 @@ interface TaskRow {
  * This would typically be called by a scheduled job or on-task-change trigger
  */
 export async function POST(request: Request) {
+  // Apply middleware - require authentication
+  const middleware = await applyMiddleware(request as any, { requireAuth: true });
+  if (middleware.error) return middleware.error;
+
   try {
     const body = await request.json();
     const { type, taskId, userId } = body;
 
     const db = getDb();
+    const auth = middleware.auth;
+
+    // Security: Only allow sending notifications for the authenticated user's tasks
+    if (!auth?.isAuthenticated || !auth.userId) {
+      return errorResponse("Authentication required", 401);
+    }
+
+    // The userId from body must match authenticated user (or be a shared task)
+    const targetUserId = userId || auth.userId;
+    if (targetUserId && targetUserId !== auth.userId) {
+      return errorResponse("Unauthorized", 403);
+    }
+
+    // Use authenticated user's ID
+    const effectiveUserId = auth.userId!;
 
     if (type === "reminder") {
-      const task = db.prepare("SELECT * FROM tasks WHERE id = ?").get(taskId) as Partial<Task> | null;
-      const user = db.prepare("SELECT email FROM users WHERE id = ?").get(userId) as { email: string } | null;
-
-      if (task && user) {
-        const taskWithRelations: Task = {
+      const task = db
+        .prepare("SELECT * FROM tasks WHERE id = ? AND user_id = ?")
+        .get(taskId, effectiveUserId) as Partial<DbTaskRow> | null;
+      if (task) {
+        const taskData: EmailTask = {
           id: task.id ?? 0,
           name: task.name ?? "Unnamed Task",
           description: task.description ?? null,
-          notes: task.notes ?? null,
-          list_id: task.list_id ?? 1,
-          date: task.date ?? null,
           deadline: task.deadline ?? null,
-          estimate: task.estimate ?? null,
-          actual_time: task.actual_time ?? null,
-          priority: task.priority ?? "none",
-          recurring: task.recurring ?? "none",
-          recurring_config: task.recurring_config ?? null,
-          completed: task.completed ?? false,
-          completed_at: task.completed_at ?? null,
-          created_at: task.created_at ?? "",
-          updated_at: task.updated_at ?? "",
-          sort_order: task.sort_order ?? 0,
-          labels: [],
-          subtasks: [],
-          reminders: [],
-          logs: [],
-          comments: [],
-          attachments: [],
-          blockers: [],
-          blocked_by: [],
-          time_entries: [],
         };
-        await sendTaskReminderEmail(user.email, taskWithRelations);
+        await sendTaskReminderEmail(auth.email!, taskData);
       }
     }
 
     if (type === "due_soon") {
-      const task = db.prepare("SELECT * FROM tasks WHERE id = ?").get(taskId) as Partial<Task> | null;
-      const user = db.prepare("SELECT email FROM users WHERE id = ?").get(userId) as { email: string } | null;
-
-      if (task && user) {
-        const taskWithRelations: Task = {
+      const task = db
+        .prepare("SELECT * FROM tasks WHERE id = ? AND user_id = ?")
+        .get(taskId, effectiveUserId) as Partial<DbTaskRow> | null;
+      if (task) {
+        const taskData: EmailTask = {
           id: task.id ?? 0,
           name: task.name ?? "Unnamed Task",
           description: task.description ?? null,
-          notes: task.notes ?? null,
-          list_id: task.list_id ?? 1,
-          date: task.date ?? null,
           deadline: task.deadline ?? null,
-          estimate: task.estimate ?? null,
-          actual_time: task.actual_time ?? null,
-          priority: task.priority ?? "none",
-          recurring: task.recurring ?? "none",
-          recurring_config: task.recurring_config ?? null,
-          completed: task.completed ?? false,
-          completed_at: task.completed_at ?? null,
-          created_at: task.created_at ?? "",
-          updated_at: task.updated_at ?? "",
-          sort_order: task.sort_order ?? 0,
-          labels: [],
-          subtasks: [],
-          reminders: [],
-          logs: [],
-          comments: [],
-          attachments: [],
-          blockers: [],
-          blocked_by: [],
-          time_entries: [],
         };
-        await sendDueSoonEmail(user.email, taskWithRelations);
+        await sendDueSoonEmail(auth.email!, taskData);
       }
     }
 
-    return Response.json({ success: true });
+    return jsonResponse({ success: true });
   } catch (error) {
-    logError("Notification error", undefined, error instanceof Error ? error : new Error(String(error)));
-    return Response.json(
-      { error: "Failed to send notification" },
-      { status: 500 }
+    logError(
+      "Notification error",
+      undefined,
+      error instanceof Error ? error : new Error(String(error))
     );
+    return Response.json({ error: "Failed to send notification" }, { status: 500 });
   }
 }
 
@@ -137,33 +118,11 @@ export async function GET() {
 
     let sentCount = 0;
     for (const task of tasks) {
-      const taskData: Task = {
+      const taskData: EmailTask = {
         id: task.id,
         name: task.name,
         description: task.description ?? null,
-        notes: null,
-        list_id: 1,
-        date: task.date ?? null,
         deadline: task.deadline ?? null,
-        estimate: null,
-        actual_time: null,
-        priority: "medium",
-        recurring: "none",
-        recurring_config: null,
-        completed: false,
-        completed_at: null,
-        created_at: "",
-        updated_at: "",
-        sort_order: 0,
-        labels: [],
-        subtasks: [],
-        reminders: [],
-        logs: [],
-        comments: [],
-        attachments: [],
-        blockers: [],
-        blocked_by: [],
-        time_entries: [],
       };
       await sendDueSoonEmail(task.user_email, taskData);
       sentCount++;
