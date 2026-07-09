@@ -145,7 +145,7 @@ function SortableTask({
   );
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 export function KanbanBoard({ tasks, lists: _lists, onTaskClick, onTaskCreate: _onTaskCreate }: KanbanBoardProps) {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [activeId, setActiveId] = useState<number | null>(null);
