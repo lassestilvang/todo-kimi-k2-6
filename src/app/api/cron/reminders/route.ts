@@ -1,7 +1,6 @@
-"use server";
-
 import { getDb } from "@/lib/db";
-import { sendTaskReminderEmail, sendDueSoonEmail, sendWeeklyDigest } from "@/lib/email";
+import { sendTaskReminderEmail, sendDueSoonEmail, sendWeeklyDigest, shouldSendNotification } from "@/lib/email";
+import { logError } from "@/lib/logger";
 import { format, startOfDay } from "date-fns";
 
 // Local type for database results (completed is stored as integer 0/1)
@@ -12,6 +11,7 @@ interface DbTask {
   completed: number; // 0 or 1
   email?: string;
   remind_at?: string;
+  user_id?: number;
   assignee_id?: number | null;
   description?: string | null;
   priority?: string;
@@ -33,113 +33,76 @@ export async function GET() {
     const now = new Date();
     const today = format(startOfDay(now), "yyyy-MM-dd");
 
-    // Get tasks with reminders due today
-    const dueTodayTasks = db
+    // Get tasks with reminders due (properly joined with user table for user_id)
+    const dueTasks = db
       .prepare(`
-        SELECT t.id, t.name, t.deadline, t.completed, t.assignee_id, t.description,
+        SELECT t.id, t.name, t.deadline, t.completed, t.user_id, t.description,
                r.remind_at, u.email, u.name
         FROM tasks t
         JOIN reminders r ON t.id = r.task_id
-        JOIN users u ON t.assignee_id = u.id
+        JOIN users u ON t.assignee_id = u.id OR t.user_id = u.id
         WHERE t.completed = 0
         AND date(t.deadline) <= ?
         AND r.remind_at <= ?
       `)
       .all(today, now.toISOString()) as DbTask[];
 
-    // Send reminders
+    // Send reminders with user isolation
     let sentCount = 0;
-    for (const task of dueTodayTasks) {
-      if (task.email) {
-        await sendTaskReminderEmail(task.email, {
-          id: task.id,
-          name: task.name,
-          description: task.description ?? null,
-          notes: null,
-          list_id: null,
-          date: null,
-          deadline: task.deadline ?? null,
-          estimate: null,
-          actual_time: null,
-          priority: (task.priority as "critical" | "high" | "medium" | "low" | "none") ?? "none",
-          recurring: "none",
-          recurring_config: null,
-          completed: task.completed === 1,
-          completed_at: null,
-          created_at: "",
-          updated_at: "",
-          sort_order: 0,
-          labels: [],
-          subtasks: [],
-          reminders: [],
-          logs: [],
-          comments: [],
-          attachments: [],
-          blockers: [],
-          blocked_by: [],
-          time_entries: [],
-          recurring_exceptions: [],
-        });
-        sentCount++;
-      }
+    for (const task of dueTasks) {
+      if (!task.email || !task.user_id) continue;
+
+      const shouldSend = await shouldSendNotification(task.user_id, { id: task.id, name: task.name, description: task.description ?? null, deadline: task.deadline ?? null, priority: task.priority as any }, "reminder");
+      if (!shouldSend) continue;
+
+      await sendTaskReminderEmail(task.email, {
+        id: task.id,
+        name: task.name,
+        description: task.description ?? null,
+        deadline: task.deadline ?? null,
+      });
+      sentCount++;
     }
 
-    // Get overdue tasks
+    // Get overdue tasks with proper user filtering
     const overdueTasks = db
       .prepare(`
-        SELECT t.id, t.name, t.deadline, t.completed, u.email, t.priority
+        SELECT t.id, t.name, t.deadline, t.completed, t.user_id, u.email, t.priority, t.description
         FROM tasks t
-        JOIN users u ON t.assignee_id = u.id
+        JOIN users u ON t.assignee_id = u.id OR t.user_id = u.id
         WHERE t.completed = 0
         AND t.deadline < ?
       `)
       .all(today) as DbTask[];
 
     for (const task of overdueTasks) {
-      if (task.email) {
-        await sendDueSoonEmail(task.email, {
-          id: task.id,
-          name: task.name,
-          description: null,
-          notes: null,
-          list_id: null,
-          date: null,
-          deadline: task.deadline ?? null,
-          estimate: null,
-          actual_time: null,
-          priority: (task.priority as "critical" | "high" | "medium" | "low" | "none") ?? "none",
-          recurring: "none",
-          recurring_config: null,
-          completed: task.completed === 1,
-          completed_at: null,
-          created_at: "",
-          updated_at: "",
-          sort_order: 0,
-          labels: [],
-          subtasks: [],
-          reminders: [],
-          logs: [],
-          comments: [],
-          attachments: [],
-          blockers: [],
-          blocked_by: [],
-          time_entries: [],
-          recurring_exceptions: [],
-        });
-        sentCount++;
-      }
+      if (!task.email || !task.user_id) continue;
+
+      const shouldSend = await shouldSendNotification(task.user_id, { id: task.id, name: task.name, description: task.description ?? null, deadline: task.deadline ?? null, priority: task.priority as any }, "overdue");
+      if (!shouldSend) continue;
+
+      await sendDueSoonEmail(task.email, {
+        id: task.id,
+        name: task.name,
+        description: task.description ?? null,
+        deadline: task.deadline ?? null,
+      });
+      sentCount++;
     }
 
     // Send weekly digest (on Sundays)
     const dayOfWeek = now.getDay();
     if (dayOfWeek === 0) {
       const users = db
-        .prepare("SELECT email, name FROM users WHERE email IS NOT NULL")
+        .prepare("SELECT id, email, name FROM users WHERE email IS NOT NULL")
         .all() as UserRecord[];
 
       for (const user of users) {
+        const settings = await shouldSendNotification(user.id, { id: 0, name: "" } as any, "due_soon");
+        if (!settings) continue;
+
         const userTasks = db
-          .prepare("SELECT * FROM tasks WHERE assignee_id = ?")
+          .prepare("SELECT * FROM tasks WHERE user_id = ?")
           .all(user.id) as DbTask[];
 
         const summary = {
@@ -155,7 +118,7 @@ export async function GET() {
 
     return Response.json({ success: true, sent: sentCount });
   } catch (error) {
-    console.error("Cron job error:", error);
+    logError("Cron job error", undefined, error instanceof Error ? error : new Error(String(error)));
     return Response.json({ error: "Cron job failed" }, { status: 500 });
   }
 }
