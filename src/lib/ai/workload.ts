@@ -41,6 +41,7 @@ export function detectScheduleConflicts(
     deadline: string | null;
     estimate: string | null;
     completed: boolean;
+    priority: string;
   }>
 ): ScheduleConflict[] {
   const conflicts: ScheduleConflict[] = [];
