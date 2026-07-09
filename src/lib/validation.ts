@@ -15,14 +15,30 @@ export const MAX_LIMIT = 100;
  */
 export const DEFAULT_LIMIT = 20;
 
+// Check if DOMPurify is available (browser environment)
+let dompurify: { sanitize: (input: string) => string } | null = null;
+if (typeof window !== "undefined") {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    dompurify = require("dompurify");
+  } catch {
+    // DOMPurify not available, use regex fallback
+  }
+}
+
 /**
- * Server-side sanitization - removes all HTML tags and dangerous attributes.
- * Uses hybrid approach: DOMPurify when available, regex fallback for server-side.
+ * Sanitize user input to prevent XSS attacks.
+ * Uses DOMPurify in browser, regex fallback for server-side.
  */
 export function sanitizeString(input: string | null | undefined): string | null {
   if (!input) return null;
 
-  // Hybrid sanitization: strip all HTML tags and dangerous attributes
+  // Browser: use DOMPurify for robust sanitization
+  if (dompurify && typeof window !== "undefined") {
+    return dompurify.sanitize(input, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] }).trim();
+  }
+
+  // Server-side or fallback: strip all HTML tags and dangerous attributes
   return input
     .replace(/<[^>]+>/g, "") // Strip all HTML tags
     .replace(/on\w+\s*=\s*["'][^"']*["']/gi, "") // Remove event handlers
@@ -40,7 +56,13 @@ export function sanitizeString(input: string | null | undefined): string | null 
 export function sanitizeHtml(input: string | null | undefined): string | null {
   if (!input) return null;
 
-  // Remove script tags and their content first
+  // Browser: use DOMPurify for robust sanitization
+  if (dompurify && typeof window !== "undefined") {
+    const allowedTags = ["b", "i", "u", "strong", "em", "p", "br", "ul", "ol", "li", "h1", "h2", "h3", "code", "pre"];
+    return dompurify.sanitize(input, { ALLOWED_TAGS: allowedTags }).trim();
+  }
+
+  // Fallback: basic sanitization
   let clean = input
     .replace(/<script[^>]*>.*?<\/script>/gi, "")
     .replace(/<script/gi, "")
@@ -57,7 +79,6 @@ export function sanitizeHtml(input: string | null | undefined): string | null {
   // Strip dangerous tags completely (keeping their content)
   clean = clean.replace(/<\/?(iframe|object|embed|form|input|button|select|textarea)[^>]*>/gi, "");
 
-  // Allow safe tags to remain (they are already in the string)
   // Clean up extra whitespace
   clean = clean.replace(/\s+/g, " ").trim();
 
