@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   CheckCircle2,
@@ -15,6 +15,8 @@ import {
   Square,
   Filter,
   Paperclip,
+  Archive,
+  ArchiveRestore,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -28,8 +30,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { TaskPreview } from "@/components/task/task-preview";
 import { BulkActionsMenu } from "@/components/task/bulk-actions-menu";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { useTaskMutations } from "@/hooks/use-task-mutations";
 import type { TaskWithRelations, List, SortField, SortDirection, Label, Priority } from "@/types";
-import { updateTask, deleteTask, toggleSubtask, bulkDeleteTasks, bulkUpdateTasks } from "@/lib/actions";
+import { updateTask, deleteTask } from "@/lib/actions";
 import { toast } from "sonner";
 
 interface TaskListProps {
@@ -84,6 +87,10 @@ export function TaskList({
   const [selectedTasks, setSelectedTasks] = useState<Set<number>>(new Set());
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const { archiveTask, unarchiveTask } = useTaskMutations();
 
   // Virtual scrolling for large task lists
   const parentRef = useRef<HTMLDivElement>(null);
@@ -128,17 +135,22 @@ export function TaskList({
     });
   };
 
-  const handleToggleComplete = async (task: TaskWithRelations) => {
+  const handleToggleComplete = useCallback(async (task: TaskWithRelations) => {
     await updateTask(task.id, { completed: !task.completed });
     onRefresh();
-  };
+  }, [onRefresh]);
 
-  const handleToggleSubtask = async (subtaskId: number) => {
-    await toggleSubtask(subtaskId);
+  const handleArchive = useCallback(async (task: TaskWithRelations) => {
+    await archiveTask(task.id);
     onRefresh();
-  };
+  }, [archiveTask, onRefresh]);
 
-  const handleDelete = async (task: TaskWithRelations) => {
+  const handleUnarchive = useCallback(async (task: TaskWithRelations) => {
+    await unarchiveTask(task.id);
+    onRefresh();
+  }, [unarchiveTask, onRefresh]);
+
+  const handleDelete = useCallback(async (task: TaskWithRelations) => {
     // Store task for potential undo
     const taskToDelete = { ...task };
 
@@ -157,19 +169,17 @@ export function TaskList({
         label: "Undo",
         onClick: async () => {
           try {
-            // Restore task by recreating (casting to avoid exactOptionalPropertyTypes issues)
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const restoreData: any = {
+            const restoreData = {
               name: taskToDelete.name,
               priority: taskToDelete.priority,
+              ...(taskToDelete.description && { description: taskToDelete.description }),
+              ...(taskToDelete.notes && { notes: taskToDelete.notes }),
+              ...(taskToDelete.list_id && { list_id: taskToDelete.list_id }),
+              ...(taskToDelete.date && { date: taskToDelete.date }),
+              ...(taskToDelete.deadline && { deadline: taskToDelete.deadline }),
+              ...(taskToDelete.recurring_config && { recurring_config: taskToDelete.recurring_config }),
+              ...(taskToDelete.recurring && { recurring: taskToDelete.recurring }),
             };
-            if (taskToDelete.description) restoreData.description = taskToDelete.description;
-            if (taskToDelete.notes) restoreData.notes = taskToDelete.notes;
-            if (taskToDelete.list_id) restoreData.list_id = taskToDelete.list_id;
-            if (taskToDelete.date) restoreData.date = taskToDelete.date;
-            if (taskToDelete.deadline) restoreData.deadline = taskToDelete.deadline;
-            if (taskToDelete.recurring_config) restoreData.recurring_config = taskToDelete.recurring_config;
-            restoreData.recurring = taskToDelete.recurring;
 
             await (await import("@/lib/actions")).createTask(restoreData);
             onRefresh();
@@ -180,11 +190,7 @@ export function TaskList({
         },
       },
     });
-  };
-
-  // Separate pending and completed tasks for display
-  const pendingTasks = visibleTasks.filter((t) => !t.completed);
-  const completedVisibleTasks = visibleTasks.filter((t) => t.completed);
+  }, [onRefresh]);
 
   const getListColor = (listId: number | null) => {
     const list = lists.find((l) => l.id === listId);
@@ -200,6 +206,73 @@ export function TaskList({
     const list = lists.find((l) => l.id === listId);
     return list?.emoji || "📥";
   };
+
+  // Keyboard navigation
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (isSelectMode || !containerRef.current) return;
+
+    const taskElements = containerRef.current.querySelectorAll("[data-task-id]");
+    const taskArray = Array.from(taskElements);
+
+    switch (e.key) {
+      case "ArrowDown":
+        e.preventDefault();
+        setFocusedIndex((prev) => {
+          const next = prev === null ? 0 : Math.min(prev + 1, taskArray.length - 1);
+          return next;
+        });
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        setFocusedIndex((prev) => {
+          const next = prev === null ? taskArray.length - 1 : Math.max(prev - 1, 0);
+          return next;
+        });
+        break;
+      case "Enter":
+      case " ":
+        if (focusedIndex !== null && focusedIndex < taskArray.length) {
+          e.preventDefault();
+          const taskId = Number(taskArray[focusedIndex].getAttribute("data-task-id"));
+          const task = visibleTasks.find((t) => t.id === taskId);
+          if (task) onEditTask(task);
+        }
+        break;
+      case "a":
+      case "A":
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          // Archive focused task
+          if (focusedIndex !== null && focusedIndex < taskArray.length) {
+            const taskId = Number(taskArray[focusedIndex].getAttribute("data-task-id"));
+            const task = visibleTasks.find((t) => t.id === taskId);
+            if (task && !task.archived) {
+              handleArchive(task);
+            } else if (task && task.archived) {
+              handleUnarchive(task);
+            }
+          }
+        }
+        break;
+      case "Delete":
+      case "Backspace":
+        if (focusedIndex !== null && focusedIndex < taskArray.length) {
+          e.preventDefault();
+          const taskId = Number(taskArray[focusedIndex].getAttribute("data-task-id"));
+          const task = visibleTasks.find((t) => t.id === taskId);
+          if (task) handleDelete(task);
+        }
+        break;
+    }
+  }, [focusedIndex, visibleTasks, isSelectMode, onEditTask, handleArchive, handleUnarchive, handleDelete]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    container.addEventListener("keydown", handleKeyDown);
+    return () => container.removeEventListener("keydown", handleKeyDown);
+  }, [handleKeyDown]);
 
   return (
     <div className="flex h-full flex-col">
@@ -380,6 +453,7 @@ export function TaskList({
       </div>
 
       <ScrollArea ref={parentRef} className="flex-1 px-6 py-4">
+        <div ref={containerRef} tabIndex={-1}></div>
         {/* Bulk Action Bar */}
         <AnimatePresence>
           {isSelectMode && selectedTasks.size > 0 && (
@@ -435,8 +509,11 @@ export function TaskList({
                     className={cn(
                       "group rounded-lg border bg-card transition-all hover:shadow-sm cursor-pointer",
                       task.completed && "opacity-60",
-                      isSelected && "ring-2 ring-primary"
+                      isSelected && "ring-2 ring-primary",
+                      task.archived && "opacity-40",
+                      focusedIndex === virtualItem.index && "ring-2 ring-primary ring-offset-2"
                     )}
+                    data-task-id={task.id}
                     style={{
                       position: "absolute",
                       top: 0,
@@ -603,18 +680,50 @@ export function TaskList({
                         </div>
                       </div>
 
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete(task);
-                        }}
-                        aria-label={`Delete "${task.name}"`}
-                      >
-                        <Trash2 className="h-3 w-3 text-red-500" />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        {!task.archived && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleArchive(task);
+                            }}
+                            aria-label={`Archive "${task.name}"`}
+                            title="Archive (Ctrl+A)"
+                          >
+                            <Archive className="h-3 w-3 text-muted-foreground" />
+                          </Button>
+                        )}
+                        {task.archived && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleUnarchive(task);
+                            }}
+                            aria-label={`Restore "${task.name}"`}
+                            title="Restore from Archive (Ctrl+A)"
+                          >
+                            <ArchiveRestore className="h-3 w-3 text-muted-foreground" />
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(task);
+                          }}
+                          aria-label={`Delete "${task.name}"`}
+                        >
+                          <Trash2 className="h-3 w-3 text-red-500" />
+                        </Button>
+                      </div>
                     </div>
                   </motion.div>
                 );
