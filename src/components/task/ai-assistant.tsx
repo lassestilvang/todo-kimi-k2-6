@@ -1,15 +1,22 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { Bot, Send, Sparkles, Clock, Target, Copy, Check, List as ListIcon, Mic, MicOff, CheckCircle2, Trash2 } from "lucide-react";
+import { Bot, Send, Sparkles, Clock, Target, Copy, Check, X, List as ListIcon, Mic, MicOff, CheckCircle2, Trash2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import type { TaskWithRelations, List } from "@/types";
+import type { TaskWithRelations, List, Priority } from "@/types";
 import type { TaskSuggestion, AIEditCommand } from "@/lib/ai";
 import { toast } from "sonner";
+import { z } from "zod";
+
+// Type declarations for Web Speech API are in src/types/speech.d.ts
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const recognitionRef = useRef<any>(null);
 
 // Type for workload suggestions
 interface WorkloadSuggestion {
@@ -41,6 +48,11 @@ interface QuickAction {
   prompt: string;
 }
 
+// Validation schema for the main input
+const inputSchema = z.object({
+  text: z.string().min(1, "Please enter a task description").max(1000, "Input too long"),
+});
+
 export function AIAssistant({ tasks, lists, onAddTask, className }: AIAssistantProps) {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -50,8 +62,9 @@ export function AIAssistant({ tasks, lists, onAddTask, className }: AIAssistantP
   const [aiStatus, setAiStatus] = useState<{ openai: boolean; anthropic: boolean; activeProvider: string } | null>(null);
   const [isListening, setIsListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
+  const [pendingEditCommand, setPendingEditCommand] = useState<AIEditCommand & { task?: TaskWithRelations } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  // SpeechRecognition is defined globally in speech.d.ts
+  // SpeechRecognition types are in src/types/speech.d.ts
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null);
 
@@ -197,6 +210,12 @@ export function AIAssistant({ tasks, lists, onAddTask, className }: AIAssistantP
   }, [loadInsights]);
 
   const handleSubmit = async () => {
+    // Validate input
+    const validated = inputSchema.safeParse({ text: input });
+    if (!validated.success) {
+      toast.error(validated.error.issues[0]?.message || "Invalid input");
+      return;
+    }
     if (!input.trim()) return;
 
     const userMessage: Message = {
@@ -231,30 +250,47 @@ export function AIAssistant({ tasks, lists, onAddTask, className }: AIAssistantP
 
       const editResult = await editCommand.json();
 
-      // If we got a valid edit command, execute it
+      // If we got a valid edit command, show confirmation dialog first
       if (editResult.action && editResult.taskId) {
-        const task = tasks.find(t => t.id === editResult.taskId);
+        const task = tasks.find((t) => t.id === editResult.taskId);
         if (task) {
+          // Show confirmation for destructive actions
+          if (editResult.action === "delete" || editResult.action === "complete" || editResult.action === "prioritize") {
+            setPendingEditCommand({ ...editResult, task });
+            setIsLoading(false);
+            return;
+          }
+
+          // Execute non-destructive actions directly
           let responseContent = "";
           try {
             switch (editResult.action) {
-              case "complete":
-                await (await import("@/lib/actions/tasks")).updateTask(task.id, { completed: true });
-                responseContent = `✅ Marked "${task.name}" as completed!`;
-                break;
               case "delete":
                 await (await import("@/lib/actions/tasks")).deleteTask(task.id);
                 responseContent = `🗑️ Deleted "${task.name}"`;
+                if (setTasks) {
+                  setTasks((prev: TaskWithRelations[]) => prev.filter((t) => t.id !== task.id));
+                }
                 break;
-              case "prioritize":
-                await (await import("@/lib/actions/tasks")).updateTask(task.id, { priority: editResult.updates?.priority });
-                responseContent = `📌 Changed priority of "${task.name}" to ${(editResult.updates as any)?.priority}`;
+              case "complete":
+                await (await import("@/lib/actions/tasks")).updateTask(task.id, { completed: true });
+                responseContent = `✅ Marked "${task.name}" as completed!`;
+                if (setTasks) {
+                  setTasks((prev: TaskWithRelations[]) => prev.map((t) => (t.id === task.id ? { ...t, completed: true } : t)));
+                }
                 break;
+              case "prioritize": {
+                const priority = editResult.updates?.priority as "critical" | "high" | "medium" | "low" | "none" | undefined;
+                await (await import("@/lib/actions/tasks")).updateTask(task.id, { priority });
+                responseContent = `📌 Changed priority of "${task.name}" to ${priority || "unknown"}`;
+                if (setTasks) {
+                  setTasks((prev: TaskWithRelations[]) => prev.map((t) => (t.id === task.id ? { ...t, priority } : t)));
+                }
+                break;
+              }
               default:
                 throw new Error("Unknown action");
             }
-            // Refresh tasks to reflect changes
-            window.location.reload();
           } catch {
             responseContent = `Failed to execute ${editResult.action} command`;
           }
@@ -327,6 +363,58 @@ export function AIAssistant({ tasks, lists, onAddTask, className }: AIAssistantP
     navigator.clipboard.writeText(content);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  // Execute an AI edit command with proper error handling
+  const executeEditCommand = useCallback(async (command: AIEditCommand & { task?: TaskWithRelations }) => {
+    if (!command.action || !command.taskId || !command.task) {
+      return;
+    }
+
+    const task = command.task;
+    let responseContent = "";
+
+    try {
+      switch (command.action) {
+        case "complete":
+          await (await import("@/lib/actions/tasks")).updateTask(task.id, { completed: true });
+          responseContent = `✅ Marked "${task.name}" as completed!`;
+          break;
+        case "delete":
+          await (await import("@/lib/actions/tasks")).deleteTask(task.id);
+          responseContent = `🗑️ Deleted "${task.name}"`;
+          break;
+        case "prioritize": {
+          const priority = command.updates?.priority as "critical" | "high" | "medium" | "low" | "none" | undefined;
+          await (await import("@/lib/actions/tasks")).updateTask(task.id, { priority });
+          responseContent = `📌 Changed priority of "${task.name}" to ${priority || "unknown"}`;
+          break;
+        }
+        default:
+          responseContent = `I don't know how to "${command.action}". Try being more specific!`;
+      }
+    } catch {
+      responseContent = `Failed to execute ${command.action} command`;
+    }
+
+    const aiResponse: Message = {
+      id: Date.now() + 1,
+      role: "assistant",
+      content: responseContent,
+      timestamp: new Date(),
+    };
+    setMessages((prev) => [...prev, aiResponse]);
+    setPendingEditCommand(null);
+  }, []);
+
+  const confirmEditCommand = () => {
+    if (pendingEditCommand) {
+      executeEditCommand(pendingEditCommand);
+    }
+  };
+
+  const cancelEditCommand = () => {
+    setPendingEditCommand(null);
   };
 
   const handleQuickAction = (prompt: string) => {
@@ -445,9 +533,7 @@ const taskSuggestions = useMemo(() => {
         const generatedTasks = await response.json();
         if (generatedTasks.tasks && generatedTasks.tasks.length > 0) {
           // Add each generated task
-          generatedTasks.tasks.forEach(
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (task: any) => {
+          generatedTasks.tasks.forEach((task: { name: string; description?: string | null; priority?: Priority; suggested_date?: string | null; list_id?: number | null }) => {
             onAddTask({
               name: task.name,
               description: task.description ?? null,
@@ -659,6 +745,66 @@ const taskSuggestions = useMemo(() => {
           </div>
         </div>
       </CardContent>
+
+      {/* Confirmation Dialog for AI Edit Actions */}
+      {pendingEditCommand && pendingEditCommand.task && (
+        <Dialog open={!!pendingEditCommand} onOpenChange={cancelEditCommand}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-amber-500" />
+                Confirm{" "}
+                {pendingEditCommand.action === "delete"
+                  ? "Deletion"
+                  : pendingEditCommand.action === "complete"
+                    ? "Completion"
+                    : "Priority Change"}
+              </DialogTitle>
+              <DialogDescription>
+                {pendingEditCommand.action === "delete" && (
+                  <>Are you sure you want to delete &ldquo;{pendingEditCommand.task.name}&rdquo;? This action cannot be undone.</>
+                )}
+                {pendingEditCommand.action === "complete" && (
+                  <>Mark &ldquo;{pendingEditCommand.task.name}&rdquo; as completed? You can undo this later.</>
+                )}
+                {pendingEditCommand.action === "prioritize" && (
+                  <>
+                    Change priority of &ldquo;{pendingEditCommand.task.name}&rdquo; to{" "}
+                    {pendingEditCommand.updates?.priority || "unknown"}?
+                  </>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={cancelEditCommand}>
+                <X className="h-4 w-4 mr-1.5" />
+                Cancel
+              </Button>
+              <Button
+                variant={pendingEditCommand.action === "delete" ? "destructive" : "default"}
+                onClick={confirmEditCommand}
+              >
+                {pendingEditCommand.action === "delete" ? (
+                  <>
+                    <Trash2 className="h-4 w-4 mr-1.5" />
+                    Delete
+                  </>
+                ) : pendingEditCommand.action === "complete" ? (
+                  <>
+                    <CheckCircle2 className="h-4 w-4 mr-1.5" />
+                    Mark Complete
+                  </>
+                ) : (
+                  <>
+                    <Target className="h-4 w-4 mr-1.5" />
+                    Change Priority
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
