@@ -125,16 +125,17 @@ export const migrations: Record<number, string> = {
   `,
   13: `
     -- Add task_dependencies table for blocker relationships
+    -- Note: Uses task_id/depends_on_task_id to be consistent with existing queries
     CREATE TABLE IF NOT EXISTS task_dependencies (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      blocker_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
-      blocked_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+      task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+      depends_on_task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
       type TEXT NOT NULL DEFAULT 'hard' CHECK(type IN ('hard', 'soft')),
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-      UNIQUE(blocker_id, blocked_id)
+      UNIQUE(task_id, depends_on_task_id)
     );
-    CREATE INDEX IF NOT EXISTS idx_task_deps_blocker ON task_dependencies(blocker_id);
-    CREATE INDEX IF NOT EXISTS idx_task_deps_blocked ON task_dependencies(blocked_id);
+    CREATE INDEX IF NOT EXISTS idx_task_deps_task ON task_dependencies(task_id);
+    CREATE INDEX IF NOT EXISTS idx_task_deps_depends ON task_dependencies(depends_on_task_id);
   `,
   14: `
     -- Add index on recurring column for generateRecurringTasks performance
@@ -144,6 +145,11 @@ export const migrations: Record<number, string> = {
     -- Add user_id to tasks for proper user isolation
     ALTER TABLE tasks ADD COLUMN user_id INTEGER REFERENCES users(id) ON DELETE CASCADE;
     CREATE INDEX IF NOT EXISTS idx_tasks_user_id ON tasks(user_id);
+  `,
+  16: `
+    -- Add archived column to tasks for archiving functionality
+    ALTER TABLE tasks ADD COLUMN archived INTEGER DEFAULT 0 CHECK(archived IN (0, 1));
+    CREATE INDEX IF NOT EXISTS idx_tasks_archived ON tasks(archived);
   `,
 };
 
