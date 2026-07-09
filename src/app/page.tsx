@@ -23,6 +23,7 @@ import { KeyboardShortcuts } from "@/components/task/keyboard-shortcuts";
 import { TaskAnalytics } from "@/components/task/task-analytics";
 import { MobileSidebar } from "@/components/task/mobile-sidebar";
 import { GoalsDashboard } from "@/components/task/goals-dashboard";
+import { AIAssistant } from "@/components/task/ai-assistant";
 import { useTasks } from "@/hooks/use-tasks";
 import type { TaskWithRelations, FilterPreset, Template, Goal, Workspace } from "@/types";
 import { toast } from "sonner";
@@ -385,39 +386,64 @@ export default function Home() {
       );
     }
 
+    if (currentView === "ai") {
+      return (
+        <div className="p-6">
+          <AIAssistant
+            tasks={tasks}
+            lists={lists}
+            onAddTask={async (task) => {
+              try {
+                const newTask = await (await import("@/lib/actions/tasks")).createTask(task as unknown as import("@/types").CreateTaskInput);
+                setTasks([...tasks, newTask]);
+                toast.success("Task added successfully");
+              } catch (error) {
+                toast.error("Failed to add task");
+                console.error(error);
+              }
+            }}
+            className="max-w-2xl mx-auto"
+          />
+        </div>
+      );
+    }
+
     if (currentView === "focus") {
       const currentTask = tasks.find(t => !t.completed);
+      const fallbackTask: TaskWithRelations = {
+        id: 1,
+        user_id: null,
+        name: "Select a task to focus on",
+        description: null,
+        notes: null,
+        list_id: 1,
+        date: null,
+        deadline: null,
+        estimate: null,
+        actual_time: null,
+        priority: "none",
+        recurring: "none",
+        recurring_config: null,
+        completed: false,
+        completed_at: null,
+        created_at: "",
+        updated_at: "",
+        sort_order: 0,
+        archived: false,
+        labels: [],
+        subtasks: [],
+        reminders: [],
+        logs: [],
+        comments: [],
+        attachments: [],
+        blockers: [],
+        blocked_by: [],
+        time_entries: [],
+        recurring_exceptions: [],
+      };
       return (
         <FocusMode
-          task={currentTask || {
-            id: 1,
-            name: "Select a task to focus on",
-            description: null,
-            notes: null,
-            list_id: 1,
-            date: null,
-            deadline: null,
-            estimate: null,
-            actual_time: null,
-            priority: "none",
-            recurring: "none",
-            recurring_config: null,
-            completed: false,
-            completed_at: null,
-            created_at: "",
-            updated_at: "",
-            sort_order: 0,
-            labels: [],
-            subtasks: [],
-            reminders: [],
-            logs: [],
-            comments: [],
-            attachments: [],
-            blockers: [],
-            blocked_by: [],
-            time_entries: [],
-            recurring_exceptions: [],
-          }}
+          task={currentTask || fallbackTask}
           open={true}
           onOpenChange={(open) => !open && handleViewChange("today")}
         />
