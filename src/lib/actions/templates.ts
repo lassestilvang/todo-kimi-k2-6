@@ -14,10 +14,22 @@ export async function getTemplates(includeCategories = false): Promise<Template[
          ORDER BY t.name ASC`
       )
       .all()
-      .map((row: any) => ({
-        ...row,
+      .map((row) => ({
+        id: row.id as number,
+        name: row.name as string,
+        description: row.description as string | null,
+        list_id: row.list_id as number | null,
+        priority: (row.priority as "critical" | "high" | "medium" | "low" | "none") || "none",
+        label_ids: row.label_ids ? JSON.parse(row.label_ids as string) : [],
+        subtasks: row.subtasks ? JSON.parse(row.subtasks as string) : [],
+        category_id: row.category_id as number | null,
         category: row.category_name
-          ? { id: row.category_id, name: row.category_name, description: row.category_description, created_at: "" }
+          ? {
+              id: row.category_id as number,
+              name: row.category_name as string,
+              description: row.category_description as string | null,
+              created_at: "",
+            }
           : undefined,
       })) as Template[];
   }
@@ -112,7 +124,7 @@ export async function saveTemplateFromTask(
     name: options?.name || task.name,
     description: task.description,
     list_id: task.list_id || null,
-    priority: task.priority || "none",
+    priority: (task.priority as "critical" | "high" | "medium" | "low" | "none") || "none",
     label_ids: [],
     subtasks,
     category_id: options?.category_id || null,
