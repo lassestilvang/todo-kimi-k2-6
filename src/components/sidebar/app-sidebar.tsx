@@ -46,6 +46,7 @@ import {
 } from "@/lib/actions";
 import { toast } from "sonner";
 import { WorkspaceSelector } from "@/components/workspace/workspace-selector";
+import { useUndo } from "@/hooks/use-undo";
 
 interface AppSidebarProps {
   lists: List[];
@@ -102,6 +103,9 @@ export function AppSidebar({
   const [labelColor, setLabelColor] = useState("#8b5cf6");
   const [hoveredList, setHoveredList] = useState<number | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Undo hook for destructive actions
+  const { executeWithUndo, cancelUndo } = useUndo();
 
   // Close mobile sidebar on route change
   useEffect(() => {
@@ -355,12 +359,10 @@ export function AppSidebar({
                   Lists
                 </p>
                 <Dialog open={newListOpen} onOpenChange={setNewListOpen}>
-                  <DialogTrigger
-                    render={
-                      <Button variant="ghost" size="icon" className="h-6 w-6" />
-                    }
-                  >
-                    <Plus className="h-3.5 w-3.5" />
+                  <DialogTrigger>
+                    <Button variant="ghost" size="icon" className="h-6 w-6">
+                      <Plus className="h-3.5 w-3.5" />
+                    </Button>
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
@@ -457,12 +459,10 @@ export function AppSidebar({
                   Labels
                 </p>
                 <Dialog open={newLabelOpen} onOpenChange={setNewLabelOpen}>
-                  <DialogTrigger
-                    render={
-                      <Button variant="ghost" size="icon" className="h-6 w-6" />
-                    }
-                  >
-                    <Plus className="h-3.5 w-3.5" />
+                  <DialogTrigger>
+                    <Button variant="ghost" size="icon" className="h-6 w-6">
+                      <Plus className="h-3.5 w-3.5" />
+                    </Button>
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
