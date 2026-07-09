@@ -223,7 +223,7 @@ export function TaskModal({
       getTemplateCategories().then(setCategories).catch(console.error);
       return () => clearTimeout(timer);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
     return undefined;
   }, [open]);
 
