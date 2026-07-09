@@ -1,6 +1,6 @@
 "use server";
 
-import type { ExportData, List, Label, TaskWithRelations, Template, TimeEntry, User } from "@/types";
+import type { List, Label, TaskWithRelations, Template, TimeEntry, User } from "@/types";
 import { getDb } from "@/lib/db";
 import { getLists } from "@/lib/actions/lists";
 import { getLabels } from "@/lib/actions/labels";
@@ -73,7 +73,7 @@ export async function exportIcal(): Promise<Blob> {
   for (const task of tasks) {
     if (!task.deadline && !task.date) continue;
 
-    const dateStr = (task.deadline || task.date!).replace(/-/g, "");
+    const dateStr = ((task.deadline || task.date) as string).replace(/-/g, "");
     const uid = `${task.id}@taskflow.local`;
     const dtStamp = now.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
 
