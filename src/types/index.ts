@@ -179,6 +179,7 @@ export interface Task {
   blocked_by?: TaskDependency[];
   time_entries?: TimeEntry[];
   recurring_exceptions?: RecurringException[];
+  archived: boolean;
 }
 
 export interface TaskWithRelations extends Task {
@@ -196,6 +197,7 @@ export interface TaskWithRelations extends Task {
 export interface CreateTaskInput {
   name: string;
   description?: string;
+  notes?: string;
   list_id?: number;
   date?: string;
   deadline?: string;
