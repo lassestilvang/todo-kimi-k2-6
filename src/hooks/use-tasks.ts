@@ -1,5 +1,8 @@
 import { useState, useCallback, useRef, useMemo } from "react";
-import type { TaskWithRelations, List, Label, FilterPreset, Priority, ViewType } from "@/types";
+import type { TaskWithRelations, List, Label, FilterPreset, Priority } from "@/types";
+
+// Priority order for sorting - defined outside hook to avoid dependency issues
+const PRIORITY_ORDER: Record<Priority, number> = { critical: 0, high: 1, medium: 2, low: 3, none: 4 };
 
 interface UseTasksOptions {
   initialTasks: TaskWithRelations[];
@@ -62,34 +65,27 @@ export function useTasks({
   const [filterPriority, setFilterPriority] = useState<Priority | undefined>();
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Priority order for sorting
-  const priorityOrder = { critical: 0, high: 1, medium: 2, low: 3, none: 4 };
-
   // Cache the Fuse instance to avoid recreating it on every render
   // Use dynamic import for SSR compatibility
+  // Note: We only create the instance once and update its collection separately
   const fuseInstance = useMemo(() => {
-    let Fuse: typeof import("fuse.js").default | null = null;
-
-    // Only initialize in browser environment
-    if (typeof window !== "undefined") {
-      try {
-        Fuse = require("fuse.js").default;
-      } catch {
-        // Fuse.js not available, will fall back to simple filtering
-        return null;
-      }
-
-      if (Fuse) {
-        return new Fuse(tasks, {
-          keys: ["name", "description", "notes"],
-          threshold: 0.4,
-          minMatchCharLength: 2,
-          shouldSort: true,
-        });
-      }
+    if (typeof window === "undefined") return null;
+    try {
+      // Dynamic import for Fuse.js (SSR-safe)
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const FuseModule = require("fuse.js");
+      const Fuse = FuseModule.default || FuseModule;
+      return new Fuse([], {
+        keys: ["name", "description", "notes"],
+        threshold: 0.4,
+        minMatchCharLength: 2,
+        shouldSort: true,
+      });
+    } catch {
+      // Fuse.js not available, will fall back to simple filtering
+      return null;
     }
-    return null;
-  }, [tasks]);
+  }, []); // Empty deps - only create once
 
   // Calculate visible tasks with optimized filtering
   const visibleTasks = useMemo(() => {
@@ -97,8 +93,8 @@ export function useTasks({
 
     // Apply search query (fuzzy search)
     if (searchQuery && fuseInstance) {
-      // Update the fuse instance with current tasks
-      fuseInstance.setCollection(result);
+      // Update the fuse instance with current tasks before searching
+      fuseInstance.setCollection(tasks);
       result = fuseInstance.search(searchQuery).map((r: { item: TaskWithRelations }) => r.item);
     } else if (!currentFilterPreset && !searchQuery) {
       const now = new Date();
@@ -152,8 +148,8 @@ export function useTasks({
           bValue = b.deadline || "zzz";
           break;
         case "priority":
-          aValue = priorityOrder[a.priority];
-          bValue = priorityOrder[b.priority];
+          aValue = PRIORITY_ORDER[a.priority];
+          bValue = PRIORITY_ORDER[b.priority];
           break;
         case "created_at":
           aValue = a.created_at;
@@ -174,7 +170,7 @@ export function useTasks({
     });
 
     return sorted;
-  }, [tasks, currentView, currentFilterPreset, searchQuery, sortBy, sortDirection, filterListId, filterLabelIds, filterPriority, fuseInstance]);
+  }, [tasks, currentView, currentFilterPreset, searchQuery, sortBy, sortDirection, filterListId, filterLabelIds, filterPriority, fuseInstance]); // priorityOrder is a stable constant (no deps)
 
   // Calculate overdue count
   const overdueCount = useMemo(() => {
