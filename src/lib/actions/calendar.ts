@@ -1,20 +1,20 @@
 "use server";
 
 import { getDb } from "@/lib/db";
-import type { CalendarSyncConfig } from "@/types";
+import type { CalendarSync } from "@/types";
 
-export async function getCalendarSync(userId: number): Promise<CalendarSyncConfig | null> {
+export async function getCalendarSync(userId: number): Promise<CalendarSync | null> {
   const db = getDb();
   const result = db.prepare(
     "SELECT provider, access_token, refresh_token, expires_at, enabled FROM calendar_sync WHERE user_id = ?"
-  ).get(userId) as CalendarSyncConfig | undefined;
+  ).get(userId) as CalendarSync | undefined;
   return result ?? null;
 }
 
 export async function saveCalendarSync(
   userId: number,
-  config: Omit<CalendarSyncConfig, "user_id">
-): Promise<CalendarSyncConfig> {
+  config: Omit<CalendarSync, "user_id" | "id" | "created_at">
+): Promise<CalendarSync> {
   const db = getDb();
 
   const existing = db.prepare("SELECT id FROM calendar_sync WHERE user_id = ?").get(userId);
