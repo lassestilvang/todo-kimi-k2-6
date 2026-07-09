@@ -1,10 +1,20 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+// SQLite Statement (sync)
 export interface Statement {
   run(...params: unknown[]): { lastInsertRowid: number | bigint; changes: number };
   get(...params: unknown[]): any;
   all(...params: unknown[]): any[];
 }
+
+// PostgreSQL Statement (async - same interface but returns promises at runtime)
+export interface AsyncStatement {
+  run(...params: unknown[]): Promise<{ lastInsertRowid: number | bigint; changes: number }>;
+  get(...params: unknown[]): Promise<any>;
+  all(...params: unknown[]): Promise<any[]>;
+}
+
+export type AnyStatement = Statement | AsyncStatement;
 
 export interface Transaction {
   commit(): void;
@@ -41,7 +51,7 @@ export function createDatabase(): Database {
   }
 
   // Dynamic import config to avoid issues in edge cases
-  let config: { database: { url: string }; isProduction: boolean } | null = null;
+  let config: { database: { url: string }; isProduction: boolean };
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     config = require("@/lib/config").config;
@@ -109,58 +119,71 @@ function createSQLiteDatabase(path: string): Database {
 }
 
 function createPostgreSQLDatabase(url: string): Database {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { Pool } = require("pg");
-    const pool = new Pool({
-      connectionString: url,
-    });
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { Pool } = require("pg");
+  const pool = new Pool({
+    connectionString: url,
+  });
 
-    return {
-      prepare(sql: string): Statement {
+  const asyncStatement: Statement = {
+    run: async (...params: unknown[]) => {
+      const result = await pool.query(sql, params);
+      return {
+        lastInsertRowid: result.rows[0]?.id || 0,
+        changes: result.rowCount,
+      };
+    },
+    get: async (...params: unknown[]) => {
+      const result = await pool.query(sql, params);
+      return result.rows[0];
+    },
+    all: async (...params: unknown[]) => {
+      const result = await pool.query(sql, params);
+      return result.rows;
+    },
+  };
+
+  // Store sql in a closure-friendly way
+  return {
+    prepare: (sql: string): Statement => ({
+      run: async (...params: unknown[]) => {
+        const result = await pool.query(sql, params);
         return {
-          run: async (...params: unknown[]) => {
-            const result = await pool.query(sql, params);
-            return {
-              lastInsertRowid: result.rows[0]?.id || 0,
-              changes: result.rowCount,
-            };
-          },
-          get: async (...params: unknown[]) => {
-            const result = await pool.query(sql, params);
-            return result.rows[0];
-          },
-          all: async (...params: unknown[]) => {
-            const result = await pool.query(sql, params);
-            return result.rows;
-          },
+          lastInsertRowid: result.rows[0]?.id || 0,
+          changes: result.rowCount,
         };
       },
-      exec: (sql: string): Promise<any> => {
-        // For multiple statements, use query
-        return pool.query(sql);
+      get: async (...params: unknown[]) => {
+        const result = await pool.query(sql, params);
+        return result.rows[0];
       },
-      close: () => {
-        pool.end();
+      all: async (...params: unknown[]) => {
+        const result = await pool.query(sql, params);
+        return result.rows;
       },
-      transaction: async <T>(fn: () => T | Promise<T>): Promise<T> => {
-        const client = await pool.connect();
-        try {
-          await client.query("BEGIN");
-          const result = await fn();
-          await client.query("COMMIT");
-          return result;
-        } catch (error) {
-          await client.query("ROLLBACK");
-          throw error;
-        } finally {
-          client.release();
-        }
-      },
-    };
-  } catch {
-    throw new Error("PostgreSQL driver not available. Install 'pg' package for PostgreSQL support.");
-  }
+    }),
+    exec: (sql: string): Promise<any> => {
+      // For multiple statements, use query
+      return pool.query(sql);
+    },
+    close: () => {
+      pool.end();
+    },
+    transaction: async <T>(fn: () => T | Promise<T>): Promise<T> => {
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        const result = await fn();
+        await client.query("COMMIT");
+        return result;
+      } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+      } finally {
+        client.release();
+      }
+    },
+  };
 }
 
 /**
