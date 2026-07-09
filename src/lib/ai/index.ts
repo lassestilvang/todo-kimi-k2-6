@@ -12,6 +12,7 @@ export const taskSuggestionSchema = z.object({
   estimated_duration: z.number().int().min(0).nullable().optional(),
   suggested_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
   recurring: z.enum(["none", "daily", "weekly", "weekdays", "monthly", "yearly", "custom"]).nullable().optional(),
+  recurring_config: z.string().nullable().optional(),
   list_name: z.string().nullable().optional(),
   deadline: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
   list_id: z.number().int().min(1).nullable().optional(),
@@ -36,7 +37,7 @@ export const aiEditCommandSchema = z.object({
   action: z.enum(["edit", "delete", "complete", "prioritize", "schedule", "add_label", "remove_label"]),
   taskId: z.number().optional(),
   taskName: z.string().optional(),
-  updates: z.record(z.unknown()).optional(),
+  updates: z.record(z.string(), z.unknown()).optional(),
   searchQuery: z.string().optional(),
 });
 
@@ -143,50 +144,6 @@ function calculateScheduleConfidence(task: { estimated_duration?: number | null;
 }
 
 /**
- * Parse time range from text (e.g., "from 2pm to 4pm", "9am-11am")
- */
-export function parseTimeRange(text: string): { start_time?: string; end_time?: string } | null {
-  // Match "from X to Y" pattern
-  const fromToMatch = text.match(/from\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\s+to\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)/i);
-  if (fromToMatch) {
-    const startHour = parseTimeToMinutes(fromToMatch[1]);
-    const endHour = parseTimeToMinutes(fromToMatch[2]);
-    if (startHour !== null && endHour !== null) {
-      return {
-        start_time: formatMinutesToTime(startHour),
-        end_time: formatMinutesToTime(endHour),
-      };
-    }
-  }
-
-  // Match "X-Y" time range pattern
-  const rangeMatch = text.match(/(\d{1,2})(?::(\d{2}))?\s*-\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
-  if (rangeMatch) {
-    const startHour = parseInt(rangeMatch[1]);
-    const startMin = parseInt(rangeMatch[2] || "0");
-    const endHour = parseInt(rangeMatch[3]);
-    const endMin = parseInt(rangeMatch[4] || "0");
-    const period = rangeMatch[5]?.toLowerCase();
-
-    let startTotal = startHour * 60 + startMin;
-    let endTotal = endHour * 60 + endMin;
-
-    // Handle AM/PM
-    if (period === "pm" && startHour !== 12) startTotal += 12 * 60;
-    if (period === "pm" && endHour !== 12) endTotal += 12 * 60;
-    if (period === "am" && startHour === 12) startTotal = 0;
-    if (period === "am" && endHour === 12) endTotal = 0;
-
-    return {
-      start_time: formatMinutesToTime(startTotal),
-      end_time: formatMinutesToTime(endTotal),
-    };
-  }
-
-  return null;
-}
-
-/**
  * Parse location context from task text
  */
 export function parseLocation(text: string, locations?: Array<{ name: string; keywords: string[] }>): string | null {
@@ -217,32 +174,6 @@ export function parseLocation(text: string, locations?: Array<{ name: string; ke
   }
 
   return null;
-}
-
-/**
- * Convert time string to minutes from midnight
- */
-function parseTimeToMinutes(timeStr: string): number | null {
-  const match = timeStr.match(/(\d{1,2})(?:[:.]?(\d{2}))?\s*(am|pm)?/i);
-  if (!match) return null;
-
-  let hours = parseInt(match[1]);
-  const minutes = parseInt(match[2] || "0");
-  const period = match[3]?.toLowerCase();
-
-  if (period === "pm" && hours !== 12) hours += 12;
-  if (period === "am" && hours === 12) hours = 0;
-
-  return hours * 60 + minutes;
-}
-
-/**
- * Convert minutes from midnight to time string (HH:mm)
- */
-function formatMinutesToTime(minutes: number): string {
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-  return `${hours.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}`;
 }
 
 // Generate task insights and recommendations
@@ -308,6 +239,15 @@ export {
 
 // Cache management
 export { aiCache } from "./providers";
+
+// Re-export shared time utilities
+export {
+  formatMinutesToTime,
+  parseTimeToMinutes,
+  parseTimeRange,
+  getNextDay,
+  parseMonthDayDate,
+} from "@/lib/time-utils";
 
 // AI-powered task editing
 export async function parseEditCommand(
