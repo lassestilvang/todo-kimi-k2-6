@@ -1,9 +1,8 @@
 // Email notification system
 // This implementation uses Nodemailer for sending emails
 // Requires SMTP configuration (e.g., SendGrid, Resend, or custom SMTP)
-// Install nodemailer to enable: npm install nodemailer @types/nodemailer
 
-import type { Task } from "@/types";
+import type { Priority } from "@/types";
 
 interface EmailConfig {
   host: string;
@@ -13,6 +12,17 @@ interface EmailConfig {
     user: string;
     pass: string;
   };
+}
+
+/**
+ * Get user notification settings
+ */
+export interface NotificationSettings {
+  enabled: boolean;
+  reminderMinutes: number;
+  dueDateReminders: boolean;
+  overdueReminders: boolean;
+  dailySummary: boolean;
 }
 
 // Create transporter with config
@@ -67,9 +77,57 @@ export async function sendEmail(options: EmailOptions, config?: EmailConfig): Pr
   }
 }
 
+export interface EmailTask {
+  id: number;
+  name: string;
+  description: string | null;
+  deadline: string | null;
+  priority?: Priority;
+}
+
+/**
+ * Get notification settings for a user
+ */
+export async function getUserNotificationSettings(userId: number): Promise<NotificationSettings> {
+  // In a real implementation, this would fetch from the database
+  // For now, return default settings
+  return {
+    enabled: true,
+    reminderMinutes: 60,
+    dueDateReminders: true,
+    overdueReminders: true,
+    dailySummary: false,
+  };
+}
+
+/**
+ * Check if we should send an email notification for a task
+ * Returns true if notifications are enabled and the task qualifies
+ */
+export async function shouldSendNotification(
+  userId: number,
+  task: EmailTask,
+  type: "reminder" | "due_soon" | "overdue"
+): Promise<boolean> {
+  const settings = await getUserNotificationSettings(userId);
+
+  if (!settings.enabled) return false;
+
+  switch (type) {
+    case "reminder":
+      return settings.reminderMinutes > 0;
+    case "due_soon":
+      return settings.dueDateReminders;
+    case "overdue":
+      return settings.overdueReminders;
+    default:
+      return false;
+  }
+}
+
 export async function sendTaskReminderEmail(
   userEmail: string,
-  task: Task
+  task: EmailTask
 ): Promise<boolean> {
   const subject = `Task Reminder: ${task.name}`;
   const html = `
@@ -90,7 +148,7 @@ export async function sendTaskReminderEmail(
 
 export async function sendDueSoonEmail(
   userEmail: string,
-  task: Task
+  task: EmailTask
 ): Promise<boolean> {
   const subject = `Due Soon: ${task.name}`;
   const html = `
