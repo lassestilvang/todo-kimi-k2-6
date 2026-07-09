@@ -4,7 +4,8 @@ import { getDb } from "@/lib/db";
 import { comparePassword } from "@/lib/auth";
 import { config } from "@/lib/config";
 import type { User as AppUser } from "@/types";
-import type { Session, JWT, User } from "next-auth";
+import type { Session } from "next-auth";
+import type { AuthOptions } from "next-auth";
 
 interface Credentials {
   email?: string;
@@ -61,21 +62,23 @@ export const authOptions = {
     error: "/auth/error",
   },
   callbacks: {
-    async jwt({ token, user }: { token: JWT; user: User | undefined }) {
-      if (user) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    async jwt({ token, user }: { token: any; user?: any }) {
+      if (user?.id) {
         token.id = user.id;
       }
       return token;
     },
-    async session({ session, token }: { session: Session; token: JWT }) {
-      if (session.user && token.id) {
-        session.user.id = String(token.id);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    async session({ session, token }: { session: Session; token: any }) {
+      if (token.id) {
+        (session.user as Record<string, unknown>).id = String(token.id);
       }
       return session;
     },
   },
   secret: config.auth.secret,
   debug: process.env.NODE_ENV === "development",
-};
+} satisfies AuthOptions;
 
 export default NextAuth(authOptions);
