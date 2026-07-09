@@ -151,7 +151,8 @@ export { rateLimits } from "./rate-limiter";
  */
 export function jsonResponse(
   data: unknown,
-  init?: number | ResponseInit,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  init?: any,
   middlewareHeaders?: Record<string, string>
 ): NextResponse {
   const response = NextResponse.json(data, init);
