@@ -67,7 +67,7 @@ export function isLightColor(color: string): boolean {
 /**
  * Trap focus within a container (for modals, dialogs)
  */
-export function trapFocus(container: HTMLElement): void {
+export function trapFocus(container: HTMLElement): (() => void) {
   const focusableElements = container.querySelectorAll(
     'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
   ) as NodeListOf<HTMLElement>;
@@ -106,7 +106,7 @@ export function announce(message: string): void {
 /**
  * Hook to announce changes to screen readers
  */
-export function useAnnounce(message: string, dependsOn?: any[]): void {
+export function useAnnounce(message: string, dependsOn?: unknown[]): void {
   useEffect(() => {
     if (message) {
       announce(message);
