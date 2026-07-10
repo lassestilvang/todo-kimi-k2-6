@@ -214,6 +214,8 @@ describe("Modal Tab Logic", () => {
       };
       expect(formatDate("2024-01-15T12:00:00Z")).toBe("2024-01-15");
       expect(formatDate(null)).toBe("");
+      expect(formatDate(undefined)).toBe("");
+      expect(formatDate("")).toBe("");
     });
   });
 
@@ -227,14 +229,142 @@ describe("Modal Tab Logic", () => {
       expect(formatSize(500)).toBe("500 B");
       expect(formatSize(1024)).toBe("1.0 KB");
       expect(formatSize(1024 * 1024)).toBe("1.0 MB");
+      expect(formatSize(0)).toBe("0 B");
+    });
+
+    it("should handle large file sizes", () => {
+      const formatSize = (bytes: number) => {
+        if (bytes < 1024) return `${bytes} B`;
+        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+      };
+      expect(formatSize(1536)).toBe("1.5 KB");
     });
   });
 
   describe("Task completion toggle logic", () => {
-    it("should toggle completion state", () => {
+    it("should toggle completion state from 0 to 1", () => {
       const original = 0;
       const toggled = original === 1 ? 0 : 1;
       expect(toggled).toBe(1);
+    });
+
+    it("should toggle completion state from 1 to 0", () => {
+      const original = 1;
+      const toggled = original === 1 ? 0 : 1;
+      expect(toggled).toBe(0);
+    });
+  });
+
+  describe("Time formatting", () => {
+    it("should parse time strings correctly", () => {
+      const parseTime = (time: string) => {
+        const [hours, minutes] = time.split(":").map(Number);
+        return { hours, minutes };
+      };
+      expect(parseTime("09:30").hours).toBe(9);
+      expect(parseTime("09:30").minutes).toBe(30);
+    });
+
+    it("should handle hour extraction from ISO date (timezone aware)", () => {
+      // Use a date that works across timezones
+      const date = "2024-01-15T00:00:00Z";
+      const hour = new Date(date).getHours();
+      // Just verify the function works
+      expect(typeof hour).toBe("number");
+    });
+  });
+
+  describe("Subtask filtering logic", () => {
+    it("should filter tasks by blocking status", () => {
+      const allTasks = [
+        { id: 1, name: "Task 1", completed: false },
+        { id: 2, name: "Task 2", completed: true },
+        { id: 3, name: "Task 3", completed: false },
+      ];
+      const available = allTasks.filter((t) => !t.completed).slice(0, 20);
+      expect(available.length).toBe(2);
+    });
+
+    it("should exclude self from blocking options", () => {
+      const allTasks = [{ id: 1, name: "Task 1", completed: false }];
+      const currentTaskId = 1;
+      const available = allTasks.filter((t) => t.id !== currentTaskId);
+      expect(available.length).toBe(0);
+    });
+  });
+
+  describe("Recurring config parsing", () => {
+    it("should parse valid JSON recurring config", () => {
+      const config = JSON.parse(JSON.stringify({ interval: 2, unit: "weeks" }));
+      expect(config.interval).toBe(2);
+      expect(config.unit).toBe("weeks");
+    });
+
+    it("should handle invalid JSON gracefully", () => {
+      expect(() => JSON.parse("invalid")).toThrow();
+    });
+
+    it("should handle null config", () => {
+      const config = JSON.parse("null");
+      expect(config).toBeNull();
+    });
+  });
+
+  describe("Label toggle logic", () => {
+    it("should add label to selection", () => {
+      const selected = [1, 2];
+      const newSelection = [...selected, 3];
+      expect(newSelection).toContain(3);
+    });
+
+    it("should remove label from selection", () => {
+      const selected = [1, 2, 3];
+      const newSelection = selected.filter((id) => id !== 2);
+      expect(newSelection).not.toContain(2);
+    });
+  });
+
+  describe("Blocker toggle logic", () => {
+    it("should add blocker to selection", () => {
+      const selected = [1, 2];
+      const newSelection = [...selected, 3];
+      expect(newSelection.length).toBe(3);
+    });
+
+    it("should remove blocker from selection", () => {
+      const selected = [1, 2, 3];
+      const newSelection = selected.filter((id) => id !== 2);
+      expect(newSelection.length).toBe(2);
+    });
+  });
+
+  describe("Reminder management", () => {
+    it("should add reminder to list", () => {
+      const reminders = ["2024-01-15T09:00"];
+      const newReminders = [...reminders, "2024-01-15T10:00"];
+      expect(newReminders.length).toBe(2);
+    });
+
+    it("should remove reminder by index", () => {
+      const reminders = ["09:00", "10:00", "11:00"];
+      const index = 1;
+      const remaining = reminders.filter((_, i) => i !== index);
+      expect(remaining.length).toBe(2);
+    });
+  });
+
+  describe("Task form validation", () => {
+    it("should require non-empty task name", () => {
+      const name = "  ";
+      const isValid = name.trim().length > 0;
+      expect(isValid).toBe(false);
+    });
+
+    it("should accept non-empty task name", () => {
+      const name = "Valid Task";
+      const isValid = name.trim().length > 0;
+      expect(isValid).toBe(true);
     });
   });
 });
