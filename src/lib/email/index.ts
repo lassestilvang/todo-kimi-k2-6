@@ -88,7 +88,7 @@ export interface EmailTask {
 /**
  * Get notification settings for a user
  */
-export async function getUserNotificationSettings(userId: number): Promise<NotificationSettings> {
+export async function getUserNotificationSettings(): Promise<NotificationSettings> {
   // In a real implementation, this would fetch from the database
   // For now, return default settings
   return {
@@ -109,7 +109,9 @@ export async function shouldSendNotification(
   task: EmailTask,
   type: "reminder" | "due_soon" | "overdue"
 ): Promise<boolean> {
-  const settings = await getUserNotificationSettings(userId);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  void userId;
+  const settings = await getUserNotificationSettings();
 
   if (!settings.enabled) return false;
 
