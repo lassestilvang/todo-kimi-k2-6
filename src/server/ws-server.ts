@@ -3,7 +3,7 @@
  * Handles task updates, comments, presence tracking, and cursor positions
  */
 
-import { WebSocketServer } from "ws";
+import { WebSocketServer, type WebSocket as WSWebSocket } from "ws";
 import type { TaskWithRelations } from "@/types";
 
 interface CollaborationEvent {
