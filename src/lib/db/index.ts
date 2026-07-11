@@ -31,7 +31,8 @@ export async function withTransaction<T>(fn: (db: Database) => T | Promise<T>): 
  */
 export function withTransactionSync<T>(fn: (db: Database) => T): T {
   const database = getDb();
-  return database.transaction(() => fn(database));
+  // For synchronous functions with SQLite, transaction returns T directly
+  return database.transaction(() => fn(database)) as T;
 }
 
 export function getDb(): Database {
