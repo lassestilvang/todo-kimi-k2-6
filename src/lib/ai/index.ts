@@ -34,7 +34,7 @@ export type AIInsights = z.infer<typeof aiInsightsSchema>;
 
 // Schema for AI task editing commands
 export const aiEditCommandSchema = z.object({
-  action: z.enum(["edit", "delete", "complete", "prioritize", "schedule", "add_label", "remove_label"]),
+  action: z.enum(["edit", "delete", "complete", "prioritize", "schedule", "add_label", "remove_label", "search"]),
   taskId: z.number().optional(),
   taskName: z.string().optional(),
   updates: z.record(z.string(), z.unknown()).optional(),
