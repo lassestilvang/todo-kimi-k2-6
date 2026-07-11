@@ -268,24 +268,15 @@ export function AIAssistant({ tasks, lists, onAddTask, className }: AIAssistantP
               case "delete":
                 await (await import("@/lib/actions/tasks")).deleteTask(task.id);
                 responseContent = `🗑️ Deleted "${task.name}"`;
-                if (setTasks) {
-                  setTasks((prev: TaskWithRelations[]) => prev.filter((t) => t.id !== task.id));
-                }
                 break;
               case "complete":
                 await (await import("@/lib/actions/tasks")).updateTask(task.id, { completed: true });
                 responseContent = `✅ Marked "${task.name}" as completed!`;
-                if (setTasks) {
-                  setTasks((prev: TaskWithRelations[]) => prev.map((t) => (t.id === task.id ? { ...t, completed: true } : t)));
-                }
                 break;
               case "prioritize": {
                 const priority = editResult.updates?.priority as "critical" | "high" | "medium" | "low" | "none" | undefined;
                 await (await import("@/lib/actions/tasks")).updateTask(task.id, { priority });
                 responseContent = `📌 Changed priority of "${task.name}" to ${priority || "unknown"}`;
-                if (setTasks) {
-                  setTasks((prev: TaskWithRelations[]) => prev.map((t) => (t.id === task.id ? { ...t, priority } : t)));
-                }
                 break;
               }
               default:
