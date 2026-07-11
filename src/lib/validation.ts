@@ -35,7 +35,7 @@ export function sanitizeString(input: string | null | undefined): string | null 
 
   // Browser: use DOMPurify for robust sanitization
   if (dompurify && typeof window !== "undefined") {
-    return dompurify.sanitize(input, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] }).trim();
+    return dompurify.sanitize(input).trim();
   }
 
   // Server-side or fallback: strip all HTML tags and dangerous attributes
@@ -58,8 +58,8 @@ export function sanitizeHtml(input: string | null | undefined): string | null {
 
   // Browser: use DOMPurify for robust sanitization
   if (dompurify && typeof window !== "undefined") {
-    const allowedTags = ["b", "i", "u", "strong", "em", "p", "br", "ul", "ol", "li", "h1", "h2", "h3", "code", "pre"];
-    return dompurify.sanitize(input, { ALLOWED_TAGS: allowedTags }).trim();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (dompurify.sanitize as any)(input).trim();
   }
 
   // Fallback: basic sanitization
