@@ -1068,3 +1068,42 @@ export async function getArchivedTasks(): Promise<TaskWithRelations[]> {
 // - comments.ts for task comment functions
 // - export.ts for import/export functions
 // - attachments.ts for attachment functions
+
+/**
+ * AI-powered task editing - process natural language commands to modify tasks
+ */
+export async function editTaskWithAI(
+  command: { action: string; taskId?: number; updates?: Record<string, unknown> },
+  tasks: Array<{ id: number; name: string; completed: boolean; priority: string }>
+): Promise<{ success: boolean; message: string; task?: TaskWithRelations }> {
+  const { action, taskId, updates } = command;
+
+  if (action === "delete" && taskId) {
+    await deleteTask(taskId);
+    return { success: true, message: "Task deleted" };
+  }
+
+  if (taskId) {
+    const taskInput: Record<string, unknown> = {};
+    if (updates?.priority && ["critical", "high", "medium", "low", "none"].includes(updates.priority as string)) {
+      taskInput.priority = updates.priority;
+    }
+    if (updates?.list_id && typeof updates.list_id === "number") {
+      taskInput.list_id = updates.list_id;
+    }
+    if (updates?.completed !== undefined) {
+      taskInput.completed = updates.completed ? 1 : 0;
+    }
+    if (updates?.date && typeof updates.date === "string") {
+      taskInput.date = updates.date;
+    }
+    if (updates?.deadline && typeof updates.deadline === "string") {
+      taskInput.deadline = updates.deadline;
+    }
+
+    const updated = await updateTask(taskId, taskInput);
+    return { success: true, message: "Task updated", task: updated };
+  }
+
+  return { success: false, message: "No valid task specified" };
+}
