@@ -41,44 +41,16 @@ export function CollaborationProvider({
 
   useEffect(() => {
     const wsUrl = process.env["NEXT_PUBLIC_WS_URL"] || "ws://localhost:3001";
-    const ws = wsRef.current; // Copy ref to variable for cleanup
-    ws.connect(wsUrl);
-
-    // Task update handler - placeholder for future real-time collaboration
-    wsRef.current.subscribe("task_update", () => undefined);
-
-    wsRef.current.subscribe("presence_change", (data: PresenceUser) => {
-      setPresence((prev) => {
-        const filtered = prev.filter((p) => p.userId !== userId);
-        return [...filtered, data];
-      });
-    });
-
-    // Join presence
-    wsRef.current.send({
-      type: "presence_change",
-      userId,
-      userName,
-    });
-
-    setConnected(true);
-
-    return () => {
-      ws.disconnect();
-    };
-  }, [userId, userName]);
-
-  useEffect(() => {
-    const wsUrl = process.env["NEXT_PUBLIC_WS_URL"] || "ws://localhost:3001";
     wsRef.current.connect(wsUrl);
 
     // Task update handler - placeholder for future real-time collaboration
     wsRef.current.subscribe("task_update", () => undefined);
 
     wsRef.current.subscribe("presence_change", (data) => {
+      const presenceData = data as PresenceUser;
       setPresence((prev) => {
         const filtered = prev.filter((p) => p.userId !== userId);
-        return [...filtered, data];
+        return [...filtered, presenceData];
       });
     });
 
