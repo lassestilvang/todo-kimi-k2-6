@@ -37,10 +37,12 @@ export async function POST(request: Request) {
 
     // Hash password and create user
     const passwordHash = await hashPassword(password);
-    const result = db
+    const dbResult = db
       .prepare("INSERT INTO users (email, name, password_hash) VALUES (?, ?, ?)")
       .run(email, name, passwordHash);
 
+    // Extract lastInsertRowid synchronously (SQLite)
+    const result = dbResult as { lastInsertRowid: number | bigint };
     return Response.json(
       { message: "User created successfully", userId: result.lastInsertRowid },
       { status: 201 }
