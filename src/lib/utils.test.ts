@@ -312,9 +312,9 @@ describe("Utils", () => {
         { id: 1, name: "Charlie" },
         { id: 2, name: "Alice" },
       ];
-      const original = [...tasks];
       sortTasks(tasks, "name", "asc");
-      expect(tasks[0].name).toBe("Charlie"); // Original unchanged
+      // After sort, original array should be unchanged
+      expect(tasks[0].name).toBe("Charlie");
     });
   });
 
@@ -323,7 +323,7 @@ describe("Utils", () => {
       { id: 1, name: "Task A", list_id: 1, priority: "high", completed: 0, description: "Desc A" },
       { id: 2, name: "Task B", list_id: 2, priority: "low", completed: 1, description: "Desc B" },
       { id: 3, name: "Task C", list_id: 1, priority: "high", completed: 0, description: null },
-    ] as any[];
+    ];
 
     it("should filter by list ID", () => {
       const result = filterTasks(tasks, { listId: 1 });
