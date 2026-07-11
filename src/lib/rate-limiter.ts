@@ -22,7 +22,9 @@ interface RateLimiterBackend {
 
 /**
  * Database-backed rate limiter for persistence across restarts
+ * Note: Currently not used due to circular dependency with db module
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 class DatabaseRateLimiter implements RateLimiterBackend {
   private db: ReturnType<typeof import("./db").getDb>;
 
@@ -119,7 +121,8 @@ class MemoryRateLimiter implements RateLimiterBackend {
  * Redis-based rate limiter (for production)
  */
 class RedisRateLimiter implements RateLimiterBackend {
-  private redis: ReturnType<typeof import("ioredis")> | undefined;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Redis type is complex
+  private redis: any;
 
   constructor(redisUrl?: string) {
     if (redisUrl) {
@@ -127,7 +130,8 @@ class RedisRateLimiter implements RateLimiterBackend {
         // Dynamic import to avoid issues if Redis isn't configured
         // eslint-disable-next-line @typescript-eslint/no-require-imports
         const Redis = require("ioredis");
-        this.redis = new Redis(redisUrl);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        this.redis = new Redis(redisUrl) as any;
       } catch {
         // Fall back to memory if Redis unavailable
         console.warn("Redis not available, falling back to in-memory rate limiting");
@@ -165,6 +169,7 @@ class RedisRateLimiter implements RateLimiterBackend {
       };
     } catch (error) {
       console.error("Redis rate limiter error:", error);
+      const resetTime = Date.now() + limitConfig.windowMs;
       return { allowed: true, remaining: limitConfig.max, resetTime, limit: limitConfig.max };
     }
   }
