@@ -94,13 +94,6 @@ describe("email", () => {
 
   describe("sendTaskSharedEmail", () => {
     it("should send task shared email and return boolean", async () => {
-      const task = {
-        id: 123,
-        name: "Shared Task",
-        description: "Task description",
-        deadline: "2024-12-31",
-      };
-
       // sendTaskSharedEmail signature: (email, taskName, sharerName, permission)
       const result = await sendTaskSharedEmail("invitee@test.com", "Shared Task", "John Doe", "view");
       expect(result).toBe(true);
