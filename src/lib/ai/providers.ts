@@ -1141,6 +1141,103 @@ export class AIManager {
       }
     }
 
+    // Pattern: "move [task] to [list name]" or "move [task] to inbox"
+    const moveMatch = text.match(/(?:move|put)\s+(?:task\s+)?(.+?)\s+to\s+(.+)/i);
+    if (moveMatch) {
+      const taskName = moveMatch[1].trim();
+      const listName = moveMatch[2].trim();
+      const task = context.tasks.find((t) => t.name.toLowerCase().includes(taskName.toLowerCase()));
+      if (task) {
+        return { action: "edit", taskId: task.id, updates: { listName } };
+      }
+    }
+
+    // Pattern: "schedule [task] for [date]" or "move [task] to [day]"
+    const scheduleMatch = text.match(/(?:schedule|move|set)\s+(?:task\s+)?(.+?)\s+(?:for|on|to)\s+(.+)/i);
+    if (scheduleMatch && !completeMatch && !deleteMatch) {
+      const taskName = scheduleMatch[1].trim();
+      const dateStr = scheduleMatch[2].trim();
+      const task = context.tasks.find((t) => t.name.toLowerCase().includes(taskName.toLowerCase()));
+      if (task) {
+        // Try to parse date
+        const date = this.parseNaturalDate(dateStr);
+        if (date) {
+          return { action: "schedule", taskId: task.id, updates: { date } };
+        }
+      }
+    }
+
+    // Pattern: "postpone [task] to tomorrow/today/next week"
+    const postponeMatch = text.match(/(?:postpone|defer|push)\s+(?:task\s+)?(.+?)\s+(?:to\s+)?(.+)/i);
+    if (postponeMatch) {
+      const taskName = postponeMatch[1].trim();
+      const timeRef = postponeMatch[2].trim();
+      const task = context.tasks.find((t) => t.name.toLowerCase().includes(taskName.toLowerCase()));
+      if (task) {
+        const date = this.parseNaturalDate(timeRef);
+        if (date) {
+          return { action: "schedule", taskId: task.id, updates: { date } };
+        }
+      }
+    }
+
+    // Pattern: "search for [query]" or "find [query]"
+    const searchMatch = text.match(/(?:search|find)\s+(?:for\s+)?(.+)/i);
+    if (searchMatch) {
+      const query = searchMatch[1].trim();
+      return { action: "search", searchQuery: query };
+    }
+
+    return null;
+  }
+
+  /**
+   * Parse natural language dates (tomorrow, today, monday, next week, etc.)
+   */
+  private parseNaturalDate(dateStr: string): string | null {
+    const normalized = dateStr.toLowerCase().trim();
+    const today = new Date();
+
+    if (normalized === "today") {
+      return today.toISOString().split("T")[0];
+    }
+
+    if (normalized === "tomorrow") {
+      const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+      return tomorrow.toISOString().split("T")[0];
+    }
+
+    if (normalized === "next week" || normalized === "weekend") {
+      const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+      return nextWeek.toISOString().split("T")[0];
+    }
+
+    const dayMap: Record<string, number> = {
+      sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6,
+    };
+
+    if (dayMap[normalized] !== undefined) {
+      const targetDay = dayMap[normalized];
+      const daysUntil = (targetDay - today.getDay() + 7) % 7 || 7;
+      const targetDate = new Date(today.getTime() + daysUntil * 24 * 60 * 60 * 1000);
+      return targetDate.toISOString().split("T")[0];
+    }
+
+    // Try YYYY-MM-DD format
+    if (/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
+      return normalized;
+    }
+
+    // "in X days/weeks"
+    const inMatch = normalized.match(/in\s+(\d+)\s+(day|week|month)/);
+    if (inMatch) {
+      const num = parseInt(inMatch[1]);
+      const unit = inMatch[2];
+      const multiplier = unit === "day" ? 1 : unit === "week" ? 7 : 30;
+      const targetDate = new Date(today.getTime() + num * multiplier * 24 * 60 * 60 * 1000);
+      return targetDate.toISOString().split("T")[0];
+    }
+
     return null;
   }
 }
