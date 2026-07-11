@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Mock database driver for testing environments
  * This provides a pure JavaScript implementation of the Database interface
@@ -90,7 +91,7 @@ export function createMockDatabase(): MockDatabase {
     if (!whereMatch) return [];
 
     const whereClause = whereMatch[1];
-    const conditions = [];
+    const conditions: { column: string; value: unknown }[] = [];
 
     // Match conditions like "column = ?" with parameter
     const paramMatches = [...whereClause.matchAll(/([\w.]+)\s*=\s*\?/gi)];
@@ -231,8 +232,9 @@ export function createMockDatabase(): MockDatabase {
             table.set(explicitId ?? lastInsertId, record);
             return { lastInsertRowid: explicitId ?? lastInsertId, changes: 1 };
           },
-          get: () => table?.get(lastInsertId),
-          all: () => table ? [table.get(lastInsertId)!] : [],
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          get: (..._params: unknown[]) => table ? (table as Map<number, Record<string, unknown>>).get(lastInsertId) : undefined,
+          all: (..._params: unknown[]) => table ? [((table as Map<number, Record<string, unknown>>).get(lastInsertId))!] : [],
         };
       }
 
@@ -242,10 +244,11 @@ export function createMockDatabase(): MockDatabase {
         const table = tableName && tables.get(tableName.toLowerCase());
 
         if (lowerSql.includes("count(*)")) {
+          const tableSize = table instanceof Map ? table.size : 0;
           return {
             run: () => ({ lastInsertRowid: 0, changes: 0 }),
-            get: () => ({ count: table?.size || 0 }),
-            all: () => [{ count: table?.size || 0 }],
+            get: () => ({ count: tableSize }),
+            all: () => [{ count: tableSize }],
           };
         }
 
@@ -434,17 +437,18 @@ export function createMockDatabase(): MockDatabase {
               run: () => ({ lastInsertRowid: 0, changes: 0 }),
               get: () => undefined,
               all: (...params: unknown[]) => {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 let result = reminders.map((reminder: Record<string, unknown>) => ({
                   ...reminder,
                   task_name: tasksTable?.get(reminder.task_id as number)?.name || "Unknown",
                   task_completed: tasksTable?.get(reminder.task_id as number)?.completed || 0,
-                }));
+                })) as any[];
 
                 // Apply WHERE clause filtering for date/reminder conditions
                 if (isDue) {
-                  result = result.filter(r => r.remind_at <= now && r.task_completed === 0);
+                  result = result.filter((r: any) => r.remind_at <= now && r.task_completed === 0);
                 } else if (isUpcoming) {
-                  result = result.filter(r => r.remind_at >= now);
+                  result = result.filter((r: any) => r.remind_at >= now);
                 }
 
                 // Handle LIMIT parameter
@@ -463,7 +467,8 @@ export function createMockDatabase(): MockDatabase {
             // Always use task_shares table directly
             return {
               run: () => ({ lastInsertRowid: 0, changes: 0 }),
-              get: (...params: unknown[]) => {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              get: (...params: unknown[]): any => {
                 // For token lookup with WHERE share_token = ?
                 if (params.length === 1 && lowerSql.includes("share_token")) {
                   const token = params[0] as string;
@@ -669,8 +674,9 @@ export function createMockDatabase(): MockDatabase {
                 const dateGteMatch = whereClause.match(/date\s*>\s*\?/i);
                 if (dateGteMatch) {
                   const paramCountBeforeDate = (whereClause.substring(0, dateGteMatch.index!).match(/\?/g) || []).length;
-                  const date = params[paramCountBeforeDate];
-                  result = result.filter(r => r && r.date >= date);
+                  const date = params[paramCountBeforeDate] as string;
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  result = result.filter((r: any) => r && r.date >= date);
                 }
               }
             }
@@ -845,7 +851,8 @@ export function createMockDatabase(): MockDatabase {
         if (table && valuesMatch && columns.length > 0) {
           const valuesStr = valuesMatch[1];
           // Parse values with proper handling of quotes and parentheses
-          const values = [];
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const values: any[] = [];
           let parenDepth = 0;
           let current = '';
           for (const char of valuesStr) {
@@ -870,7 +877,7 @@ export function createMockDatabase(): MockDatabase {
               record[col] = Number(val);
             } else if (val?.startsWith('(') && val?.endsWith(')')) {
               // Handle array literals like ('label1', 'label2')
-              record[col] = val.slice(1, -1).split(',').map(v => v.trim().replace(/['"]/g, ''));
+              record[col] = val.slice(1, -1).split(',').map((v: string) => v.trim().replace(/['"]/g, ''));
             } else {
               record[col] = val;
             }
