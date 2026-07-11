@@ -120,14 +120,18 @@ async function refreshAccessTokenIfNeeded(sync: GoogleCalendarSync): Promise<str
 
   if (!sync.refresh_token) return null;
 
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  if (!clientId || !clientSecret) return null;
+
   const response = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
     },
     body: new URLSearchParams({
-      client_id: process.env.GOOGLE_CLIENT_ID!,
-      client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+      client_id: clientId,
+      client_secret: clientSecret,
       refresh_token: sync.refresh_token,
       grant_type: "refresh_token",
     }),
