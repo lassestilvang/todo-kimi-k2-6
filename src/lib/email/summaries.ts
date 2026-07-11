@@ -12,17 +12,6 @@ interface TaskSummary {
   daysUntilDue: number;
 }
 
-interface UserSummary {
-  userName: string;
-  email: string;
-  totalTasks: number;
-  completedTasks: number;
-  overdueTasks: number[];
-  dueTodayTasks: number[];
-  highPriorityTasks: number[];
-  completionRate: number;
-}
-
 /**
  * Generate a daily summary for a user
  */
