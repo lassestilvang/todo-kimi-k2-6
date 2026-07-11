@@ -138,7 +138,7 @@ export function getPriorityIcon(priority: string): string {
 /**
  * Sort an array of tasks by a specific field
  */
-export function sortTasks<T extends { [key: string]: any }>(
+export function sortTasks<T extends Record<string, unknown>>(
   tasks: T[],
   field: string,
   direction: "asc" | "desc" = "asc"
@@ -160,7 +160,7 @@ export function sortTasks<T extends { [key: string]: any }>(
  * Filter tasks based on criteria
  */
 export function filterTasks(
-  tasks: typeof import("@/types").Task[],
+  tasks: Array<{ id: number; name: string; list_id: number | null; priority: string; completed: boolean | number; description: string | null }>,
   filters: {
     listId?: number;
     priority?: string;
@@ -201,6 +201,7 @@ export const VALID_SORT_DIRECTIONS = ["asc", "desc"] as const;
  * Validates and returns a safe sort field, or throws if invalid
  */
 export function validateSortField(field: string): string {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (!VALID_TASK_SORT_FIELDS.includes(field as any)) {
     throw new Error(`Invalid sort field: ${field}. Must be one of: ${VALID_TASK_SORT_FIELDS.join(", ")}`);
   }
@@ -211,7 +212,7 @@ export function validateSortField(field: string): string {
  * Validates and returns a safe sort direction, or throws if invalid
  */
 export function validateSortDirection(direction: string): "asc" | "desc" {
-  if (!VALID_SORT_DIRECTIONS.includes(direction as any)) {
+  if (!VALID_SORT_DIRECTIONS.includes(direction as "asc" | "desc")) {
     throw new Error(`Invalid sort direction: ${direction}. Must be "asc" or "desc"`);
   }
   return direction as "asc" | "desc";
