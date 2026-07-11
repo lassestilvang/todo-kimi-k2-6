@@ -1,5 +1,6 @@
 // Vitest environment declarations
 /// <reference types="vitest/globals" />
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 declare module "vitest/globals" {
   export interface Vi {
