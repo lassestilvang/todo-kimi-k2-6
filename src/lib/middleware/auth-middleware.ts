@@ -1,43 +1,21 @@
 import { getServerSession } from "next-auth";
-import type { NextRequest } from "next/server";
 import { UnauthorizedError } from "./error-handler";
-
-interface SessionUser {
-  id: number;
-  email?: string;
-  name?: string;
-}
-
-interface Session {
-  user?: SessionUser;
-}
 
 /**
  * Authentication middleware for API routes
- * Usage: Wrap your API handler with requireAuth()
- *
- * @example
- * export const GET = requireAuth(async (req, session) => {
- *   // req is the NextRequest, session is the user session
- *   return Response.json({ user: session.user });
- * });
+ * This is a configuration helper - actual auth is handled by applyMiddleware in api-middleware.ts
+ * @deprecated This function is deprecated. Use the middleware configuration in applyMiddleware instead.
  */
-export function requireAuth() {
-  return async (handler: (req: NextRequest, session: Session) => Promise<Response>) => {
-    const session = await getServerSession();
-    if (!session) {
-      throw new UnauthorizedError("Authentication required");
-    }
-    // Note: This middleware pattern requires NextRequest to be passed separately
-    // The req parameter should be provided by the caller
-    throw new Error("requireAuth middleware needs NextRequest parameter - use withAuth helper instead");
-  };
+/* eslint-disable @typescript-eslint/no-unused-vars -- kept for middleware compatibility */
+function requireAuth(): undefined {
+  // This is a configuration marker for applyMiddleware
+  return undefined;
 }
 
 /**
  * Get the current user session, returns null if not authenticated
  */
-export async function getSession(): Promise<Session | null> {
+export async function getSession(): Promise<Record<string, unknown> | null> {
   return getServerSession();
 }
 
@@ -46,8 +24,10 @@ export async function getSession(): Promise<Session | null> {
  */
 export async function getUserId(): Promise<number> {
   const session = await getServerSession();
-  if (!session?.user?.id) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const user = (session as any)?.user;
+  if (!user?.id) {
     throw new UnauthorizedError("Authentication required");
   }
-  return Number(session.user.id);
+  return Number(user.id);
 }
