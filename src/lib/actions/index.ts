@@ -27,6 +27,7 @@ export {
   toggleSubtask,
   bulkUpdateTasks,
   bulkDeleteTasks,
+  editTaskWithAI,
 } from "./tasks";
 
 // Task dependencies
