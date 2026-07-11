@@ -3,7 +3,7 @@ export interface WSMessage {
   taskId?: number;
   userId?: number;
   userName?: string;
-  data?: any;
+  data?: unknown | null;
   timestamp: string;
 }
 
@@ -16,7 +16,7 @@ export interface PresenceUser {
 
 class WebSocketClient {
   private ws: WebSocket | null = null;
-  private listeners: Map<string, Set<(data: any) => void>> = new Map();
+  private listeners: Map<string, Set<(data: unknown | null) => void>> = new Map();
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private reconnectTimeout: NodeJS.Timeout | null = null;
@@ -70,15 +70,19 @@ class WebSocketClient {
     }
   }
 
-  subscribe(type: string, callback: (data: any) => void) {
+  subscribe(type: string, callback: (data: unknown | null) => void) {
     if (!this.listeners.has(type)) {
       this.listeners.set(type, new Set());
     }
-    const callbacks = this.listeners.get(type)!;
-    callbacks.add(callback);
+    const callbacks = this.listeners.get(type);
+    if (callbacks) {
+      callbacks.add(callback);
+    }
 
     return () => {
-      callbacks.delete(callback);
+      if (callbacks) {
+        callbacks.delete(callback);
+      }
     };
   }
 
