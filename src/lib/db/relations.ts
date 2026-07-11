@@ -1,6 +1,5 @@
 import type { Database } from "./driver";
 import type {
-  Task,
   Label,
   Subtask,
   Reminder,
