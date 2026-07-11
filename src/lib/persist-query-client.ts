@@ -30,7 +30,8 @@ export const persistQueryClient = {
       queries.forEach((q) => {
         // Only restore non-stale data
         if (now - q.timestamp < STALE_TIME) {
-          queryClient.setQueryData(q.queryKey, q.data);
+          // Parse queryKey back from string to array
+          queryClient.setQueryData(JSON.parse(q.queryKey) as unknown[], q.data);
         }
       });
     } catch (error) {
