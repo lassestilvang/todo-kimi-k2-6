@@ -4,7 +4,6 @@
  */
 
 import { getDb } from "./db";
-import { getCurrentUser } from "./session";
 
 /**
  * Ensure user owns a resource before allowing modification.
@@ -27,7 +26,7 @@ export async function checkResourceOwnership(
  * Apply user filter to queries that support user isolation.
  * This ensures users can only access their own data.
  */
-export function withUserFilter<T>(
+export function withUserFilter(
   baseQuery: string,
   params: unknown[],
   userId: number | null
