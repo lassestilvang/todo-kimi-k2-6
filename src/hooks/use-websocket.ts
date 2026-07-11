@@ -21,9 +21,10 @@ export function useWebSocket({ taskId, onMessage }: UseWebSocketOptions = {}) {
 
     // Subscribe to presence changes
     const unsubscribePresence = wsClient.subscribe("presence_change", (data) => {
+      const presenceData = data as { userId: number; userName: string; lastSeen: string };
       setPresence((prev) => {
         const next = new Map(prev);
-        next.set(data.userId, { userName: data.userName, lastSeen: data.lastSeen });
+        next.set(presenceData.userId, { userName: presenceData.userName, lastSeen: presenceData.lastSeen });
         return next;
       });
     });
@@ -37,7 +38,7 @@ export function useWebSocket({ taskId, onMessage }: UseWebSocketOptions = {}) {
     };
   }, [onMessage]);
 
-  const sendTaskUpdate = useCallback((taskId: number, data: any) => {
+  const sendTaskUpdate = useCallback((taskId: number, data: Record<string, unknown>) => {
     wsClient.send({ type: "task_update", taskId, data });
   }, []);
 
