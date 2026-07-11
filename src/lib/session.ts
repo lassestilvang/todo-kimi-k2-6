@@ -31,12 +31,14 @@ export async function getCurrentUser(): Promise<User | null> {
   try {
     const session = await getServerSession(authOptions);
 
-    if (session?.user?.email) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const userSession = session as any;
+    if (userSession?.user?.email) {
       return {
-        id: Number(session.user.id),
-        email: session.user.email,
-        name: session.user.name || null,
-        avatar_url: session.user.image || null,
+        id: Number(userSession.user.id),
+        email: userSession.user.email,
+        name: userSession.user.name || null,
+        avatar_url: userSession.user.image || null,
         created_at: new Date().toISOString(),
       };
     }
