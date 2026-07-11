@@ -17,6 +17,11 @@ export interface PerformanceMetric {
 }
 
 /**
+ * Input for recording a performance metric (timestamp added automatically)
+ */
+export type PerformanceMetricInput = Omit<PerformanceMetric, "timestamp">;
+
+/**
  * In-memory performance monitoring utility.
  * Tracks operation durations and provides basic analytics.
  * For production, consider integrating with APM solutions like New Relic or Datadog.
@@ -30,7 +35,7 @@ class PerformanceMonitor {
    *
    * @param metric - The performance metric to record
    */
-  record(metric: PerformanceMetric): void {
+  record(metric: PerformanceMetricInput): void {
     this.metrics.push({
       ...metric,
       timestamp: Date.now(),
