@@ -87,7 +87,7 @@
     "@types/ws": "8.18.1",
     "@vitest/coverage-v8": "4.1.9",
     "@vitest/ui": "4.1.9",
-    "eslint": "^9",
+    "eslint": "^10",
     "eslint-config-next": "16.2.4",
     "husky": "^9.0.0",
     "ioredis": "5.11.1",
