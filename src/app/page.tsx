@@ -21,6 +21,7 @@ import { CalendarSyncSettings } from "@/components/task/calendar-sync-settings";
 import { PwaInstallPrompt } from "@/components/task/pwa-install-prompt";
 import { KeyboardShortcuts } from "@/components/task/keyboard-shortcuts";
 import { TaskAnalytics } from "@/components/task/task-analytics";
+import { TaskInvestmentPortfolio } from "@/components/task/task-investment-portfolio";
 import { MobileSidebar } from "@/components/task/mobile-sidebar";
 import { GoalsDashboard } from "@/components/task/goals-dashboard";
 import { AIAssistant } from "@/components/task/ai-assistant";
@@ -49,6 +50,7 @@ export default function Home() {
     ai: tNav("ai"),
     analytics: tNav("analytics"),
     goals: tNav("goals"),
+    investment: "Task Investment Portfolio",
   };
   const [templates, setTemplates] = useState<Template[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -341,6 +343,17 @@ export default function Home() {
           tasks={tasks}
           completedTasks={completedTasks}
         />
+      );
+    }
+
+    if (currentView === "investment") {
+      return (
+        <div className="p-6">
+          <TaskInvestmentPortfolio
+            tasks={tasks}
+            completedTasks={completedTasks}
+          />
+        </div>
       );
     }
 
