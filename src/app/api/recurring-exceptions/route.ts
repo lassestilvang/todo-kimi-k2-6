@@ -29,7 +29,6 @@ export async function GET(request: NextRequest) {
 
   try {
     const db = getDb();
-    const userId = middlewareResult.auth?.userId;
 
     const exceptions = db.prepare(
       "SELECT * FROM recurring_exceptions WHERE task_id = ? ORDER BY exception_date ASC"
