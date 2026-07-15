@@ -110,7 +110,6 @@ describe("TaskLabels Component", () => {
   it("should display label icons correctly", () => {
     render(<TaskLabels {...defaultProps} labels={mockLabels} />);
 
-    const icons = screen.getAllByTestId("icon-tag");
     // Icon is part of the label itself, verify labels render
     expect(screen.getByText("Urgent")).toBeInTheDocument();
   });
