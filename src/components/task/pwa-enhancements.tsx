@@ -1,12 +1,10 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { Download, X, Bell, BellOff, RefreshCw, Database, Shield } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Download, X, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 
 interface BeforeInstallPromptEvent extends Event {
   promise: Promise<any>;
@@ -63,7 +61,6 @@ export function PwaEnhancements({ onInstalled }: PwaInstallPromptProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>("default");
   const [isInstalled, setIsInstalled] = useState(false);
-  const [syncQueueLength, setSyncQueueLength] = useState(0);
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: BeforeInstallPromptEvent) => {
@@ -263,6 +260,7 @@ export class OfflineDataManager {
     });
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   static async saveTask(task: any) {
     const db = await this.init();
     if (!db) return;
