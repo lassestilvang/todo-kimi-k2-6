@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Wifi, WifiOff } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { WifiOff } from "lucide-react";
 
 export function OfflineIndicator() {
   const [isOnline, setIsOnline] = useState(true);
