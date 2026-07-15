@@ -2,10 +2,8 @@
 
 import { useMemo, useState, useEffect, useRef } from "react";
 import { TaskWithRelations } from "@/types";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, RotateCcw } from "lucide-react";
-import type { TaskDependency } from "@/types";
 
 interface TaskDependencyGraphProps {
   tasks: TaskWithRelations[];
@@ -307,7 +305,7 @@ export function TaskDependencyGraph({ tasks, onTaskClick }: TaskDependencyGraphP
                 {task.name}
               </span>
               <span className="text-xs text-muted-foreground">
-                blocked by {task.blocked_by!.length} task{task.blocked_by!.length > 1 ? 's' : ''}
+                blocked by {task.blocked_by?.length ?? 0} task{(task.blocked_by?.length ?? 0) > 1 ? 's' : ''}
               </span>
             </div>
           ))
