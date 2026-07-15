@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { TimeTracking } from '../time-tracking';
 import type { TimeEntry } from '@/types';
 
@@ -14,7 +14,7 @@ vi.mock('lucide-react', () => ({
 
 // Mock UI components
 vi.mock('@/components/ui/button', () => ({
-  Button: ({ children, onClick, variant, size, disabled }: { children: React.ReactNode; onClick?: () => void; variant?: string; size?: string; disabled?: boolean }) => (
+  Button: ({ children, onClick, variant, disabled }: { children: React.ReactNode; onClick?: () => void; variant?: string; disabled?: boolean }) => (
     <button onClick={onClick} disabled={disabled} data-testid={`button-${variant || 'default'}`}>{children}</button>
   ),
 }));
@@ -30,7 +30,7 @@ vi.mock('@/components/ui/label', () => ({
 }));
 
 vi.mock('@/components/ui/popover', () => ({
-  Popover: ({ children, open, onOpenChange }: { children: React.ReactNode; open: boolean; onOpenChange: (open: boolean) => void }) => (
+  Popover: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="popover">{children}</div>
   ),
   PopoverContent: ({ children }: { children: React.ReactNode }) => <div data-testid="popover-content">{children}</div>,
@@ -123,7 +123,7 @@ describe('TimeTracking', () => {
 
   it('should handle log time with zero elapsed', () => {
     const onLogTime = vi.fn();
-    const { getByText } = render(
+    render(
       <TimeTracking {...defaultProps} onLogTime={onLogTime} />
     );
 
