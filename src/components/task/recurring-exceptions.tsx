@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Trash2, CalendarX2, Plus } from "lucide-react";
+import { Trash2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,7 +17,7 @@ interface RecurringExceptionsProps {
 }
 
 export function RecurringExceptions({
-  taskId,
+  taskId: _taskId,
   exceptions,
   onAddException,
   onRemoveException,
