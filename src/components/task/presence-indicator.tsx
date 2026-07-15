@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import type { User } from "@/types";
 
 interface PresenceState {
   userId: number;
@@ -20,7 +18,7 @@ interface PresenceIndicatorProps {
   currentUserId?: number;
 }
 
-export function PresenceIndicator({ users, currentUserId }: PresenceIndicatorProps) {
+export function PresenceIndicator({ users, currentUserId: _currentUserId }: PresenceIndicatorProps) {
   const onlineUsers = users.filter((u) => u.status === "online");
   const awayUsers = users.filter((u) => u.status === "away");
 
