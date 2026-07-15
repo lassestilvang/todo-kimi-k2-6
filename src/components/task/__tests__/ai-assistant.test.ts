@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 
 // Mock the AI manager
 vi.mock("@/lib/ai", () => ({
@@ -91,7 +91,6 @@ describe("AI Edit Command Logic", () => {
 
 describe("AI Assistant - Logic Tests", () => {
   describe("Priority Detection", () => {
-    const priorities = ["critical", "high", "medium", "low", "none"] as const;
 
     it("should identify critical priority keywords", () => {
       const criticalKeywords = ["urgent", "asap", "critical", "deadline", "important"];
