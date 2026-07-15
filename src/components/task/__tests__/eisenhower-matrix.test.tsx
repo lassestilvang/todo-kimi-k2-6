@@ -79,7 +79,7 @@ describe("EisenhowerMatrix Component Logic", () => {
     const priorities = ["critical", "high", "medium", "low"] as const;
 
     // Simulate button clicks for each quadrant
-    priorities.forEach((priority, index) => {
+    priorities.forEach((priority) => {
       onAddTask(priority);
     });
 
