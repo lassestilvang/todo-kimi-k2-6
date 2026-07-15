@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -8,7 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { Save } from "lucide-react";
 import type { Template, TemplateCategory } from "@/types";
-import { createTemplate as createTemplateAction, getTemplateCategories as getTemplateCategoriesAction } from "@/lib/actions";
+import { createTemplate as createTemplateAction } from "@/lib/actions";
 
 interface TaskTemplateTabProps {
   name: string;
