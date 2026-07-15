@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Calendar,
@@ -8,7 +8,6 @@ import {
   CalendarRange,
   LayoutGrid,
   Plus,
-  Search,
   Sun,
   Moon,
   Trash2,
@@ -31,7 +30,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import type { List as ListType, Label as LabelType, Workspace, ViewType } from "@/types";
+import type { List as ListType, Label as LabelType, Workspace } from "@/types";
 import {
   createList,
   deleteList,
@@ -77,7 +76,6 @@ export function MobileSidebar({
   overdueCount,
   onViewChange,
   onRefresh,
-  onSearch,
   onNewTask,
   workspaces,
   currentWorkspace,
@@ -89,27 +87,14 @@ export function MobileSidebar({
   const [newLabelDialogOpen, setNewLabelDialogOpen] = useState(false);
   const [listName, setListName] = useState("");
   const [listEmoji, setListEmoji] = useState("📋");
-  const [listColor, setListColor] = useState("#6366f1");
   const [labelName, setLabelName] = useState("");
   const [labelIcon, setLabelIcon] = useState("🏷️");
-  const [labelColor, setLabelColor] = useState("#8b5cf6");
-  const [hoveredList, setHoveredList] = useState<number | null>(null);
-
-  const colors = [
-    "#6366f1",
-    "#ec4899",
-    "#f59e0b",
-    "#10b981",
-    "#3b82f6",
-    "#8b5cf6",
-    "#ef4444",
-    "#14b8a6",
-  ];
+  const setHoveredList = useState<number | null>(null)[1];  
 
   const handleCreateList = async () => {
     if (!listName.trim()) return;
     try {
-      await createList({ name: listName, emoji: listEmoji, color: listColor });
+      await createList({ name: listName, emoji: listEmoji });
       setListName("");
       setNewListDialogOpen(false);
       onRefresh?.();
@@ -122,7 +107,7 @@ export function MobileSidebar({
   const handleCreateLabel = async () => {
     if (!labelName.trim()) return;
     try {
-      await createLabel({ name: labelName, icon: labelIcon, color: labelColor });
+      await createLabel({ name: labelName, icon: labelIcon });
       setLabelName("");
       setNewLabelDialogOpen(false);
       onRefresh?.();
@@ -220,6 +205,7 @@ export function MobileSidebar({
                       onWorkspaceChange?.(ws);
                       setIsOpen(false);
                     }}
+                    // eslint-disable-next-line @typescript-eslint/no-empty-function
                     onCreateWorkspace={() => {}}
                   />
                 </div>
