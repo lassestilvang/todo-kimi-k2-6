@@ -63,8 +63,9 @@ export function CollaborationProvider({
 
     setConnected(true);
 
+    const ws = wsRef.current;
     return () => {
-      wsRef.current.disconnect();
+      ws.disconnect();
     };
   }, [userId, userName]);
 
