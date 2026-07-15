@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Share2, Copy, Check, UserPlus, Shield, ShieldOff, Users, MessageCircle } from "lucide-react";
+import { Copy, Check, UserPlus, Shield, ShieldOff, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -38,6 +38,7 @@ interface ShareDialogProps {
   task: TaskWithRelations;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   shares?: any[];
   onShare?: (email: string, permission: "view" | "edit") => void;
   onRemoveShare?: (userId: number) => void;
@@ -169,7 +170,7 @@ export function ShareDialog({ task, open, onOpenChange, shares = [], onShare, on
             <div className="space-y-2">
               <Label>Shared with</Label>
               <div className="space-y-2">
-                {(shares as any).map((share: any, index: number) => (
+                {(shares as ShareWithUser[]).map((share, index: number) => (
                   <div key={index} className="flex items-center justify-between p-2 border rounded">
                     <div className="flex items-center gap-2">
                       <Users className="h-4 w-4" />
@@ -186,7 +187,7 @@ export function ShareDialog({ task, open, onOpenChange, shares = [], onShare, on
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleRemoveShare(share.user.id)}
+                          onClick={() => handleRemoveShare(share.user?.id || 0)}
                           className="text-red-500 hover:text-red-700"
                         >
                           Remove
