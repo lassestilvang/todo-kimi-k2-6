@@ -135,7 +135,7 @@ describe("KanbanBoard Component Logic", () => {
   });
 
   it("should truncate long task names", () => {
-    const truncateName = (name: string, maxLength: number = 30) => {
+    const truncateName = (name: string, maxLength = 30) => {
       return name.length > maxLength ? `${name.slice(0, maxLength)}...` : name;
     };
 
