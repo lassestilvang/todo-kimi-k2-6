@@ -7,7 +7,7 @@ import { NotificationProvider } from "@/components/task/notification-provider";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { KeyboardShortcutsHandler } from "@/components/task/keyboard-shortcuts-handler";
 import { QueryProvider } from "@/components/query-provider";
-import { SessionProvider } from "next-auth/react";
+import { SessionProvider } from "@/components/session-provider";
 import { WebVitalsTracker } from "@/components/web-vitals";
 import { initSentry } from "@/lib/sentry";
 
