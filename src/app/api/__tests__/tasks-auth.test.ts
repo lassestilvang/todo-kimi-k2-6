@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { NextRequest } from "next/server";
 
 // Mock the database
@@ -61,7 +61,7 @@ import { applyMiddleware } from "@/lib/api-middleware";
 vi.mock("@/lib/offline-storage", () => ({
   syncOfflineTasks: () => Promise.resolve({}),
   getSyncStatus: () => ({}),
-  clearSyncedTasks: () => {},
+  clearSyncedTasks: () => undefined,
 }));
 
 describe("API Routes - Authentication", () => {
