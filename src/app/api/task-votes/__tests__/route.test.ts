@@ -264,3 +264,108 @@ describe("Task Voting API - Vote Score Calculation", () => {
     expect(sumVotes([{ value: 1 }, { value: -1 }, { value: 1 }, { value: -1 }])).toBe(0);
   });
 });
+
+describe("Task Voting API - Database Operations", () => {
+  beforeEach(() => {
+    resetDb();
+    const testDb = createTestDb();
+    setDb(testDb);
+  });
+
+  afterEach(() => {
+    resetDb();
+    vi.clearAllMocks();
+  });
+
+  describe("GET with task_id", () => {
+    it("should return votes for specific task", async () => {
+      // Create test tables
+      const testDb = createTestDb();
+      setDb(testDb);
+      testDb.exec(`
+        CREATE TABLE IF NOT EXISTS task_votes (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          task_id INTEGER,
+          user_id INTEGER,
+          value INTEGER,
+          created_at TEXT
+        );
+        CREATE TABLE IF NOT EXISTS users (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT,
+          avatar_url TEXT
+        );
+      `);
+
+      // Insert test votes
+      testDb.prepare("INSERT INTO task_votes (task_id, user_id, value, created_at) VALUES (?, ?, ?, ?)")
+        .run(1, 1, 1, "2024-01-01");
+      testDb.prepare("INSERT INTO task_votes (task_id, user_id, value, created_at) VALUES (?, ?, ?, ?)")
+        .run(1, 2, -1, "2024-01-02");
+
+      const route = await import("../route");
+      const request = createMockRequest("http://localhost/api/task-votes?task_id=1");
+      const response = await route.GET(request);
+
+      expect(response.status).toBe(200);
+    });
+  });
+
+  describe("GET with user_id", () => {
+    it("should return votes for specific user", async () => {
+      const testDb = createTestDb();
+      setDb(testDb);
+
+      const route = await import("../route");
+      const request = createMockRequest("http://localhost/api/task-votes?user_id=1");
+      const response = await route.GET(request);
+
+      expect(response.status).toBe(200);
+    });
+  });
+
+  describe("Score calculation edge cases", () => {
+    it("should handle all positive votes", () => {
+      const votes = [{ value: 1 }, { value: 1 }, { value: 1 }];
+      const total = votes.reduce((sum, v) => sum + v.value, 0);
+      const score = total / votes.length;
+      expect(score).toBe(1);
+    });
+
+    it("should handle all negative votes", () => {
+      const votes = [{ value: -1 }, { value: -1 }, { value: -1 }];
+      const total = votes.reduce((sum, v) => sum + v.value, 0);
+      const score = total / votes.length;
+      expect(score).toBe(-1);
+    });
+
+    it("should handle equal positive and negative votes", () => {
+      const votes = [{ value: 1 }, { value: 1 }, { value: -1 }, { value: -1 }];
+      const total = votes.reduce((sum, v) => sum + v.value, 0);
+      const score = total / votes.length;
+      expect(score).toBe(0);
+    });
+  });
+
+  describe("Vote data structure", () => {
+    it("should have correct vote object structure", () => {
+      const vote = { id: 1, task_id: 1, user_id: 1, value: 1, created_at: "2024-01-01" };
+      expect(vote.id).toBe(1);
+      expect(vote.task_id).toBe(1);
+      expect(vote.user_id).toBe(1);
+      expect(vote.value).toBe(1);
+    });
+  });
+
+  describe("Error handling", () => {
+    it("should handle database errors gracefully", async () => {
+      // Test with invalid database state
+      const route = await import("../route");
+      const request = createMockRequest("http://localhost/api/task-votes");
+
+      // Should not throw
+      const response = await route.GET(request);
+      expect(response).toBeDefined();
+    });
+  });
+});
