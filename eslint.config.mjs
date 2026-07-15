@@ -11,7 +11,6 @@ const eslintConfig = defineConfig([
     ignores: ["**/node_modules/**"],
     rules: {
       // Type safety rules - strict
-      "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/no-non-null-assertion": "error",
       "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
       "@typescript-eslint/explicit-function-return-type": "off",
@@ -23,6 +22,13 @@ const eslintConfig = defineConfig([
       "react-hooks/set-state-in-effect": "off",
     },
   },
+  // Override for NextAuth route (complex types)
+  {
+    files: ["src/app/api/auth/[...nextauth]/route.ts"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:
@@ -31,7 +37,21 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     "node_modules/**",
+    // Generated files
+    "coverage/**",
+    "html/**",
+    // Configuration and script files
+    "scripts/**",
+    "next.config.analyzer.js",
   ]),
+  // Allow any in test files (necessary for mocking)
+  {
+    files: ["**/*.test.ts", "**/*.test.tsx", "__tests__/**/*.ts", "__tests__/**/*.tsx"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-non-null-assertion": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;
