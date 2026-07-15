@@ -37,6 +37,7 @@ export function TaskCollaborateTab({ task }: TaskCollaborateTabProps) {
               />
               <Select
                 value="view"
+                // eslint-disable-next-line @typescript-eslint/no-empty-function
                 onValueChange={() => {}}
               >
                 <SelectTrigger className="w-24">
