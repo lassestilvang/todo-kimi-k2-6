@@ -45,7 +45,7 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
           tag,
           icon: "/favicon.ico",
         } as NotificationOptions);
-      } catch (e) {
+      } catch {
         // Fallback to toast
       }
     }
