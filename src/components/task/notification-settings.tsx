@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Bell, BellOff, Clock, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -22,7 +21,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { useTheme } from "next-themes";
 
 interface NotificationSettingsProps {
   trigger?: React.ReactNode;
@@ -47,7 +45,6 @@ export function NotificationSettings({ trigger }: NotificationSettingsProps) {
     position: "top",
   });
   const [permission, setPermission] = useState<NotificationPermission>("default");
-  const { theme } = useTheme();
 
   useEffect(() => {
     // Load settings from storage
