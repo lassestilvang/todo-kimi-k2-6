@@ -5,9 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, X, UserPlus } from "lucide-react";
+import { X, UserPlus } from "lucide-react";
 import type { TaskWithRelations } from "@/types";
 
 interface TaskCollaborationProps {
@@ -24,7 +23,6 @@ export function TaskCollaboration({ task, onUpdate }: TaskCollaborationProps) {
       permission: "edit"
     }] : []
   );
-  const [assigneeSearchQuery, setAssigneeSearchQuery] = useState("");
   const [newAssigneeEmail, setNewAssigneeEmail] = useState("");
   const [newAssigneePermission, setNewAssigneePermission] = useState<"view" | "edit">("view");
 
@@ -46,14 +44,6 @@ export function TaskCollaboration({ task, onUpdate }: TaskCollaborationProps) {
 
   const handleRemoveAssignee = (userId: number) => {
     const newAssignees = assignees.filter(a => a.user_id !== userId);
-    setAssignees(newAssignees);
-    onUpdate(newAssignees);
-  };
-
-  const handlePermissionChange = (userId: number, permission: "view" | "edit") => {
-    const newAssignees = assignees.map(a =>
-      a.user_id === userId ? { ...a, permission } : a
-    );
     setAssignees(newAssignees);
     onUpdate(newAssignees);
   };
