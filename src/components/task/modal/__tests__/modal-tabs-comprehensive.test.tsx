@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 
 // Mock all dependencies
 vi.mock("lucide-react", () => ({
@@ -41,7 +41,7 @@ vi.mock("@/components/ui/textarea", () => ({
 }));
 
 vi.mock("@/components/ui/select", () => ({
-  Select: ({ value, onValueChange, children }: any) => (
+  Select: ({ value, children }: any) => (
     <div data-testid="select" data-value={value}>{children}</div>
   ),
   SelectContent: ({ children }: any) => <div data-testid="select-content">{children}</div>,
