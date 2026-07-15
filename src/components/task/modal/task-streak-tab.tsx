@@ -1,7 +1,6 @@
 "use client";
 
 import { toast } from "sonner";
-import { Flame } from "lucide-react";
 import type { TaskWithRelations } from "@/types";
 import { StreakCalendar } from "@/components/task/streak-calendar";
 
@@ -21,7 +20,7 @@ export function TaskStreakTab({ task }: TaskStreakTabProps) {
         taskName={task.name}
         currentDate={task.date || ""}
         completedDates={task.completed ? [task.date || ""] : []}
-        onDateToggle={async (date) => {
+        onDateToggle={async (_date) => {
           // TODO: Implement habit tracking API integration
           toast.info("Habit tracking will be fully implemented with backend integration");
         }}
