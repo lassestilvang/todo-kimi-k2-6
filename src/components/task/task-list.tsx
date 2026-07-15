@@ -34,6 +34,7 @@ import { useTaskMutations } from "@/hooks/use-task-mutations";
 import type { TaskWithRelations, List, SortField, SortDirection, Label, Priority } from "@/types";
 import { updateTask, deleteTask } from "@/lib/actions";
 import { toast } from "sonner";
+import { calculateTaskHealth } from "@/lib/task-health";
 
 interface TaskListProps {
   tasks: TaskWithRelations[];
@@ -591,6 +592,25 @@ export function TaskList({
                           >
                             {task.name}
                           </span>
+
+                          {/* Health Score Indicator */}
+                          {!task.completed && (
+                            <div
+                              className={cn(
+                                "inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[10px]",
+                                (() => {
+                                  const { totalScore } = calculateTaskHealth(task);
+                                  if (totalScore >= 70) return "bg-green-100 text-green-700";
+                                  if (totalScore >= 40) return "bg-amber-100 text-amber-700";
+                                  return "bg-red-100 text-red-700";
+                                })()
+                              )}
+                              title={`Health Score: ${calculateTaskHealth(task).totalScore}%`}
+                            >
+                              Health: {calculateTaskHealth(task).totalScore}
+                            </div>
+                          )}
+
                           {task.priority !== "none" && (
                             <Badge
                               variant="outline"
