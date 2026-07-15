@@ -14,7 +14,7 @@ interface DbTask {
   user_id?: number;
   assignee_id?: number | null;
   description?: string | null;
-  priority?: string;
+  priority?: "critical" | "high" | "medium" | "low" | "none" | null;
 }
 
 interface UserRecord {
@@ -52,7 +52,7 @@ export async function GET() {
     for (const task of dueTasks) {
       if (!task.email || !task.user_id) continue;
 
-      const shouldSend = await shouldSendNotification(task.user_id, { id: task.id, name: task.name, description: task.description ?? null, deadline: task.deadline ?? null, priority: task.priority as any }, "reminder");
+      const shouldSend = await shouldSendNotification(task.user_id, { id: task.id, name: task.name, description: task.description ?? null, deadline: task.deadline ?? null, priority: task.priority ?? undefined }, "reminder");
       if (!shouldSend) continue;
 
       await sendTaskReminderEmail(task.email, {
@@ -78,7 +78,7 @@ export async function GET() {
     for (const task of overdueTasks) {
       if (!task.email || !task.user_id) continue;
 
-      const shouldSend = await shouldSendNotification(task.user_id, { id: task.id, name: task.name, description: task.description ?? null, deadline: task.deadline ?? null, priority: task.priority as any }, "overdue");
+      const shouldSend = await shouldSendNotification(task.user_id, { id: task.id, name: task.name, description: task.description ?? null, deadline: task.deadline ?? null, priority: task.priority ?? undefined }, "overdue");
       if (!shouldSend) continue;
 
       await sendDueSoonEmail(task.email, {
@@ -98,8 +98,10 @@ export async function GET() {
         .all() as UserRecord[];
 
       for (const user of users) {
-        const settings = await shouldSendNotification(user.id, { id: 0, name: "" } as any, "due_soon");
-        if (!settings) continue;
+        // _settings is intentionally unused - placeholder for future notification settings check
+         
+        const _settings = await shouldSendNotification(user.id, { id: 0, name: "", description: null, deadline: null }, "due_soon");
+        if (!_settings) continue;
 
         const userTasks = db
           .prepare("SELECT * FROM tasks WHERE user_id = ?")
