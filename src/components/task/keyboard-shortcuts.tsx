@@ -77,15 +77,24 @@ const availableKeys = [
 export function KeyboardShortcuts({ settings: _settings, onSaveSettings: _onSaveSettings }: KeyboardShortcutsProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [shortcuts, setShortcuts] = useState<Shortcut[]>(() => {
-    const saved = localStorage.getItem("keyboard-shortcuts");
-    if (saved) {
-      return JSON.parse(saved);
+    // Safe localStorage access with SSR check
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("keyboard-shortcuts");
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch {
+          return defaultShortcuts;
+        }
+      }
     }
     return defaultShortcuts;
   });
 
   useEffect(() => {
-    localStorage.setItem("keyboard-shortcuts", JSON.stringify(shortcuts));
+    if (typeof window !== "undefined") {
+      localStorage.setItem("keyboard-shortcuts", JSON.stringify(shortcuts));
+    }
   }, [shortcuts]);
 
   const handleSaveShortcut = (id: string, updates: Partial<Shortcut>) => {
