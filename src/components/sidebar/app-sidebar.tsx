@@ -19,6 +19,7 @@ import {
   BarChart3,
   Bot,
   Focus,
+  TrendingUp,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
@@ -75,6 +76,7 @@ const views = [
   { id: "ai", name: "AI Assistant", icon: Bot },
   { id: "calendar", name: "Calendar", icon: Calendar },
   { id: "analytics", name: "Analytics", icon: BarChart3 },
+  { id: "investment", name: "Investment Portfolio", icon: TrendingUp },
 ];
 
 export function AppSidebar({
@@ -104,7 +106,8 @@ export function AppSidebar({
   const [hoveredList, setHoveredList] = useState<number | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  // Undo hook for destructive actions
+  // Undo hook for destructive actions (available for future use)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { executeWithUndo, cancelUndo } = useUndo();
 
   // Close mobile sidebar on route change
