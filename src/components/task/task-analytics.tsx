@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import { format, subDays, startOfDay, endOfDay, isWithinInterval, parseISO, isAfter } from "date-fns";
-import { BarChart3, TrendingUp, Clock, Target, PieChart, Activity, Award, Calendar, List, Tag, CheckSquare, Flame, Lightbulb, RefreshCw } from "lucide-react";
+import { format, subDays, startOfDay, endOfDay, isWithinInterval, parseISO } from "date-fns";
+import { BarChart3, TrendingUp, Clock, Target, PieChart, Activity, Award, Calendar, List, Tag, Flame, Lightbulb, RefreshCw } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Pie, Cell, LineChart, Line } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -484,7 +484,7 @@ export function TaskAnalytics({ tasks, completedTasks }: TaskAnalyticsProps) {
 }
 
 // AI Insights hook
-function useAIInsights(tasks: TaskWithRelations[], completedTasks: TaskWithRelations[]) {
+function useAIInsights(tasks: TaskWithRelations[], _completedTasks: TaskWithRelations[]) {
   const [insights, setInsights] = useState<{
     tips: string[];
     suggestions: string[];
