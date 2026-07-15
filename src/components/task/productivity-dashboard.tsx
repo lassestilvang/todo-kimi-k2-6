@@ -1,10 +1,10 @@
 "use client";
 
 import { useMemo } from "react";
-import { BarChart3, Calendar, TrendingUp, Target, Flame, Award, Clock, UserCheck } from "lucide-react";
+import { Calendar, Target, Flame, Award, UserCheck } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, BarChart, Bar } from "recharts";
-import { format, subDays, startOfWeek, endOfWeek, parseISO } from "date-fns";
+import { format, subDays, startOfWeek, parseISO } from "date-fns";
 import type { TaskWithRelations } from "@/types";
 
 interface ProductivityDashboardProps {
