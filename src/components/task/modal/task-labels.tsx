@@ -2,7 +2,6 @@
 
 import { Tag } from "lucide-react";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import type { Label as LabelType } from "@/types";
 import { cn } from "@/lib/utils";
 
