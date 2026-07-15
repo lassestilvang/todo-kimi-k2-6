@@ -131,7 +131,7 @@ export function TaskModal({
     unit?: "days" | "weeks" | "months" | "years";
   }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState<"task" | "template" | "comments" | "time" | "pomodoro" | "assign" | "attachments" | "collaborate" | "streak">("task");
+  const [activeTab, setActiveTab] = useState<"task" | "template" | "comments" | "time" | "pomodoro" | "assign" | "attachments" | "collaborate" | "streak" | "schedule">("task");
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [assignees, setAssignees] = useState<Array<{ user_id: number; user_email: string; user_name: string | null; permission: "view" | "edit" }>>([]);
   const [assigneeSearchQuery, setAssigneeSearchQuery] = useState("");
