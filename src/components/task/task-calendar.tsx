@@ -14,7 +14,7 @@ interface TaskCalendarProps {
 
 export function TaskCalendar({ tasks, onTaskClick }: TaskCalendarProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [_selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   const days = useMemo(() => {
     const start = startOfMonth(currentMonth);
