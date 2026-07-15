@@ -2,6 +2,7 @@ import { getDb } from "@/lib/db";
 import { sendTaskReminderEmail, sendDueSoonEmail, EmailTask } from "@/lib/email";
 import { logError } from "@/lib/logger";
 import { applyMiddleware, jsonResponse, errorResponse } from "@/lib/api-middleware";
+import { NextRequest } from "next/server";
 
 interface DbTaskRow {
   id?: number;
@@ -25,9 +26,9 @@ interface TaskRow {
  * API endpoint to send task-related notifications
  * This would typically be called by a scheduled job or on-task-change trigger
  */
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   // Apply middleware - require authentication
-  const middleware = await applyMiddleware(request as any, { requireAuth: true });
+  const middleware = await applyMiddleware(request, { requireAuth: true });
   if (middleware.error) return middleware.error;
 
   try {
@@ -49,20 +50,21 @@ export async function POST(request: Request) {
     }
 
     // Use authenticated user's ID
-    const effectiveUserId = auth.userId!;
+    const effectiveUserId = auth.userId;
+    const userEmail = auth.email;
 
     if (type === "reminder") {
       const task = db
         .prepare("SELECT * FROM tasks WHERE id = ? AND user_id = ?")
         .get(taskId, effectiveUserId) as Partial<DbTaskRow> | null;
-      if (task) {
+      if (task && userEmail) {
         const taskData: EmailTask = {
           id: task.id ?? 0,
           name: task.name ?? "Unnamed Task",
           description: task.description ?? null,
           deadline: task.deadline ?? null,
         };
-        await sendTaskReminderEmail(auth.email!, taskData);
+        await sendTaskReminderEmail(userEmail, taskData);
       }
     }
 
@@ -70,14 +72,14 @@ export async function POST(request: Request) {
       const task = db
         .prepare("SELECT * FROM tasks WHERE id = ? AND user_id = ?")
         .get(taskId, effectiveUserId) as Partial<DbTaskRow> | null;
-      if (task) {
+      if (task && userEmail) {
         const taskData: EmailTask = {
           id: task.id ?? 0,
           name: task.name ?? "Unnamed Task",
           description: task.description ?? null,
           deadline: task.deadline ?? null,
         };
-        await sendDueSoonEmail(auth.email!, taskData);
+        await sendDueSoonEmail(userEmail, taskData);
       }
     }
 
