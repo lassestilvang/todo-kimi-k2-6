@@ -79,6 +79,7 @@ function SortableTask({
           <div className="flex items-center gap-2 mb-1">
             <Checkbox
               checked={task.completed}
+              // eslint-disable-next-line @typescript-eslint/no-empty-function
               onCheckedChange={() => {}}
               className="h-3 w-3"
             />
