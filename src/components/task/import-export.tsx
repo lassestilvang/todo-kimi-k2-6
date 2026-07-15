@@ -83,9 +83,10 @@ export function ImportExport({ onRefresh }: ImportExportProps) {
 
     setIsImporting(true);
     try {
-      let data: any;
+      let data;
 
       if (importSource === "file") {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const text = await file!.text();
         data = JSON.parse(text);
       } else {
