@@ -12,19 +12,16 @@ import type { TaskWithRelations, List, Priority } from "@/types";
 import type { TaskSuggestion, AIEditCommand } from "@/lib/ai";
 import { toast } from "sonner";
 import { z } from "zod";
+import { useAIConversationMemory } from "@/hooks/use-ai-conversation-memory";
 
 // Type declarations for Web Speech API are in src/types/speech.d.ts
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const recognitionRef = useRef<any>(null);
-
-// Type for workload suggestions
-interface WorkloadSuggestion {
+type WorkloadSuggestion = {
   type: string;
   taskName: string;
   reason: string;
   confidence: number;
-}
+};
 
 interface AIAssistantProps {
   tasks: TaskWithRelations[];
@@ -64,7 +61,6 @@ export function AIAssistant({ tasks, lists, onAddTask, className }: AIAssistantP
   const [speechSupported, setSpeechSupported] = useState(false);
   const [pendingEditCommand, setPendingEditCommand] = useState<AIEditCommand & { task?: TaskWithRelations } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  // SpeechRecognition types are in src/types/speech.d.ts
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null);
 
@@ -470,7 +466,7 @@ export function AIAssistant({ tasks, lists, onAddTask, className }: AIAssistantP
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   }, []);
 
-const taskSuggestions = useMemo(() => {
+  const taskSuggestions = useMemo(() => {
     const now = new Date();
     const suggestions: string[] = [];
 
