@@ -238,7 +238,7 @@ export class KeywordParser implements AIProvider {
       if (interval) {
         recurring = "custom";
         // Store for later use in return
-        // eslint-disable-next-line @typescript-eslint/no-use-before-define
+         
         recurringConfig = JSON.stringify(interval);
       }
     }
