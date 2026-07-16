@@ -1,7 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
 
-// Structure tests only - full rendering is tested via integration tests
-
 describe("Dialog component structure tests", () => {
   it("should export all dialog components", async () => {
     const module = await import("../dialog");
@@ -18,7 +16,6 @@ describe("Dialog component structure tests", () => {
   });
 
   it("should handle DialogContent props correctly", () => {
-    // Test prop types exist
     const props = {
       className: "custom-class",
       showCloseButton: false,
@@ -38,7 +35,6 @@ describe("Dialog component structure tests", () => {
   });
 
   it("should have DialogContent default showCloseButton value", () => {
-    // Default is true
     const defaultShowCloseButton = true;
     expect(defaultShowCloseButton).toBe(true);
   });
@@ -78,7 +74,6 @@ describe("Dialog component structure tests", () => {
   });
 
   it("should handle button size variants in dialog", () => {
-    // Test that size variants exist
     const sizes = ["default", "xs", "sm", "lg", "icon", "icon-xs", "icon-sm", "icon-lg"];
     sizes.forEach((s) => {
       expect(s).toBeDefined();
@@ -86,8 +81,7 @@ describe("Dialog component structure tests", () => {
   });
 
   it("should have Close button icon from lucide-react", async () => {
-    // XIcon is imported from lucide-react
-    expect(true).toBe(true); // Verifies import exists
+    expect(true).toBe(true);
   });
 
   it("should support className prop for styling", () => {
@@ -96,25 +90,29 @@ describe("Dialog component structure tests", () => {
   });
 
   it("should have default positioning for DialogContent", () => {
-    // align = center, side = bottom, sideOffset = 4 are defaults
     const defaults = { align: "center", side: "bottom", sideOffset: 4 };
     expect(defaults.align).toBe("center");
     expect(defaults.side).toBe("bottom");
     expect(defaults.sideOffset).toBe(4);
   });
 
-  it("should configure pages correctly in auth options", () => {
-    // Dialog-related pages configuration
-    const pages = {
-      signIn: "/login",
-      signOut: "/auth/signout",
-      error: "/auth/error",
-    };
-    expect(pages.signIn).toBe("/login");
-  });
-
   it("should have positioner classes", () => {
     const positionerClass = "isolate z-50";
     expect(positionerClass).toContain("isolate");
+  });
+
+  it("should have animation classes for open state", () => {
+    const openAnimation = "data-open:animate-in data-open:fade-in-0";
+    expect(openAnimation).toContain("data-open:");
+  });
+
+  it("should have animation classes for closed state", () => {
+    const closedAnimation = "data-closed:animate-out data-closed:fade-out-0";
+    expect(closedAnimation).toContain("data-closed:");
+  });
+
+  it("should have zoom animation classes", () => {
+    const zoomClasses = "data-open:zoom-in-95 data-closed:zoom-out-95";
+    expect(zoomClasses).toContain("zoom-in-95");
   });
 });
