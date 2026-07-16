@@ -1,6 +1,6 @@
 export type Priority = "critical" | "high" | "medium" | "low" | "none";
 export type Recurring = "none" | "daily" | "weekly" | "weekdays" | "monthly" | "yearly" | "custom";
-export type ViewType = "today" | "next7" | "upcoming" | "all" | "list" | "blocked" | "kanban" | "gantt" | "matrix" | "calendar" | "graph" | "analytics" | "ai" | "goals" | "focus" | "calendar_sync";
+export type ViewType = "today" | "next7" | "upcoming" | "all" | "list" | "blocked" | "kanban" | "gantt" | "matrix" | "calendar" | "graph" | "analytics" | "ai" | "goals" | "focus" | "calendar_sync" | "investment";
 export type FilterPreset = "needs_attention" | "this_week" | "with_labels" | "with_subtasks" | "completed";
 export type SortField = "name" | "date" | "deadline" | "priority" | "created_at" | "updated_at";
 export type SortDirection = "asc" | "desc";
@@ -180,6 +180,8 @@ export interface Task {
   time_entries?: TimeEntry[];
   recurring_exceptions?: RecurringException[];
   archived: boolean;
+  health_score?: number;
+  health_status?: "healthy" | "attention" | "critical" | "overdue";
 }
 
 export interface TaskWithRelations extends Task {
@@ -193,6 +195,15 @@ export interface TaskWithRelations extends Task {
   recurring_exceptions: RecurringException[];
   workspace_id?: number | null;
 }
+
+// Re-export health score types
+export {
+  calculateTaskHealth,
+  getHealthStatusColor,
+  getHealthStatusEmoji,
+  type HealthStatus,
+  type HealthScoreBreakdown
+} from "@/lib/task-health";
 
 export interface CreateTaskInput {
   name: string;
@@ -365,6 +376,206 @@ export interface CreateGoalInput {
   target_count: number;
   target_unit: string;
   period: GoalPeriod;
+}
+
+/**
+ * Personal Knowledge Graph Types
+ */
+
+export interface TaskConnection {
+  id: number;
+  source_task_id: number;
+  target_task_id: number;
+  connection_type: "prerequisite" | "inspiration" | "similar" | "contrast" | "related" | "learned_from";
+  strength: number; // 0 to 1
+  notes: string | null;
+  created_at: string;
+}
+
+export interface TaskInsight {
+  id: number;
+  task_id: number;
+  user_id: number;
+  insight_type: "lesson_learned" | "pattern_observed" | "success_factor" | "failure_reason";
+  content: string;
+  context_tags: string | null; // JSON array
+  confidence: number; // 0 to 1
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserSkill {
+  id: number;
+  user_id: number;
+  skill_name: string;
+  proficiency_level: number; // 1-5
+  evidence_task_ids: string | null; // JSON array
+  last_used_at: string | null;
+  created_at: string;
+}
+
+export interface HabitContext {
+  id: number;
+  task_id: number;
+  user_id: number;
+  context_type: "time_of_day" | "location" | "mood" | "energy_level" | "external_trigger";
+  context_value: string;
+  frequency: number;
+  success_rate: number;
+  created_at: string;
+}
+
+export interface DecisionEntry {
+  id: number;
+  task_id: number | null;
+  user_id: number;
+  decision_type: "priority" | "approach" | "tool" | "timeline" | "allocation" | "cancellation";
+  question: string;
+  chosen_option_id: number | null;
+  rationale: string;
+  outcome: string | null;
+  outcome_notes: string | null;
+  outcome_rating: number | null; // -1 to 1
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DecisionOption {
+  id: number;
+  decision_entry_id: number;
+  option_text: string;
+  pros: string | null; // JSON array
+  cons: string | null; // JSON array
+  estimated_impact: string | null;
+  estimated_effort: string | null;
+}
+
+export interface Integration {
+  id: number;
+  user_id: number;
+  type: "github" | "slack" | "notion" | "trello" | "linear" | "asana" | "clickup" | "todoist";
+  name: string;
+  config: string | null; // JSON configuration
+  enabled: boolean;
+  sync_direction: "import" | "export" | "bidirectional";
+  last_sync_at: string | null;
+  created_at: string;
+}
+
+export interface TaskMapping {
+  id: number;
+  integration_id: number;
+  external_task_id: string;
+  local_task_id: number | null;
+  field_mappings: string | null; // JSON mapping
+  sync_rules: string | null; // JSON rules
+  last_sync_at: string | null;
+  created_at: string;
+}
+
+export interface CognitiveLoadLog {
+  id: number;
+  user_id: number;
+  date: string;
+  task_count: number;
+  completed_count: number;
+  avg_time_to_complete: number | null;
+  energy_level: number | null; // 1-10
+  distraction_score: number | null; // 0-1
+  created_at: string;
+}
+
+export interface KnowledgeGraphActivity {
+  id: number;
+  user_id: number;
+  activity_type: "task_connected" | "insight_extracted" | "skill_updated" | "context_recorded" | "decision_made" | "integration_synced";
+  task_id: number | null;
+  details: string | null; // JSON with activity details
+  created_at: string;
+}
+
+export type TaskConnectionType = TaskConnection["connection_type"];
+export type TaskInsightType = TaskInsight["insight_type"];
+export type HabitContextType = HabitContext["context_type"];
+export type DecisionType = DecisionEntry["decision_type"];
+export type IntegrationType = Integration["type"];
+export type ActivityType = KnowledgeGraphActivity["activity_type"];
+
+// Input types for creating new records
+
+export interface CreateTaskConnectionInput {
+  source_task_id: number;
+  target_task_id: number;
+  connection_type: TaskConnectionType;
+  strength?: number;
+  notes?: string;
+}
+
+export interface CreateTaskInsightInput {
+  task_id?: number;
+  insight_type: TaskInsightType;
+  content: string;
+  context_tags?: string[]; // JSON array
+  confidence?: number;
+}
+
+export interface CreateUserSkillInput {
+  user_id: number;
+  skill_name: string;
+  proficiency_level?: number;
+  evidence_task_ids?: number[];
+}
+
+export interface CreateHabitContextInput {
+  task_id: number;
+  user_id: number;
+  context_type: HabitContextType;
+  context_value: string;
+  success?: boolean;
+}
+
+export interface CreateDecisionEntryInput {
+  task_id?: number;
+  user_id: number;
+  decision_type: DecisionType;
+  question: string;
+  chosen_option_id?: number;
+  rationale: string;
+  outcome?: string;
+  outcome_notes?: string;
+  outcome_rating?: number;
+}
+
+export interface CreateDecisionOptionInput {
+  decision_entry_id: number;
+  option_text: string;
+  pros?: string[];
+  cons?: string[];
+  estimated_impact?: string;
+  estimated_effort?: string;
+}
+
+export interface CreateIntegrationInput {
+  user_id: number;
+  type: IntegrationType;
+  name: string;
+  config?: Record<string, any>;
+  sync_direction?: "import" | "export" | "bidirectional";
+}
+
+export interface CreateTaskMappingInput {
+  integration_id: number;
+  external_task_id: string;
+  local_task_id?: number;
+  field_mappings?: Record<string, string>;
+  sync_rules?: Record<string, any>;
+}
+
+export interface CreateDecisionTemplateInput {
+  user_id: number;
+  name: string;
+  prompt_template: string;
+  option_template?: string;
 }
 
 export interface GoalProgress {
