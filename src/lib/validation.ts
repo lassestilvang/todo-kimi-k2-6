@@ -15,69 +15,62 @@ export const MAX_LIMIT = 100;
  */
 export const DEFAULT_LIMIT = 20;
 
-// Check if DOMPurify is available (browser environment)
-let dompurify: { sanitize: (input: string) => string } | null = null;
-if (typeof window !== "undefined") {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    dompurify = require("dompurify");
-  } catch {
-    // DOMPurify not available, use regex fallback
-  }
-}
-
 /**
  * Sanitize user input to prevent XSS attacks.
- * Uses DOMPurify in browser, regex fallback for server-side.
+ * Uses regex-based sanitization for consistent behavior across server and client environments.
  */
 export function sanitizeString(input: string | null | undefined): string | null {
   if (!input) return null;
 
-  // Browser: use DOMPurify for robust sanitization
-  if (dompurify && typeof window !== "undefined") {
-    return dompurify.sanitize(input).trim();
-  }
+  let clean = input;
 
-  // Server-side or fallback: strip all HTML tags and dangerous attributes
-  return input
-    .replace(/<[^>]+>/g, "") // Strip all HTML tags
+  // Remove script tags with their content first (most dangerous)
+  clean = clean
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "") // Script with content
+    .replace(/<script[^>]*>/gi, "") // Opening script tag
+    .replace(/<\/script>/gi, ""); // Closing script tag
+
+  // Strip all remaining HTML tags
+  clean = clean.replace(/<[^>]+>/g, "");
+
+  // Remove dangerous attributes and protocols
+  clean = clean
     .replace(/on\w+\s*=\s*["'][^"']*["']/gi, "") // Remove event handlers
     .replace(/on\w+=/gi, "") // Remove unquoted event handlers
     .replace(/javascript:/gi, "") // Remove javascript: URLs
     .replace(/vbscript:/gi, "") // Remove vbscript: URLs
     .replace(/data:text\/html/gi, "") // Remove data:text/html URLs
     .trim();
+
+  return clean;
 }
 
 /**
  * Sanitizes HTML content while preserving safe formatting tags.
+ * Uses regex-based sanitization for consistent behavior across environments.
  * Allows basic formatting: b, i, u, strong, em, p, br, ul, ol, li, h1-3, code, pre
  */
 export function sanitizeHtml(input: string | null | undefined): string | null {
   if (!input) return null;
 
-  // Browser: use DOMPurify for robust sanitization
-  if (dompurify && typeof window !== "undefined") {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (dompurify.sanitize as any)(input).trim();
-  }
+  let clean = input;
 
-  // Fallback: basic sanitization
-  let clean = input
-    .replace(/<script[^>]*>.*?<\/script>/gi, "")
-    .replace(/<script/gi, "")
+  // Remove script tags with their content first (most dangerous)
+  clean = clean
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+    .replace(/<script[^>]*>/gi, "")
     .replace(/<\/script>/gi, "");
 
-  // Remove dangerous attributes
+  // Strip dangerous tags completely (keeping their content)
+  clean = clean.replace(/<\/?(iframe|object|embed|form|input|button|select|textarea)[^>]*>/gi, "");
+
+  // Remove dangerous attributes and protocols
   clean = clean
     .replace(/on\w+\s*=\s*["'][^"']*["']/gi, "")
     .replace(/on\w+=/gi, "")
     .replace(/javascript:/gi, "")
     .replace(/vbscript:/gi, "")
     .replace(/data:text\/html/gi, "");
-
-  // Strip dangerous tags completely (keeping their content)
-  clean = clean.replace(/<\/?(iframe|object|embed|form|input|button|select|textarea)[^>]*>/gi, "");
 
   // Clean up extra whitespace
   clean = clean.replace(/\s+/g, " ").trim();
