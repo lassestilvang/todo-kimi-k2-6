@@ -154,6 +154,174 @@ describe("Export Actions", () => {
       expect(result.lists).toBe(1);
       expect(result.labels).toBe(1);
     });
+
+    it("should import tasks with labels", async () => {
+      const { importData } = await import("../export");
+      const data = {
+        lists: [],
+        labels: [{ id: 1, name: "Urgent", icon: "⚡", color: "#ff0000", created_at: "" }],
+        tasks: [{
+          id: 1,
+          name: "Task with labels",
+          description: null,
+          list_id: null,
+          date: null,
+          deadline: null,
+          estimate: null,
+          actual_time: null,
+          priority: "high",
+          recurring: "none",
+          recurring_config: null,
+          completed: 0,
+          completed_at: null,
+          created_at: "",
+          updated_at: "",
+          sort_order: 0,
+          labels: [{ id: 1, name: "Urgent", icon: "⚡", color: "#ff0000", created_at: "" }],
+          subtasks: [],
+          reminders: [],
+          logs: [],
+          comments: [],
+          attachments: [],
+          blockers: [],
+          blocked_by: [],
+          time_entries: [],
+        }],
+        templates: [],
+        time_entries: [],
+      };
+
+      const result = await importData(data);
+      expect(result.tasks).toBe(1);
+    });
+
+    it("should import tasks with subtasks", async () => {
+      const { importData } = await import("../export");
+      const data = {
+        lists: [],
+        labels: [],
+        tasks: [{
+          id: 1,
+          name: "Task with subtasks",
+          description: null,
+          list_id: null,
+          date: null,
+          deadline: null,
+          estimate: null,
+          actual_time: null,
+          priority: "medium",
+          recurring: "none",
+          recurring_config: null,
+          completed: 0,
+          completed_at: null,
+          created_at: "",
+          updated_at: "",
+          sort_order: 0,
+          labels: [],
+          subtasks: [
+            { id: 1, task_id: 1, name: "Subtask 1", completed: false, created_at: "" },
+            { id: 2, task_id: 1, name: "Subtask 2", completed: true, created_at: "" },
+          ],
+          reminders: [],
+          logs: [],
+          comments: [],
+          attachments: [],
+          blockers: [],
+          blocked_by: [],
+          time_entries: [],
+        }],
+        templates: [],
+        time_entries: [],
+      };
+
+      const result = await importData(data);
+      expect(result.tasks).toBe(1);
+    });
+
+    it("should import tasks with reminders", async () => {
+      const { importData } = await import("../export");
+      const data = {
+        lists: [],
+        labels: [],
+        tasks: [{
+          id: 1,
+          name: "Task with reminders",
+          description: null,
+          list_id: null,
+          date: "2024-07-15",
+          deadline: null,
+          estimate: null,
+          actual_time: null,
+          priority: "low",
+          recurring: "none",
+          recurring_config: null,
+          completed: 0,
+          completed_at: null,
+          created_at: "",
+          updated_at: "",
+          sort_order: 0,
+          labels: [],
+          subtasks: [],
+          reminders: [
+            { id: 1, task_id: 1, remind_at: "2024-07-14T09:00:00Z", created_at: "" },
+            { id: 2, task_id: 1, remind_at: "2024-07-15T09:00:00Z", created_at: "" },
+          ],
+          logs: [],
+          comments: [],
+          attachments: [],
+          blockers: [],
+          blocked_by: [],
+          time_entries: [],
+        }],
+        templates: [],
+        time_entries: [],
+      };
+
+      const result = await importData(data);
+      expect(result.tasks).toBe(1);
+    });
+
+    it("should import time entries with all fields", async () => {
+      const { importData } = await import("../export");
+      const data = {
+        lists: [],
+        labels: [],
+        tasks: [{
+          id: 1,
+          name: "Task with time entry",
+          description: null,
+          list_id: null,
+          date: null,
+          deadline: null,
+          estimate: null,
+          actual_time: null,
+          priority: "none",
+          recurring: "none",
+          recurring_config: null,
+          completed: 0,
+          completed_at: null,
+          created_at: "",
+          updated_at: "",
+          sort_order: 0,
+          labels: [],
+          subtasks: [],
+          reminders: [],
+          logs: [],
+          comments: [],
+          attachments: [],
+          blockers: [],
+          blocked_by: [],
+          time_entries: [],
+        }],
+        templates: [],
+        time_entries: [
+          { id: 1, task_id: 1, start_time: "2024-07-15T09:00:00Z", end_time: "2024-07-15T10:00:00Z", duration_seconds: 3600, description: "Work session", created_at: "" },
+        ],
+      };
+
+      const result = await importData(data);
+      expect(result.time_entries).toBe(1);
+    });
   });
 
   describe("taskToCsvRow function", () => {
