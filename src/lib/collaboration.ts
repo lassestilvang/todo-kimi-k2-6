@@ -4,6 +4,7 @@
  */
 
 import type { TaskWithRelations, User } from "../types";
+import { getDb } from "@/lib/db";
 
 export interface CollaborationEvent {
   type: "task_updated" | "task_created" | "task_deleted" | "comment_added" | "user_joined" | "user_left";
@@ -92,13 +93,6 @@ export function validateShareToken(token: string): {
 }
 
 /**
- * Generate a cryptographically secure random token for public shares
- */
-export function generateSecureShareToken(): string {
-  return require("crypto").randomBytes(32).toString("hex");
-}
-
-/**
  * Task assignment helper
  */
 export interface TaskAssignment {
@@ -126,7 +120,6 @@ export interface TaskShare {
  * Check if a user can perform an action on a task
  * Note: In demo mode without authentication, returns true for view actions
  */
-import { getDb } from "@/lib/db";
 
 export function canPerformAction(
   user: User | null,
@@ -203,4 +196,13 @@ export function getPendingAssignments(
       t.deadline &&
       new Date(t.deadline) >= new Date()
   );
+}
+
+/**
+ * Generate a cryptographically secure random token for public shares
+ */
+export function generateSecureShareToken(): string {
+  // Use Node.js crypto for secure random bytes
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  return require("crypto").randomBytes(32).toString("hex");
 }
