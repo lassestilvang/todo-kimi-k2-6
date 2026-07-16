@@ -109,7 +109,7 @@ export async function shouldSendNotification(
   task: EmailTask,
   type: "reminder" | "due_soon" | "overdue"
 ): Promise<boolean> {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   void userId;
   const settings = await getUserNotificationSettings();
 
