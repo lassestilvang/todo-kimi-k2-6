@@ -3,9 +3,11 @@ import {
   parseMentions,
   generateTaskShareLink,
   generateListShareLink,
+  validateShareToken,
   canPerformAction,
   groupTasksByAssignee,
   getPendingAssignments,
+  generateSecureShareToken,
 } from "@/lib/collaboration";
 import type { TaskWithRelations, User } from "@/types";
 
@@ -223,6 +225,77 @@ describe("Collaboration utilities", () => {
 
       const pending = getPendingAssignments(tasks, 1);
       expect(pending.length).toBe(0);
+    });
+  });
+
+  describe("validateShareToken", () => {
+    it("should validate a valid task token", () => {
+      const futureTimestamp = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days from now
+      const validToken = Buffer.from(`task:123:${futureTimestamp}`).toString("base64");
+      const result = validateShareToken(validToken);
+      expect(result).not.toBeNull();
+      expect(result?.entityType).toBe("task");
+      expect(result?.entityId).toBe(123);
+    });
+
+    it("should validate a valid list token", () => {
+      const futureTimestamp = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days from now
+      const validToken = Buffer.from(`list:456:${futureTimestamp}`).toString("base64");
+      const result = validateShareToken(validToken);
+      expect(result).not.toBeNull();
+      expect(result?.entityType).toBe("list");
+      expect(result?.entityId).toBe(456);
+    });
+
+    it("should return null for invalid entity type", () => {
+      const futureTimestamp = Date.now() + 7 * 24 * 60 * 60 * 1000;
+      const invalidToken = Buffer.from(`invalid:123:${futureTimestamp}`).toString("base64");
+      const result = validateShareToken(invalidToken);
+      expect(result).toBeNull();
+    });
+
+    it("should return null for expired token", () => {
+      const pastTimestamp = Date.now() - 1000; // 1 second ago
+      const expiredToken = Buffer.from(`task:123:${pastTimestamp}`).toString("base64");
+      const result = validateShareToken(expiredToken);
+      expect(result).toBeNull();
+    });
+
+    it("should return null for malformed token", () => {
+      const result = validateShareToken("not-valid-base64!!!");
+      expect(result).toBeNull();
+    });
+
+    it("should return null for token with invalid entityId", () => {
+      const futureTimestamp = Date.now() + 7 * 24 * 60 * 60 * 1000;
+      const invalidToken = Buffer.from(`task:invalid:${futureTimestamp}`).toString("base64");
+      const result = validateShareToken(invalidToken);
+      expect(result).toBeNull();
+    });
+
+    it("should return null for token with invalid expiresAt", () => {
+      const invalidToken = Buffer.from("task:123:invalid").toString("base64");
+      const result = validateShareToken(invalidToken);
+      expect(result).toBeNull();
+    });
+
+    it("should return null for empty token", () => {
+      const result = validateShareToken("");
+      expect(result).toBeNull();
+    });
+  });
+
+  describe("generateSecureShareToken", () => {
+    it("should generate a 64 character hex token", () => {
+      const token = generateSecureShareToken();
+      expect(token.length).toBe(64);
+      expect(/^[a-f0-9]+$/.test(token)).toBe(true);
+    });
+
+    it("should generate unique tokens", () => {
+      const token1 = generateSecureShareToken();
+      const token2 = generateSecureShareToken();
+      expect(token1).not.toBe(token2);
     });
   });
 });
