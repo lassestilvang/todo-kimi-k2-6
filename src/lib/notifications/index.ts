@@ -13,6 +13,7 @@ import type { Reminder, Task, User } from "@/types";
  */
 export async function getUsersWithNotifications(): Promise<Array<User & { preferences: { notifications?: boolean } }>> {
   const db = getDb();
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const users = db
     .prepare(`
@@ -58,12 +59,13 @@ export async function getReminderWithDetails(
 
   if (!result) return null;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   return {
     id: result.id,
     task_id: result.task_id,
     remind_at: result.remind_at,
     created_at: result.created_at,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     task: {
       id: result.task_id,
       name: result.task_name,
@@ -71,6 +73,7 @@ export async function getReminderWithDetails(
       deadline: result.task_deadline,
       priority: result.task_priority,
     } as any as Task,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     user: {
       id: 0,
       email: result.user_email,
