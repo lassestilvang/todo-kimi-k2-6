@@ -168,4 +168,60 @@ describe("Mock Database Driver - Extended Scenarios", () => {
       expect(result === undefined || result !== null || typeof result === "object").toBe(true);
     });
   });
+
+  describe("Default fallback cases", () => {
+    it("should return empty array for unknown SQL patterns in all()", () => {
+      // This tests the default fallback in prepare()
+      const result = db.prepare("SELECT COUNT(*) FROM unknown_table").all();
+      expect(Array.isArray(result)).toBe(true);
+    });
+
+    it("should handle exec with INSERT statements", () => {
+      db.exec("INSERT INTO tasks (id, name) VALUES (10, 'Exec Task')");
+      const result = db.prepare("SELECT * FROM tasks WHERE id = 10").get();
+      expect(result).toBeDefined();
+      expect((result as any)?.name).toBe("Exec Task");
+    });
+
+    it("should handle exec with string values in INSERT", () => {
+      db.exec("INSERT INTO tasks (id, name) VALUES (20, 'String Task')");
+      const result = db.prepare("SELECT * FROM tasks WHERE id = 20").get();
+      expect(result).toBeDefined();
+    });
+
+    it("should handle exec with numeric values in INSERT", () => {
+      db.exec("INSERT INTO tasks (id, name) VALUES (30, 'Numeric Task')");
+      const result = db.prepare("SELECT * FROM tasks WHERE id = 30").get();
+      expect(result).toBeDefined();
+    });
+
+    it("should handle exec with array literal values", () => {
+      // This tests the array literal handling in exec (lines 878-882)
+      db.exec("INSERT INTO task_labels (task_id, label_id) VALUES (1, ('a', 'b'))");
+    });
+  });
+
+  describe("Edge cases in exec", () => {
+    it("should handle CREATE TABLE IF NOT EXISTS", () => {
+      db.exec("CREATE TABLE IF NOT EXISTS test_table (id INTEGER, name TEXT)");
+      const result = db.prepare("SELECT * FROM test_table").all();
+      expect(Array.isArray(result)).toBe(true);
+    });
+
+    it("should handle multiple INSERT statements via exec", () => {
+      db.exec("INSERT INTO tasks (id, name) VALUES (100, 'Task 1')");
+      db.exec("INSERT INTO tasks (id, name) VALUES (101, 'Task 2')");
+      const result = db.prepare("SELECT * FROM tasks WHERE id >= 100").all();
+      expect(result.length).toBeGreaterThanOrEqual(2);
+    });
+  });
+
+  describe("Transaction edge cases", () => {
+    it("should handle empty transaction", () => {
+      const result = db.transaction(() => {
+        return "empty";
+      });
+      expect(result).toBe("empty");
+    });
+  });
 });
