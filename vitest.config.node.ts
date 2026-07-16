@@ -30,6 +30,5 @@ export default defineConfig({
       },
     },
     clearMocks: true,
-    restoreWorkers: true,
   },
 });
