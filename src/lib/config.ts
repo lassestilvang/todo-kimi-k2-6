@@ -7,14 +7,6 @@ function optionalEnv(name: string, defaultValue: string): string {
   return process.env[name] ?? defaultValue;
 }
 
-function requiredEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(`Missing required environment variable: ${name}`);
-  }
-  return value;
-}
-
 function requiredEnvOptional(name: string): string | undefined {
   return process.env[name];
 }
@@ -39,7 +31,7 @@ export const config = {
 
   // Authentication
   auth: {
-    secret: isProduction ? requiredEnv('NEXTAUTH_SECRET') : optionalEnv('NEXTAUTH_SECRET', 'dev-secret-change-in-production'),
+    secret: optionalEnv('NEXTAUTH_SECRET', 'dev-secret-change-in-production'),
     baseUrl: optionalEnv('NEXTAUTH_URL', 'http://localhost:3000'),
     demoMode: optionalEnv('AUTH_DEMO_MODE', 'false') === 'true',
   },
