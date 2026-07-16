@@ -70,6 +70,40 @@ describe("Views Actions", () => {
 
       expect(updated.name).toBe("Updated");
     });
+
+    it("should update sort_direction", async () => {
+      const { createCustomView, updateCustomView } = await import("../views");
+      const view = await createCustomView(1, { name: "Test" });
+      const updated = await updateCustomView(view.id, 1, { sort_direction: "desc" });
+
+      expect(updated.sort_direction).toBe("desc");
+    });
+
+    it("should update view_type", async () => {
+      const { createCustomView, updateCustomView } = await import("../views");
+      const view = await createCustomView(1, { name: "Test" });
+      const updated = await updateCustomView(view.id, 1, { view_type: "kanban" });
+
+      expect(updated.view_type).toBe("kanban");
+    });
+
+    it("should update multiple fields at once", async () => {
+      const { createCustomView, updateCustomView } = await import("../views");
+      const view = await createCustomView(1, { name: "Test" });
+      const updated = await updateCustomView(view.id, 1, {
+        name: "Updated Name",
+        priority: "high",
+        sort_field: "priority",
+        sort_direction: "desc",
+        view_type: "gantt",
+      });
+
+      expect(updated.name).toBe("Updated Name");
+      expect(updated.priority).toBe("high");
+      expect(updated.sort_field).toBe("priority");
+      expect(updated.sort_direction).toBe("desc");
+      expect(updated.view_type).toBe("gantt");
+    });
   });
 
   describe("deleteCustomView", () => {
