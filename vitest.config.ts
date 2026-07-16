@@ -50,13 +50,12 @@ export default defineConfig({
         '**/components/task/gantt-calendar.tsx',
       ],
       thresholds: {
-        branches: 60,
-        functions: 65,
-        lines: 71,
-        statements: 70,
+        branches: 65,
+        functions: 75,
+        lines: 75,
+        statements: 75,
       },
     },
     clearMocks: true,
-    restoreWorkers: true,
   },
 });
