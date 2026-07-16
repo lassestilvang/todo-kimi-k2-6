@@ -47,7 +47,8 @@ export function getDb(): Database {
     }
 
     initializeSchema(db);
-    runMigrations().catch(() => {}); // Migrations handled separately
+    // Migrations handled separately
+    void runMigrations();
   }
   return db;
 }
@@ -113,7 +114,8 @@ export function initializeSchema(db: Database) {
       sort_order INTEGER DEFAULT 0,
       assignee_id INTEGER REFERENCES users(id),
       created_by INTEGER REFERENCES users(id),
-      workspace_id INTEGER REFERENCES workspaces(id) ON DELETE SET NULL
+      workspace_id INTEGER REFERENCES workspaces(id) ON DELETE SET NULL,
+      archived INTEGER DEFAULT 0
     );
 
     CREATE TABLE IF NOT EXISTS task_labels (
@@ -157,6 +159,7 @@ export function initializeSchema(db: Database) {
     CREATE INDEX IF NOT EXISTS idx_tasks_priority_deadline ON tasks(priority, deadline);
     CREATE INDEX IF NOT EXISTS idx_tasks_recurring ON tasks(recurring);
     CREATE INDEX IF NOT EXISTS idx_tasks_user_id ON tasks(user_id);
+    CREATE INDEX IF NOT EXISTS idx_tasks_archived ON tasks(archived);
     CREATE INDEX IF NOT EXISTS idx_subtasks_task ON subtasks(task_id);
     CREATE INDEX IF NOT EXISTS idx_logs_task ON task_logs(task_id);
     CREATE INDEX IF NOT EXISTS idx_reminders_task ON reminders(task_id);
@@ -384,6 +387,167 @@ export function initializeSchema(db: Database) {
     );
     CREATE INDEX IF NOT EXISTS idx_recurring_exceptions_task ON recurring_exceptions(task_id);
     CREATE INDEX IF NOT EXISTS idx_recurring_exceptions_date ON recurring_exceptions(exception_date);
+
+    -- Task connections (semantic relationships in knowledge graph)
+    CREATE TABLE IF NOT EXISTS task_connections (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      source_task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+      target_task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+      connection_type TEXT NOT NULL CHECK(connection_type IN ('prerequisite', 'inspiration', 'similar', 'contrast', 'related', 'learned_from')),
+      strength REAL DEFAULT 0.5 CHECK(strength BETWEEN 0 AND 1),
+      notes TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(source_task_id, target_task_id, connection_type)
+    );
+    CREATE INDEX IF NOT EXISTS idx_task_connections_source ON task_connections(source_task_id);
+    CREATE INDEX IF NOT EXISTS idx_task_connections_target ON task_connections(target_task_id);
+    CREATE INDEX IF NOT EXISTS idx_task_connections_type ON task_connections(connection_type);
+
+    -- User insights (lessons learned and patterns)
+    CREATE TABLE IF NOT EXISTS task_insights (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      task_id INTEGER REFERENCES tasks(id) ON DELETE CASCADE,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      insight_type TEXT NOT NULL CHECK(insight_type IN ('lesson_learned', 'pattern_observed', 'success_factor', 'failure_reason')),
+      content TEXT NOT NULL,
+      context_tags TEXT, -- JSON array of tags
+      confidence REAL CHECK(confidence BETWEEN 0 AND 1),
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_task_insights_task ON task_insights(task_id);
+    CREATE INDEX IF NOT EXISTS idx_task_insights_user ON task_insights(user_id);
+    CREATE INDEX IF NOT EXISTS idx_task_insights_type ON task_insights(insight_type);
+
+    -- Skill tracking (implicit from task completion)
+    CREATE TABLE IF NOT EXISTS user_skills (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      skill_name TEXT NOT NULL,
+      proficiency_level INTEGER DEFAULT 1 CHECK(proficiency_level BETWEEN 1 AND 5),
+      evidence_task_ids TEXT, -- JSON array of task IDs that demonstrate this skill
+      last_used_at TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(user_id, skill_name)
+    );
+    CREATE INDEX IF NOT EXISTS idx_user_skills_user ON user_skills(user_id);
+    CREATE INDEX IF NOT EXISTS idx_user_skills_proficiency ON user_skills(proficiency_level DESC);
+
+    -- Habit-context connections (context-aware task analysis)
+    CREATE TABLE IF NOT EXISTS habit_contexts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+      context_type TEXT NOT NULL CHECK(context_type IN ('time_of_day', 'location', 'mood', 'energy_level', 'external_trigger')),
+      context_value TEXT NOT NULL,
+      frequency INTEGER DEFAULT 1,
+      success_rate REAL DEFAULT 1.0,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_habit_contexts_task ON habit_contexts(task_id);
+    CREATE INDEX IF NOT EXISTS idx_habit_contexts_type ON habit_contexts(context_type);
+
+    -- Decision journal entries
+    CREATE TABLE IF NOT EXISTS decision_entries (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      task_id INTEGER REFERENCES tasks(id) ON DELETE SET NULL,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      decision_type TEXT NOT NULL CHECK(decision_type IN ('priority', 'approach', 'tool', 'timeline', 'allocation', 'cancellation')),
+      question TEXT NOT NULL,
+      chosen_option_id INTEGER,
+      rationale TEXT,
+      outcome TEXT,
+      outcome_notes TEXT,
+      outcome_rating INTEGER CHECK(outcome_rating BETWEEN -1 AND 1),
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_decision_entries_task ON decision_entries(task_id);
+    CREATE INDEX IF NOT EXISTS idx_decision_entries_user ON decision_entries(user_id);
+    CREATE INDEX IF NOT EXISTS idx_decision_entries_type ON decision_entries(decision_type);
+
+    -- Decision options
+    CREATE TABLE IF NOT EXISTS decision_options (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      decision_entry_id INTEGER NOT NULL REFERENCES decision_entries(id) ON DELETE CASCADE,
+      option_text TEXT NOT NULL,
+      pros TEXT, -- JSON array
+      cons TEXT, -- JSON array
+      estimated_impact TEXT,
+      estimated_effort TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_decision_options_decision ON decision_options(decision_entry_id);
+
+    -- Decision templates
+    CREATE TABLE IF NOT EXISTS decision_templates (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      prompt_template TEXT NOT NULL,
+      option_template TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_decision_templates_user ON decision_templates(user_id);
+
+    -- Integration settings for external tools
+    CREATE TABLE IF NOT EXISTS integrations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      type TEXT NOT NULL CHECK(type IN ('github', 'slack', 'notion', 'trello', 'linear', 'asana', 'clickup', 'todoist')),
+      name TEXT NOT NULL,
+      config TEXT, -- JSON configuration
+      enabled INTEGER DEFAULT 1,
+      sync_direction TEXT DEFAULT 'bidirectional' CHECK(sync_direction IN ('import', 'export', 'bidirectional')),
+      last_sync_at TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(user_id, type)
+    );
+    CREATE INDEX IF NOT EXISTS idx_integrations_user ON integrations(user_id);
+    CREATE INDEX IF NOT EXISTS idx_integrations_type ON integrations(type);
+    CREATE INDEX IF NOT EXISTS idx_integrations_enabled ON integrations(enabled);
+
+    -- Task mappings for integration sync
+    CREATE TABLE IF NOT EXISTS task_mappings (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      integration_id INTEGER NOT NULL REFERENCES integrations(id) ON DELETE CASCADE,
+      external_task_id TEXT NOT NULL,
+      local_task_id INTEGER,
+      field_mappings TEXT, -- JSON mapping of field names
+      sync_rules TEXT, -- JSON rules for sync
+      last_sync_at TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(integration_id, external_task_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_task_mappings_integration ON task_mappings(integration_id);
+    CREATE INDEX IF NOT EXISTS idx_task_mappings_local ON task_mappings(local_task_id);
+
+    -- Activity log for knowledge graph events
+    CREATE TABLE IF NOT EXISTS knowledge_graph_activities (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      activity_type TEXT NOT NULL CHECK(activity_type IN ('task_connected', 'insight_extracted', 'skill_updated', 'context_recorded', 'decision_made', 'integration_synced')),
+      task_id INTEGER REFERENCES tasks(id) ON DELETE CASCADE,
+      details TEXT, -- JSON with activity details
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_knowledge_activities_user ON knowledge_graph_activities(user_id);
+    CREATE INDEX IF NOT EXISTS idx_knowledge_activities_task ON knowledge_graph_activities(task_id);
+    CREATE INDEX IF NOT EXISTS idx_knowledge_activities_type ON knowledge_graph_activities(activity_type);
+    CREATE INDEX IF NOT EXISTS idx_knowledge_activities_created ON knowledge_graph_activities(created_at DESC);
+
+    -- Cognitive load tracking
+    CREATE TABLE IF NOT EXISTS cognitive_load_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      date TEXT NOT NULL,
+      task_count INTEGER DEFAULT 0,
+      completed_count INTEGER DEFAULT 0,
+      avg_time_to_complete REAL DEFAULT 0,
+      energy_level REAL, -- 1-10 scale
+      distraction_score REAL, -- 0-1 scale
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_cognitive_load_user_date ON cognitive_load_logs(user_id, date);
+    CREATE INDEX IF NOT EXISTS idx_cognitive_load_user_created ON cognitive_load_logs(user_id, created_at DESC);
 
     -- Custom view sharing
     CREATE TABLE IF NOT EXISTS custom_view_shares (
