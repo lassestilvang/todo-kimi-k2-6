@@ -13,7 +13,6 @@ import { sendTaskReminderEmail, sendDueSoonEmail, sendWeeklyDigest, getUserNotif
 export async function checkDueTasks(): Promise<number> {
   const db = getDb();
   const today = new Date().toISOString().split("T")[0];
-  const now = Date.now();
 
   // Get tasks due today
   const dueTodayTasks = db
