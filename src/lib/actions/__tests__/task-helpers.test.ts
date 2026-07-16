@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock the db module
 vi.mock('@/lib/db', () => ({
@@ -14,20 +14,10 @@ describe('task-helpers', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Reset the mock to simulate server environment
-    (global as any).window = undefined;
-  });
-
-  afterEach(() => {
-    // Restore global.window check
     delete (global as any).window;
   });
 
   describe('logTaskAction', () => {
-    it('should be a function', async () => {
-      const { logTaskAction } = await import('../task-helpers');
-      expect(typeof logTaskAction).toBe('function');
-    });
-
     it('should return early when window is defined (browser environment)', async () => {
       // Mock browser environment
       (global as any).window = {};
@@ -37,6 +27,11 @@ describe('task-helpers', () => {
 
       // Should return early without executing
       expect(result).toBeUndefined();
+    });
+
+    it('should be a function', async () => {
+      const { logTaskAction } = await import('../task-helpers');
+      expect(typeof logTaskAction).toBe('function');
     });
   });
 });
