@@ -19,20 +19,18 @@ export function reportWebVitals(metric: WebVitalsMetric) {
 }
 
 export function WebVitalsTracker() {
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-
+  // Safe hook usage - only run in client
   useEffect(() => {
-    // Route change analytics
-    const route = pathname + searchParams.toString();
+    // Route change analytics - skip if not in browser
+    if (typeof window === "undefined") return;
 
-    // Track page view
+    // Track page view on mount
     reportWebVitals({
       id: "page_view",
       name: "Page View",
-      value: route.length,
+      value: 1,
     });
-  }, [pathname, searchParams]);
+  }, []);
 
   return null;
 }
