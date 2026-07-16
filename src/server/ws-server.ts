@@ -24,14 +24,14 @@ interface ClientData {
 }
 
 const PORT = parseInt(process.env.WS_PORT || "3001");
-const clients = new Map<WebSocket, ClientData>();
+const clients = new Map<WSWebSocket, ClientData>();
 
 export function createWebSocketServer() {
   const wss = new WebSocketServer({ port: PORT });
 
   console.log(`WebSocket server started on port ${PORT}`);
 
-  wss.on("connection", (ws) => {
+  wss.on("connection", (ws: WSWebSocket) => {
     console.log("Client connected");
 
     ws.on("message", (message) => {
@@ -56,7 +56,7 @@ export function createWebSocketServer() {
   return wss;
 }
 
-function handleMessage(data: CollaborationEvent, wss: WebSocketServer, ws: WebSocket) {
+function handleMessage(data: CollaborationEvent, wss: WebSocketServer, ws: WSWebSocket) {
   switch (data.type) {
     case "user_joined": {
       const userId = data.userId ?? 0;
@@ -87,7 +87,8 @@ function handleMessage(data: CollaborationEvent, wss: WebSocketServer, ws: WebSo
 // Helper function to send generic messages
 function broadcastMessage(data: CollaborationEvent, wss: WebSocketServer) {
   const message = JSON.stringify({ type: data.type, payload: data });
-  wss.clients.forEach((client) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  wss.clients.forEach((client: any) => {
     if (client.readyState === client.OPEN) {
       client.send(message);
     }
@@ -104,7 +105,8 @@ export function broadcastTaskUpdate(task: TaskWithRelations, wss: WebSocketServe
   };
 
   const message = JSON.stringify({ type: "task_updated", payload: event });
-  wss.clients.forEach((client) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  wss.clients.forEach((client: any) => {
     if (client.readyState === client.OPEN) {
       client.send(message);
     }
@@ -121,7 +123,8 @@ export function broadcastTaskCreated(task: TaskWithRelations, wss: WebSocketServ
   };
 
   const message = JSON.stringify({ type: "task_created", payload: event });
-  wss.clients.forEach((client) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  wss.clients.forEach((client: any) => {
     if (client.readyState === client.OPEN) {
       client.send(message);
     }
@@ -137,7 +140,8 @@ export function broadcastTaskDeleted(taskId: number, wss: WebSocketServer) {
   };
 
   const message = JSON.stringify({ type: "task_deleted", payload: event });
-  wss.clients.forEach((client) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  wss.clients.forEach((client: any) => {
     if (client.readyState === client.OPEN) {
       client.send(message);
     }
@@ -153,7 +157,8 @@ function broadcastPresence(userId: number, userName: string, joined: boolean, ws
     timestamp: new Date(),
   };
   const message = JSON.stringify({ type: event.type, payload: event });
-  wss.clients.forEach((client) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  wss.clients.forEach((client: any) => {
     if (client.readyState === client.OPEN) {
       client.send(message);
     }
@@ -170,7 +175,8 @@ function broadcastCursorPosition(userId: number, taskId: number | undefined, cur
     timestamp: new Date(),
   };
   const message = JSON.stringify({ type: "cursor_position", payload: event });
-  wss.clients.forEach((client) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  wss.clients.forEach((client: any) => {
     if (client.readyState === client.OPEN) {
       client.send(message);
     }
@@ -186,7 +192,8 @@ function broadcastTyping(userId: number, taskId: number | undefined, typing: boo
     timestamp: new Date(),
   };
   const message = JSON.stringify({ type: event.type, payload: event });
-  wss.clients.forEach((client) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  wss.clients.forEach((client: any) => {
     if (client.readyState === client.OPEN) {
       client.send(message);
     }
