@@ -129,9 +129,9 @@ function createPostgreSQLDatabase(url: string): Database {
           changes: 0,
         };
       },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       get: (...params: unknown[]) => pool.query(sql, params).then((r: any) => r.rows[0]),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       all: (...params: unknown[]) => pool.query(sql, params).then((r: any) => r.rows),
     }),
     exec: (sql: string) => {
