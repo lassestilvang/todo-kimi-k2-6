@@ -232,7 +232,7 @@ export function createMockDatabase(): MockDatabase {
             table.set(explicitId ?? lastInsertId, record);
             return { lastInsertRowid: explicitId ?? lastInsertId, changes: 1 };
           },
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+           
           get: (..._params: unknown[]) => table ? (table as Map<number, Record<string, unknown>>).get(lastInsertId) : undefined,
           all: (..._params: unknown[]) => table ? [((table as Map<number, Record<string, unknown>>).get(lastInsertId))!] : [],
         };
@@ -437,7 +437,7 @@ export function createMockDatabase(): MockDatabase {
               run: () => ({ lastInsertRowid: 0, changes: 0 }),
               get: () => undefined,
               all: (...params: unknown[]) => {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                 
                 let result = reminders.map((reminder: Record<string, unknown>) => ({
                   ...reminder,
                   task_name: tasksTable?.get(reminder.task_id as number)?.name || "Unknown",
@@ -467,7 +467,7 @@ export function createMockDatabase(): MockDatabase {
             // Always use task_shares table directly
             return {
               run: () => ({ lastInsertRowid: 0, changes: 0 }),
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+               
               get: (...params: unknown[]): any => {
                 // For token lookup with WHERE share_token = ?
                 if (params.length === 1 && lowerSql.includes("share_token")) {
@@ -577,6 +577,13 @@ export function createMockDatabase(): MockDatabase {
               return allRecords.find(r => r && (r.user_id === userId || r.user_id === null || r.user_id === undefined));
             }
 
+            // Handle WHERE with email = ? pattern for user lookup (auth)
+            const emailWhereMatch = sql.match(/WHERE\s+email\s*=\s*\?/i);
+            if (emailWhereMatch && params.length > 0) {
+              const email = params[0] as string;
+              return allRecords.find(r => r && r.email === email);
+            }
+
             // Handle simple WHERE column = ? pattern
             const simpleWhereMatch = sql.match(/WHERE\s+([\w.]+)\s*=\s*\?/i);
             if (simpleWhereMatch && params.length > 0) {
@@ -675,8 +682,15 @@ export function createMockDatabase(): MockDatabase {
                 if (dateGteMatch) {
                   const paramCountBeforeDate = (whereClause.substring(0, dateGteMatch.index!).match(/\?/g) || []).length;
                   const date = params[paramCountBeforeDate] as string;
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
                   result = result.filter((r: any) => r && r.date >= date);
+                }
+
+                // Handle email = ? pattern for user lookup (auth)
+                const emailMatch = whereClause.match(/email\s*=\s*\?/i);
+                if (emailMatch && params.length > 0) {
+                  const email = params[0] as string;
+                  result = result.filter(r => r && r.email === email);
                 }
               }
             }
@@ -851,7 +865,7 @@ export function createMockDatabase(): MockDatabase {
         if (table && valuesMatch && columns.length > 0) {
           const valuesStr = valuesMatch[1];
           // Parse values with proper handling of quotes and parentheses
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+           
           const values: any[] = [];
           let parenDepth = 0;
           let current = '';
