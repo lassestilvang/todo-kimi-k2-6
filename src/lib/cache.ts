@@ -12,10 +12,12 @@ interface CacheEntry<T> {
 }
 
 // In-memory cache (used when Redis is not configured)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const memoryCache = new Map<string, CacheEntry<any>>();
 const DEFAULT_TTL = 5 * 60 * 1000; // 5 minutes
 
 // Redis client (will be initialized if REDIS_URL is set)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let redis: any = null;
 
 /**
@@ -143,9 +145,11 @@ export function getCacheStats(): { size: number; keys: string[] } {
 export const taskCache = {
   tasks: {
     key: (filters: string) => `tasks:${filters}`,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     set: async (filters: string, data: any, ttl?: number) => {
       await set(`tasks:${filters}`, data, ttl);
     },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     get: async (filters: string) => await get<any>(`tasks:${filters}`),
     invalidate: async () => {
       // Invalidate all task-related cache keys
@@ -162,24 +166,31 @@ export const taskCache = {
   },
   lists: {
     key: () => "lists",
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     set: async (data: any, ttl?: number) => await set("lists", data, ttl),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     get: async () => await get<any>("lists"),
     invalidate: async () => await del("lists"),
   },
   labels: {
     key: () => "labels",
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     set: async (data: any, ttl?: number) => await set("labels", data, ttl),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     get: async () => await get<any>("labels"),
     invalidate: async () => await del("labels"),
   },
 };
 
 // Cache decorator for async functions
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function cached<T extends (...args: any[]) => Promise<any>>(
   fn: T,
+   
   keyGenerator: (...args: Parameters<T>) => string,
   ttl: number = DEFAULT_TTL
 ): T {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (async (...args: Parameters<T>): Promise<any> => {
     const key = keyGenerator(...args);
     const cached = await get<ReturnType<T>>(key);
