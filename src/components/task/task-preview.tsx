@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { format, parseISO } from "date-fns";
-import { Clock, Calendar, Tag, Repeat, CheckCircle2 } from "lucide-react";
+import { Clock, Calendar, Tag, Repeat, CheckCircle2, ThumbsUp, ThumbsDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import type { TaskWithRelations, List } from "@/types";
 
 interface TaskPreviewProps {
@@ -109,6 +110,27 @@ export function TaskPreview({ task, lists, isVisible, x, y }: TaskPreviewProps) 
             </div>
           </div>
         )}
+
+        {/* Voting Section */}
+        <div className="flex items-center gap-1 pt-2 border-t">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 w-6 p-0"
+            onClick={() => console.log("Upvote", task.id)}
+          >
+            <ThumbsUp className="h-3 w-3" />
+          </Button>
+          <span className="text-xs text-muted-foreground w-6 text-center">4.5</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 w-6 p-0"
+            onClick={() => console.log("Downvote", task.id)}
+          >
+            <ThumbsDown className="h-3 w-3" />
+          </Button>
+        </div>
       </div>
     </div>
   );
