@@ -1,14 +1,28 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { connectIntegration, syncTasksFromIntegration, getIntegrationSyncStatus, disconnectIntegration } from '../integrations';
-import { setupTestDb, cleanupTestDb } from '@/test/test-utils';
+import { setDb, resetDb, getDb } from '@/lib/db';
+import { createTestDb } from '@/lib/db/test-db';
+
+// Mock CSRF protection
+vi.mock('@/lib/csrf', () => ({
+  csrfProtection: () => null,
+}));
+
+// Mock rate limiter
+vi.mock('@/lib/rate-limiter', () => ({
+  rateLimits: { api: { windowMs: 60000, max: 100 } },
+  getClientKey: () => 'test-client',
+  checkRateLimit: () => Promise.resolve({ allowed: true, remaining: 99, resetTime: Date.now() + 60000 }),
+}));
 
 describe('Integration Actions', () => {
-  beforeEach(async () => {
-    await setupTestDb();
+  beforeEach(() => {
+    const testDb = createTestDb();
+    setDb(testDb);
   });
 
-  afterEach(async () => {
-    await cleanupTestDb();
+  afterEach(() => {
+    resetDb();
   });
 
   describe('connectIntegration', () => {
@@ -80,13 +94,12 @@ describe('Integration Actions', () => {
       // Create integration first
       const integration = await connectIntegration({ id: 1 }, 'github', 'Test', {});
 
-      const result = await disconnectIntegration(integration.id, 1);
-
-      expect(result).toBe(true);
+      // Should not throw
+      await expect(disconnectIntegration({ id: 1 }, integration.id)).resolves.toBeUndefined();
     });
 
     it('throws error for non-owned integration', async () => {
-      await expect(disconnectIntegration(9999, 1))
+      await expect(disconnectIntegration({ id: 1 }, 9999))
         .rejects.toThrow('Integration not found or not accessible');
     });
   });
