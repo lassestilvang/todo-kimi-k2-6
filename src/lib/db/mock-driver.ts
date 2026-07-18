@@ -232,9 +232,45 @@ export function createMockDatabase(): MockDatabase {
             table.set(explicitId ?? lastInsertId, record);
             return { lastInsertRowid: explicitId ?? lastInsertId, changes: 1 };
           },
-           
-          get: (..._params: unknown[]) => table ? (table as Map<number, Record<string, unknown>>).get(lastInsertId) : undefined,
-          all: (..._params: unknown[]) => table ? [((table as Map<number, Record<string, unknown>>).get(lastInsertId))!] : [],
+
+          get: (...params: unknown[]) => {
+            if (!table) return undefined;
+            // For SELECT queries with params, filter by WHERE conditions
+            if (params.length > 0) {
+              const allRecords = Array.from(table.values());
+              const whereMatch = sql.match(/WHERE\s+(.+?)(?:\s+ORDER|\s+LIMIT|$)/i);
+              if (whereMatch) {
+                const whereClause = whereMatch[1];
+                const columns = whereClause.match(/([\w.]+)\s*=\s*\?/gi) || [];
+                return allRecords.find(r =>
+                  columns.every((col, idx) => {
+                    const cleanCol = col.replace(/^[a-z]+\./i, '').replace(/\s*=\s*\?\s*$/i, '');
+                    return r && r[cleanCol] === params[idx];
+                  })
+                );
+              }
+            }
+            return table instanceof Map ? Array.from(table.values())[0] : undefined;
+          },
+          all: (...params: unknown[]) => {
+            if (!table) return [];
+            if (params.length === 0) {
+              return Array.from(table.values());
+            }
+            const allRecords = Array.from(table.values());
+            const whereMatch = sql.match(/WHERE\s+(.+?)(?:\s+ORDER|\s+LIMIT|$)/i);
+            if (whereMatch) {
+              const whereClause = whereMatch[1];
+              const columns = whereClause.match(/([\w.]+)\s*=\s*\?/gi) || [];
+              return allRecords.filter(r =>
+                columns.every((col, idx) => {
+                  const cleanCol = col.replace(/^[a-z]+\./i, '').replace(/\s*=\s*\?\s*$/i, '');
+                  return r && r[cleanCol] === params[idx];
+                })
+              );
+            }
+            return allRecords;
+          },
         };
       }
 
@@ -810,24 +846,40 @@ export function createMockDatabase(): MockDatabase {
       if (lowerSql.includes("delete")) {
         const tableName = parseTableName(sql);
         const table = tableName && tables.get(tableName.toLowerCase());
-        const whereMatch = sql.match(/WHERE\s+(\w+)\s*=\s*\?/i);
 
         return {
           run: (...params: unknown[]) => {
             if (!table) return { lastInsertRowid: 0, changes: 0 };
             let changes = 0;
 
-            const toRemove = params[params.length - 1];
+            // Handle WHERE id = ? AND user_id = ? pattern
+            const whereMatch = sql.match(/WHERE\s+(\w+)\s*=\s*\?\s+AND\s+(\w+)\s*=\s*\?/i);
             if (whereMatch) {
+              const [col1, col2] = [whereMatch[1], whereMatch[2]];
+              const [val1, val2] = [params[0], params[1]];
               for (const [key, record] of Array.from(table.entries())) {
-                if (record[whereMatch[1]] === toRemove) {
+                if (record[col1] === val1 && record[col2] === val2) {
                   table.delete(key);
                   changes++;
                 }
               }
             } else {
-              changes = table.size;
-              table.clear();
+              // Handle simple WHERE id = ? pattern
+              const simpleWhereMatch = sql.match(/WHERE\s+(\w+)\s*=\s*\?/i);
+              if (simpleWhereMatch) {
+                const col = simpleWhereMatch[1];
+                const val = params[0];
+                for (const [key, record] of Array.from(table.entries())) {
+                  if (record[col] === val) {
+                    table.delete(key);
+                    changes++;
+                  }
+                }
+              } else {
+                // No WHERE clause - delete all
+                changes = table.size;
+                table.clear();
+              }
             }
 
             return { lastInsertRowid: 0, changes };
