@@ -9,9 +9,12 @@ import { Label } from "@/components/ui/label";
 
 interface CalendarSyncSettingsProps {
   accessToken?: string | null;
+  provider?: string | null;
+  lastSynced?: string | null;
+  expiresAt?: string | null;
+  error?: string;
   onAuth?: () => void;
   onSync?: () => void;
-  lastSynced?: string | null;
   onEnableChange?: (enabled: boolean) => void;
 }
 
@@ -23,15 +26,18 @@ interface SyncStatus {
 
 export function CalendarSyncSettings({
   accessToken,
+  provider,
+  lastSynced,
+  expiresAt,
+  error: externalError,
   onAuth,
   onSync,
-  lastSynced,
   onEnableChange,
 }: CalendarSyncSettingsProps) {
   const [status, setStatus] = useState<SyncStatus>({
-    enabled: !!accessToken,
+    enabled: accessToken === "connected",
     lastSync: lastSynced || null,
-    error: null,
+    error: externalError || null,
   });
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -45,7 +51,7 @@ export function CalendarSyncSettings({
   };
 
   const handleSync = async () => {
-    if (!accessToken) return;
+    if (!accessToken || accessToken !== "connected") return;
 
     setIsSyncing(true);
     setStatus((prev) => ({ ...prev, error: null }));
@@ -56,7 +62,7 @@ export function CalendarSyncSettings({
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ accessToken }),
+        body: JSON.stringify({}), // Access token is stored in DB, not passed in body
       });
 
       if (!response.ok) {
@@ -80,7 +86,16 @@ export function CalendarSyncSettings({
     }
   };
 
-  const handleDisconnect = () => {
+  const handleDisconnect = async () => {
+    try {
+      // Call API to delete calendar sync
+      await fetch("/api/calendar/sync", {
+        method: "DELETE",
+      });
+    } catch {
+      // Ignore errors on disconnect
+    }
+
     setStatus({
       enabled: false,
       lastSync: null,
@@ -116,13 +131,25 @@ export function CalendarSyncSettings({
             <div className="flex items-center justify-between">
               <div className="space-y-1">
                 <Label className="text-base">Calendar Sync</Label>
-                <p className="text-sm text-muted-foreground">
-                  {status.lastSync
-                    ? `Last synced: ${new Date(status.lastSync).toLocaleString()}`
-                    : "Not yet synced"}
-                </p>
+                {provider && (
+                  <p className="text-sm text-muted-foreground">
+                    Connected to <strong>{provider.charAt(0).toUpperCase() + provider.slice(1)} Calendar</strong>
+                  </p>
+                )}
+                {status.lastSync ? (
+                  <p className="text-sm text-muted-foreground">
+                    Last synced: {new Date(status.lastSync).toLocaleString()}
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Not yet synced</p>
+                )}
                 {status.error && (
                   <p className="text-sm text-red-500">{status.error}</p>
+                )}
+                {expiresAt && (
+                  <p className="text-xs text-muted-foreground/70">
+                    Token expires: {new Date(expiresAt).toLocaleString()}
+                  </p>
                 )}
               </div>
               <Switch
