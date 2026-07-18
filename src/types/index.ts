@@ -5,6 +5,18 @@ export type FilterPreset = "needs_attention" | "this_week" | "with_labels" | "wi
 export type SortField = "name" | "date" | "deadline" | "priority" | "created_at" | "updated_at";
 export type SortDirection = "asc" | "desc";
 
+// Notification settings
+export interface NotificationPrefs {
+  enabled: boolean;
+  reminderMinutes: number;
+  dueReminders: boolean;
+  overdueReminders: boolean;
+  dailySummary: boolean;
+  pushEnabled: boolean;
+  soundEnabled: boolean;
+  position: "top" | "bottom";
+}
+
 // Recurring task exceptions
 export interface RecurringException {
   id: number;
