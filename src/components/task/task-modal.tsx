@@ -51,6 +51,9 @@ import {
   TaskAssignTab,
   TaskTemplateTab,
   TaskStreakTab,
+  TaskContextTab,
+  TaskDecisionTab,
+  TaskConnectionsTab,
 } from "./modal";
 import { TimeReport } from "./time-report";
 import { PomodoroTimer } from "./pomodoro-timer";
@@ -70,6 +73,8 @@ import {
   CheckCircle2,
   Share2,
   Flame,
+  Lightbulb,
+  Brain,
 } from "lucide-react";
 
 interface TaskModalProps {
@@ -131,7 +136,7 @@ export function TaskModal({
     unit?: "days" | "weeks" | "months" | "years";
   }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState<"task" | "template" | "comments" | "time" | "pomodoro" | "assign" | "attachments" | "collaborate" | "streak" | "schedule">("task");
+  const [activeTab, setActiveTab] = useState<"task" | "template" | "comments" | "time" | "pomodoro" | "assign" | "attachments" | "collaborate" | "streak" | "schedule" | "context" | "decision" | "connections">("task");
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [assignees, setAssignees] = useState<Array<{ user_id: number; user_email: string; user_name: string | null; permission: "view" | "edit" }>>([]);
   const [assigneeSearchQuery, setAssigneeSearchQuery] = useState("");
@@ -519,6 +524,62 @@ export function TaskModal({
               >
                 <Flame className="h-3.5 w-3.5 mr-1.5 inline" />
                 Streak
+              </button>
+            )}
+            {isEditing && (
+              <button
+                className={cn(
+                  "pb-2 text-sm font-medium",
+                  activeTab === "context"
+                    ? "border-b-2 border-primary text-primary"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                onClick={() => setActiveTab("context")}
+              >
+                <Brain className="h-3.5 w-3.5 mr-1.5 inline" />
+                Context
+              </button>
+            )}
+            {isEditing && (
+              <button
+                className={cn(
+                  "pb-2 text-sm font-medium",
+                  activeTab === "decision"
+                    ? "border-b-2 border-primary text-primary"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                onClick={() => setActiveTab("decision")}
+              >
+                <Lightbulb className="h-3.5 w-3.5 mr-1.5 inline" />
+                Decisions
+              </button>
+            )}
+            {isEditing && (
+              <button
+                className={cn(
+                  "pb-2 text-sm font-medium",
+                  activeTab === "connections"
+                    ? "border-b-2 border-primary text-primary"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                onClick={() => setActiveTab("connections")}
+              >
+                <Link className="h-3.5 w-3.5 mr-1.5 inline" />
+                Connections
+              </button>
+            )}
+            {isEditing && task && task.completed && (
+              <button
+                className={cn(
+                  "pb-2 text-sm font-medium",
+                  activeTab === "schedule"
+                    ? "border-b-2 border-primary text-primary"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                onClick={() => setActiveTab("schedule")}
+              >
+                <Calendar className="h-3.5 w-3.5 mr-1.5 inline" />
+                Schedule
               </button>
             )}
           </div>
@@ -976,6 +1037,37 @@ export function TaskModal({
 
           {activeTab === "streak" && isEditing && task && (
             <TaskStreakTab task={task} />
+          )}
+
+          {activeTab === "context" && isEditing && task && (
+            <TaskContextTab
+              task={task}
+              contexts={task.habit_contexts as any}
+            />
+          )}
+
+          {activeTab === "decision" && isEditing && task && (
+            <TaskDecisionTab
+              task={task}
+              decisions={task.decisions as any}
+            />
+          )}
+
+          {activeTab === "connections" && isEditing && task && (
+            <TaskConnectionsTab
+              task={task}
+              connections={task.connections as any}
+              relatedTasks={allTasks}
+            />
+          )}
+
+          {activeTab === "schedule" && isEditing && task && (
+            <div className="pt-4">
+              <TaskSchedule
+                task={task}
+                lists={lists}
+              />
+            </div>
           )}
         </ScrollArea>
 
