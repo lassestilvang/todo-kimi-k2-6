@@ -17,6 +17,8 @@ import {
   Paperclip,
   Archive,
   ArchiveRestore,
+  ThumbsUp,
+  ThumbsDown,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -35,6 +37,7 @@ import type { TaskWithRelations, List, SortField, SortDirection, Label, Priority
 import { updateTask, deleteTask } from "@/lib/actions";
 import { toast } from "sonner";
 import { calculateTaskHealth } from "@/lib/task-health";
+import { useTaskVotes } from "@/hooks/use-task-votes";
 
 interface TaskListProps {
   tasks: TaskWithRelations[];
