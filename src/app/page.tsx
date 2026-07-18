@@ -61,6 +61,13 @@ export default function Home() {
   const [isOnline, setIsOnline] = useState(true);
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [currentWorkspace, setCurrentWorkspace] = useState<Workspace | null>(null);
+  const [calendarStatus, setCalendarStatus] = useState<{
+    connected: boolean;
+    provider: string | null;
+    lastSync: string | null;
+    expiresAt?: string | null;
+    error?: string;
+  } | null>(null);
 
   const {
     tasks,
@@ -122,6 +129,14 @@ export default function Home() {
       window.removeEventListener("online", checkOnline);
       window.removeEventListener("offline", checkOnline);
     };
+  }, []);
+
+  // Fetch calendar sync status
+  useEffect(() => {
+    fetch("/api/calendar/status")
+      .then((r) => r.json())
+      .then(setCalendarStatus)
+      .catch(console.error);
   }, []);
 
   // Get completed tasks for statistics
@@ -391,9 +406,13 @@ export default function Home() {
       return (
         <div className="p-6">
           <CalendarSyncSettings
-            accessToken={null}
+            accessToken={calendarStatus?.connected ? "connected" : null}
+            provider={calendarStatus?.provider}
+            lastSynced={calendarStatus?.lastSync}
+            expiresAt={calendarStatus?.expiresAt}
             onAuth={() => { window.location.href = "/api/calendar/sync?action=auth"; }}
             onSync={loadData}
+            error={calendarStatus?.error}
           />
         </div>
       );
