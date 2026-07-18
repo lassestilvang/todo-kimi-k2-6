@@ -1,12 +1,14 @@
 "use client";
 
-import { useMemo } from "react";
-import { TrendingUp, Target, BarChart3, PieChart, Activity, Lightbulb } from "lucide-react";
+import { useMemo, useState } from "react";
+import { TrendingUp, Target, BarChart3, PieChart, Activity, Lightbulb, Brain, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Pie, Cell, LineChart, Line } from "recharts";
+import { Button } from "@/components/ui/button";
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Pie, Cell, LineChart, Line, ScatterChart, Scatter, CartesianGrid, ReferenceLine } from "recharts";
 import { format, parseISO, startOfWeek, endOfWeek } from "date-fns";
 import type { TaskWithRelations } from "@/types";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface TaskInvestmentPortfolioProps {
   tasks: TaskWithRelations[];
@@ -74,6 +76,52 @@ export function TaskInvestmentPortfolio({ tasks, completedTasks = [] }: TaskInve
   // Investment efficiency score
   const investmentEfficiency = portfolio.totalInvestmentValue / Math.max(tasks.length, 1);
 
+  // Risk-Return scatter data for visualization
+  const scatterData = useMemo(() => {
+    const allInvestments: TaskInvestmentScore[] = [
+      ...portfolio.highROI,
+      ...portfolio.mediumROI,
+      ...portfolio.lowROI,
+    ];
+    return allInvestments.map(inv => ({
+      x: inv.risk,
+      y: inv.roi,
+      name: inv.name,
+      taskId: inv.taskId,
+      category: inv.category,
+    }));
+  }, [portfolio.highROI, portfolio.mediumROI, portfolio.lowROI]);
+
+  // Category colors for scatter plot
+  const categoryColors: Record<string, string> = {
+    high_investment: "#22c55e",
+    medium_investment: "#f59e0b",
+    low_investment: "#6b7280",
+  };
+
+  // Portfolio health analysis
+  const portfolioHealth = useMemo(() => {
+    const totalTasks = tasks.length;
+    const completedHighROI = completedTasks.filter(t =>
+      portfolio.highROI.some(h => h.taskId === t.id)
+    ).length;
+    const highROICount = portfolio.highROI.length;
+
+    const completionRate = highROICount > 0
+      ? Math.round((completedHighROI / highROICount) * 100)
+      : 0;
+
+    let healthStatus: "excellent" | "good" | "needs_attention" | "critical";
+    if (completionRate >= 80) healthStatus = "excellent";
+    else if (completionRate >= 50) healthStatus = "good";
+    else if (completionRate >= 25) healthStatus = "needs_attention";
+    else healthStatus = "critical";
+
+    return { completionRate, healthStatus, completedHighROI, highROICount };
+  }, [tasks, completedTasks, portfolio.highROI]);
+
+  const [showScatterChart, setShowScatterChart] = useState(false);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -135,6 +183,27 @@ export function TaskInvestmentPortfolio({ tasks, completedTasks = [] }: TaskInve
             <p className="text-2xl font-bold">{Math.round(portfolio.diversificationScore)}%</p>
           </CardContent>
         </Card>
+
+        {/* Portfolio Health */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+              <CheckCircle2 className="h-3 w-3" />
+              Health
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold flex items-center gap-1">
+              {portfolioHealth.completionRate}%
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {portfolioHealth.healthStatus === "excellent" && "Excellent progress!"}
+              {portfolioHealth.healthStatus === "good" && "Good progress!"}
+              {portfolioHealth.healthStatus === "needs_attention" && "Needs attention"}
+              {portfolioHealth.healthStatus === "critical" && "Action needed"}
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Weekly Performance */}
@@ -193,6 +262,84 @@ export function TaskInvestmentPortfolio({ tasks, completedTasks = [] }: TaskInve
         </Card>
       </div>
 
+      {/* Risk-Return Scatter Chart */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-medium flex items-center gap-1.5">
+            <Brain className="h-4 w-4" />
+            Risk-Return Analysis
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowScatterChart(!showScatterChart)}
+            >
+              {showScatterChart ? "Hide" : "Show"} Details
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {!showScatterChart ? (
+            <div className="text-center py-8">
+              <p className="text-sm text-muted-foreground mb-4">
+                Click to view detailed risk-return analysis
+              </p>
+              <Button variant="outline" onClick={() => setShowScatterChart(true)}>
+                Show Risk-Return Chart
+              </Button>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={300}>
+              <ScatterChart margin={{ top: 20, right: 30, bottom: 40, left: 40 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  type="number"
+                  dataKey="x"
+                  name="Risk"
+                  label={{ value: "Risk", angle: -90, position: "insideLeft" }}
+                  domain={[0, 100]}
+                />
+                <YAxis
+                  type="number"
+                  dataKey="y"
+                  name="ROI"
+                  label={{ value: "ROI", angle: 0, position: "insideTop" }}
+                  domain={[0, 100]}
+                />
+                <Tooltip
+                  formatter={(value: number, name: string) => [value, name]}
+                  formatter2={(value: number, name: string) => [value, name]}
+                  content={(props) => (
+                    <div className="bg-background border rounded p-2">
+                      {props.payload && (
+                        <>
+                          <div className="font-medium">{props.payload.name}</div>
+                          <div className="text-sm text-muted-foreground">
+                            Risk: {props.payload.x} | ROI: {props.payload.y}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+                />
+                <Scatter data={scatterData} shape="circle" />
+                <ReferenceLine
+                  X={50}
+                  stroke="gray"
+                  strokeDasharray="3 3"
+                  label="Average Risk"
+                />
+                <ReferenceLine
+                  Y={50}
+                  stroke="gray"
+                  strokeDasharray="3 3"
+                  label="Average ROI"
+                />
+              </ScatterChart>
+            </ResponsiveContainer>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Top Investment Opportunities */}
       {topInvestments.length > 0 && (
         <Card>
@@ -247,34 +394,105 @@ export function TaskInvestmentPortfolio({ tasks, completedTasks = [] }: TaskInve
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
+            {/* High ROI Tasks Insights */}
+            {portfolio.highROI.length > 0 && (
+              <div className="p-3 bg-green-50 dark:bg-green-950/20 rounded-lg">
+                <p className="text-sm text-green-700 dark:text-green-300 font-medium">
+                  ✅ {portfolio.highROI.length} high ROI task{portfolio.highROI.length > 1 ? 's' : ''} ready for investment
+                </p>
+                <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                  Focus on these first - they offer the best return on effort invested.
+                </p>
+              </div>
+            )}
+
+            {/* Medium ROI Tasks Insights */}
+            {portfolio.mediumROI.length > 0 && (
+              <div className="p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
+                <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">
+                  ⚖️ {portfolio.mediumROI.length} medium ROI tasks - balance your workload
+                </p>
+                <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                  Good candidates for days when you have moderate capacity.
+                </p>
+              </div>
+            )}
+
+            {/* Low ROI Tasks Insights */}
+            {portfolio.lowROI.length > tasks.length * 0.3 && (
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg">
+                <p className="text-sm text-amber-700 dark:text-amber-300 font-medium">
+                  ⚠️ {portfolio.lowROI.length} low ROI tasks ({(portfolio.lowROI.length / tasks.length * 100).toFixed(0)}% of total)
+                </p>
+                <p className="text-xs text-amber-600 dark:text-amber-300 mt-1">
+                  Consider delegating, batching, or archiving these tasks.
+                </p>
+              </div>
+            )}
+
+            {/* Portfolio Health Insights */}
+            {portfolioHealth.healthStatus === "excellent" && (
+              <div className="p-3 bg-emerald-50 dark:bg-emerald-950/20 rounded-lg">
+                <p className="text-sm text-emerald-700 dark:text-emerald-300 font-medium">
+                  📈 Portfolio Health: Excellent!
+                </p>
+                <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">
+                  You've completed {portfolioHealth.completedHighROI} of {portfolioHealth.highROICount} high ROI tasks.
+                </p>
+              </div>
+            )}
+
+            {portfolioHealth.healthStatus === "good" && (
+              <div className="p-3 bg-emerald-50 dark:bg-emerald-950/20 rounded-lg">
+                <p className="text-sm text-emerald-700 dark:text-emerald-300 font-medium">
+                  📈 Portfolio Health: Good
+                </p>
+                <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">
+                  Keep building momentum on your high ROI tasks!
+                </p>
+              </div>
+            )}
+
+            {portfolioHealth.healthStatus === "needs_attention" && (
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg">
+                <p className="text-sm text-amber-700 dark:text-amber-300 font-medium">
+                  📊 Portfolio Health: Needs Attention
+                </p>
+                <p className="text-xs text-amber-600 dark:text-amber-300 mt-1">
+                  Only {portfolioHealth.completionRate}% of high ROI tasks completed. Focus on finishing these first.
+                </p>
+              </div>
+            )}
+
+            {portfolioHealth.healthStatus === "critical" && (
+              <div className="p-3 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-800">
+                <p className="text-sm text-red-700 dark:text-red-300 font-medium flex items-center gap-1.5">
+                  <AlertTriangle className="h-4 w-4" />
+                  Portfolio Health: Critical
+                </p>
+                <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+                  Action needed: Prioritize high ROI tasks to improve portfolio health.
+                </p>
+              </div>
+            )}
+
+            {/* Diversification Insights */}
+            {portfolio.diversificationScore < 50 && (
+              <div className="p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
+                <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">
+                  🎯 Diversification Opportunity
+                </p>
+                <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                  Your portfolio is concentrated. Mix high-impact strategic work with routine tasks.
+                </p>
+              </div>
+            )}
+
+            {/* No High ROI Tasks */}
             {portfolio.highROI.length === 0 && (
               <p className="text-sm text-muted-foreground">
                 No high ROI tasks identified. Consider adding more strategic tasks.
               </p>
-            )}
-
-            {portfolio.lowROI.length > tasks.length * 0.3 && (
-              <div className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg">
-                <p className="text-sm text-amber-700 dark:text-amber-300">
-                  ⚠️ Over 30% of tasks have low ROI. Consider delegating or archiving.
-                </p>
-              </div>
-            )}
-
-            {portfolio.diversificationScore < 50 && (
-              <div className="p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
-                <p className="text-sm text-blue-700 dark:text-blue-300">
-                  💡 Try diversifying your task types. Mix high-impact strategic work with routine tasks.
-                </p>
-              </div>
-            )}
-
-            {investmentEfficiency > 0.7 && (
-              <div className="p-3 bg-green-50 dark:bg-green-950/20 rounded-lg">
-                <p className="text-sm text-green-700 dark:text-green-300">
-                  ✅ Excellent portfolio efficiency! Your tasks align well with your goals.
-                </p>
-              </div>
             )}
           </div>
         </CardContent>
