@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2, FolderTree, ListTree } from "lucide-react";
+import { Plus, Trash2, FolderTree, ListTree, Bell } from "lucide-react";
 import { toast } from "sonner";
-import type { TemplateCategory, CustomView } from "@/types";
+import { NotificationSettings } from "@/components/task/notification-settings";
+import type { TemplateCategory, CustomView, NotificationPrefs } from "@/types";
 
 export default function SettingsPage() {
   const [categories, setCategories] = useState<TemplateCategory[]>([]);
@@ -16,16 +17,20 @@ export default function SettingsPage() {
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryDesc, setNewCategoryDesc] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [notificationSettings, setNotificationSettings] = useState<NotificationPrefs | null>(null);
 
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [catsRes, viewsRes] = await Promise.all([
+      const [catsRes, viewsRes, settingsRes] = await Promise.all([
         fetch("/api/template-categories"),
         fetch("/api/custom-views?userId=1"), // Would use actual user ID
+        fetch("/api/user-settings"),
       ]);
       setCategories(await catsRes.json());
       setCustomViews(await viewsRes.json());
+      const settingsData = await settingsRes.json();
+      setNotificationSettings(settingsData.settings || settingsData);
     } catch (error) {
       console.error("Failed to load data:", error);
     } finally {
@@ -191,6 +196,22 @@ export default function SettingsPage() {
                 ))
               )}
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Notification Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Bell className="h-5 w-5" />
+              Notification Settings
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <NotificationSettings
+              settings={notificationSettings || undefined}
+              onSave={(settings) => setNotificationSettings(settings)}
+            />
           </CardContent>
         </Card>
       </div>
