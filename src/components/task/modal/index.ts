@@ -9,3 +9,6 @@ export { TaskCollaborateTab } from "./task-collaborate-tab";
 export { TaskAttachments } from "./task-attachments";
 export { TaskTemplateTab } from "./task-template-tab";
 export { TaskStreakTab } from "./task-streak-tab";
+export { TaskContextTab } from "./task-context-tab";
+export { TaskDecisionTab } from "./task-decision-tab";
+export { TaskConnectionsTab } from "./task-connections-tab";
