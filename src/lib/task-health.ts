@@ -124,13 +124,8 @@ export function calculateTaskHealth(task: {
     }
   }
 
-  // Calculate total with weights
-  const totalScore = Math.round(
-    priorityScore * 0.35 +
-    deadlineScore * 0.3 +
-    effortScore * 0.2 +
-    importanceScore * 0.15
-  );
+  // Calculate total score (sum of all scores, max 100)
+  const totalScore = Math.min(100, priorityScore + deadlineScore + effortScore + importanceScore);
 
   // Determine status
   let status: HealthStatus;
