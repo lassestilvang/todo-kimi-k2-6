@@ -1,10 +1,28 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi, beforeAll } from 'vitest';
 import { createTaskConnection, getConnectionStrength, findRelatedTasks, extractInsightsFromTask, updateSkillProficiency } from '../knowledge-graph';
 import { setupTestDb, cleanupTestDb, createTestTasks } from '@/test/test-utils';
+import { setDb } from '@/lib/db';
+import { createMockDatabase } from '@/lib/db/mock-driver';
+
+// Set up demo mode for authentication
+const originalNodeEnv = process.env.NODE_ENV;
+const originalNextAuthSecret = process.env.NEXTAUTH_SECRET;
+
+beforeAll(() => {
+  process.env.NODE_ENV = 'test';
+  process.env.NEXTAUTH_SECRET = 'demo-secret';
+});
+
+afterEach(() => {
+  vi.resetModules();
+});
 
 describe('Knowledge Graph Actions', () => {
+  let testDb: ReturnType<typeof createMockDatabase>;
+
   beforeEach(async () => {
-    await setupTestDb();
+    testDb = await setupTestDb();
+    setDb(testDb);
     await createTestTasks();
   });
 
