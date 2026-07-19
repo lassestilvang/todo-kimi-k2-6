@@ -38,6 +38,7 @@ import { updateTask, deleteTask } from "@/lib/actions";
 import { toast } from "sonner";
 import { calculateTaskHealth } from "@/lib/task-health";
 import { useTaskVotes } from "@/hooks/use-task-votes";
+import { VoteIndicator } from "@/components/task/vote-indicator";
 
 interface TaskListProps {
   tasks: TaskWithRelations[];
@@ -622,6 +623,16 @@ export function TaskList({
                             >
                               {priorityConfig[task.priority].label}
                             </Badge>
+                          )}
+
+                          {/* Vote Indicator */}
+                          {task.vote_score !== undefined && (
+                            <VoteIndicator
+                              taskId={task.id}
+                              initialScore={task.vote_score}
+                              initialCount={task.vote_count || 0}
+                              className="ml-1"
+                            />
                           )}
                         </div>
 
