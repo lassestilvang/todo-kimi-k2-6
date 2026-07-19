@@ -6,6 +6,86 @@ import type { TaskWithRelations } from "@/types";
 import { aiCache } from "@/lib/ai/providers";
 
 /**
+ * Create a new connection between two tasks in the knowledge graph
+ */
+export async function createTaskConnection(
+  sourceTaskId: number,
+  targetTaskId: number,
+  connectionType: string,
+  strength: number = 0.5,
+  notes?: string
+): Promise<{
+  id: number;
+  source_task_id: number;
+  target_task_id: number;
+  connection_type: string;
+  strength: number;
+  notes: string | null;
+  created_at: string;
+}> {
+  const db = getDb();
+  const user = await getCurrentUser();
+
+  if (!user?.id) {
+    throw new Error("Authentication required to create task connections");
+  }
+
+  // Validate connection type
+  const validTypes = ['prerequisite', 'inspiration', 'similar', 'contrast', 'related', 'learned_from'];
+  if (!validTypes.includes(connectionType)) {
+    throw new Error(`Invalid connection type: ${connectionType}. Must be one of: ${validTypes.join(', ')}`);
+  }
+
+  // Validate strength is between 0 and 1
+  if (strength < 0 || strength > 1) {
+    throw new Error("Strength must be between 0 and 1");
+  }
+
+  // Check if tasks exist and belong to user or are shared (null user_id for shared tasks)
+  const sourceTask = db.prepare("SELECT id, user_id FROM tasks WHERE id = ?").get(sourceTaskId);
+  const targetTask = db.prepare("SELECT id, user_id FROM tasks WHERE id = ?").get(targetTaskId);
+
+  if (!sourceTask) {
+    throw new Error(`Source task ${sourceTaskId} not found or not accessible`);
+  }
+  if (!targetTask) {
+    throw new Error(`Target task ${targetTaskId} not found or not accessible`);
+  }
+
+  // Check user ownership (user_id matches or is null for shared tasks)
+  if (sourceTask.user_id !== user.id && sourceTask.user_id !== null) {
+    throw new Error(`Source task ${sourceTaskId} not found or not accessible`);
+  }
+  if (targetTask.user_id !== user.id && targetTask.user_id !== null) {
+    throw new Error(`Target task ${targetTaskId} not found or not accessible`);
+  }
+
+  // Check if connection already exists for this type
+  const existing = db.prepare(
+    "SELECT id FROM task_connections WHERE source_task_id = ? AND target_task_id = ? AND connection_type = ?"
+  ).get(sourceTaskId, targetTaskId, connectionType);
+
+  if (existing) {
+    // Update existing connection
+    db.prepare(
+      "UPDATE task_connections SET strength = ?, notes = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?"
+    ).run(strength, notes || null, existing.id);
+
+    const updated = db.prepare("SELECT * FROM task_connections WHERE id = ?").get(existing.id);
+    return updated as any;
+  }
+
+  // Create new connection
+  const result = db.prepare(
+    `INSERT INTO task_connections (source_task_id, target_task_id, connection_type, strength, notes, created_at)
+     VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`
+  ).run(sourceTaskId, targetTaskId, connectionType, strength, notes || null);
+
+  const connection = db.prepare("SELECT * FROM task_connections WHERE id = ?").get(result.lastInsertRowid as number);
+  return connection as any;
+}
+
+/**
  * Get semantic connection strength between two tasks based on various factors
  */
 export async function getConnectionStrength(
