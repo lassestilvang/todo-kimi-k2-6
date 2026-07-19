@@ -20,6 +20,7 @@ import {
   Bot,
   Focus,
   TrendingUp,
+  Clock,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
@@ -67,6 +68,7 @@ const views = [
   { id: "today", name: "Today", icon: Calendar },
   { id: "next7", name: "Next 7 Days", icon: CalendarDays },
   { id: "upcoming", name: "Upcoming", icon: CalendarRange },
+  { id: "timeline", name: "Timeline", icon: Clock },
   { id: "kanban", name: "Kanban", icon: LayoutGrid },
   { id: "all", name: "All Tasks", icon: LayoutGrid },
   { id: "focus", name: "Focus Mode", icon: Focus },
