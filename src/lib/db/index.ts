@@ -84,6 +84,10 @@ export function initializeSchema(db: Database) {
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
 
+    -- Ensure default inbox list exists (user_id is NULL for shared/default inbox)
+    INSERT OR IGNORE INTO lists (id, name, emoji, color, is_inbox, user_id, created_at)
+    VALUES (1, 'Inbox', '📥', '#6366f1', 1, NULL, CURRENT_TIMESTAMP);
+
     CREATE TABLE IF NOT EXISTS labels (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER REFERENCES users(id),
@@ -373,9 +377,6 @@ export function initializeSchema(db: Database) {
     CREATE INDEX IF NOT EXISTS idx_activity_logs_user ON activity_logs(user_id);
     CREATE INDEX IF NOT EXISTS idx_activity_logs_entity ON activity_logs(entity_type, entity_id);
     CREATE INDEX IF NOT EXISTS idx_activity_logs_created ON activity_logs(created_at DESC);
-
-    -- Ensure default inbox list exists
-    INSERT OR IGNORE INTO lists (id, name, emoji, color, is_inbox) VALUES (1, 'Inbox', '📥', '#6366f1', 1);
 
     -- Recurring task exceptions (skip specific dates)
     CREATE TABLE IF NOT EXISTS recurring_exceptions (
