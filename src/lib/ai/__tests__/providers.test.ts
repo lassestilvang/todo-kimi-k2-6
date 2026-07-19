@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { KeywordParser, AIManager } from "../providers";
-import type { AITaskInput } from "../index";
+import type { AITaskInput, ProjectPlanInput } from "../index";
 
 describe("AI Providers", () => {
   let keywordParser: KeywordParser;
@@ -86,6 +86,103 @@ describe("AI Providers", () => {
       expect(result.name).toBeDefined();
       expect(result.priority).toBe("critical");
     });
+
+    describe("generateProjectPlan", () => {
+      it("should generate a project plan with basic input", async () => {
+        const input: ProjectPlanInput = {
+          projectName: "Website Redesign",
+        };
+        const result = await keywordParser.generateProjectPlan(input);
+
+        expect(result.name).toBe("Website Redesign");
+        expect(result.phases).toBeDefined();
+        expect(result.phases.length).toBeGreaterThan(0);
+        expect(result.total_duration_days).toBeGreaterThan(0);
+        expect(result.provider).toBe("keyword-parser");
+      });
+
+      it("should generate phases with proper structure", async () => {
+        const input: ProjectPlanInput = {
+          projectName: "E-commerce Launch",
+          description: "Build a complete e-commerce platform with planning, development, testing, and launch phases.",
+        };
+        const result = await keywordParser.generateProjectPlan(input);
+
+        expect(result.phases).toBeInstanceOf(Array);
+        for (const phase of result.phases) {
+          expect(phase.name).toBeDefined();
+          expect(phase.priority).toBeDefined();
+          expect(phase.duration_days).toBeGreaterThan(0);
+        }
+      });
+
+      it("should respect deadline constraints", async () => {
+        const input: ProjectPlanInput = {
+          projectName: "Short Project",
+          description: "Quick launch project",
+          constraints: {
+            deadline: "2024-12-31",
+            startDate: "2024-11-01",
+          },
+        };
+        const result = await keywordParser.generateProjectPlan(input);
+
+        // Duration should be based on constraint dates (30 days)
+        expect(result.total_duration_days).toBeGreaterThanOrEqual(1);
+      });
+
+      it("should detect development phases from description", async () => {
+        const input: ProjectPlanInput = {
+          projectName: "Tech Project",
+          description: "This includes planning, development, testing, and launch phases for the new feature.",
+        };
+        const result = await keywordParser.generateProjectPlan(input);
+
+        const phaseNames = result.phases.map(p => p.name.toLowerCase());
+        expect(phaseNames.some(name => name.includes("planning") || name.includes("design"))).toBe(true);
+        expect(phaseNames.some(name => name.includes("development") || name.includes("coding"))).toBe(true);
+        expect(phaseNames.some(name => name.includes("testing") || name.includes("qa"))).toBe(true);
+        expect(phaseNames.some(name => name.includes("launch") || name.includes("release"))).toBe(true);
+      });
+
+      it("should set priority based on keywords", async () => {
+        const input: ProjectPlanInput = {
+          projectName: "Critical Project",
+          description: "Urgent critical project that needs immediate attention - must be done ASAP.",
+        };
+        const result = await keywordParser.generateProjectPlan(input);
+
+        // At least one phase should have high or critical priority
+        const priorities = result.phases.map(p => p.priority);
+        expect(priorities.some(p => p === "critical" || p === "high")).toBe(true);
+      });
+
+      it("should calculate duration based on complexity keywords", async () => {
+        const simpleInput: ProjectPlanInput = {
+          projectName: "Simple Task",
+          description: "A simple basic project",
+        };
+        const simpleResult = await keywordParser.generateProjectPlan(simpleInput);
+
+        const complexInput: ProjectPlanInput = {
+          projectName: "Enterprise Project",
+          description: "A large enterprise project with comprehensive features",
+        };
+        const complexResult = await keywordParser.generateProjectPlan(complexInput);
+
+        expect(complexResult.total_duration_days).toBeGreaterThan(simpleResult.total_duration_days);
+      });
+
+      it("should include description in result", async () => {
+        const input: ProjectPlanInput = {
+          projectName: "My Project",
+          description: "This is my detailed project description",
+        };
+        const result = await keywordParser.generateProjectPlan(input);
+
+        expect(result.description).toBe("This is my detailed project description");
+      });
+    });
   });
 
   describe("AIManager", () => {
@@ -111,6 +208,21 @@ describe("AI Providers", () => {
       const result = await aiManager.generateInsights([]);
       expect(result.tips).toBeDefined();
       expect(result.trends).toBeDefined();
+    });
+
+    describe("generateProjectPlan", () => {
+      it("should generate project plan through AIManager", async () => {
+        const input: ProjectPlanInput = {
+          projectName: "Test Project",
+          description: "A test project description",
+        };
+        const result = await aiManager.generateProjectPlan(input);
+
+        expect(result.name).toBe("Test Project");
+        expect(result.phases).toBeDefined();
+        expect(result.provider).toBeDefined();
+        expect(result.total_duration_days).toBeGreaterThan(0);
+      });
     });
   });
 });
