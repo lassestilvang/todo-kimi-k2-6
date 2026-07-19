@@ -61,11 +61,28 @@ export async function createDecisionEntry(
           option.estimated_effort || null
         );
 
-      optionIds.push(result.lastInsertRowid as number);
+      optionIds.push(optionResult.lastInsertRowid as number);
     }
   }
 
-  return { entry: { ...input, id: entryId, created_at: new Date().toISOString(), updated_at: new Date().toISOString() } as DecisionEntry, optionIds };
+  return {
+    entry: {
+      id: entryId,
+      task_id: input.task_id ?? null,
+      user_id: user.id,
+      decision_type: input.decision_type,
+      question: input.question,
+      chosen_option_id: input.chosen_option_id ?? null,
+      rationale: input.rationale ?? "",
+      outcome: input.outcome ?? "",
+      outcome_notes: input.outcome_notes ?? "",
+      outcome_rating: input.outcome_rating ?? null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      options: [],
+    } as DecisionEntry,
+    optionIds,
+  };
 }
 
 /**
@@ -428,6 +445,8 @@ function calculateOutcomeQuality(decisions: DecisionEntry[]): any {
 
   if (outcomes.length === 0) {
     return {
+      total_decisions: decisions.length,
+      outcomes_with_rating: 0,
       average_rating: null,
       positive_outcomes: 0,
       negative_outcomes: 0,
@@ -441,6 +460,8 @@ function calculateOutcomeQuality(decisions: DecisionEntry[]): any {
   const negative = ratings.filter(r => r < 0).length;
 
   return {
+    total_decisions: decisions.length,
+    outcomes_with_rating: outcomes.length,
     average_rating: Math.round(average * 10) / 10,
     positive_outcomes: positive,
     negative_outcomes: negative,
