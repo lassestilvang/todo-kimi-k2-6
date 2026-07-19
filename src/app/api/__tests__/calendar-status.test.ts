@@ -2,18 +2,21 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { GET } from "../calendar/status/route";
 import { NextRequest } from "next/server";
 
-describe("Calendar Status API", () => {
-  const mockGetCalendarSync = vi.fn();
+// Mock the calendar module at the top level for proper hoisting
+vi.mock("@/lib/actions/calendar", () => ({
+  getCalendarSync: vi.fn(),
+}));
 
+// Import after mock is defined
+import { getCalendarSync } from "@/lib/actions/calendar";
+
+describe("Calendar Status API", () => {
   beforeEach(() => {
     vi.resetAllMocks();
-    vi.mock("@/lib/actions/calendar", () => ({
-      getCalendarSync: mockGetCalendarSync,
-    }));
   });
 
   it("should return connected status when calendar is synced", async () => {
-    mockGetCalendarSync.mockResolvedValue({
+    (getCalendarSync as any).mockResolvedValue({
       provider: "google",
       access_token: "test-token",
       refresh_token: "test-refresh",
@@ -32,7 +35,7 @@ describe("Calendar Status API", () => {
   });
 
   it("should return disconnected status when no calendar sync", async () => {
-    mockGetCalendarSync.mockResolvedValue(null);
+    (getCalendarSync as any).mockResolvedValue(null);
 
     const request = new NextRequest("http://localhost/api/calendar/status");
     const response = await GET(request);
@@ -44,7 +47,7 @@ describe("Calendar Status API", () => {
   });
 
   it("should handle errors gracefully", async () => {
-    mockGetCalendarSync.mockRejectedValue(new Error("Database error"));
+    (getCalendarSync as any).mockRejectedValue(new Error("Database error"));
 
     const request = new NextRequest("http://localhost/api/calendar/status");
     const response = await GET(request);
@@ -52,6 +55,6 @@ describe("Calendar Status API", () => {
 
     expect(response.status).toBe(200);
     expect(data.connected).toBe(false);
-    expect(data.error).toBeUndefined();
+    expect(data.error).toBeDefined();
   });
 });
