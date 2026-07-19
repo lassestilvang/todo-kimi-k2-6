@@ -1086,4 +1086,62 @@ describe("Providers Comprehensive Coverage", () => {
       expect(result).toBeNull();
     });
   });
+
+  describe("AIManager - Error handling paths", () => {
+    it("should handle generateTasksFromNotes with provider throwing error", async () => {
+      // Test line 1359 - error handling in generateTasksFromNotes
+      vi.resetModules();
+      const providers = await import("../providers");
+
+      const errorProvider = {
+        name: "failing-provider",
+        parseTask: vi.fn(),
+        generateTasksFromNotes: vi.fn().mockImplementation(() => {
+          throw new Error("Provider crashed");
+        }),
+        generateInsights: vi.fn(),
+      };
+
+      const manager = new providers.AIManager();
+      (manager as any).providers = [
+        new providers.KeywordParser(),
+        errorProvider,
+      ];
+
+      providers.aiCache.clear();
+
+      const result = await manager.generateTasksFromNotes("- Task 1");
+      // Should fall through to keyword parser when provider throws
+      expect(result.length).toBe(1);
+    });
+
+    it("should handle generateProjectPlan with provider throwing error", async () => {
+      // Test line 1386 - error handling in generateProjectPlan
+      vi.resetModules();
+      const providers = await import("../providers");
+
+      const errorProvider = {
+        name: "failing-plan-provider",
+        parseTask: vi.fn(),
+        generateProjectPlan: vi.fn().mockImplementation(() => {
+          throw new Error("Plan generation failed");
+        }),
+        generateTasksFromNotes: vi.fn(),
+        generateInsights: vi.fn(),
+      };
+
+      const manager = new providers.AIManager();
+      (manager as any).providers = [
+        new providers.KeywordParser(),
+        errorProvider,
+      ];
+
+      const result = await manager.generateProjectPlan({
+        projectName: "Test Project",
+      });
+
+      // Should fall through to keyword parser when provider throws
+      expect(result.name).toBe("Test Project");
+    });
+  });
 });
