@@ -4,6 +4,7 @@
  */
 
 import type { TaskSuggestion, AITaskInput, AIEditCommand } from "./index";
+import type { ProjectPlanInput, GeneratedProject, ProjectPhase, DecisionContext, GeneratedDecisionTemplate } from "./index";
 import { logError, logWarn } from "@/lib/logger";
 import { taskSuggestionSchema, aiInsightsSchema } from "./index";
 import { formatMinutesToTime, parseTimeToMinutes, getNextDay, parseTimeRange, parseTime } from "../time-utils";
@@ -15,6 +16,8 @@ export interface AIProvider {
   generateInsights(tasks: Array<{ name: string; completed: boolean; priority: string; date?: string | null; deadline?: string | null }>): Promise<{ tips: string[]; suggestions: string[]; trends: string[] }>;
   generateTasksFromNotes?(notes: string, context?: { lists?: Array<{ id: number; name: string; emoji: string }> }): Promise<Array<{ name: string; description?: string; priority?: "critical" | "high" | "medium" | "low" | "none" }>>;
   parseEditCommand?(text: string, context: { tasks: Array<{ id: number; name: string; completed: boolean; priority: string }> }): Promise<AIEditCommand>;
+  generateProjectPlan?(input: ProjectPlanInput): Promise<GeneratedProject>;
+  generateDecisionTemplate?(context: DecisionContext): Promise<GeneratedDecisionTemplate>;
 }
 
 /**
@@ -85,6 +88,21 @@ export const aiCache = new AICache();
 export class KeywordParser implements AIProvider {
   name = "keyword-parser";
 
+  private readonly projectPhaseKeywords = {
+    planning: ["planning", "setup", "foundation", "design", "architect"],
+    development: ["development", "coding", "building", "implementation", "feature"],
+    testing: ["testing", "qa", "quality", "review", "debug", "audit"],
+    launch: ["launch", "release", "deployment", "go-live", "production"],
+    maintenance: ["maintenance", "update", "optimize", "refactor", "support"],
+  };
+
+  private readonly phasePriorityKeywords = {
+    critical: ["critical", "urgent", "asap", "must-have", "blocking", "immediately"],
+    high: ["high priority", "important", "soon", "required", "needed"],
+    medium: ["medium priority", "normal", "standard", "important but not urgent"],
+    low: ["low priority", "later", "optional", "nice-to-have", "backlog"],
+  };
+
   private readonly priorityKeywords = {
     critical: ["urgent", "asap", "critical", "high priority", "deadline"],
     high: ["important", "high priority", "soon", "today", "this week"],
@@ -151,6 +169,15 @@ export class KeywordParser implements AIProvider {
   };
 
   private readonly dayKeywords = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+
+  // Common project phase names based on typical project workflows
+  private readonly standardPhaseNames = [
+    ["Planning", "Initiation", "Setup", "Research", "Design"],
+    ["Development", "Implementation", "Building", "Creation"],
+    ["Testing", "Quality Assurance", "Review", "Debugging", "Audit"],
+    ["Launch", "Release", "Deployment", "Go-Live"],
+    ["Maintenance", "Updates", "Optimization", "Support"],
+  ];
 
   async parseTask(input: AITaskInput): Promise<TaskSuggestion> {
     const text = input.text.toLowerCase();
@@ -399,6 +426,300 @@ export class KeywordParser implements AIProvider {
     }
 
     return tasks;
+  }
+
+  /**
+   * Generate a project plan from natural language description
+   */
+  async generateProjectPlan(input: ProjectPlanInput): Promise<GeneratedProject> {
+    const { projectName, description = "", constraints = {}, context = {} } = input;
+    const normalizedDescription = (description + " " + projectName).toLowerCase();
+
+    // Determine project duration based on constraints or description analysis
+    const totalDuration = this.calculateProjectDuration(normalizedDescription, constraints);
+
+    // Identify phases based on keywords in the description
+    const phases = this.identifyPhases(normalizedDescription, totalDuration);
+
+    // Calculate total duration (sum of all phase durations)
+    let calculatedDuration = 0;
+    for (const phase of phases) {
+      if (phase.duration_days) {
+        calculatedDuration += phase.duration_days;
+      }
+    }
+
+    // If no phases detected, create a default single phase
+    if (phases.length === 0) {
+      phases.push({
+        name: "Execution",
+        description: `Primary phase for ${projectName}`,
+        duration_days: totalDuration,
+        priority: "high",
+      });
+      calculatedDuration = totalDuration;
+    }
+
+    // Distribute remaining days across phases if calculated < total
+    if (calculatedDuration < totalDuration) {
+      const remainingDays = totalDuration - calculatedDuration;
+      // Add remaining days to the highest priority phase or spread across all
+      if (phases.length > 0) {
+        phases[0] = {
+          ...phases[0],
+          duration_days: (phases[0].duration_days || 0) + remainingDays,
+        };
+      }
+    }
+
+    return {
+      name: projectName,
+      description: description || undefined,
+      phases,
+      total_duration_days: calculatedDuration || totalDuration,
+      provider: this.name,
+    };
+  }
+
+  /**
+   * Generate a decision template based on context
+   */
+  async generateDecisionTemplate(context: { decisionType?: string; task?: { name: string; priority?: string; deadline?: string } }): Promise<{ name: string; prompt_template: string; option_template?: string; provider: string }> {
+    const decisionTemplates: Record<string, { name: string; prompt_template: string; option_template?: string }> = {
+      priority: {
+        name: "Priority Decision Template",
+        prompt_template: "You need to decide on priority for task: {task_name}. Consider: deadline, urgency, impact, effort required. What's the best priority level (critical, high, medium, low)?",
+        option_template: '[{{ "critical": "Urgent and important - do immediately", "high": "Important but not urgent - schedule soon", "medium": "Standard priority - do when scheduled", "low": "Can wait - low impact" }}]',
+      },
+      approach: {
+        name: "Approach Decision Template",
+        prompt_template: "You need to decide on an approach for: {task_name}. What's the best strategy? Consider: available resources, constraints, past learnings, and desired outcome.",
+        option_template: '[{{ "method1": "Description", "method2": "Description", "method3": "Description" }}]',
+      },
+      tool: {
+        name: "Tool Selection Template",
+        prompt_template: "You need to select a tool for: {task_name}. What tool best fits the need? Consider: cost, integration, learning curve, and capabilities.",
+        option_template: '[{{ "tool_name": "Features, pros, cons", "alternative": "Features, pros, cons" }}]',
+      },
+      timeline: {
+        name: "Timeline Decision Template",
+        prompt_template: "You need to decide on a timeline for: {task_name}. When should this be completed? Consider: dependencies, deadlines, and available time.",
+        option_template: '[{{ "date": "Duration, milestones", "alternative_date": "Duration, milestones" }}]',
+      },
+      allocation: {
+        name: "Resource Allocation Template",
+        prompt_template: "You need to allocate resources for: {task_name}. How should resources be distributed? Consider: team capacity, skill requirements, and priority.",
+        option_template: '[{{ "allocation1": "Resources, rationale", "allocation2": "Resources, rationale" }}]',
+      },
+      cancellation: {
+        name: "Cancellation Decision Template",
+        prompt_template: "You need to decide whether to cancel: {task_name}. What are the costs and benefits of cancellation vs. completion? Consider: time invested, remaining work, and opportunity cost.",
+        option_template: '[{{ "cancel": "Rationale, costs", "complete": "Rationale, benefits", "defer": "Conditions for deferral" }}]',
+      },
+    };
+
+    const template = decisionTemplates[context.decisionType || "approach"] || decisionTemplates.approach;
+    return { ...template, provider: this.name };
+  }
+
+  /**
+   * Calculate project duration from description and constraints
+   */
+  private calculateProjectDuration(description: string, constraints: ProjectPlanInput["constraints"]): number {
+    // Check for explicit constraint dates
+    if (constraints?.deadline && constraints?.startDate) {
+      const deadline = new Date(constraints.deadline);
+      const startDate = new Date(constraints.startDate);
+      const diffDays = Math.ceil((deadline.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+      if (diffDays > 0) return diffDays;
+    }
+
+    // Check for duration keywords in description
+    const durationPatterns = [
+      { pattern: /(\d+)\s*day/i, days: 1 },
+      { pattern: /(\d+)\s*week/i, days: 7 },
+      { pattern: /(\d+)\s*month/i, days: 30 },
+      { pattern: /(\d+)\s*hour/i, days: 0 },
+    ];
+
+    // Look for timeline indicators
+    const timelineMatch = description.match(/(quick|fast|rapid|short).*?(project|delivery|milestone)/i);
+    if (timelineMatch) {
+      return 14;
+    }
+
+    const mediumMatch = description.match(/medium|standard|normal|typical/i);
+    if (mediumMatch) {
+      return 60;
+    }
+
+    const longMatch = description.match(/(long|extended|comprehensive|major|enterprise|large)/i);
+    if (longMatch) {
+      return 180;
+    }
+
+    // Default duration based on project complexity keywords
+    const complexityKeywords = {
+      "simple": 30,
+      "basic": 30,
+      "standard": 60,
+      "complex": 90,
+      "advanced": 90,
+      "enterprise": 180,
+      "major": 120,
+      "comprehensive": 150,
+    };
+
+    for (const [keyword, defaultDays] of Object.entries(complexityKeywords)) {
+      if (description.includes(keyword)) {
+        return defaultDays;
+      }
+    }
+
+    // Check for "sprint" or "agile" patterns
+    if (description.includes("sprint") || description.includes("agile")) {
+      return 90;
+    }
+
+    // Check for "launch" or "rollout" keywords
+    if (description.includes("launch") || description.includes("rollout") || description.includes("release")) {
+      return 60;
+    }
+
+    // Default project duration
+    return 60;
+  }
+
+  /**
+   * Identify phases based on keywords in the description
+   */
+  private identifyPhases(description: string, totalDuration: number): ProjectPhase[] {
+    const phases: ProjectPhase[] = [];
+    let remainingDays = totalDuration;
+
+    // Define standard phase templates
+    const phaseTemplates: Array<{
+      namePattern: string[];
+      description?: string;
+      priorityKeyword: string[];
+      estimatedDays?: number;
+    }> = [
+      {
+        namePattern: ["planning", "setup", "design", "research"],
+        description: "Initial planning, research, and design work",
+        priorityKeyword: ["critical", "important", "essential", "foundational"],
+        estimatedDays: Math.floor(totalDuration * 0.15),
+      },
+      {
+        namePattern: ["development", "building", "implementation", "coding", "creation"],
+        description: "Core development and implementation work",
+        priorityKeyword: ["high", "critical", "essential", "main"],
+        estimatedDays: Math.floor(totalDuration * 0.5),
+      },
+      {
+        namePattern: ["testing", "review", "qa", "quality", "debug"],
+        description: "Testing, quality assurance, and bug fixes",
+        priorityKeyword: ["high", "important", "required"],
+        estimatedDays: Math.floor(totalDuration * 0.2),
+      },
+      {
+        namePattern: ["launch", "deployment", "release", "go-live"],
+        description: "Final deployment and launch activities",
+        priorityKeyword: ["critical", "urgent", "must-have", "final"],
+        estimatedDays: Math.floor(totalDuration * 0.1),
+      },
+      {
+        namePattern: ["maintenance", "support", "update", "optimization"],
+        description: "Post-launch monitoring and optimization",
+        priorityKeyword: ["medium", "ongoing", "support"],
+        estimatedDays: Math.floor(totalDuration * 0.05),
+      },
+    ];
+
+    // Track which phases have been detected
+    const detectedPhaseKeys = new Set<string>();
+
+    // Find matching phases based on keywords
+    for (const [phaseIndex, template] of phaseTemplates.entries()) {
+      const matches = template.namePattern.filter((pattern) =>
+        description.includes(pattern) || detectedPhaseKeys.has(pattern)
+      );
+
+      if (matches.length > 0) {
+        // Determine priority based on keywords in description
+        let priority: "critical" | "high" | "medium" | "low" | "none" = "medium";
+        if (template.priorityKeyword.some((k) => description.includes(k))) {
+          if (template.priorityKeyword.includes("critical") || template.priorityKeyword.includes("must-have") || template.priorityKeyword.includes("urgent")) {
+            priority = "critical";
+          } else if (template.priorityKeyword.includes("high")) {
+            priority = "high";
+          } else if (template.priorityKeyword.includes("medium")) {
+            priority = "medium";
+          } else {
+            priority = "low";
+          }
+        }
+
+        // Calculate duration (minimum 3 days, use estimatedDays if found)
+        let phaseDays = template.estimatedDays || Math.max(3, Math.floor(totalDuration / 5));
+
+        // Check if there are specific duration mentions
+        const phaseNumberMatch = description.match(new RegExp(`${matches[0]}\\s*(\\d+)\\s*(?:day|week)`, "i"));
+        if (phaseNumberMatch) {
+          const num = parseInt(phaseNumberMatch[1], 10);
+          const unit = phaseNumberMatch[2].toLowerCase();
+          phaseDays = unit === "week" ? num * 7 : num;
+        }
+
+        // Mark these patterns as detected
+        for (const match of matches) {
+          detectedPhaseKeys.add(match);
+        }
+
+        phases.push({
+          name: this.formatPhaseName(matches[0], phaseIndex),
+          description: template.description,
+          duration_days: phaseDays,
+          priority,
+        });
+
+        remainingDays -= phaseDays;
+      }
+    }
+
+    return phases;
+  }
+
+  /**
+   * Format phase name to be more readable and appropriate
+   */
+  private formatPhaseName(keyword: string, phaseIndex: number): string {
+    const nameMap: Record<string, string> = {
+      "planning": "Planning",
+      "setup": "Setup",
+      "design": "Design",
+      "research": "Research",
+      "development": "Development",
+      "building": "Building",
+      "implementation": "Implementation",
+      "coding": "Coding",
+      "creation": "Creation",
+      "testing": "Testing",
+      "review": "Review",
+      "qa": "QA",
+      "quality": "Quality Assurance",
+      "debug": "Debugging",
+      "launch": "Launch",
+      "deployment": "Deployment",
+      "release": "Release",
+      "go-live": "Go Live",
+      "maintenance": "Maintenance",
+      "support": "Support",
+      "update": "Update",
+      "optimization": "Optimization",
+    };
+
+    return nameMap[keyword.toLowerCase()] || keyword.charAt(0).toUpperCase() + keyword.slice(1);
   }
 
   async generateInsights(tasks: Array<{ name: string; completed: boolean; priority: string; date?: string | null; deadline?: string | null }>): Promise<{ tips: string[]; suggestions: string[]; trends: string[] }> {
@@ -1047,6 +1368,49 @@ export class AIManager {
       ...task,
       provider: "keyword-parser",
     }));
+  }
+
+  /**
+   * Generate a project plan from natural language description
+   */
+  async generateProjectPlan(input: ProjectPlanInput): Promise<GeneratedProject & { provider: string }> {
+    // Try providers that support project planning (keyword parser always has it)
+    for (const provider of this.providers) {
+      if (typeof (provider as any).generateProjectPlan === "function") {
+        try {
+          const result = await (provider as any).generateProjectPlan(input);
+          if (result) {
+            return { ...result, provider: provider.name };
+          }
+        } catch (error) {
+          logWarn(`${provider.name} project plan generation failed`, { error: error instanceof Error ? error.message : String(error) });
+        }
+      }
+    }
+
+    // Fallback to keyword parser (should never fail)
+    const parser = new KeywordParser();
+    const result = await parser.generateProjectPlan(input);
+    return { ...result, provider: "keyword-parser" };
+  }
+
+  /**
+   * Generate a decision template based on context
+   */
+  async generateDecisionTemplate(context: { decisionType?: string; task?: { name: string; priority?: string; deadline?: string } }): Promise<{ name: string; prompt_template: string; option_template?: string }> {
+    // Try keyword parser first (always available)
+    const parser = new KeywordParser();
+    try {
+      return await parser.generateDecisionTemplate(context);
+    } catch (error) {
+      logWarn("Decision template generation failed", { error: error instanceof Error ? error.message : String(error) });
+      // Return a default template
+      return {
+        name: "General Decision Template",
+        prompt_template: "You need to make a decision about: {task_name}. What are the options, pros, and cons of each?",
+        option_template: '[{{ "option1": "Description, pros, cons" }}]',
+      };
+    }
   }
 
   clearCache(): void {
