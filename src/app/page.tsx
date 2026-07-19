@@ -14,6 +14,7 @@ import { TaskCalendar } from "@/components/task/task-calendar";
 import { TaskDependencyGraph } from "@/components/task/task-dependency-graph";
 import { GanttChart } from "@/components/task/gantt-chart";
 import { EisenhowerMatrix } from "@/components/task/eisenhower-matrix";
+import { TimelineView } from "@/components/task/timeline-view";
 import { KanbanBoard } from "@/components/task/kanban-board";
 import { FocusMode } from "@/components/task/focus-mode";
 import { ImportExport } from "@/components/task/import-export";
@@ -47,6 +48,7 @@ export default function Home() {
     matrix: tNav("matrix"),
     kanban: tNav("kanban"),
     gantt: tNav("gantt"),
+    timeline: "Timeline",
     ai: tNav("ai"),
     analytics: tNav("analytics"),
     goals: tNav("goals"),
@@ -349,6 +351,17 @@ export default function Home() {
           tasks={tasks}
           onTaskClick={handleEditTask}
         />
+      );
+    }
+
+    if (currentView === "timeline") {
+      return (
+        <div className="p-6">
+          <TimelineView
+            tasks={tasks}
+            onTaskClick={handleEditTask}
+          />
+        </div>
       );
     }
 
