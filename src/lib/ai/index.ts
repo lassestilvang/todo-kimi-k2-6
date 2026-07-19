@@ -257,3 +257,82 @@ export async function parseEditCommand(
   const ai = getAIManager();
   return ai.parseEditCommand(text, context);
 }
+
+// Project Plan schemas and types
+export const projectPhaseSchema = z.object({
+  name: z.string(),
+  description: z.string().optional(),
+  duration_days: z.number().int().min(1).optional(),
+  priority: z.enum(["critical", "high", "medium", "low", "none"]).optional(),
+  labels: z.string().optional(),
+  deadline: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  blocking_tasks: z.array(z.number()).optional(),
+});
+
+export const projectTemplateSchema = z.object({
+  name: z.string(),
+  description: z.string().optional(),
+  phases: z.array(projectPhaseSchema),
+  total_duration_days: z.number().int().min(1).optional(),
+});
+
+export type ProjectPhase = z.infer<typeof projectPhaseSchema>;
+export type ProjectTemplate = z.infer<typeof projectTemplateSchema>;
+
+// AI-powered project planning
+export interface ProjectPlanInput {
+  projectName: string;
+  description?: string;
+  constraints?: {
+    deadline?: string;
+    startDate?: string;
+    availableHoursPerDay?: number;
+  };
+  context?: {
+    existingProjects?: Array<{ name: string; phases: string[] }>;
+    teamCapacity?: number;
+  };
+}
+
+export interface GeneratedProject {
+  name: string;
+  description?: string;
+  phases: ProjectPhase[];
+  total_duration_days: number;
+  provider: string;
+}
+
+/**
+ * Generate a project plan from natural language description
+ */
+export async function generateProjectPlan(input: ProjectPlanInput): Promise<GeneratedProject> {
+  const ai = getAIManager();
+  return ai.generateProjectPlan(input);
+}
+
+/**
+ * Decision Template types and schemas
+ */
+export interface DecisionContext {
+  decisionType?: string;
+  task?: { name: string; priority?: string; deadline?: string };
+  environment?: string;
+}
+
+export interface GeneratedDecisionTemplate {
+  name: string;
+  prompt_template: string;
+  option_template?: string;
+  provider: string;
+}
+
+/**
+ * Generate an AI-powered decision template
+ */
+export async function generateDecisionTemplate(
+  userId: number,
+  context: DecisionContext
+): Promise<GeneratedDecisionTemplate> {
+  const ai = getAIManager();
+  return ai.generateDecisionTemplate(context);
+}
