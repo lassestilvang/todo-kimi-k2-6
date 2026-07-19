@@ -72,7 +72,7 @@ export async function getLists(): Promise<List[]> {
 
   // In test/demo mode, return inbox with user_id = 1 or null (for compatibility)
   if (process.env.NODE_ENV === "test" || process.env.NEXTAUTH_SECRET === "demo-secret") {
-    return db.prepare("SELECT * FROM lists WHERE user_id IS 1 OR user_id IS NULL ORDER BY is_inbox DESC, name ASC").all() as List[];
+    return db.prepare("SELECT * FROM lists WHERE user_id = 1 OR user_id IS NULL ORDER BY is_inbox DESC, name ASC").all() as List[];
   }
 
   return [];
@@ -401,6 +401,26 @@ export async function getTasks(options?: GetTasksOptions): Promise<TaskWithRelat
   // Batch fetch all relations using shared utility
   const relationsMap = await getTaskRelations(db, taskIds);
 
+  // Fetch vote scores for all tasks
+  const voteScores: Record<number, { total: number; count: number; score: number }> = {};
+  if (taskIds.length > 0) {
+    const placeholder = taskIds.map(() => "?").join(",");
+    const votes = db.prepare(
+      `SELECT task_id, SUM(value) as total, COUNT(*) as count,
+              CASE WHEN COUNT(*) > 0 THEN SUM(value) * 1.0 / COUNT(*) ELSE 0 END as score
+       FROM task_votes WHERE task_id IN (${placeholder})
+       GROUP BY task_id`
+    ).all(...taskIds) as Array<{ task_id: number; total: number; count: number; score: number }>;
+
+    for (const vote of votes) {
+      voteScores[vote.task_id] = {
+        total: vote.total || 0,
+        count: vote.count || 0,
+        score: vote.score || 0,
+      };
+    }
+  }
+
   const result: TaskWithRelations[] = tasks.map((task) => {
     const relations = relationsMap[task.id] || {
       labels: [],
@@ -415,6 +435,9 @@ export async function getTasks(options?: GetTasksOptions): Promise<TaskWithRelat
       time_entries: [],
       recurring_exceptions: [],
     };
+
+    const voteData = voteScores[task.id] || { total: 0, count: 0, score: 0 };
+
     return {
       ...task,
       labels: relations.labels,
@@ -427,6 +450,8 @@ export async function getTasks(options?: GetTasksOptions): Promise<TaskWithRelat
       blocked_by: relations.blocked_by,
       time_entries: relations.time_entries,
       recurring_exceptions: relations.recurring_exceptions,
+      vote_score: voteData.score,
+      vote_count: voteData.count,
     };
   });
 
