@@ -151,6 +151,93 @@ export const migrations: Record<number, string> = {
     ALTER TABLE tasks ADD COLUMN archived INTEGER DEFAULT 0 CHECK(archived IN (0, 1));
     CREATE INDEX IF NOT EXISTS idx_tasks_archived ON tasks(archived);
   `,
+  17: `
+    -- Add task_votes table for crowdsourced task prioritization
+    CREATE TABLE IF NOT EXISTS task_votes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      value INTEGER NOT NULL CHECK(value IN (-1, 1)),
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(task_id, user_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_task_votes_task ON task_votes(task_id);
+    CREATE INDEX IF NOT EXISTS idx_task_votes_user ON task_votes(user_id);
+  `,
+  18: `
+    -- Add decision_entries table for decision tracking
+    CREATE TABLE IF NOT EXISTS decision_entries (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      task_id INTEGER REFERENCES tasks(id) ON DELETE CASCADE,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      decision_type TEXT NOT NULL,
+      question TEXT NOT NULL,
+      chosen_option_id INTEGER,
+      rationale TEXT,
+      outcome TEXT,
+      outcome_notes TEXT,
+      outcome_rating INTEGER CHECK(outcome_rating BETWEEN -1 AND 1),
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_decisions_user ON decision_entries(user_id);
+    CREATE INDEX IF NOT EXISTS idx_decisions_task ON decision_entries(task_id);
+  `,
+  19: `
+    -- Add decision_options table for decision choices
+    CREATE TABLE IF NOT EXISTS decision_options (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      decision_entry_id INTEGER NOT NULL REFERENCES decision_entries(id) ON DELETE CASCADE,
+      option_text TEXT NOT NULL,
+      pros TEXT,
+      cons TEXT,
+      estimated_impact TEXT,
+      estimated_effort TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+  `,
+  20: `
+    -- Add decision_templates table for reusable decision frameworks
+    CREATE TABLE IF NOT EXISTS decision_templates (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      prompt_template TEXT NOT NULL,
+      option_template TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_decision_templates_user ON decision_templates(user_id);
+  `,
+  21: `
+    -- Add task_insights table for extracted lessons from tasks
+    CREATE TABLE IF NOT EXISTS task_insights (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      insight_type TEXT NOT NULL,
+      content TEXT NOT NULL,
+      context_tags TEXT,
+      confidence REAL DEFAULT 0.5,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_task_insights_task ON task_insights(task_id);
+    CREATE INDEX IF NOT EXISTS idx_task_insights_user ON task_insights(user_id);
+  `,
+  22: `
+    -- Add user_skills table for personal skill tracking
+    CREATE TABLE IF NOT EXISTS user_skills (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      skill_name TEXT NOT NULL,
+      proficiency_level INTEGER DEFAULT 1 CHECK(proficiency_level BETWEEN 1 AND 5),
+      evidence_task_ids TEXT,
+      last_used_at TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_user_skills_user ON user_skills(user_id);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_user_skills_unique ON user_skills(user_id, skill_name);
+  `,
 };
 
 export async function runMigrations(): Promise<void> {
