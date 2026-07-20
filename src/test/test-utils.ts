@@ -1,5 +1,6 @@
 import { Database } from 'better-sqlite3';
 import { setupSchema } from '@/lib/db/schema';
+import { initializeSchema } from '@/lib/db/index';
 import { createMockDatabase } from '@/lib/db/mock-driver';
 
 let testDb: ReturnType<typeof createMockDatabase> | null = null;
@@ -7,7 +8,8 @@ let testDb: ReturnType<typeof createMockDatabase> | null = null;
 export async function setupTestDb(): Promise<ReturnType<typeof createMockDatabase>> {
   // Always create a fresh database for test isolation
   testDb = createMockDatabase();
-  setupSchema(testDb);
+  // Use the full schema that includes all tables (including knowledge graph tables)
+  initializeSchema(testDb as any);
   return testDb;
 }
 
