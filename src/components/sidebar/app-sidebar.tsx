@@ -1,6 +1,4 @@
-"use client";
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Calendar,
@@ -26,6 +24,7 @@ import {
   Zap,
   Smile,
   GraduationCap,
+  type LucideIcon
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
@@ -57,8 +56,8 @@ import { useUndo } from "@/hooks/use-undo";
 
 interface ViewItem {
   id?: string;
-  name: string;
-  icon: React.ElementType;
+  name?: string;
+  icon?: LucideIcon;
   separator?: boolean;
   label?: string;
 }
@@ -77,7 +76,7 @@ interface AppSidebarProps {
   onWorkspaceChange?: ((workspace: Workspace | null) => void) | undefined;
 }
 
-const views = [
+const views: ViewItem[] = [
   { id: "today", name: "Today", icon: Calendar },
   { id: "next7", name: "Next 7 Days", icon: CalendarDays },
   { id: "upcoming", name: "Upcoming", icon: CalendarRange },
@@ -336,14 +335,15 @@ export function AppSidebar({
                 if (view.separator) {
                   return (
                     <div key={`separator-${index}`}>
-                    <Separator className="my-1" />
-                    <p className="px-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      {view.label || "Labs"}
-                    </p>
+                      <Separator className="my-1" />
+                      <p className="px-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        {view.label || "Labs"}
+                      </p>
                     </div>
                   );
                 }
 
+                if (!view.icon || !view.name) return null;
                 const Icon = view.icon;
                 const isActive = currentView === view.id;
                 return (
