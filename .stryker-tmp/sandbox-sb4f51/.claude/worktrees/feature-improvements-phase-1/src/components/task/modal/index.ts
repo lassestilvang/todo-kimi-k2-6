@@ -1,0 +1,12 @@
+// @ts-nocheck
+export { TaskBasicInfo } from "./task-basic-info";
+export { TaskSchedule } from "./task-schedule";
+export { TaskLabels } from "./task-labels";
+export { TaskSubtasks } from "./task-subtasks";
+export { TaskDependencies } from "./task-dependencies";
+export { TaskCommentsTab } from "./task-comments-tab";
+export { TaskAssignTab } from "./task-assign-tab";
+export { TaskCollaborateTab } from "./task-collaborate-tab";
+export { TaskAttachments } from "./task-attachments";
+export { TaskTemplateTab } from "./task-template-tab";
+export { TaskStreakTab } from "./task-streak-tab";

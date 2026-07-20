@@ -1,0 +1,353 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "TaskFlow API",
+    "description": "Task management API with AI-powered task parsing, team collaboration, and productivity analytics.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Development server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "tasks",
+      "description": "Task management operations"
+    },
+    {
+      "name": "lists",
+      "description": "Task list management"
+    },
+    {
+      "name": "labels",
+      "description": "Task labeling and categorization"
+    },
+    {
+      "name": "auth",
+      "description": "Authentication and user management"
+    },
+    {
+      "name": "ai",
+      "description": "AI-powered task parsing and insights"
+    },
+    {
+      "name": "calendar",
+      "description": "Calendar integration"
+    },
+    {
+      "name": "sharing",
+      "description": "Task sharing and collaboration"
+    }
+  ],
+  "paths": {
+    "/api/tasks": {
+      "get": {
+        "tags": ["tasks"],
+        "summary": "Get all tasks",
+        "description": "Retrieve tasks with optional filtering and sorting",
+        "parameters": [
+          {
+            "name": "view",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["today", "next7", "upcoming", "all", "blocked"]
+            },
+            "description": "Predefined view filter"
+          },
+          {
+            "name": "listId",
+            "in": "query",
+            "schema": { "type": "integer" },
+            "description": "Filter by list ID"
+          },
+          {
+            "name": "searchQuery",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Search tasks by name or description"
+          },
+          {
+            "name": "includeCompleted",
+            "in": "query",
+            "schema": { "type": "boolean", "default": false },
+            "description": "Include completed tasks"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of tasks",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Task" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["tasks"],
+        "summary": "Create a new task",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateTaskInput" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Task created successfully",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Task" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks/{id}": {
+      "get": {
+        "tags": ["tasks"],
+        "summary": "Get a task by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Task details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TaskWithRelations" }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["tasks"],
+        "summary": "Update a task",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateTaskInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Task updated successfully"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["tasks"],
+        "summary": "Delete a task",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Task deleted successfully"
+          }
+        }
+      }
+    },
+    "/api/ai": {
+      "post": {
+        "tags": ["ai"],
+        "summary": "Parse task from natural language",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": ["parse", "insights"]
+                  },
+                  "input": {
+                    "type": "object",
+                    "properties": {
+                      "text": { "type": "string" },
+                      "context": { "type": "object" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Parsed task suggestion"
+          }
+        }
+      }
+    },
+    "/api/auth/[...nextauth]/config": {
+      "get": {
+        "tags": ["auth"],
+        "summary": "Get authentication providers",
+        "responses": {
+          "200": {
+            "description": "Available auth providers"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Task": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "description": { "type": "string", "nullable": true },
+          "priority": {
+            "type": "string",
+            "enum": ["critical", "high", "medium", "low", "none"]
+          },
+          "date": { "type": "string", "format": "date", "nullable": true },
+          "deadline": { "type": "string", "format": "date", "nullable": true },
+          "completed": { "type": "boolean" },
+          "recurring": {
+            "type": "string",
+            "enum": ["none", "daily", "weekly", "weekdays", "monthly", "yearly", "custom"]
+          }
+        }
+      },
+      "TaskWithRelations": {
+        "allOf": [
+          { "$ref": "#/components/schemas/Task" },
+          {
+            "type": "object",
+            "properties": {
+              "labels": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/Label" }
+              },
+              "subtasks": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/Subtask" }
+              },
+              "comments": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/Comment" }
+              }
+            }
+          }
+        ]
+      },
+      "CreateTaskInput": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "list_id": { "type": "integer" },
+          "date": { "type": "string", "format": "date" },
+          "deadline": { "type": "string", "format": "date" },
+          "priority": {
+            "type": "string",
+            "enum": ["critical", "high", "medium", "low", "none"]
+          },
+          "label_ids": {
+            "type": "array",
+            "items": { "type": "integer" }
+          },
+          "subtasks": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "required": ["name"]
+      },
+      "UpdateTaskInput": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "completed": { "type": "boolean" },
+          "priority": {
+            "type": "string",
+            "enum": ["critical", "high", "medium", "low", "none"]
+          }
+        }
+      },
+      "Label": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "icon": { "type": "string" },
+          "color": { "type": "string" }
+        }
+      },
+      "Subtask": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "task_id": { "type": "integer" },
+          "name": { "type": "string" },
+          "completed": { "type": "boolean" }
+        }
+      },
+      "Comment": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "task_id": { "type": "integer" },
+          "content": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "TaskSuggestion": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "description": { "type": "string", "nullable": true },
+          "priority": {
+            "type": "string",
+            "enum": ["critical", "high", "medium", "low", "none"]
+          },
+          "estimated_duration": { "type": "number", "nullable": true },
+          "suggested_date": { "type": "string", "format": "date", "nullable": true },
+          "recurring": {
+            "type": "string",
+            "enum": ["none", "daily", "weekly", "weekdays", "monthly", "yearly", "custom"]
+          },
+          "deadline": { "type": "string", "format": "date", "nullable": true }
+        }
+      }
+    }
+  }
+}

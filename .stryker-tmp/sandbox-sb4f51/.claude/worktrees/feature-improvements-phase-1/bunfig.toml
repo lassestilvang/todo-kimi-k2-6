@@ -1,0 +1,9 @@
+[test]
+# Exclude e2e tests from Bun test runner
+# E2E tests should be run with `npm run test:e2e`
+root = "."
+exclude = ["e2e/**/*", "tests-e2e/**/*", "playwright/**/*", "playwright-e2e/**/*", "playwright-e2e/**/*/**/*", ".e2e/**/*", "**/*.spec.ts", "**/*.spec.tsx"]
+
+[serve]
+# Not used, but prevents serve from looking for test files
+port = 3000
