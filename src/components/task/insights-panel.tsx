@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { Brain, Lightbulb, TrendingUp, Target, CheckCircle, AlertCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import type { TaskWithRelations } from "@/types";
 
@@ -37,7 +36,7 @@ export function InsightsPanel({ tasks, userId, onInsightClick, className }: Insi
   const [insights, setInsights] = useState<Insight[]>([]);
   const [skills, setSkills] = useState<Skill[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("insights");
+  const [activeView, setActiveView] = useState<"insights" | "skills" | "analytics">("insights");
 
   useEffect(() => {
     loadInsightsAndSkills();
@@ -109,7 +108,7 @@ export function InsightsPanel({ tasks, userId, onInsightClick, className }: Insi
       insights.push({
         id: "insight-1",
         type: "pattern_observed",
-        title: `${mostCommonPriority.charAt(0).toUpperCase() + mostCommonPriority.slice(1)} Priority Tasks Completed Most",
+        title: `${mostCommonPriority.charAt(0).toUpperCase() + mostCommonPriority.slice(1)} Priority Tasks Completed Most`,
         content: `You tend to complete ${mostCommonPriority} priority tasks most frequently. This suggests a natural working rhythm that aligns with task importance levels.`,
         confidence: 0.8,
         context_tags: ["priority", "completion", "behavior"],
@@ -218,61 +217,6 @@ export function InsightsPanel({ tasks, userId, onInsightClick, className }: Insi
     return mostCommon;
   };
 
-  const renderInsights = () => {
-    if (insights.length === 0) {
-      return (
-        <div className="text-center py-8 text-muted-foreground">
-          <Brain className="h-12 w-12 mx-auto mb-4 opacity-50" />
-          <p>No insights available yet.</p>
-          <p className="text-sm">Complete more tasks to generate AI-powered insights</p>
-        </div>
-      );
-    }
-
-    return (
-      <div className="space-y-4">
-        {insights.map((insight) => (
-          <Card
-            key={insight.id}
-            className={`cursor-pointer transition-all hover:scale-102 ${getInsightColor(insight.type)}`}
-            onClick={() => onInsightClick && onInsightClick(insight)}
-          >
-            <CardContent className="pt-4">
-              <div className="flex items-start gap-3">
-                <div className="p-2 rounded-lg bg-background/50">
-                  {getInsightIcon(insight.type)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-sm mb-1 line-clamp-2">
-                    {insight.title}
-                  </h3>
-                  <p className="text-sm text-muted-foreground line-clamp-3 mb-2">
-                    {insight.content}
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className="text-xs">
-                        {insight.type.replace('_', ' ')}
-                      </Badge>
-                      {insight.context_tags.map((tag) => (
-                        <Badge key={tag} variant="outline" className="text-xs">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                    <div className={`text-xs font-medium ${getConfidenceColor(insight.confidence)}`">
-                      {Math.round(insight.confidence * 100)}% confidence
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    );
-  };
-
   if (loading) {
     return (
       <Card className={className}>
@@ -297,47 +241,129 @@ export function InsightsPanel({ tasks, userId, onInsightClick, className }: Insi
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="insights">Insights</TabsTrigger>
-            <TabsTrigger value="skills">Skills</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          </TabsList>
+        <div className="space-y-4">
+          {/* View Selector */}
+          <div className="flex gap-2 mb-4">
+            <button
+              onClick={() => setActiveView("insights")}
+              className={`px-3 py-1 text-sm rounded-full transition-all ${
+                activeView === "insights"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              }`}
+            >
+              Insights ({insights.length})
+            </button>
+            <button
+              onClick={() => setActiveView("skills")}
+              className={`px-3 py-1 text-sm rounded-full transition-all ${
+                activeView === "skills"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              }`}
+            >
+              Skills ({skills.length})
+            </button>
+            <button
+              onClick={() => setActiveView("analytics")}
+              className={`px-3 py-1 text-sm rounded-full transition-all ${
+                activeView === "analytics"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              }`}
+            >
+              Analytics
+            </button>
+          </div>
 
-          <TabsContent value="insights" className="space-y-4 mt-4">
-            {renderInsights()}
-          </TabsContent>
+          {/* Insights View */}
+          {activeView === "insights" && (
+            <div className="space-y-4">
+              {insights.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Brain className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No insights available yet.</p>
+                  <p className="text-sm">Complete more tasks to generate AI-powered insights</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {insights.map((insight) => (
+                    <Card
+                      key={insight.id}
+                      className={`cursor-pointer transition-all hover:scale-102 ${getInsightColor(insight.type)}`}
+                      onClick={() => onInsightClick && onInsightClick(insight)}
+                    >
+                      <CardContent className="pt-4">
+                        <div className="flex items-start gap-3">
+                          <div className="p-2 rounded-lg bg-background/50">
+                            {getInsightIcon(insight.type)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-sm mb-1 line-clamp-2">
+                              {insight.title}
+                            </h3>
+                            <p className="text-sm text-muted-foreground line-clamp-3 mb-2">
+                              {insight.content}
+                            </p>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Badge variant="secondary" className="text-xs">
+                                  {insight.type.replace('_', ' ')}
+                                </Badge>
+                                {insight.context_tags.map((tag) => (
+                                  <Badge key={tag} variant="outline" className="text-xs">
+                                    {tag}
+                                  </Badge>
+                                ))}
+                              </div>
+                              <div className={`text-xs font-medium ${getConfidenceColor(insight.confidence)}`}>
+                                {Math.round(insight.confidence * 100)}% confidence
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
-          <TabsContent value="skills" className="space-y-4 mt-4">
-            {skills.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No skills tracked yet.</p>
-                <p className="text-sm">Complete more tasks to track skill development</p>
-              </div>
-            ) : (
-              <div className="grid gap-4">
-                {skills.map((skill) => (
-                  <Card key={skill.id} className="hover:bg-muted/50 transition-colors">
-                    <CardContent className="pt-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="font-semibold text-lg">{skill.name}</h3>
-                        <Badge variant="secondary">
-                          Level {skill.proficiency_level}/5
-                        </Badge>
-                      </div>
-                      <Progress value={(skill.proficiency_level / 5) * 100} className="h-2 mb-2" />
-                      <div className="text-sm text-muted-foreground">
-                        Evidence from {skill.evidence_task_ids.length} task{skill.evidence_task_ids.length !== 1 ? 's' : ''}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </TabsContent>
+          {/* Skills View */}
+          {activeView === "skills" && (
+            <div className="space-y-4">
+              {skills.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No skills tracked yet.</p>
+                  <p className="text-sm">Complete more tasks to track skill development</p>
+                </div>
+              ) : (
+                <div className="grid gap-4">
+                  {skills.map((skill) => (
+                    <Card key={skill.id} className="hover:bg-muted/50 transition-colors">
+                      <CardContent className="pt-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="font-semibold text-lg">{skill.name}</h3>
+                          <Badge variant="secondary">
+                            Level {skill.proficiency_level}/5
+                          </Badge>
+                        </div>
+                        <Progress value={(skill.proficiency_level / 5) * 100} className="h-2 mb-2" />
+                        <div className="text-sm text-muted-foreground">
+                          Evidence from {skill.evidence_task_ids.length} task{skill.evidence_task_ids.length !== 1 ? 's' : ''}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
-          <TabsContent value="analytics" className="space-y-4 mt-4">
+          {/* Analytics View */}
+          {activeView === "analytics" && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Card>
                 <CardHeader className="pb-3">
@@ -387,8 +413,8 @@ export function InsightsPanel({ tasks, userId, onInsightClick, className }: Insi
                 </CardContent>
               </Card>
             </div>
-          </TabsContent>
-        </Tabs>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
