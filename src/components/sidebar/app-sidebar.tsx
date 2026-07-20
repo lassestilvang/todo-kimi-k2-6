@@ -90,13 +90,15 @@ const views: ViewItem[] = [
   { id: "ai", name: "AI Assistant", icon: Bot },
   { id: "calendar", name: "Calendar", icon: Calendar },
   { id: "analytics", name: "Analytics", icon: BarChart3 },
-  { id: "investment", name: "Investment Portfolio", icon: TrendingUp },
+  { id: "investment", name: "Technology Portfolio", icon: TrendingUp },
   { separator: true, label: "Labs" },
   { id: "labs", name: "AI Playground", icon: TestTube },
   { id: "project-planning", name: "Project Planner", icon: GraduationCap },
   { id: "skills", name: "Skills Tracker", icon: Calculator },
   { id: "energy", name: "Energy Scheduler", icon: Zap },
   { id: "stories", name: "Success Stories", icon: Smile },
+  { id: "decision-journal", name: "Decision Journal", icon: Brain },
+  { id: "career-compass", name: "Career Compass", icon: GraduationCap },
 ];
 
 export function AppSidebar({
