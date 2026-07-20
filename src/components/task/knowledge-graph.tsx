@@ -29,7 +29,9 @@ import {
   Brain,
   Link2,
   MousePointer,
-  Maximize2
+  Maximize2,
+  CheckCircle,
+  AlertCircle
 } from "lucide-react";
 import type { TaskWithRelations } from "@/types";
 import type { TaskConnection, TaskInsight, UserSkill, HabitContext, TaskConnectionType } from "@/types";
@@ -188,7 +190,7 @@ export function KnowledgeGraph({ tasks, userId, onConnectionChange, className }:
           group: task.completed ? "completed" : (task.date && new Date(task.date) < new Date() ? "in_progress" : "planned"),
           labels: task.labels?.map(l => l.name) || [],
           priority: task.priority,
-          date: task.date,
+          date: task.date || undefined,
           skill_level: task.completed ? Math.min(5, Math.floor(Math.random() * 3) + 1) : undefined,
           connection_strength: task.blockers?.length ? 1 / Math.max(task.blockers.length, 1) : 0.5,
           val: task.labels?.length || 3,
@@ -198,21 +200,19 @@ export function KnowledgeGraph({ tasks, userId, onConnectionChange, className }:
       });
 
       // Generate insights from tasks
-      if (tasks.length > 0) {
-        const completedTasks = tasks.filter(t => t.completed);
-        if (completedTasks.length > 0) {
-          mockInsights.push({
-            id: 1,
-            task_id: completedTasks[0].id,
-            user_id: userId,
-            insight_type: "pattern_observed",
-            content: "You tend to complete high-priority tasks most frequently",
-            context_tags: ["priority", "completion"],
-            confidence: 0.8,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          });
-        }
+      const completedTasks = tasks.filter(t => t.completed);
+      if (completedTasks.length > 0) {
+        mockInsights.push({
+          id: 1,
+          task_id: completedTasks[0].id,
+          user_id: userId,
+          insight_type: "pattern_observed",
+          content: "You tend to complete high-priority tasks most frequently",
+          context_tags: JSON.stringify(["priority", "completion"]),
+          confidence: 0.8,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
       }
 
       // Generate skills from task patterns
@@ -324,6 +324,26 @@ export function KnowledgeGraph({ tasks, userId, onConnectionChange, className }:
     return colors[priority as keyof typeof colors] || '#6b7280';
   };
 
+  const getInsightIcon = (type: string) => {
+    const icons: Record<string, React.ReactNode> = {
+      'lesson_learned': <Lightbulb className="h-4 w-4" />,
+      'pattern_observed': <TrendingUp className="h-4 w-4" />,
+      'success_factor': <CheckCircle className="h-4 w-4" />,
+      'failure_reason': <AlertCircle className="h-4 w-4" />,
+    };
+    return icons[type] || <Brain className="h-4 w-4" />;
+  };
+
+  const getInsightColor = (type: string): string => {
+    const colors: Record<string, string> = {
+      'lesson_learned': 'bg-blue-500/10 border-blue-500/20',
+      'pattern_observed': 'bg-green-500/10 border-green-500/20',
+      'success_factor': 'bg-emerald-500/10 border-emerald-500/20',
+      'failure_reason': 'bg-orange-500/10 border-orange-500/20',
+    };
+    return colors[type] || 'bg-purple-500/10 border-purple-500/20';
+  };
+
   const getNodeColor = (node: GraphNode): string => {
     if (node.type === "task") {
       return getPriorityColor(node.priority);
@@ -375,18 +395,10 @@ export function KnowledgeGraph({ tasks, userId, onConnectionChange, className }:
     }
   };
 
-  const handleNodeDragEnd = (node: any, transform: any) => {
-    const updatedNodes = nodes.map(n => {
-      if (n.id === node.id) {
-        return {
-          ...n,
-          x: node.x + transform.x,
-          y: node.y + transform.y,
-        };
-      }
-      return n;
-    });
-    setNodes(updatedNodes);
+  const handleNodeDragEnd = (node: any) => {
+    // Node position update is handled by the graph component internally
+    // This callback can be used for side effects if needed
+    console.log("Node dragged:", node.id, node.name);
   };
 
   const openConnectionForm = () => {
@@ -522,7 +534,7 @@ export function KnowledgeGraph({ tasks, userId, onConnectionChange, className }:
         <div className="flex justify-between items-center">
           <h3 className="text-lg font-semibold">Task Connections</h3>
           <Dialog open={showConnectionForm} onOpenChange={setShowConnectionForm}>
-            <DialogTrigger asChild>
+            <DialogTrigger>
               <Button size="sm">
                 <Plus className="h-4 w-4 mr-1" /> Add Connection
               </Button>
@@ -596,13 +608,13 @@ export function KnowledgeGraph({ tasks, userId, onConnectionChange, className }:
   };
 
   const ConnectionForm = ({ onSubmit, onCancel }: { onSubmit: (data: ConnectionFormData) => void; onCancel: () => void }) => {
-    const [formData, setFormData] = useState<ConnectionFormData({
+    const [formData, setFormData] = useState<ConnectionFormData>({
       source_task_id: tasks[0]?.id || 0,
       target_task_id: tasks[1]?.id || 0,
       connection_type: "prerequisite",
       strength: 0.5,
       notes: "",
-    }));
+    });
 
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault();
@@ -619,7 +631,7 @@ export function KnowledgeGraph({ tasks, userId, onConnectionChange, className }:
           <Label htmlFor="source">Source Task</Label>
           <Select
             value={formData.source_task_id.toString()}
-            onValueChange={(value) => setFormData(prev => ({ ...prev, source_task_id: parseInt(value) }))}
+            onValueChange={(value) => { if (value !== null) setFormData(prev => ({ ...prev, source_task_id: parseInt(value) })); }}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select source task" />
@@ -638,7 +650,7 @@ export function KnowledgeGraph({ tasks, userId, onConnectionChange, className }:
           <Label htmlFor="target">Target Task</Label>
           <Select
             value={formData.target_task_id.toString()}
-            onValueChange={(value) => setFormData(prev => ({ ...prev, target_task_id: parseInt(value) }))}
+            onValueChange={(value) => { if (value !== null) setFormData(prev => ({ ...prev, target_task_id: parseInt(value) })); }}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select target task" />
@@ -657,7 +669,7 @@ export function KnowledgeGraph({ tasks, userId, onConnectionChange, className }:
           <Label htmlFor="type">Connection Type</Label>
           <Select
             value={formData.connection_type}
-            onValueChange={(value: TaskConnectionType) => setFormData(prev => ({ ...prev, connection_type: value }))}
+            onValueChange={(value) => { if (value !== null) setFormData(prev => ({ ...prev, connection_type: value })); }}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select connection type" />
@@ -676,9 +688,8 @@ export function KnowledgeGraph({ tasks, userId, onConnectionChange, className }:
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="strength">Connection Strength: {Math.round(formData.strength * 100)}%</Label>
+          <Label>Connection Strength: {Math.round(formData.strength * 100)}%</Label>
           <Slider
-            id="strength"
             min={0}
             max={1}
             step={0.1}
@@ -725,17 +736,17 @@ export function KnowledgeGraph({ tasks, userId, onConnectionChange, className }:
               <Card key={insight.id} className="hover:bg-muted/50 transition-colors">
                 <CardContent className="pt-4">
                   <div className="flex items-start gap-3 mb-3">
-                    {getInsightIcon(insight.type)}
+                    {getInsightIcon(insight.insight_type)}
                     <div className="flex-1">
-                      <h3 className="font-semibold text-sm mb-1">{insight.title}</h3>
-                      <p className="text-sm text-muted-foreground">{insight.content}</p>
+                      <h3 className="font-semibold text-sm mb-1">{insight.content}</h3>
+                      <p className="text-sm text-muted-foreground">Context: {insight.context_tags}</p>
                     </div>
                     <Badge variant="secondary" className="text-xs">
                       {Math.round(insight.confidence * 100)}%
                     </Badge>
                   </div>
                   <div className="flex flex-wrap gap-1 mt-3">
-                    {insight.context_tags.map((tag) => (
+                    {insight.context_tags && JSON.parse(insight.context_tags).map((tag: string) => (
                       <Badge key={tag} variant="outline" className="text-xs">
                         {tag}
                       </Badge>
@@ -765,7 +776,7 @@ export function KnowledgeGraph({ tasks, userId, onConnectionChange, className }:
               <Card key={skill.id} className="hover:bg-muted/50 transition-colors">
                 <CardContent className="pt-4">
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-semibold">{skill.name}</h3>
+                    <h3 className="font-semibold">{skill.skill_name}</h3>
                     <Badge variant="secondary">
                       Level {skill.proficiency_level}/5
                     </Badge>
