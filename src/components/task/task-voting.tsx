@@ -1,102 +1,154 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { ThumbsUp, ThumbsDown, Star, ChevronUp, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ChevronUp, ChevronDown, Users } from "lucide-react";
-import { cn } from "@/lib/utils";
-
-interface TaskVote {
-  userId: number;
-  userName: string;
-  value: number; // -1 (downvote) or 1 (upvote)
-}
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { toast } from "sonner";
 
 interface TaskVotingProps {
   taskId: number;
-  initialScore: number;
-  initialVotes: TaskVote[];
-  currentUserId?: number;
-  onVote?: (taskId: number, value: number) => void;
+  initialScore?: number;
+  initialVote?: -1 | 1 | null;
+  disabled?: boolean;
+}
+
+interface VoteStats {
+  total: number;
+  count: number;
+  score: number;
 }
 
 export function TaskVoting({
   taskId,
-  initialScore,
-  initialVotes,
-  currentUserId,
-  onVote,
+  initialScore = 0,
+  initialVote = null,
+  disabled = false,
 }: TaskVotingProps) {
-  const [score, setScore] = useState(initialScore);
-  const [votes, setVotes] = useState<TaskVote[]>(initialVotes);
-  const [userVote, setUserVote] = useState<number>(0);
+  const [vote, setVote] = useState<-1 | 1 | null>(initialVote);
+  const [stats, setStats] = useState<VoteStats>({ total: 0, count: 0, score: 0 });
+  const [loading, setLoading] = useState(false);
 
-  const handleVote = (value: number) => {
-    if (!currentUserId) return;
+  useEffect(() => {
+    loadVoteData();
+  }, [taskId]);
 
-    const newScore = score + (value - userVote);
-    const newVotes = [...votes.filter((v) => v.userId !== currentUserId)];
+  const loadVoteData = async () => {
+    try {
+      const response = await fetch(`/api/task-votes?task_id=${taskId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setStats({
+          total: data.total || 0,
+          count: data.count || 0,
+          score: data.score || 0,
+        });
 
-    if (value !== 0) {
-      newVotes.push({
-        userId: currentUserId,
-        userName: "Current User",
-        value,
-      });
+        const votes = data.votes || [];
+        // Get first user's vote (in real app would use session)
+        if (votes.length > 0) {
+          setVote(votes[0].value);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to load vote data:", error);
     }
-
-    setScore(newScore);
-    setVotes(newVotes);
-    setUserVote(value);
-    onVote?.(taskId, value);
   };
 
-  const upvoteCount = votes.filter((v) => v.value > 0).length;
-  const downvoteCount = votes.filter((v) => v.value < 0).length;
+  const handleVote = async (value: -1 | 1) => {
+    if (disabled || loading) return;
+
+    setLoading(true);
+
+    try {
+      const response = await fetch("/api/task-votes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ task_id: taskId, value }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setVote(value);
+        setStats(data.stats);
+        toast.success(`Task ${value === 1 ? "prioritized" : "marked as reviewed"}!`);
+      } else {
+        throw new Error("Failed to vote");
+      }
+    } catch (error) {
+      toast.error("Failed to vote on task");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRemoveVote = async () => {
+    if (disabled || loading) return;
+
+    setLoading(true);
+
+    try {
+      const response = await fetch(`/api/task-votes?task_id=${taskId}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        setVote(null);
+        await loadVoteData();
+        toast.success("Vote removed");
+      }
+    } catch (error) {
+      toast.error("Failed to remove vote");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getScoreColor = (score: number) => {
+    if (score > 0.5) return "text-green-500";
+    if (score < -0.5) return "text-red-500";
+    return "text-amber-500";
+  };
+
+  if (stats.count === 0) {
+    return null; // Don't show voting UI if no votes yet
+  }
 
   return (
-    <div className="flex items-center gap-2">
-      <div className="flex items-center gap-1">
+    <TooltipProvider>
+      <div className="flex items-center gap-2 text-xs">
         <Button
-          variant="ghost"
           size="sm"
-          className={cn("h-6 w-6 p-0", userVote === 1 && "text-green-500")}
-          onClick={() => handleVote(userVote === 1 ? 0 : 1)}
-          disabled={!currentUserId}
+          variant={vote === 1 ? "default" : "outline"}
+          disabled={disabled || loading}
+          onClick={() => vote === 1 ? handleRemoveVote() : handleVote(1)}
+          className="h-6 px-2"
         >
-          <ChevronUp className="h-3 w-3" />
+          <ThumbsUp className="h-3 w-3" />
+          {vote === 1 && <ChevronUp className="h-2 w-2 ml-0.5" />}
         </Button>
-        <span className="text-sm font-medium min-w-[30px] text-center">{score}</span>
+
+        <span className={getScoreColor(stats.score)}>
+          <Star className="h-3 w-3 inline fill-current" /> {stats.score.toFixed(2)}
+        </span>
+
         <Button
-          variant="ghost"
           size="sm"
-          className={cn("h-6 w-6 p-0", userVote === -1 && "text-red-500")}
-          onClick={() => handleVote(userVote === -1 ? 0 : -1)}
-          disabled={!currentUserId}
+          variant={vote === -1 ? "default" : "outline"}
+          disabled={disabled || loading}
+          onClick={() => vote === -1 ? handleRemoveVote() : handleVote(-1)}
+          className="h-6 px-2"
         >
-          <ChevronDown className="h-3 w-3" />
+          <ThumbsDown className="h-3 w-3" />
+          {vote === -1 && <ChevronDown className="h-2 w-2 ml-0.5" />}
         </Button>
-      </div>
-      {(upvoteCount > 0 || downvoteCount > 0) && (
-        <Badge variant="secondary" className="text-xs">
-          <Users className="h-3 w-3 mr-1" />
-          {upvoteCount - downvoteCount}
+
+        <Badge variant="outline" className="text-xs">
+          {stats.count} {stats.count === 1 ? "vote" : "votes"}
         </Badge>
-      )}
-    </div>
+      </div>
+    </TooltipProvider>
   );
 }
-
-// Database schema for task votes (add to schema)
-export const taskVotesSchema = `
-CREATE TABLE IF NOT EXISTS task_votes (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
-  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  value INTEGER NOT NULL CHECK(value IN (-1, 1)),
-  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE(task_id, user_id)
-);
-CREATE INDEX IF NOT EXISTS idx_votes_task ON task_votes(task_id);
-CREATE INDEX IF NOT EXISTS idx_votes_user ON task_votes(user_id);
-`;
