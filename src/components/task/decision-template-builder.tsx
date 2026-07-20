@@ -224,7 +224,7 @@ export function DecisionTemplateBuilder({ taskName, onDecision }: DecisionTempla
             className="h-9 w-48"
           />
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-            <DialogTrigger asChild>
+            <DialogTrigger>
               <Button size="sm">
                 <FileText className="h-4 w-4 mr-2" />
                 New Template
@@ -246,8 +246,12 @@ export function DecisionTemplateBuilder({ taskName, onDecision }: DecisionTempla
                 <div className="space-y-2">
                   <Label>Decision Type</Label>
                   <Select
-                    value={newTemplate.decision_type}
-                    onValueChange={(v) => setNewTemplate({ ...newTemplate, decision_type: v })}
+                    value={newTemplate.decision_type || "approach"}
+                    onValueChange={(v) => {
+                      if (v !== null) {
+                        setNewTemplate({ ...newTemplate, decision_type: v });
+                      }
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -303,7 +307,7 @@ export function DecisionTemplateBuilder({ taskName, onDecision }: DecisionTempla
       {/* Filters */}
       <div className="flex items-center gap-2">
         <Filter className="h-4 w-4 text-muted-foreground" />
-        <Select value={filterType} onValueChange={setFilterType}>
+        <Select value={filterType} onValueChange={(v) => { if (v !== null) setFilterType(v); }}>
           <SelectTrigger className="h-8 w-40">
             <SelectValue placeholder="All types" />
           </SelectTrigger>
