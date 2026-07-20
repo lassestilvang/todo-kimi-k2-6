@@ -275,7 +275,7 @@ export function SkillTracker({ tasks, userId, className }: SkillTrackerProps) {
                       </Badge>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm">Skills New (<2.0)</span>
+                      <span className="text-sm">{"Skills New (<2.0)"}</span>
                       <Badge variant="secondary">
                         {skills.filter(s => s.proficiency_level < 2).length}
                       </Badge>
