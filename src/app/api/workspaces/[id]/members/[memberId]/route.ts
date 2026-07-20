@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getDb } from "@/lib/db";
 import { applyMiddleware, errorResponse, jsonResponse } from "@/lib/api-middleware";
 
@@ -9,11 +9,12 @@ interface UpdateMemberInput {
 // PATCH update member role
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string; memberId: string } }
+  context: { params: Promise<{ id: string; memberId: string }> }
 ) {
   const middleware = await applyMiddleware(request, { requireAuth: true });
   if (middleware.error) return middleware.error;
 
+  const params = await context.params;
   const workspaceId = parseInt(params.id, 10);
   const memberId = parseInt(params.memberId, 10);
 
@@ -47,7 +48,8 @@ export async function PATCH(
       .get(workspaceId) as { user_id: number } | undefined;
 
     if (existingOwner && existingOwner.user_id !== userId) {
-      db.prepare("UPDATE workspace_users SET role = 'admin' WHERE workspace_id = ? AND user_id = ?", workspaceId, existingOwner.user_id).run();
+      db.prepare("UPDATE workspace_users SET role = 'admin' WHERE workspace_id = ? AND user_id = ?")
+        .run(workspaceId, existingOwner.user_id);
     }
   }
 
@@ -74,11 +76,12 @@ export async function PATCH(
 // DELETE remove member from workspace
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string; memberId: string } }
+  context: { params: Promise<{ id: string; memberId: string }> }
 ) {
   const middleware = await applyMiddleware(request, { requireAuth: true });
   if (middleware.error) return middleware.error;
 
+  const params = await context.params;
   const workspaceId = parseInt(params.id, 10);
   const memberId = parseInt(params.memberId, 10);
 
