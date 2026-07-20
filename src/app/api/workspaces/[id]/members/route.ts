@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getDb } from "@/lib/db";
 import { applyMiddleware, jsonResponse, errorResponse } from "@/lib/api-middleware";
 
@@ -23,10 +23,14 @@ interface User {
 }
 
 // GET workspace members
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
   const middleware = await applyMiddleware(request, { requireAuth: true });
   if (middleware.error) return middleware.error;
 
+  const params = await context.params;
   const workspaceId = parseInt(params.id, 10);
   if (isNaN(workspaceId)) {
     return errorResponse("Invalid workspace ID", 400);
@@ -61,11 +65,12 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 // POST add member to workspace
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   const middleware = await applyMiddleware(request, { requireAuth: true });
   if (middleware.error) return middleware.error;
 
+  const params = await context.params;
   const workspaceId = parseInt(params.id, 10);
   if (isNaN(workspaceId)) {
     return errorResponse("Invalid workspace ID", 400);
