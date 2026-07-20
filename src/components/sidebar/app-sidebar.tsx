@@ -21,6 +21,11 @@ import {
   Focus,
   TrendingUp,
   Clock,
+  TestTube,
+  Calculator,
+  Zap,
+  Smile,
+  GraduationCap,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
@@ -49,6 +54,14 @@ import {
 import { toast } from "sonner";
 import { WorkspaceSelector } from "@/components/workspace/workspace-selector";
 import { useUndo } from "@/hooks/use-undo";
+
+interface ViewItem {
+  id?: string;
+  name: string;
+  icon: React.ElementType;
+  separator?: boolean;
+  label?: string;
+}
 
 interface AppSidebarProps {
   lists: List[];
@@ -79,6 +92,12 @@ const views = [
   { id: "calendar", name: "Calendar", icon: Calendar },
   { id: "analytics", name: "Analytics", icon: BarChart3 },
   { id: "investment", name: "Investment Portfolio", icon: TrendingUp },
+  { separator: true, label: "Labs" },
+  { id: "labs", name: "AI Playground", icon: TestTube },
+  { id: "project-planning", name: "Project Planner", icon: GraduationCap },
+  { id: "skills", name: "Skills Tracker", icon: Calculator },
+  { id: "energy", name: "Energy Scheduler", icon: Zap },
+  { id: "stories", name: "Success Stories", icon: Smile },
 ];
 
 export function AppSidebar({
@@ -312,13 +331,25 @@ export function AppSidebar({
               <p className="px-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Views
               </p>
-              {views.map((view) => {
+              {views.map((view, index) => {
+                // Header separator
+                if (view.separator) {
+                  return (
+                    <div key={`separator-${index}`}>
+                    <Separator className="my-1" />
+                    <p className="px-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      {view.label || "Labs"}
+                    </p>
+                    </div>
+                  );
+                }
+
                 const Icon = view.icon;
                 const isActive = currentView === view.id;
                 return (
                   <button
                     key={view.id}
-                    onClick={() => onViewChange(view.id)}
+                    onClick={() => onViewChange(view.id!)}
                     className={cn(
                       "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
                       isActive
