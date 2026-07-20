@@ -194,6 +194,7 @@ export interface Task {
   archived: boolean;
   health_score?: number;
   health_status?: "healthy" | "attention" | "critical" | "overdue";
+  vote_score?: number;
 }
 
 export interface TaskWithRelations extends Task {
@@ -203,9 +204,12 @@ export interface TaskWithRelations extends Task {
   logs: TaskLog[];
   comments: TaskComment[];
   attachments: TaskAttachment[];
+  blockers: TaskDependency[];
+  blocked_by: TaskDependency[];
   time_entries: TimeEntry[];
   recurring_exceptions: RecurringException[];
   workspace_id?: number | null;
+  vote_count?: number;
 }
 
 // Re-export health score types
@@ -460,6 +464,45 @@ export interface DecisionOption {
   cons: string | null; // JSON array
   estimated_impact: string | null;
   estimated_effort: string | null;
+}
+
+export interface DecisionTemplate {
+  id: number;
+  user_id: number;
+  name: string;
+  prompt_template: string;
+  option_template: string | null;
+  created_at: string;
+}
+
+export interface TaskInsight {
+  id: number;
+  task_id: number;
+  user_id: number;
+  insight_type: "lesson_learned" | "pattern_observed" | "success_factor" | "failure_reason";
+  content: string;
+  context_tags: string | null; // JSON array
+  confidence: number; // 0 to 1
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserSkill {
+  id: number;
+  user_id: number;
+  skill_name: string;
+  proficiency_level: number; // 1-5
+  evidence_task_ids: string | null; // JSON array
+  last_used_at: string | null;
+  created_at: string;
+}
+
+export interface TaskVote {
+  id: number;
+  task_id: number;
+  user_id: number;
+  value: -1 | 1;
+  created_at: string;
 }
 
 export interface Integration {
