@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useId } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   UserCheck,
   TrendingUp,
@@ -10,7 +10,7 @@ import {
   ChevronUp
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -23,7 +23,7 @@ interface Skill {
   user_id: number;
   skill_name: string;
   proficiency_level: number; // 1-5
-  evidence_task_ids: string; // JSON array
+  evidence_task_ids: string | null; // JSON array
   last_used_at: string | null;
   created_at: string;
 }
@@ -39,6 +39,19 @@ interface Task {
 
 interface SkillsGrowthTrackerProps {
   tasks?: Task[];
+}
+
+interface SkillRecommendation {
+  skill_name: string;
+  recommended: boolean;
+  reason: string;
+}
+
+interface CareerPath {
+  role: string;
+  matchScore: number;
+  requiredSkills: string[];
+  yourSkills: number;
 }
 
 const skillKeywords: Record<string, string[]> = {
@@ -161,31 +174,78 @@ export function SkillsGrowthTracker({ tasks = [] }: SkillsGrowthTrackerProps) {
     return recommendations;
   }, [tasks, progressMetrics, extractedSkills]);
 
-  // Load skills from localStorage (simplified for demo)
+  // Load skills from API/database
   useEffect(() => {
-    const savedSkills = localStorage.getItem("skills_growth_tracker");
-    if (savedSkills) {
-      setSkills(JSON.parse(savedSkills));
-    } else {
-      // Initialize with extracted skills
-      setSkills(extractedSkills.skills);
-    }
-    setLoading(false);
-  }, [extractedSkills]);
+    const loadSkills = async () => {
+      try {
+        const response = await fetch("/api/skills");
+        if (response.ok) {
+          const data = await response.json();
+          const savedSkills = data.skills as Skill[];
 
-  // Save skills when changed
-  useEffect(() => {
-    if (!loading) {
-      localStorage.setItem("skills_growth_tracker", JSON.stringify(skills));
-    }
-  }, [skills, loading]);
+          // Merge API skills with extracted skills
+          const mergedSkills = new Map<number | string, Skill>();
+
+          // Add API skills
+          savedSkills.forEach(skill => mergedSkills.set(skill.id, skill));
+
+          // Merge with extracted skills
+          extractedSkills.skills.forEach(es => {
+            const existing = Array.from(mergedSkills.values()).find(s => s.skill_name === es.name);
+            if (!existing) {
+              mergedSkills.set(es.name, {
+                id: 0, // Will be assigned by DB on save
+                user_id: 0,
+                skill_name: es.name,
+                proficiency_level: es.proficiency,
+                evidence_task_ids: es.tasks ? JSON.stringify(es.tasks) : null,
+                last_used_at: es.lastCompleted,
+                created_at: new Date().toISOString()
+              });
+            }
+          });
+
+          setSkills(Array.from(mergedSkills.values()) as Skill[]);
+        } else {
+          // Fallback to extracted skills - convert to Skill format
+          const convertedSkills: Skill[] = extractedSkills.skills.map(es => ({
+            id: 0,
+            user_id: 0,
+            skill_name: es.name,
+            proficiency_level: es.proficiency,
+            evidence_task_ids: es.tasks ? JSON.stringify(es.tasks) : null,
+            last_used_at: es.lastCompleted,
+            created_at: new Date().toISOString()
+          }));
+          setSkills(convertedSkills);
+        }
+      } catch (error) {
+        console.error("Failed to load skills from API:", error);
+        const convertedSkills: Skill[] = extractedSkills.skills.map(es => ({
+          id: 0,
+          user_id: 0,
+          skill_name: es.name,
+          proficiency_level: es.proficiency,
+          evidence_task_ids: es.tasks ? JSON.stringify(es.tasks) : null,
+          last_used_at: es.lastCompleted,
+          created_at: new Date().toISOString()
+        }));
+        setSkills(convertedSkills);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadSkills();
+  }, [extractedSkills]);
 
   const toggleSkillCollapse = (skillId: number) => {
     const newSet = new Set(collapsedSkills);
-    if (newSet.has(skillId)) {
-      newSet.delete(skillId);
+    const idStr = String(skillId);
+    if (newSet.has(idStr)) {
+      newSet.delete(idStr);
     } else {
-      newSet.add(skillId);
+      newSet.add(idStr);
     }
     setCollapsedSkills(newSet);
   };
@@ -322,7 +382,7 @@ export function SkillsGrowthTracker({ tasks = [] }: SkillsGrowthTrackerProps) {
 
                           <div className="text-xs">
                             <span className="text-muted-foreground">Evidence: </span>
-                            <span>{skill.evidence_task_ids.split(',').length} task(s)</span>
+                            <span>{skill.evidence_task_ids ? JSON.parse(skill.evidence_task_ids).length : 0} task(s)</span>
                           </div>
                         </div>
                       </CollapsibleContent>
