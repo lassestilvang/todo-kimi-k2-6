@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   Brain,
@@ -18,22 +18,36 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ThemeProvider } from "@/components/theme-provider";
+import { toast } from "sonner";
 
 // Import our new components
 import { TaskFlowLabs } from "@/components/task/taskflow-labs";
-import { EnergyScheduler } from "@/components/task/energy-scheduler";
+import { EnergySchedulerEnhanced } from "@/components/task/energy-scheduler-enhanced";
 import { TaskSuccessStories } from "@/components/task/task-success-stories";
 import { SkillsGrowthTracker } from "@/components/task/skills-growth-tracker";
+import { DecisionJournalPage } from "@/app/labs/decision-journal/page";
+import { CareerCompass } from "@/components/task/career-compass";
 
-type ActiveLab = "ai" | "skills" | "energy" | "stories";
+type ActiveLab = "ai" | "skills" | "energy" | "stories" | "decision-journal" | "career-compass" | "project-planning";
 
 export default function LabsPage() {
   const [activeLab, setActiveLab] = useState<ActiveLab>("ai");
+  const [tasks, setTasks] = useState([]);
+
+  useEffect(() => {
+    fetch("/api/tasks?limit=20")
+      .then(r => r.json())
+      .then(data => setTasks(data.tasks || []))
+      .catch(() => setTasks([]));
+  }, []);
 
   const labs = [
     { id: "ai" as ActiveLab, name: "AI Playground", icon: Brain, description: "Compare AI models on task parsing" },
+    { id: "project-planning" as ActiveLab, name: "Project Planner", icon: BarChart3, description: "Generate project plans from natural language" },
     { id: "skills" as ActiveLab, name: "Skills Tracker", icon: Calculator, description: "Track skill development" },
+    { id: "career-compass" as ActiveLab, name: "Career Compass", icon: LayoutDashboard, description: "AI-powered career guidance" },
     { id: "energy" as ActiveLab, name: "Energy Scheduler", icon: Zap, description: "Optimize task timing" },
+    { id: "decision-journal" as ActiveLab, name: "Decision Journal", icon: Brain, description: "Track and analyze decisions" },
     { id: "stories" as ActiveLab, name: "Success Stories", icon: Smile, description: "Reflect on completed tasks" },
   ];
 
@@ -98,19 +112,46 @@ export default function LabsPage() {
           {/* Lab Content */}
           {activeLab === "ai" && <TaskFlowLabs />}
 
+          {activeLab === "project-planning" && (
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Project Planning Generator</CardTitle>
+                  <CardDescription>
+                    Create comprehensive project plans from natural language descriptions
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">
+                    Go to <a href="/labs/project-planning" className="text-primary hover:underline">
+                      /labs/project-planning
+                    </a> for the full project planning experience with Gantt visualization.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
           {activeLab === "skills" && (
-            <SkillsGrowthTracker tasks={[
-              { id: 1, name: "Design task", completed: true, completed_at: new Date().toISOString(), labels: [{ name: "design" }] },
-              { id: 2, name: "Code feature", completed: true, completed_at: new Date().toISOString(), description: "Implement user authentication" },
-              { id: 3, name: "Write documentation", completed: true, completed_at: new Date().toISOString(), description: "Create user guide" },
-            ]} />
+            <SkillsGrowthTracker tasks={tasks} />
+          )}
+
+          {activeLab === "career-compass" && (
+            <CareerCompass skills={[]} />
           )}
 
           {activeLab === "energy" && (
-            <EnergyScheduler tasks={[
-              { id: 1, name: "Morning task", priority: "high", estimated_duration: 45, date: new Date().toISOString().split("T")[0] },
-              { id: 2, name: "Afternoon work", priority: "medium", estimated_duration: 60 },
-            ]} />
+            <EnergySchedulerEnhanced
+              tasks={tasks}
+              onSchedule={(taskId, date) => {
+                console.log(`Scheduled task ${taskId} for ${date}`);
+                toast.success(`Task scheduled for ${date}`);
+              }}
+            />
+          )}
+
+          {activeLab === "decision-journal" && (
+            <DecisionJournalPage taskId={tasks[0]?.id} />
           )}
 
           {activeLab === "stories" && (
