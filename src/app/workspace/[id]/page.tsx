@@ -77,7 +77,7 @@ export default function WorkspacePage({ params }: WorkspacePageProps) {
 
   const handleMemberChange = (updatedMembers: WorkspaceMember[]) => {
     setMembers(updatedMembers);
-    setCurrentUser(updatedMembers.find((m) => m.user_id === 1));
+    setCurrentUser(updatedMembers.find((m) => m.user_id === 1) || null);
   };
 
   if (isLoading) {
