@@ -16,8 +16,9 @@ interface EmailConfig {
 
 /**
  * Validate SMTP configuration to prevent injection attacks
+ * @internal Used to validate SMTP config before creating transporter
  */
-function validateSmtpConfig(config: EmailConfig): void {
+export function validateSmtpConfig(config: EmailConfig): void {
   // Validate host - only allow alphanumeric, dots, and hyphens
   if (!/^[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?$/.test(config.host)) {
     throw new Error(`Invalid SMTP host: ${config.host}`);
@@ -36,8 +37,9 @@ function validateSmtpConfig(config: EmailConfig): void {
 
 /**
  * Sanitize email address to prevent header injection
+ * @internal Used to sanitize email addresses before sending
  */
-function sanitizeEmail(email: string): string {
+export function sanitizeEmail(email: string): string {
   // Remove line breaks and other injection characters
   return email.replace(/[\r\n<>,;:\\]/g, "");
 }
