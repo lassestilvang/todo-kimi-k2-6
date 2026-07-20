@@ -63,6 +63,7 @@ export function EnergyScheduler({ tasks = [] }: EnergySchedulerProps) {
   const [suggestions, setSuggestions] = useState<EnergySuggestion[]>([]);
   const [sleepHours, setSleepHours] = useState(7.5);
   const [energyPattern, setEnergyPattern] = useState("morning-peak");
+  const [currentEnergyLevel, setCurrentEnergyLevel] = useState<number>(5);
 
   // Load energy data from localStorage
   useEffect(() => {
@@ -115,13 +116,14 @@ export function EnergyScheduler({ tasks = [] }: EnergySchedulerProps) {
         let confidence = 0.5;
 
         // Consider priority
-        const priorityWeight = {
+        const priorityWeights: Record<string, number> = {
           critical: 0.9,
           high: 0.8,
           medium: 0.6,
           low: 0.4,
           none: 0.5,
-        }[task.priority as keyof typeof priorityWeight] || 0.5;
+        };
+        const priorityWeight = priorityWeights[task.priority as keyof typeof priorityWeights] || 0.5;
 
         // Consider energy data
         if (averageEnergy) {
@@ -337,14 +339,15 @@ export function EnergyScheduler({ tasks = [] }: EnergySchedulerProps) {
 
               <div>
                 <Label className="block mb-2">
-                  Energy Level: {energyData.length > 0 ? energyData[energyData.length - 1]?.energy_level || 5 : 5}/10
+                  Energy Level: {currentEnergyLevel}/10
                 </Label>
                 <Slider
+                  value={[currentEnergyLevel]}
                   min={1}
                   max={10}
                   step={1}
-                  defaultValue={[5]}
                   onValueChange={v => {
+                    setCurrentEnergyLevel(v[0]);
                     const latest = energyData[energyData.length - 1];
                     if (latest) {
                       setEnergyData(prev => prev.map(e => e.id === latest.id ? { ...e, energy_level: v[0] } : e));
