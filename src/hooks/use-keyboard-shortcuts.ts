@@ -25,6 +25,7 @@ interface UseKeyboardShortcutsOptions {
   onNewTask?: () => void;
   onSearchFocus?: () => void;
   onEscape?: () => void;
+  onCommandPalette?: () => void;
 }
 
 // Default shortcuts configuration
@@ -230,8 +231,16 @@ export function useKeyboardShortcuts(options: UseKeyboardShortcutsOptions = {}) 
           }
         }
 
-        // K - Show shortcuts
-        if (e.key.toLowerCase() === "k") {
+        // K - Show shortcuts (without cmd/cmd)
+        // ⌘K or Ctrl+K - Open command palette
+        if (e.key.toLowerCase() === "k" && (e.metaKey || e.ctrlKey)) {
+          e.preventDefault();
+          options.onCommandPalette?.();
+          return;
+        }
+
+        // K - Show shortcuts (without modifier)
+        if (e.key.toLowerCase() === "k" && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
           e.preventDefault();
           window.dispatchEvent(new CustomEvent("open-keyboard-shortcuts"));
           return;
