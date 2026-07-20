@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Coffee, Clock, MapPin, Smile, Battery, Brain, TrendingUp } from "lucide-react";
+import { Coffee, Clock, MapPin, Smile, Battery, Brain, TrendingUp, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
