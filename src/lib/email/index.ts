@@ -15,6 +15,34 @@ interface EmailConfig {
 }
 
 /**
+ * Validate SMTP configuration to prevent injection attacks
+ */
+function validateSmtpConfig(config: EmailConfig): void {
+  // Validate host - only allow alphanumeric, dots, and hyphens
+  if (!/^[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?$/.test(config.host)) {
+    throw new Error(`Invalid SMTP host: ${config.host}`);
+  }
+
+  // Validate port - must be valid TCP port
+  if (!Number.isInteger(config.port) || config.port < 1 || config.port > 65535) {
+    throw new Error(`Invalid SMTP port: ${config.port}`);
+  }
+
+  // Validate port is not 25 to avoid potential issues with non-encrypted SMTP
+  if (config.port === 25 && !config.secure) {
+    console.warn("Warning: Using non-encrypted SMTP on port 25");
+  }
+}
+
+/**
+ * Sanitize email address to prevent header injection
+ */
+function sanitizeEmail(email: string): string {
+  // Remove line breaks and other injection characters
+  return email.replace(/[\r\n<>,;:\\]/g, "");
+}
+
+/**
  * Get user notification settings
  */
 export interface NotificationSettings {
@@ -41,6 +69,11 @@ function createTransporter(config?: EmailConfig) {
         pass: process.env.SMTP_PASS || "",
       },
     };
+
+    // Validate configuration to prevent injection attacks
+    if (config || process.env.SMTP_HOST) {
+      validateSmtpConfig(smtp);
+    }
 
     return nodemailer.createTransporter(smtp);
   } catch {
