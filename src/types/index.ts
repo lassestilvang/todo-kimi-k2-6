@@ -464,6 +464,7 @@ export interface DecisionOption {
   cons: string | null; // JSON array
   estimated_impact: string | null;
   estimated_effort: string | null;
+  created_at: string;
 }
 
 export interface DecisionTemplate {
@@ -474,89 +475,6 @@ export interface DecisionTemplate {
   option_template: string | null;
   created_at: string;
 }
-
-export interface TaskInsight {
-  id: number;
-  task_id: number;
-  user_id: number;
-  insight_type: "lesson_learned" | "pattern_observed" | "success_factor" | "failure_reason";
-  content: string;
-  context_tags: string | null; // JSON array
-  confidence: number; // 0 to 1
-  created_at: string;
-  updated_at: string;
-}
-
-export interface UserSkill {
-  id: number;
-  user_id: number;
-  skill_name: string;
-  proficiency_level: number; // 1-5
-  evidence_task_ids: string | null; // JSON array
-  last_used_at: string | null;
-  created_at: string;
-}
-
-export interface TaskVote {
-  id: number;
-  task_id: number;
-  user_id: number;
-  value: -1 | 1;
-  created_at: string;
-}
-
-export interface Integration {
-  id: number;
-  user_id: number;
-  type: "github" | "slack" | "notion" | "trello" | "linear" | "asana" | "clickup" | "todoist";
-  name: string;
-  config: string | null; // JSON configuration
-  enabled: boolean;
-  sync_direction: "import" | "export" | "bidirectional";
-  last_sync_at: string | null;
-  created_at: string;
-}
-
-export interface TaskMapping {
-  id: number;
-  integration_id: number;
-  external_task_id: string;
-  local_task_id: number | null;
-  field_mappings: string | null; // JSON mapping
-  sync_rules: string | null; // JSON rules
-  last_sync_at: string | null;
-  created_at: string;
-}
-
-export interface CognitiveLoadLog {
-  id: number;
-  user_id: number;
-  date: string;
-  task_count: number;
-  completed_count: number;
-  avg_time_to_complete: number | null;
-  energy_level: number | null; // 1-10
-  distraction_score: number | null; // 0-1
-  created_at: string;
-}
-
-export interface KnowledgeGraphActivity {
-  id: number;
-  user_id: number;
-  activity_type: "task_connected" | "insight_extracted" | "skill_updated" | "context_recorded" | "decision_made" | "integration_synced";
-  task_id: number | null;
-  details: string | null; // JSON with activity details
-  created_at: string;
-}
-
-export type TaskConnectionType = TaskConnection["connection_type"];
-export type TaskInsightType = TaskInsight["insight_type"];
-export type HabitContextType = HabitContext["context_type"];
-export type DecisionType = DecisionEntry["decision_type"];
-export type IntegrationType = Integration["type"];
-export type ActivityType = KnowledgeGraphActivity["activity_type"];
-
-// Input types for creating new records
 
 export interface CreateTaskConnectionInput {
   source_task_id: number;
@@ -691,3 +609,55 @@ export interface CustomViewShare {
   permission: "view" | "edit";
   created_at: string;
 }
+
+// Integration Types
+export interface Integration {
+  id: number;
+  user_id: number;
+  type: "github" | "slack" | "notion" | "trello" | "linear" | "asana" | "clickup" | "todoist";
+  name: string;
+  config: string | null; // JSON configuration
+  enabled: boolean;
+  sync_direction: "import" | "export" | "bidirectional";
+  last_sync_at: string | null;
+  created_at: string;
+}
+
+export interface TaskMapping {
+  id: number;
+  integration_id: number;
+  external_task_id: string;
+  local_task_id: number | null;
+  field_mappings: string | null; // JSON mapping
+  sync_rules: string | null; // JSON rules
+  last_sync_at: string | null;
+  created_at: string;
+}
+
+export interface CognitiveLoadLog {
+  id: number;
+  user_id: number;
+  date: string;
+  task_count: number;
+  completed_count: number;
+  avg_time_to_complete: number | null;
+  energy_level: number | null; // 1-10
+  distraction_score: number | null; // 0-1
+  created_at: string;
+}
+
+export interface KnowledgeGraphActivity {
+  id: number;
+  user_id: number;
+  activity_type: "task_connected" | "insight_extracted" | "skill_updated" | "context_recorded" | "decision_made" | "integration_synced";
+  task_id: number | null;
+  details: string | null; // JSON with activity details
+  created_at: string;
+}
+
+export type TaskConnectionType = TaskConnection["connection_type"];
+export type TaskInsightType = TaskInsight["insight_type"];
+export type HabitContextType = HabitContext["context_type"];
+export type DecisionType = DecisionEntry["decision_type"];
+export type IntegrationType = Integration["type"];
+export type ActivityType = KnowledgeGraphActivity["activity_type"];
