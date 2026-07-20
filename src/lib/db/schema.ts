@@ -311,6 +311,90 @@ export function setupSchema(db: Database): void {
     );
   `);
 
+  // Task votes table - for crowdsourced prioritization
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS task_votes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      value INTEGER NOT NULL CHECK(value IN (-1, 1)),
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(task_id, user_id)
+    );
+  `);
+
+  // Decision entries table - for decision tracking
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS decision_entries (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      task_id INTEGER REFERENCES tasks(id) ON DELETE CASCADE,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      decision_type TEXT NOT NULL,
+      question TEXT NOT NULL,
+      chosen_option_id INTEGER,
+      rationale TEXT,
+      outcome TEXT,
+      outcome_notes TEXT,
+      outcome_rating INTEGER CHECK(outcome_rating BETWEEN -1 AND 1),
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  // Decision options table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS decision_options (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      decision_entry_id INTEGER NOT NULL REFERENCES decision_entries(id) ON DELETE CASCADE,
+      option_text TEXT NOT NULL,
+      pros TEXT,
+      cons TEXT,
+      estimated_impact TEXT,
+      estimated_effort TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  // Decision templates table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS decision_templates (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      prompt_template TEXT NOT NULL,
+      option_template TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  // Task insights table - for extracted lessons
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS task_insights (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      insight_type TEXT NOT NULL,
+      content TEXT NOT NULL,
+      context_tags TEXT,
+      confidence REAL DEFAULT 0.5,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  // User skills table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS user_skills (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      skill_name TEXT NOT NULL,
+      proficiency_level INTEGER DEFAULT 1 CHECK(proficiency_level BETWEEN 1 AND 5),
+      evidence_task_ids TEXT,
+      last_used_at TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
   // Insert default inbox list
   db.exec(`
     INSERT OR IGNORE INTO lists (id, name, emoji, color, is_inbox, created_at)
