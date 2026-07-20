@@ -1,9 +1,32 @@
 import nodemailer from "nodemailer";
 import type { TaskWithRelations, User } from "@/types";
 
+/**
+ * Validate SMTP host to prevent CRLF injection
+ */
+function validateSmtpHost(host: string): boolean {
+  // Only allow alphanumeric, dots, and hyphens
+  return /^[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?$/.test(host);
+}
+
+/**
+ * Sanitize email addresses to prevent header injection
+ */
+function sanitizeEmail(email: string): string {
+  return email.replace(/[\r\n<>,;:\\]/g, "");
+}
+
+/**
+ * Validate email configuration at module load time
+ */
+const smtpHost = process.env.SMTP_HOST || "smtp.resend.dev";
+if (!validateSmtpHost(smtpHost)) {
+  console.warn(`Warning: Invalid SMTP host configured: ${smtpHost}`);
+}
+
 // Email transporter configuration
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || "smtp.resend.dev",
+  host: smtpHost,
   port: parseInt(process.env.SMTP_PORT || "587"),
   secure: false, // true for 465, false for other ports
   auth: {
