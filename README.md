@@ -30,11 +30,13 @@ A modern, full-featured task management application built with Next.js, featurin
 - **Pomodoro Timer**: Built-in time management
 - **Keyboard Shortcuts**: Full keyboard navigation support
 
-### Technical Features
-- **PWA Support**: Installable on mobile devices
-- **Offline Support**: Works offline with local storage sync
-- **Dark/Light Mode**: System-aware theming
-- **Mobile Responsive**: Optimized for all screen sizes
+### TaskFlow Labs (New!)
+Interactive AI-powered productivity experiments:
+- **AI Playground**: Compare OpenAI, Claude, and keyword parser on task parsing
+- **Project Planner**: Generate full project plans from natural language
+- **Skills Tracker**: Track skill development through completed tasks
+- **Energy Scheduler**: Optimize task timing based on energy patterns
+- **Success Stories**: Reflect on completed tasks and capture insights
 
 ## Getting Started
 
@@ -93,6 +95,8 @@ Set `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` for advanced AI features:
 - Natural language task parsing
 - Smart scheduling suggestions
 - Productivity insights
+- Project plan generation
+- Decision templates
 
 ### Calendar Sync
 Configure Google Calendar API credentials in your `.env.local`:
@@ -102,16 +106,37 @@ Configure Google Calendar API credentials in your `.env.local`:
 4. Create OAuth 2.0 credentials
 5. Add redirect URI: `http://localhost:3000/api/auth/callback/google`
 
+## TaskFlow Labs
+
+Explore the Labs section to experiment with AI-powered productivity:
+
+- **AI Playground** (`/labs`): Compare different AI models and their task parsing results
+- **Project Planner** (`/labs/project-planning`): Generate project plans from natural language
+- **Skills Tracker** (`/labs/skills`): Track skill development through your work
+- **Energy Scheduler** (`/labs/energy`): Optimize your schedule based on energy patterns
+- **Success Stories** (`/labs/stories`): Capture insights from completed tasks
+
 ## Project Structure
 
 ```
 src/
 ├── app/                    # Next.js App Router
 │   ├── api/              # API routes
-│   └── auth/             # Authentication pages
+│   ├── auth/             # Authentication pages
+│   └── labs/             # Labs pages
 ├── components/
 │   ├── sidebar/          # Navigation sidebar
 │   ├── task/             # Task-related components
+│   │   ├── ai-assistant.tsx
+│   │   ├── task-modal.tsx
+│   │   ├── time-report.tsx
+│   │   ├── productivity-dashboard.tsx
+│   │   ├── decision-template-builder.tsx
+│   │   ├── project-planning-dashboard.tsx
+│   │   ├── skills-growth-tracker.tsx
+│   │   ├── taskflow-labs.tsx
+│   │   ├── energy-scheduler.tsx
+│   │   └── task-success-stories.tsx
 │   └── ui/               # Shared UI components
 ├── hooks/                # Custom React hooks
 ├── lib/
@@ -149,6 +174,8 @@ src/
 | `/api/task/[id]` | GET/PUT/DELETE | Individual task |
 | `/api/shares` | GET/POST/DELETE | Task sharing |
 | `/api/ai` | POST | AI parsing |
+| `/api/decision-templates` | GET/POST/PATCH/DELETE | Decision templates |
+| `/api/ai/parse-comparison` | POST | Compare AI models |
 | `/api/tasks/time-report` | GET | Time tracking |
 
 ## License
