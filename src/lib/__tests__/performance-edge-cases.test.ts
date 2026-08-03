@@ -121,8 +121,8 @@ describe("Performance and Timing Edge Cases", () => {
     });
 
     it("should reset rate limit after window expires", () => {
-      const windowStart = Date.now() - windowMs - 1000;
       const windowMs = 60000;
+      const windowStart = Date.now() - windowMs - 1000;
       const isExpired = Date.now() - windowStart > windowMs;
 
       expect(isExpired).toBe(true);
@@ -132,33 +132,55 @@ describe("Performance and Timing Edge Cases", () => {
   describe("Concurrency Limits", () => {
     it("should limit concurrent operations", async () => {
       const MAX_CONCURRENT = 3;
-      const queue: Promise<void>[] = [];
       let active = 0;
       let maxActive = 0;
+      const results: number[] = [];
 
-      const task = (id: number) => {
-        return new Promise<void>((resolve) => {
-          if (active >= MAX_CONCURRENT) {
-            queue.push(task(id)).then(() => resolve());
-            return;
-          }
-
-          active++;
-          maxActive = Math.max(maxActive, active);
-
-          setTimeout(() => {
-            active--;
-            if (queue.length > 0) {
-              const next = queue.shift();
-              if (next) next();
-            }
-            resolve();
-          }, 10);
-        });
+      // Proper concurrency limiter
+      const semaphore = {
+        count: 0,
+        async acquire() {
+          return new Promise<void>((resolve) => {
+            const tryAcquire = () => {
+              if (this.count < MAX_CONCURRENT) {
+                this.count++;
+                maxActive = Math.max(maxActive, this.count);
+                resolve();
+              } else {
+                setTimeout(tryAcquire, 1);
+              }
+            };
+            tryAcquire();
+          });
+        },
+        release() {
+          this.count--;
+        },
       };
 
-      await Promise.all([task(1), task(2), task(3), task(4), task(5)]);
+      const executeTask = async (id: number): Promise<number> => {
+        await semaphore.acquire();
+        active++;
+        // Simulate async work
+        await new Promise((r) => setTimeout(r, 20));
+        semaphore.release();
+        return id;
+      };
+
+      const taskResults = await Promise.all([
+        executeTask(1),
+        executeTask(2),
+        executeTask(3),
+        executeTask(4),
+        executeTask(5),
+      ]);
+
+      results.push(...taskResults);
+
+      // Verify we never exceeded max concurrent
       expect(maxActive).toBeLessThanOrEqual(MAX_CONCURRENT);
+      // Verify all tasks completed
+      expect(results).toHaveLength(5);
     });
   });
 
