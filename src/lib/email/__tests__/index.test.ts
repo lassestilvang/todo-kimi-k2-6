@@ -328,7 +328,7 @@ describe("email", () => {
     });
 
     it("should generate correct subject for due soon", async () => {
-      const task = { id: 1, name: "Due Soon Task" };
+      const task = { id: 1, name: "Due Soon Task", description: null, deadline: "2025-01-15" };
 
       const result = await sendDueSoonEmail("test@test.com", task);
       expect(result).toBe(true);
@@ -359,23 +359,23 @@ describe("email", () => {
 
     it("should return true for reminders when enabled", async () => {
       const settings = await getUserNotificationSettings();
-      const result = await shouldSendNotification(1, { id: 1, name: "Test", deadline: "2025-01-01" }, "reminder");
+      const result = await shouldSendNotification(1, { id: 1, name: "Test", description: null, deadline: "2025-01-01" }, "reminder");
       expect(result).toBe(settings.reminderMinutes > 0);
     });
 
     it("should return true for due_soon when enabled", async () => {
-      const result = await shouldSendNotification(1, { id: 1, name: "Test", deadline: "2025-01-01" }, "due_soon");
+      const result = await shouldSendNotification(1, { id: 1, name: "Test", description: null, deadline: "2025-01-01" }, "due_soon");
       expect(result).toBe(true);
     });
 
     it("should return true for overdue when enabled", async () => {
-      const result = await shouldSendNotification(1, { id: 1, name: "Test", deadline: "2025-01-01" }, "overdue");
+      const result = await shouldSendNotification(1, { id: 1, name: "Test", description: null, deadline: "2025-01-01" }, "overdue");
       expect(result).toBe(true);
     });
 
     it("should return false for unknown notification type", async () => {
       // @ts-expect-error - Testing invalid type
-      const result = await shouldSendNotification(1, { id: 1, name: "Test" }, "invalid");
+      const result = await shouldSendNotification(1, { id: 1, name: "Test", description: null, deadline: null }, "invalid");
       expect(result).toBe(false);
     });
   });
@@ -383,7 +383,7 @@ describe("email", () => {
   describe("email error handling", () => {
     it("should return false when transporter fails", async () => {
       // This test verifies error handling path
-      const task = { id: 1, name: "Test Task" };
+      const task = { id: 1, name: "Test Task", description: null, deadline: null };
       // The mock returns success, so we can't easily test failure
       // But we verify the function signature works
       const result = await sendTaskReminderEmail("test@test.com", task);
