@@ -198,7 +198,7 @@ describe("integrations module", () => {
       mockFetch.mockResolvedValue({ ok: true });
 
       const { sendDiscordNotification } = await import("@/lib/integrations/index");
-      const actions = ["created", "updated", "completed", "due_soon", "overdue"];
+      const actions: ("created" | "updated" | "completed" | "due_soon" | "overdue")[] = ["created", "updated", "completed", "due_soon", "overdue"];
 
       for (const action of actions) {
         await sendDiscordNotification(
