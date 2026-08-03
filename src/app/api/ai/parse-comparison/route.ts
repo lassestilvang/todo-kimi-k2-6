@@ -5,8 +5,23 @@ import { applyMiddleware, errorResponse, jsonResponse } from "@/lib/api-middlewa
 interface ParseComparisonRequest {
   input: {
     text: string;
-    context?: any;
+    context?: unknown;
   };
+}
+
+interface ProviderResult {
+  provider: string;
+  label: string;
+  name: string | null;
+  description: string | null;
+  priority: string;
+  estimated_duration: string | null;
+  suggested_date: string | null;
+  recurring: string;
+  timeout: boolean;
+  duration_ms: number;
+  confidence_score: number;
+  error?: string;
 }
 
 // GET available AI models
@@ -34,7 +49,7 @@ export async function POST(request: NextRequest) {
     }
 
     const ai = getAIManager();
-    const results: any[] = [];
+    const results: ProviderResult[] = [];
     const startTime = Date.now();
 
     // Get all providers including keyword parser
@@ -67,9 +82,10 @@ export async function POST(request: NextRequest) {
           duration_ms: duration,
           confidence_score: 0.8, // Default confidence for successful parses
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         const duration = Date.now() - attemptStart;
-        const isTimeout = error.message?.includes("timed out") || duration > 10000;
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        const isTimeout = errorMessage.includes("timed out") || duration > 10000;
 
         results.push({
           provider: provider.name,
@@ -83,7 +99,7 @@ export async function POST(request: NextRequest) {
           timeout: isTimeout,
           duration_ms: duration,
           confidence_score: 0,
-          error: error.message || "Unknown error",
+          error: errorMessage || "Unknown error",
         });
       }
     }
@@ -96,7 +112,7 @@ export async function POST(request: NextRequest) {
         totalDurationMs: totalDuration,
         successful: results.filter(r => !r.timeout).length,
         failed: results.filter(r => r.timeout).length,
-        fastest: results.reduce((min, r) => r.duration_ms < min ? r : min),
+        fastest: results.reduce((min, r) => r.duration_ms < min.duration_ms ? r : min),
       },
     });
 
