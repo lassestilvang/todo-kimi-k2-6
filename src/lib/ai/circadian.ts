@@ -460,7 +460,7 @@ function analyzeRecoveryNeeds(dailyPatterns: any[]): any {
       'Schedule tasks in energy blocks (high energy tasks together)',
       'Take regular breaks during deep work sessions',
       'Plan lighter days after intensive work periods',
-      'Use completion time to assess tomorrow's workload',
+      'Use completion time to assess tomorrow workload',
     ],
   };
 }
