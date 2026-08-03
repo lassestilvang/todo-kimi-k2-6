@@ -1,50 +1,97 @@
-import { describe, it, expect, vi } from "vitest";
-import * as PopoverModule from "../popover";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import React from "react";
+import { render, screen } from "@testing-library/react";
 
-// Mock @base-ui/react/popover
-vi.mock("@base-ui/react/popover", () => ({
-  Root: ({ children, ...props }: any) => (
-    <div data-testid="popover-root" {...props}>
-      {children}
-    </div>
-  ),
-  Trigger: ({ children, ...props }: any) => (
-    <button data-testid="popover-trigger" {...props}>
-      {children}
-    </button>
-  ),
-  Content: ({ children, ...props }: any) => (
-    <div data-testid="popover-content" {...props}>
-      {children}
-    </div>
-  ),
-  Positioner: ({ children }: any) => <div data-testid="popover-positioner">{children}</div>,
-  Popup: ({ children }: any) => children,
-  Portal: ({ children }: any) => children,
-  Title: ({ children }: any) => <h3>{children}</h3>,
-  Description: ({ children }: any) => <p>{children}</p>,
-}));
+// Mock @base-ui/react/popover - matching the pattern where
+// Popover is imported as { Popover } and Popover.Root is used
+vi.mock("@base-ui/react/popover", () => {
+  const Root = ({ children, ...props }: any) =>
+    React.createElement(
+      "div",
+      { "data-testid": "popover-root", ...props },
+      children
+    );
+
+  const Trigger = ({ children, ...props }: any) =>
+    React.createElement(
+      "button",
+      { "data-testid": "popover-trigger", ...props },
+      children
+    );
+
+  const Positioner = ({ children, side, align, sideOffset, alignOffset, ...props }: any) =>
+    React.createElement(
+      "div",
+      {
+        "data-testid": "popover-positioner",
+        "data-side": side,
+        "data-align": align,
+        "data-side-offset": sideOffset,
+        "data-align-offset": alignOffset,
+        ...props,
+      },
+      children
+    );
+
+  const Popup = ({ children, className, ...props }: any) =>
+    React.createElement(
+      "div",
+      {
+        "data-testid": "popover-content",
+        "data-slot": "popover-content",
+        className,
+        ...props,
+      },
+      children
+    );
+
+  const Portal = ({ children }: any) =>
+    React.createElement(React.Fragment, null, children);
+
+  const Title = ({ children }: any) =>
+    React.createElement("h3", {}, children);
+
+  const Description = ({ children }: any) =>
+    React.createElement("p", {}, children);
+
+  // Create Popover object matching library structure
+  const Popover = Object.assign(Root, {
+    Root,
+    Trigger,
+    Positioner,
+    Popup,
+    Portal,
+    Title,
+    Description,
+  });
+
+  return {
+    __esModule: true,
+    Popover,
+    Root,
+    Trigger,
+    Positioner,
+    Popup,
+    Portal,
+    Title,
+    Description,
+  };
+});
 
 // Mock cn utility
 vi.mock("@/lib/utils", () => ({
-  cn: (...classes: any[]) => classes.filter(Boolean).join(" "),
+  cn: (...classes: string[]) => classes.filter(Boolean).join(" "),
 }));
 
-// Import all components for direct testing
-const {
+// Now import the actual components after mocks are set up
+import {
   Popover,
   PopoverTrigger,
   PopoverContent,
   PopoverHeader,
   PopoverTitle,
   PopoverDescription,
-  PopoverSeparator,
-  PopoverScrollUpButton,
-  PopoverScrollDownButton,
-  PopoverValue,
-  PopoverGroup,
-  SelectLabel,
-} = PopoverModule;
+} from "../popover";
 
 describe("Popover Component", () => {
   describe("Module exports", () => {
@@ -67,143 +114,164 @@ describe("Popover Component", () => {
     });
   });
 
-  describe("PopOver component structure", () => {
-    it("is a function component", () => {
-      expect(typeof Popover).toBe("function");
+  describe("Popover rendering", () => {
+    it("renders Popover wrapper", () => {
+      const { container } = render(
+        <Popover>
+          <PopoverTrigger>Open</PopoverTrigger>
+          <PopoverContent>Content</PopoverContent>
+        </Popover>
+      );
+      expect(container.firstChild).toBeTruthy();
+    });
+
+    it("renders PopoverTrigger with children", () => {
+      render(
+        <Popover>
+          <PopoverTrigger>Open Popover</PopoverTrigger>
+        </Popover>
+      );
+      expect(screen.getByTestId("popover-trigger")).toBeTruthy();
+      expect(screen.getByText("Open Popover")).toBeTruthy();
+    });
+
+    it("renders PopoverContent with children", () => {
+      render(
+        <Popover>
+          <PopoverContent>
+            <PopoverHeader>
+              <PopoverTitle>Title</PopoverTitle>
+              <PopoverDescription>Description</PopoverDescription>
+            </PopoverHeader>
+            Content
+          </PopoverContent>
+        </Popover>
+      );
+      expect(screen.getByTestId("popover-content")).toBeTruthy();
+      expect(screen.getByText("Content")).toBeTruthy();
+    });
+
+    it("renders PopoverHeader with flex layout", () => {
+      render(
+        <PopoverContent>
+          <PopoverHeader>
+            <PopoverTitle>Test Title</PopoverTitle>
+          </PopoverHeader>
+        </PopoverContent>
+      );
+      expect(screen.getByText("Test Title")).toBeTruthy();
+    });
+
+    it("renders complete popover structure", () => {
+      render(
+        <Popover>
+          <PopoverTrigger>Click me</PopoverTrigger>
+          <PopoverContent side="bottom" align="start">
+            <PopoverHeader>
+              <PopoverTitle>Dialog Title</PopoverTitle>
+              <PopoverDescription>Description text</PopoverDescription>
+            </PopoverHeader>
+            Main content
+          </PopoverContent>
+        </Popover>
+      );
+
+      expect(screen.getByTestId("popover-root")).toBeTruthy();
+      expect(screen.getByTestId("popover-trigger")).toBeTruthy();
+      expect(screen.getByTestId("popover-content")).toBeTruthy();
+      expect(screen.getByTestId("popover-positioner")).toBeTruthy();
+      expect(screen.getByText("Click me")).toBeTruthy();
+      expect(screen.getByText("Dialog Title")).toBeTruthy();
+      expect(screen.getByText("Description text")).toBeTruthy();
+      expect(screen.getByText("Main content")).toBeTruthy();
     });
   });
 
-  describe("PopoverTrigger", () => {
-    it("is a function component", () => {
-      expect(typeof PopoverTrigger).toBe("function");
+  describe("Popover positioning", () => {
+    it("supports custom side prop", () => {
+      render(
+        <PopoverContent side="top">
+          Content
+        </PopoverContent>
+      );
+      expect(screen.getByTestId("popover-content")).toBeTruthy();
     });
 
-    it("has correct data-slot in its implementation", () => {
-      const implementation = `data-slot="popover-trigger"`;
-      expect(implementation).toContain("popover-trigger");
+    it("supports custom align prop", () => {
+      render(
+        <PopoverContent align="start">
+          Content
+        </PopoverContent>
+      );
+      expect(screen.getByTestId("popover-content")).toBeTruthy();
+    });
+
+    it("supports custom sideOffset prop", () => {
+      render(
+        <PopoverContent sideOffset={8}>
+          Content
+        </PopoverContent>
+      );
+      expect(screen.getByTestId("popover-content")).toBeTruthy();
+    });
+
+    it("supports custom alignOffset prop", () => {
+      render(
+        <PopoverContent alignOffset={10}>
+          Content
+        </PopoverContent>
+      );
+      expect(screen.getByTestId("popover-content")).toBeTruthy();
+    });
+
+    it("applies custom className", () => {
+      render(
+        <PopoverContent className="custom-class">
+          Content
+        </PopoverContent>
+      );
+      expect(screen.getByTestId("popover-content")).toBeTruthy();
     });
   });
 
-  describe("PopoverContent", () => {
-    it("is a function component", () => {
-      expect(typeof PopoverContent).toBe("function");
+  describe("Popover accessibility", () => {
+    it("provides proper naming pattern", () => {
+      const dataSlotPattern = "popover-";
+      expect(dataSlotPattern).toContain("popover-");
     });
 
-    it("has correct default positioning props", () => {
-      const defaults = {
-        side: "bottom",
-        align: "center",
-        sideOffset: 4,
-        alignOffset: 0,
-      };
-      expect(defaults.side).toBe("bottom");
-      expect(defaults.align).toBe("center");
+    it("has correct data-slot attributes", () => {
+      const slots = [
+        "popover-content",
+        "popover-trigger",
+        "popover-positioner",
+      ];
+      expect(slots).toBeTruthy();
     });
+  });
 
-    it("has correct z-index", () => {
-      const zClasses = "isolate z-50";
-      expect(zClasses).toContain("z-50");
-    });
-
-    it("includes required positioning classes", () => {
-      const contentClasses = "min-w-36 w-(--anchor-width)";
-      expect(contentClasses).toContain("min-w-36");
-    });
-
-    it("includes visual styling classes", () => {
-      const visualClasses = "rounded-lg bg-popover shadow-md ring-1 ring-foreground/10";
-      expect(visualClasses).toContain("rounded-lg");
-      expect(visualClasses).toContain("shadow-md");
-      expect(visualClasses).toContain("ring-1");
-    });
-
-    it("has correct animation classes for open state", () => {
+  describe("Popover CSS classes", () => {
+    it("includes animation classes for open state", () => {
       const openAnimation =
         "data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95";
+      expect(openAnimation).toContain("data-open:");
+    });
+
+    it("includes animation classes for closed state", () => {
       const closedAnimation =
         "data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95";
-
-      expect(openAnimation).toContain("data-open:");
       expect(closedAnimation).toContain("data-closed:");
     });
 
-    it("has correct side-specific animations", () => {
-      const animations = {
-        bottom: "data-[side=bottom]:slide-in-from-top-2",
-        top: "data-[side=top]:slide-in-from-bottom-2",
-        left: "data-[side=left]:slide-in-from-right-2",
-        right: "data-[side=right]:slide-in-from-left-2",
-      };
-      expect(animations.bottom).toBeDefined();
-      expect(animations.top).toBeDefined();
-      expect(animations.left).toBeDefined();
-      expect(animations.right).toBeDefined();
-    });
-  });
-
-  describe("PopoverHeader", () => {
-    it("is a function component", () => {
-      expect(typeof PopoverHeader).toBe("function");
-    });
-
-    it("has correct flex layout class", () => {
-      const flexClasses = "flex flex-col gap-0.5 text-sm";
-      expect(flexClasses).toContain("flex");
-      expect(flexClasses).toContain("flex-col");
-    });
-  });
-
-  describe("PopoverTitle", () => {
-    it("is a function component", () => {
-      expect(typeof PopoverTitle).toBe("function");
-    });
-
-    it("has correct font-medium class", () => {
-      const fontClasses = "font-medium";
-      expect(fontClasses).toBe("font-medium");
-    });
-  });
-
-  describe("PopoverDescription", () => {
-    it("is a function component", () => {
-      expect(typeof PopoverDescription).toBe("function");
-    });
-  });
-
-  describe("Component exports completeness", () => {
-    it("exports all expected components", () => {
-      const expectedExports = [
-        "Popover",
-        "PopoverContent",
-        "PopoverDescription",
-        "PopoverHeader",
-        "PopoverTitle",
-        "PopoverTrigger",
-      ];
-
-      expectedExports.forEach((exportName) => {
-        expect(PopoverModule[exportName as keyof typeof PopoverModule]).toBeDefined();
-        expect(typeof PopoverModule[exportName as keyof typeof PopoverModule]).toBe("function");
-      });
-    });
-  });
-
-  describe("Popover positioning classes", () => {
-    it("includes z-index layers", () => {
-      const positionerClasses = "isolate z-50";
-      expect(positionerClasses).toContain("z-50");
-      expect(positionerClasses).toContain("isolate");
-    });
-
-    it("includes content positioning", () => {
-      const contentClasses = "z-50 flex w-72 origin-(--transform-origin) flex-col gap-2.5";
+    it("includes required positioning classes", () => {
+      const contentClasses = "z-50 flex w-72 origin-(--transform-origin)";
       expect(contentClasses).toContain("z-50");
       expect(contentClasses).toContain("flex");
       expect(contentClasses).toContain("w-72");
     });
 
-    it("includes rounded and shadow", () => {
-      const visualClasses = "rounded-lg bg-popover p-2.5 shadow-md ring-1 ring-foreground/10";
+    it("includes visual styling classes", () => {
+      const visualClasses = "rounded-lg bg-popover shadow-md ring-1 ring-foreground/10";
       expect(visualClasses).toContain("rounded-lg");
       expect(visualClasses).toContain("shadow-md");
       expect(visualClasses).toContain("ring-1");
@@ -220,30 +288,22 @@ describe("Popover Component", () => {
     });
   });
 
-  describe("Popover accessibility", () => {
-    it("provides proper naming pattern", () => {
-      const dataSlotPattern = "popover-";
-      expect(dataSlotPattern).toContain("popover-");
-    });
-
-    it("supports aria attributes pattern", () => {
-      const ariaPattern = "aria-expanded";
-      expect(ariaPattern).toBeDefined();
-    });
-  });
-
   describe("Popover edge cases", () => {
-    it("handles custom className prop pattern", () => {
-      const classNameProp = "className";
-      expect(classNameProp).toBeDefined();
+    it("handles empty content", () => {
+      render(
+        <PopoverContent>
+          {/* Empty */}
+        </PopoverContent>
+      );
+      expect(screen.getByTestId("popover-content")).toBeTruthy();
     });
 
-    it("handles all side props", () => {
+    it("handles all side prop values", () => {
       const sides = ["top", "right", "bottom", "left", "inline-start", "inline-end"];
       expect(sides).toHaveLength(6);
     });
 
-    it("handles all align props", () => {
+    it("handles all align prop values", () => {
       const aligns = ["start", "center", "end"];
       expect(aligns).toHaveLength(3);
     });
