@@ -182,7 +182,6 @@ describe("API Integration Tests", () => {
       db.prepare("INSERT INTO shares (task_id, token, permission, expires_at) VALUES (?, ?, ?, ?)")
         .run(1, token, "view", "2025-12-31");
 
-      const share = db.prepare("SELECT * FROM shares WHERE token = ?").get(token);
       // Mock may not return the row, but the SQL should execute
       expect(true).toBe(true);
     });
