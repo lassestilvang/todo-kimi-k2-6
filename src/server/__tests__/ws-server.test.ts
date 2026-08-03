@@ -39,6 +39,11 @@ describe("WebSocket Server", () => {
         attachments: [],
         time_entries: [],
         recurring_exceptions: [],
+        blockers: [],
+        blocked_by: [],
+        user_id: 1,
+        notes: null,
+        archived: false,
       };
 
       const message = mockBroadcast("task_updated", { taskId: task.id, task });
