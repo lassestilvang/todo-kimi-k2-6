@@ -42,8 +42,6 @@ export default defineConfig({
         '**/lib/db/index.ts',
         '**/lib/db/migrations.ts',
         '**/vitest.config.node.ts',
-        // Auth config requires real NextAuth setup - covered by integration tests
-        '**/app/api/auth/[...nextauth]/config.ts',
         // Complex components that need e2e testing
         '**/components/task/task-modal.tsx',
         '**/components/task/pomodoro-timer.tsx',
