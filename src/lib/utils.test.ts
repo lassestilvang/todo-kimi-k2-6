@@ -320,9 +320,9 @@ describe("Utils", () => {
 
   describe("filterTasks", () => {
     const tasks = [
-      { id: 1, name: "Task A", list_id: 1, priority: "high", completed: 0, description: "Desc A" },
-      { id: 2, name: "Task B", list_id: 2, priority: "low", completed: 1, description: "Desc B" },
-      { id: 3, name: "Task C", list_id: 1, priority: "high", completed: 0, description: null },
+      { id: 1, name: "Task A", list_id: 1, priority: "high", completed: false, description: "Desc A" },
+      { id: 2, name: "Task B", list_id: 2, priority: "low", completed: true, description: "Desc B" },
+      { id: 3, name: "Task C", list_id: 1, priority: "high", completed: false, description: null },
     ];
 
     it("should filter by list ID", () => {
@@ -335,8 +335,8 @@ describe("Utils", () => {
       expect(result.length).toBe(2);
     });
 
-    it("should filter by completed status (using number)", () => {
-      const result = filterTasks(tasks, { completed: 1 });
+    it("should filter by completed status", () => {
+      const result = filterTasks(tasks, { completed: true });
       expect(result.length).toBe(1);
     });
 
