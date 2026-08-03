@@ -3,7 +3,7 @@ import { applyMiddleware, errorResponse, jsonResponse } from "@/lib/api-middlewa
 import { getDb } from "@/lib/db";
 import { z } from "zod";
 
-const DecisionTemplateSchema = z.object({
+const DecisionTemplateValidationSchema = z.object({
   id: z.number().optional(),
   user_id: z.number(),
   name: z.string().min(1).max(200),
@@ -20,7 +20,7 @@ const DecisionTemplateSchema = z.object({
   created_at: z.string().optional(),
 });
 
-const CreateTemplateSchema = z.object({
+const CreateTemplateValidationSchema = z.object({
   name: z.string().min(1).max(200),
   prompt_template: z.string().min(1).max(5000),
   option_template: z.string().optional(),
@@ -34,12 +34,22 @@ const CreateTemplateSchema = z.object({
   ]).optional(),
 });
 
-const GenerateTemplateSchema = z.object({
+const GenerateTemplateValidationSchema = z.object({
   context: z.object({
     decisionType: z.string().optional(),
     taskName: z.string().optional(),
   }),
 });
+
+type TemplateRow = {
+  id: number;
+  user_id: number;
+  name: string;
+  prompt_template: string;
+  option_template: string | null;
+  decision_type: string | null;
+  created_at: string;
+};
 
 // GET /api/decision-templates - Get user's decision templates
 export async function GET(request: NextRequest) {
@@ -70,15 +80,7 @@ export async function GET(request: NextRequest) {
 
     query += ` ORDER BY created_at DESC`;
 
-    const rows = db.prepare(query).all(...params) as Array<{
-      id: number;
-      user_id: number;
-      name: string;
-      prompt_template: string;
-      option_template: string | null;
-      decision_type: string | null;
-      created_at: string;
-    }>;
+    const rows = db.prepare(query).all(...params) as TemplateRow[];
 
     const templates = rows.map(row => ({
       id: row.id,
@@ -91,7 +93,7 @@ export async function GET(request: NextRequest) {
     }));
 
     return jsonResponse({ templates });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Failed to fetch templates:", error);
     return errorResponse("Failed to fetch templates", 500);
   }
@@ -109,7 +111,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const parsed = CreateTemplateSchema.safeParse(body);
+    const parsed = CreateTemplateValidationSchema.safeParse(body);
 
     if (!parsed.success) {
       return errorResponse("Invalid input: " + parsed.error.issues[0].message, 400);
@@ -131,15 +133,7 @@ export async function POST(request: NextRequest) {
       SELECT id, user_id, name, prompt_template, option_template, decision_type, created_at
       FROM decision_templates
       WHERE id = ?
-    `).get(result.lastInsertRowid as number) as {
-      id: number;
-      user_id: number;
-      name: string;
-      prompt_template: string;
-      option_template: string | null;
-      decision_type: string | null;
-      created_at: string;
-    };
+    `).get(result.lastInsertRowid as number) as TemplateRow;
 
     const template = {
       id: row.id,
@@ -152,9 +146,10 @@ export async function POST(request: NextRequest) {
     };
 
     return jsonResponse({ template }, 201);
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     console.error("Failed to create template:", error);
-    return errorResponse(`Failed to create template: ${error.message || "Unknown error"}`, 500);
+    return errorResponse(`Failed to create template: ${errorMessage}`, 500);
   }
 }
 
@@ -177,7 +172,7 @@ export async function PUT(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const partialSchema = CreateTemplateSchema.partial();
+    const partialSchema = CreateTemplateValidationSchema.partial();
     const parsed = partialSchema.safeParse(body);
 
     if (!parsed.success) {
@@ -231,15 +226,7 @@ export async function PUT(request: NextRequest) {
       SELECT id, user_id, name, prompt_template, option_template, decision_type, created_at
       FROM decision_templates
       WHERE id = ? AND user_id = ?
-    `).get(id, userId) as {
-      id: number;
-      user_id: number;
-      name: string;
-      prompt_template: string;
-      option_template: string | null;
-      decision_type: string | null;
-      created_at: string;
-    } | undefined;
+    `).get(id, userId) as TemplateRow | undefined;
 
     if (!row) {
       return errorResponse("Template not found or access denied", 404);
@@ -256,9 +243,10 @@ export async function PUT(request: NextRequest) {
     };
 
     return jsonResponse({ template });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     console.error("Failed to update template:", error);
-    return errorResponse(`Failed to update template: ${error.message || "Unknown error"}`, 500);
+    return errorResponse(`Failed to update template: ${errorMessage}`, 500);
   }
 }
 
@@ -294,9 +282,10 @@ export async function DELETE(request: NextRequest) {
     db.prepare("DELETE FROM decision_templates WHERE id = ?").run(id);
 
     return jsonResponse({ success: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     console.error("Failed to delete template:", error);
-    return errorResponse(`Failed to delete template: ${error.message || "Unknown error"}`, 500);
+    return errorResponse(`Failed to delete template: ${errorMessage}`, 500);
   }
 }
 
@@ -312,7 +301,7 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const parsed = GenerateTemplateSchema.safeParse(body);
+    const parsed = GenerateTemplateValidationSchema.safeParse(body);
 
     if (!parsed.success) {
       return errorResponse("Invalid input: " + parsed.error.issues[0].message, 400);
@@ -343,15 +332,7 @@ export async function PATCH(request: NextRequest) {
       SELECT id, user_id, name, prompt_template, option_template, decision_type, created_at
       FROM decision_templates
       WHERE id = ?
-    `).get(result.lastInsertRowid as number) as {
-      id: number;
-      user_id: number;
-      name: string;
-      prompt_template: string;
-      option_template: string | null;
-      decision_type: string | null;
-      created_at: string;
-    };
+    `).get(result.lastInsertRowid as number) as TemplateRow;
 
     const savedTemplate = {
       id: row.id,
@@ -364,10 +345,11 @@ export async function PATCH(request: NextRequest) {
     };
 
     return jsonResponse({ template: savedTemplate });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     console.error("Failed to generate template:", error);
-    return errorResponse(`Failed to generate template: ${error.message || "Unknown error"}`, 500);
+    return errorResponse(`Failed to generate template: ${errorMessage}`, 500);
   }
 }
 
-export type { DecisionTemplateSchema, CreateTemplateSchema, GenerateTemplateSchema };
+export type { DecisionTemplateValidationSchema, CreateTemplateValidationSchema, GenerateTemplateValidationSchema, TemplateRow };
