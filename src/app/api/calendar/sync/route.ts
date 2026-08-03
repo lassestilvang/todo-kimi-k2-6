@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function DELETE(request: NextRequest) {
+export async function DELETE(_request: NextRequest) {
   try {
     // Get user ID (default to 1 for demo mode)
     const userId = 1;
