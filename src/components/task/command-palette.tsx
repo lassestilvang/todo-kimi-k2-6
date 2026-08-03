@@ -24,7 +24,8 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@/components/ui/command-dialog";
+  CommandSeparator,
+} from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 import type { TaskWithRelations } from "@/types";
 
