@@ -1,6 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { setDb, resetDb } from "@/lib/db";
-import { createTestDb } from "@/lib/db/test-db";
+import { describe, it, expect, vi } from "vitest";
 
 // Mock password comparison
 vi.mock("@/lib/auth", () => ({
