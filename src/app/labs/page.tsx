@@ -25,8 +25,9 @@ import { TaskFlowLabs } from "@/components/task/taskflow-labs";
 import { EnergySchedulerEnhanced } from "@/components/task/energy-scheduler-enhanced";
 import { TaskSuccessStories } from "@/components/task/task-success-stories";
 import { SkillsGrowthTracker } from "@/components/task/skills-growth-tracker";
-import { DecisionJournalPage } from "@/app/labs/decision-journal/page";
 import { CareerCompass } from "@/components/task/career-compass";
+import { DecisionTracker } from "@/components/task/decision-tracker";
+import { DecisionAnalytics } from "@/components/task/decision-analytics";
 
 type ActiveLab = "ai" | "skills" | "energy" | "stories" | "decision-journal" | "career-compass" | "project-planning";
 
@@ -151,7 +152,13 @@ export default function LabsPage() {
           )}
 
           {activeLab === "decision-journal" && (
-            <DecisionJournalPage taskId={tasks[0]?.id} />
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold">Decision Journal</h2>
+              <div className="grid gap-6">
+                <DecisionTracker taskId={tasks[0]?.id} />
+                <DecisionAnalytics taskId={tasks[0]?.id} />
+              </div>
+            </div>
           )}
 
           {activeLab === "stories" && (
