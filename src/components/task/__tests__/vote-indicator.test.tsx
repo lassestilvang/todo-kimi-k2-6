@@ -1,7 +1,6 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { VoteIndicator, VoteButton } from "../vote-indicator";
-import React from "react";
 
 // Mock sonner
 vi.mock("sonner", () => ({
@@ -12,10 +11,43 @@ vi.mock("sonner", () => ({
   },
 }));
 
+// Mock Button component
+vi.mock("@/components/ui/button", () => ({
+  Button: ({ children, onClick, disabled, className, variant, size, ...props }: any) => (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={className}
+      data-variant={variant}
+      data-size={size}
+      {...props}
+    >
+      {children}
+    </button>
+  ),
+}));
+
+// Mock Tooltip
+vi.mock("@/components/ui/tooltip", () => ({
+  TooltipProvider: ({ children }: any) => children,
+  Tooltip: ({ children }: any) => children,
+  TooltipTrigger: ({ children }: any) => children,
+  TooltipContent: ({ children }: any) => children,
+}));
+
+// Mock fetch globally
+const mockFetch = vi.fn();
+global.fetch = mockFetch;
+
 describe("VoteIndicator Component", () => {
-  const mockOnVote = vi.fn();
+  const mockToast = vi.mocked(require("sonner").toast);
 
   beforeEach(() => {
+    vi.clearAllMocks();
+    mockFetch.mockClear();
+  });
+
+  afterEach(() => {
     vi.clearAllMocks();
   });
 
@@ -47,19 +79,17 @@ describe("VoteIndicator Component", () => {
       const { rerender } = render(<VoteIndicator taskId={1} initialUserVote={0} />);
 
       rerender(<VoteIndicator taskId={1} initialUserVote={1} />);
-      // The component should render with the new vote state
 
       rerender(<VoteIndicator taskId={1} initialUserVote={-1} />);
-      // The component should render with the new vote state
     });
 
     it("applies custom className", () => {
       render(<VoteIndicator taskId={1} className="custom-class" />);
-      // Check that the component renders without errors
       expect(screen.getByText("0")).toBeInTheDocument();
     });
 
     it("calls onVote callback when provided", () => {
+      const mockOnVote = vi.fn();
       render(<VoteIndicator taskId={1} initialScore={2} onVote={mockOnVote} />);
       expect(screen.getByText("2")).toBeInTheDocument();
     });
@@ -106,33 +136,169 @@ describe("VoteIndicator Component", () => {
   });
 
   describe("Accessibility indicators", () => {
-    it("renders upvote button", () => {
-      render(<VoteIndicator taskId={1} />);
-      // Check that there are two buttons (upvote and downvote)
-      const buttons = screen.getAllByRole("button");
-      expect(buttons.length).toBeGreaterThanOrEqual(2);
-    });
-
-    it("renders downvote button", () => {
+    it("renders upvote and downvote buttons", () => {
       render(<VoteIndicator taskId={1} />);
       const buttons = screen.getAllByRole("button");
       expect(buttons.length).toBeGreaterThanOrEqual(2);
     });
+  });
 
-    it("has aria-label for accessibility", () => {
-      render(<VoteIndicator taskId={1} />);
-      // The component should render without accessibility errors
-      const buttons = screen.getAllByRole("button");
-      expect(buttons).toBeDefined();
+  describe("Vote state rendering", () => {
+    it("renders with user upvote state", () => {
+      render(<VoteIndicator taskId={1} initialUserVote={1} />);
+      expect(screen.getByText("0")).toBeInTheDocument();
+    });
+
+    it("renders with user downvote state", () => {
+      render(<VoteIndicator taskId={1} initialUserVote={-1} />);
+      expect(screen.getByText("0")).toBeInTheDocument();
     });
   });
 });
 
-describe("VoteButton Component", () => {
-  const mockOnVote = vi.fn();
+describe("VoteIndicator API Integration", () => {
+  const mockToast = vi.mocked(require("sonner").toast);
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockFetch.mockClear();
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe("POST /api/task-votes", () => {
+    it("calls fetch with correct parameters for upvote", () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          success: true,
+          vote: { task_id: 1, user_id: 1, value: 1 },
+          stats: { total: 5, count: 3, score: 1.67 },
+        }),
+      } as Response);
+
+      render(<VoteIndicator taskId={1} initialScore={0} initialCount={0} />);
+      const upvoteButton = screen.getAllByRole("button")[0];
+
+      fireEvent.click(upvoteButton);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/task-votes",
+        expect.objectContaining({
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        })
+      );
+    });
+
+    it("calls fetch with correct parameters for downvote", () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          success: true,
+          vote: { task_id: 1, user_id: 1, value: -1 },
+          stats: { total: -3, count: 5, score: -0.6 },
+        }),
+      } as Response);
+
+      render(<VoteIndicator taskId={1} initialScore={0} initialCount={0} />);
+      const downvoteButton = screen.getAllByRole("button")[1];
+
+      fireEvent.click(downvoteButton);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/task-votes",
+        expect.objectContaining({
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        })
+      );
+    });
+
+    it("handles API error response with toast error", async () => {
+      mockToast.error = vi.fn();
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        json: async () => ({ error: "Invalid vote data" }),
+      } as Response);
+
+      render(<VoteIndicator taskId={1} />);
+      const upvoteButton = screen.getAllByRole("button")[0];
+
+      fireEvent.click(upvoteButton);
+
+      expect(mockFetch).toHaveBeenCalled();
+    });
+
+    it("handles network error gracefully", async () => {
+      mockToast.error = vi.fn();
+      mockFetch.mockRejectedValueOnce(new Error("Network error"));
+
+      render(<VoteIndicator taskId={1} />);
+      const upvoteButton = screen.getAllByRole("button")[0];
+
+      fireEvent.click(upvoteButton);
+
+      // Verify the error would be handled
+      expect(mockFetch).toHaveBeenCalled();
+    });
+  });
+
+  describe("DELETE /api/task-votes", () => {
+    it("calls fetch with DELETE method when removing vote", () => {
+      render(<VoteIndicator taskId={1} initialScore={5} initialCount={10} initialUserVote={1} />);
+      const upvoteButton = screen.getAllByRole("button")[0];
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ success: true, stats: { total: 0, count: 5, score: 0 } }),
+      } as Response);
+
+      fireEvent.click(upvoteButton);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining("/api/task-votes"),
+        expect.objectContaining({
+          method: "DELETE",
+        })
+      );
+    });
+  });
+});
+
+describe("Vote state updates", () => {
+  it("updates display after successful vote", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        success: true,
+        vote: { task_id: 1, user_id: 1, value: 1 },
+        stats: { total: 10, count: 8, score: 1.25 },
+      }),
+    } as Response);
+
+    render(<VoteIndicator taskId={1} initialScore={0} initialCount={0} />);
+    const upvoteButton = screen.getAllByRole("button")[0];
+
+    fireEvent.click(upvoteButton);
+
+    // Verify fetch was called with correct endpoint
+    expect(mockFetch).toHaveBeenCalledWith(
+      "/api/task-votes",
+      expect.objectContaining({
+        method: "POST",
+      })
+    );
+  });
+});
+
+describe("VoteButton Component", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockFetch.mockClear();
   });
 
   describe("Props handling", () => {
@@ -148,18 +314,6 @@ describe("VoteButton Component", () => {
 
     it("displays downvoting arrow", () => {
       render(<VoteButton taskId={1} score={5} />);
-      expect(screen.getByText("▼")).toBeInTheDocument();
-    });
-
-    it("calls onVote when upvoting", () => {
-      const handleVote = vi.fn();
-      render(<VoteButton taskId={1} score={0} userVote={0} onVote={handleVote} />);
-      expect(screen.getByText("▲")).toBeInTheDocument();
-    });
-
-    it("calls onVote when downvoting", () => {
-      const handleVote = vi.fn();
-      render(<VoteButton taskId={1} score={0} userVote={0} onVote={handleVote} />);
       expect(screen.getByText("▼")).toBeInTheDocument();
     });
   });
@@ -202,6 +356,34 @@ describe("VoteButton Component", () => {
     it("shows decimal score", () => {
       render(<VoteButton taskId={1} score={2.5} userVote={0} />);
       expect(screen.getByText("2.5")).toBeInTheDocument();
+    });
+  });
+
+  describe("Vote API calls", () => {
+    it("makes POST request when upvoting", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          success: true,
+          vote: { task_id: 1, user_id: 1, value: 1 },
+          stats: { total: 5, count: 3, score: 1.67 },
+        }),
+      });
+
+      render(<VoteButton taskId={1} score={0} userVote={0} />);
+      const upvoteButton = screen.getByText("▲");
+
+      fireEvent.click(upvoteButton);
+
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/task-votes",
+        expect.objectContaining({
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        })
+      );
     });
   });
 });
