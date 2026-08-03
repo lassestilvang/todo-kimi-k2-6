@@ -1,5 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { NextRequest } from "next/server";
+import { describe, it, expect, vi } from "vitest";
 
 describe("Error Handling - Comprehensive Edge Cases", () => {
   describe("Auth Middleware Edge Cases", () => {
@@ -136,7 +135,7 @@ describe("Error Handling - Comprehensive Edge Cases", () => {
     });
 
     it("should handle circular reference detection", () => {
-      const circular: any = { name: "circular" };
+      const circular: { name: string; self?: unknown } = { name: "circular" };
       circular.self = circular;
 
       // Should detect and handle circular references
@@ -146,14 +145,14 @@ describe("Error Handling - Comprehensive Edge Cases", () => {
 
   describe("Timeout Handling", () => {
     it("should handle request timeout", async () => {
-      const timeoutMs = 5000;
+      const timeoutMs = 100; // Use short timeout for test
 
       const timedOutRequest = () => new Promise((_, reject) => {
         setTimeout(() => reject(new Error("Request timeout")), timeoutMs);
       });
 
       await expect(timedOutRequest()).rejects.toThrow("timeout");
-    });
+    }, 5000); // Increase test timeout to 5 seconds
 
     it("should have proper timeout fallback", () => {
       const DEFAULT_TIMEOUT = 30000;
@@ -161,6 +160,15 @@ describe("Error Handling - Comprehensive Edge Cases", () => {
 
       const effectiveTimeout = Math.min(DEFAULT_TIMEOUT, REQUEST_TIMEOUT);
       expect(effectiveTimeout).toBe(5000);
+    });
+
+    it("should calculate timeout with backoff", () => {
+      const baseTimeout = 5000;
+      const retryDelay = 1000;
+      const attempts = 3;
+
+      const calculatedTimeout = baseTimeout + (attempts - 1) * retryDelay;
+      expect(calculatedTimeout).toBe(7000);
     });
   });
 
