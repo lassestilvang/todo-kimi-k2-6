@@ -44,8 +44,6 @@ export default defineConfig({
         '**/vitest.config.node.ts',
         // Complex components that need e2e testing
         '**/components/task/task-modal.tsx',
-        '**/components/task/pomodoro-timer.tsx',
-        '**/components/task/gantt-calendar.tsx',
         // Mock driver has limited coverage by design
         '**/lib/db/mock-driver.ts',
         '**/lib/db/test-db.ts',
@@ -67,6 +65,8 @@ export default defineConfig({
         '**/lib/ai/workload.ts',
         // Rate limiter config
         '**/lib/rate-limiter.ts',
+        // Deprecated auth middleware - use api-middleware instead
+        '**/lib/middleware/auth-middleware.ts',
       ],
       thresholds: {
         branches: 65,
