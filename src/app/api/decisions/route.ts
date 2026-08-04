@@ -144,9 +144,9 @@ export async function POST(request: NextRequest) {
     };
 
     return jsonResponse(decision, 201);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Failed to create decision:", error);
-    return errorResponse(`Failed to create decision: ${error.message || "Unknown error"}`, 500);
+    return errorResponse(`Failed to create decision: ${error instanceof Error ? error.message : "Unknown error"}`, 500);
   }
 }
 
@@ -229,9 +229,9 @@ export async function PUT(request: NextRequest) {
     }
 
     return jsonResponse(updatedDecision);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Failed to update decision:", error);
-    return errorResponse(`Failed to update decision: ${error.message || "Unknown error"}`, 500);
+    return errorResponse(`Failed to update decision: ${error instanceof Error ? error.message : "Unknown error"}`, 500);
   }
 }
 
@@ -267,8 +267,8 @@ export async function DELETE(request: NextRequest) {
     db.prepare("DELETE FROM decisions WHERE id = ?").run(decisionId);
 
     return jsonResponse({ success: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Failed to delete decision:", error);
-    return errorResponse(`Failed to delete decision: ${error.message || "Unknown error"}`, 500);
+    return errorResponse(`Failed to delete decision: ${error instanceof Error ? error.message : "Unknown error"}`, 500);
   }
 }
