@@ -1,6 +1,6 @@
 /**
  * External Integrations for TaskFlow
- * Supports Slack, Discord, and Email notifications
+ * Supports Slack, Discord, Notion, GitHub, Email, and more
  */
 
 export interface IntegrationConfig {
@@ -19,6 +19,13 @@ export interface TaskNotification {
   priority?: string;
   workspaceId?: number;
 }
+
+// Re-export connectors
+export { NotionConnector } from './notion';
+export { GitHubConnector } from './github';
+export { SlackConnector } from './slack';
+export { GmailConnector } from './gmail';
+export { BaseConnector, type IntegrationConnector, type ExternalRecord, type GitHubIssueRecord, type SlackMessageRecord, type EmailRecord, type NotionPageRecord } from './base-connector';
 
 /**
  * Send notification to Slack webhook
