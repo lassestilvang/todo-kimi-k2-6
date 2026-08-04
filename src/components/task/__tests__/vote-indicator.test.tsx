@@ -3,6 +3,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { VoteIndicator, VoteButton } from "../vote-indicator";
 
 // Mock sonner
+import { toast } from "sonner";
 vi.mock("sonner", () => ({
   toast: {
     success: vi.fn(),
@@ -10,6 +11,7 @@ vi.mock("sonner", () => ({
     info: vi.fn(),
   },
 }));
+const mockToast = vi.mocked(toast);
 
 // Mock Button component
 vi.mock("@/components/ui/button", () => ({
@@ -40,8 +42,6 @@ const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
 describe("VoteIndicator Component", () => {
-  const mockToast = vi.mocked(require("sonner").toast);
-
   beforeEach(() => {
     vi.clearAllMocks();
     mockFetch.mockClear();
@@ -157,7 +157,7 @@ describe("VoteIndicator Component", () => {
 });
 
 describe("VoteIndicator API Integration", () => {
-  const mockToast = vi.mocked(require("sonner").toast);
+  // toast is mocked via vi.mock at the top of the file
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -218,7 +218,9 @@ describe("VoteIndicator API Integration", () => {
     });
 
     it("handles API error response with toast error", async () => {
-      mockToast.error = vi.fn();
+      // Access mocked toast from sonner module
+      const mockedToast = vi.mocked(await import("sonner")).toast;
+      mockedToast.error = vi.fn();
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 400,
