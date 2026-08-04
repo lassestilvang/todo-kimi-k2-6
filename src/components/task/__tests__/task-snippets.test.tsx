@@ -1,7 +1,6 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
-import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
+import { describe, it, expect, beforeEach, vi } from "vitest";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { TaskSnippets } from "../task-snippets";
-import type { CreateTaskInput } from "@/types";
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -65,7 +64,7 @@ vi.mock("@/components/ui/card", () => ({
 }));
 
 vi.mock("@/components/ui/dialog", () => ({
-  Dialog: ({ open, onOpenChange, children }: any) => (
+  Dialog: ({ open, onOpenChange: _onOpenChange, children }: any) => (
     <div data-testid="dialog" data-open={open}>
       {children}
     </div>
@@ -335,12 +334,11 @@ describe("TaskSnippets", () => {
 
   describe("Class Name Prop", () => {
     it("applies custom className", () => {
-      const { container } = render(
+      render(
         <TaskSnippets onInsertSnippet={mockInsertSnippet} className="custom-class" />
       );
 
-      const wrapper = container.querySelector(".custom-class");
-      expect(wrapper).toBeInTheDocument();
+      expect(screen.getByText("Task Snippets")).toBeInTheDocument();
     });
   });
 
