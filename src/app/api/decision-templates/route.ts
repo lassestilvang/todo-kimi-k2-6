@@ -3,7 +3,7 @@ import { applyMiddleware, errorResponse, jsonResponse } from "@/lib/api-middlewa
 import { getDb } from "@/lib/db";
 import { z } from "zod";
 
-const DecisionTemplateValidationSchema = z.object({
+export const DecisionTemplateValidationSchema = z.object({
   id: z.number().optional(),
   user_id: z.number(),
   name: z.string().min(1).max(200),
@@ -352,4 +352,4 @@ export async function PATCH(request: NextRequest) {
   }
 }
 
-export type { DecisionTemplateValidationSchema, CreateTemplateValidationSchema, GenerateTemplateValidationSchema, TemplateRow };
+export type { CreateTemplateValidationSchema, GenerateTemplateValidationSchema, TemplateRow };
