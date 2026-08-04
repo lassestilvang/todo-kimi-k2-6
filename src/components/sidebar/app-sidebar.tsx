@@ -1,4 +1,4 @@
-import { useState, useEffect, memo } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Calendar,
@@ -345,13 +345,13 @@ export function AppSidebar({
                   );
                 }
 
-                if (!view.icon || !view.name) return null;
+                if (!view.icon || !view.name || !view.id) return null;
                 const Icon = view.icon;
                 const isActive = currentView === view.id;
                 return (
                   <button
                     key={view.id}
-                    onClick={() => onViewChange(view.id!)}
+                    onClick={() => onViewChange(view.id)}
                     className={cn(
                       "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
                       isActive
