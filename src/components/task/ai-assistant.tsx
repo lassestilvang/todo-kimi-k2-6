@@ -12,7 +12,6 @@ import type { TaskWithRelations, List, Priority } from "@/types";
 import type { TaskSuggestion, AIEditCommand } from "@/lib/ai";
 import { toast } from "sonner";
 import { z } from "zod";
-import { useAIConversationMemory } from "@/hooks/use-ai-conversation-memory";
 
 // Type declarations for Web Speech API are in src/types/speech.d.ts
 
