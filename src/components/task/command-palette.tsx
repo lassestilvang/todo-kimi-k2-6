@@ -2,20 +2,12 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
-  Command,
-  Filter,
-  Lightbulb,
-  Calendar,
-  CheckCircle,
-  AlertCircle,
-  RefreshCw,
   UserCheck,
   Brain,
   BarChart3,
   List as ListIcon,
   Search,
   Clock,
-  Settings,
 } from "lucide-react";
 import {
   CommandDialog,
@@ -24,9 +16,7 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-  CommandSeparator,
 } from "@/components/ui/command";
-import { cn } from "@/lib/utils";
 import type { TaskWithRelations } from "@/types";
 
 interface CommandPaletteProps {
@@ -100,7 +90,7 @@ const categories = [
 interface CategoryItem {
   name: string;
   keyword: string;
-  action: (query: string | (() => { type: string; payload: any })) => CommandAction;
+  action: (query: string | (() => { type: string; payload: unknown })) => CommandAction;
 }
 
 interface Category {
@@ -188,7 +178,7 @@ const nlpParser = {
     },
     {
       pattern: /(create|add)\s+(a\s+)?(task|todo)\s+(.+)/i,
-      action: (match: string, tasks: TaskWithRelations[]) => {
+      action: (match: string, _tasks: TaskWithRelations[]) => {
         const taskName = match.replace(/(create|add)\s+(a\s+)?(task|todo)\s+/, "").trim();
         return { type: "create_task" as const, payload: taskName };
       }
