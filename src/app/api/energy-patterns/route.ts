@@ -12,11 +12,6 @@ const EnergyPatternSchema = z.object({
   notes: z.string().optional(),
 });
 
-const GetPatternsSchema = z.object({
-  date: z.string().optional(),
-  days: z.number().min(1).max(30).optional(),
-});
-
 // GET /api/energy-patterns - Get energy patterns
 export async function GET(request: NextRequest) {
   const middleware = await applyMiddleware(request, { requireAuth: true });
@@ -143,25 +138,7 @@ export async function GET_ENERGY_SUGGESTIONS(request: NextRequest) {
   }
 
   try {
-    const db = getDb();
-
-    // Get user's energy patterns
-    const patterns = db.prepare(`
-      SELECT avg(value) as avg_energy
-      FROM (
-        SELECT json_each.value FROM habit_contexts, json_each(evidence_task_ids)
-        WHERE user_id = ? AND context_type = 'energy_level'
-      )
-    `).all(userId);
-
-    // Get tasks that need scheduling
-    const tasks = db.prepare(`
-      SELECT id, name, priority, labels FROM tasks
-      WHERE user_id = ? AND completed = 0 AND date IS NULL
-      ORDER BY priority DESC, created_at DESC
-    `).all(userId);
-
-    // Generate suggestions
+    // Generate suggestions based on energy patterns knowledge
     const suggestions = [
       {
         type: "schedule_urgent",
@@ -181,7 +158,7 @@ export async function GET_ENERGY_SUGGESTIONS(request: NextRequest) {
     ];
 
     return jsonResponse({ suggestions }, 200);
-  } catch (error) {
+  } catch {
     return errorResponse("Failed to get suggestions", 500);
   }
 }
