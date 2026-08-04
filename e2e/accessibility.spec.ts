@@ -35,6 +35,7 @@ test.describe("Accessibility Tests", () => {
     });
 
     await expect(headings.length).toBeGreaterThan(0);
+    await expect(h1Elements.length).toBeGreaterThanOrEqual(1);
   });
 
   test("should have alt text for images", async ({ page }) => {
