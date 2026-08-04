@@ -32,7 +32,7 @@ vi.mock("@base-ui/react/scroll-area", () => ({
       { "data-testid": "scroll-area-viewport", "data-slot": "scroll-area-viewport", className },
       children
     ),
-  Scrollbar: ({ children, orientation, className }: any) =>
+  Scrollbar: ({ children, orientation = "vertical", className }: any) =>
     React.createElement(
       "div",
       {
@@ -102,12 +102,12 @@ describe("ScrollArea Component", () => {
   });
 
   describe("ScrollArea CSS classes", () => {
-    it("includes required orientation classes", () => {
+    it("includes required orientation classes for vertical", () => {
       const verticalClasses = "data-vertical:h-full data-vertical:w-2.5";
       expect(verticalClasses).toContain("data-vertical:");
     });
 
-    it("includes horizontal orientation classes", () => {
+    it("includes orientation classes for horizontal", () => {
       const horizontalClasses = "data-horizontal:h-2.5 data-horizontal:flex-col";
       expect(horizontalClasses).toContain("data-horizontal:");
     });
