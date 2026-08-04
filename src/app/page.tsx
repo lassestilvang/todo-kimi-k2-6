@@ -26,8 +26,6 @@ import { TaskInvestmentPortfolio } from "@/components/task/task-investment-portf
 import { MobileSidebar } from "@/components/task/mobile-sidebar";
 import { GoalsDashboard } from "@/components/task/goals-dashboard";
 import { AIAssistant } from "@/components/task/ai-assistant";
-import { EnergySchedulerEnhanced } from "@/components/task/energy-scheduler-enhanced";
-import { CareerCompass } from "@/components/task/career-compass";
 import { useTasks } from "@/hooks/use-tasks";
 import type { TaskWithRelations, FilterPreset, Template, Goal, Workspace } from "@/types";
 import { toast } from "sonner";
