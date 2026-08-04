@@ -14,7 +14,7 @@ describe("API Integration Tests", () => {
     db = createTestDb();
     setDb(db);
 
-    process.env.NODE_ENV = "test";
+    (process.env as any).NODE_ENV = "test";
     process.env.NEXTAUTH_SECRET = "demo-secret";
 
     // Initialize schema
@@ -90,7 +90,7 @@ describe("API Integration Tests", () => {
   afterEach(() => {
     resetDb();
     vi.clearAllMocks();
-    process.env.NODE_ENV = originalNodeEnv;
+    (process.env as any).NODE_ENV = originalNodeEnv;
   });
 
   describe("Task Votes API Integration", () => {
