@@ -4,30 +4,21 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   RotateCcw,
-  BarChart3,
-  History,
   Lightbulb,
-  Award,
   CheckCircle,
   AlertCircle,
   Plus,
-  Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
 import { DecisionTracker } from "@/components/task/decision-tracker";
 import { DecisionAnalytics } from "@/components/task/decision-analytics";
-import { DecisionTemplateBuilder } from "@/components/task/decision-template-builder";
 import { useSession } from "next-auth/react";
 
 export default function DecisionJournalPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [taskId, setTaskId] = useState<number | undefined>();
-  const [refreshKey, setRefreshKey] = useState(0);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -49,6 +40,7 @@ export default function DecisionJournalPage() {
 
   // Fetch a recent task to associate with decisions
   useEffect(() => {
+    // Fetch a recent task to associate with decisions
     fetch("/api/tasks?limit=1")
       .then(r => r.json())
       .then(data => {
@@ -60,7 +52,7 @@ export default function DecisionJournalPage() {
   }, []);
 
   const handleRefresh = () => {
-    setRefreshKey(prev => prev + 1);
+    // Refresh logic - could trigger re-fetch of data
   };
 
   return (
