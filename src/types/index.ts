@@ -195,6 +195,8 @@ export interface Task {
   health_score?: number;
   health_status?: "healthy" | "attention" | "critical" | "overdue";
   vote_score?: number;
+  ai_provider?: string;
+  confidence_score?: number;
 }
 
 export interface TaskWithRelations extends Task {
@@ -210,6 +212,8 @@ export interface TaskWithRelations extends Task {
   recurring_exceptions: RecurringException[];
   workspace_id?: number | null;
   vote_count?: number;
+  ai_provider?: string;
+  confidence_score?: number;
 }
 
 // Re-export health score types
@@ -238,11 +242,15 @@ export interface CreateTaskInput {
   reminders?: string[];
   blocker_ids?: number[];
   recurring_exception_dates?: string[];
+  ai_provider?: string;
+  confidence_score?: number;
 }
 
 export interface UpdateTaskInput extends Partial<Omit<CreateTaskInput, 'completed'>> {
   completed?: boolean;
   blocker_ids?: number[];
+  ai_provider?: string;
+  confidence_score?: number;
 }
 
 export interface CreateListInput {
