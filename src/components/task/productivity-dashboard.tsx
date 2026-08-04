@@ -1,10 +1,35 @@
 "use client";
 
 import { useMemo } from "react";
-import { Calendar, Target, Flame, Award, UserCheck } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, BarChart, Bar } from "recharts";
-import { format, subDays, startOfWeek, parseISO } from "date-fns";
+import {
+  Calendar,
+  Target,
+  Flame,
+  Award,
+  UserCheck,
+  TrendingUp,
+  BarChart3,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  BarChart,
+  Bar,
+  CartesianGrid,
+  AreaChart,
+  Area,
+} from "recharts";
+import { format, subDays, startOfWeek, parseISO, getWeek } from "date-fns";
 import type { TaskWithRelations } from "@/types";
 
 interface ProductivityDashboardProps {
