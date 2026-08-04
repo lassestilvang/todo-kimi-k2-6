@@ -3,7 +3,7 @@
 import { SkillsGrowthTracker } from "@/components/task/skills-growth-tracker";
 import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 
 export default function SkillsPage() {
