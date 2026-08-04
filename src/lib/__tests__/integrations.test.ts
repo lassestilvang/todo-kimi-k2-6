@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { sendSlackNotification, sendDiscordNotification, sendEmailNotification } from "@/lib/integrations/index";
+import { NotionConnector, GitHubConnector, SlackConnector, GmailConnector } from "@/lib/integrations/index";
 
 // Mock fetch globally
 global.fetch = vi.fn();
