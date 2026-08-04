@@ -14,10 +14,10 @@ interface ProviderResult {
   label: string;
   name: string | null;
   description: string | null;
-  priority: string;
+  priority: string | null;
   estimated_duration: string | null;
   suggested_date: string | null;
-  recurring: string;
+  recurring: string | null;
   timeout: boolean;
   duration_ms: number;
   confidence_score: number;
@@ -72,12 +72,12 @@ export async function POST(request: NextRequest) {
         results.push({
           provider: provider.name,
           label: provider.label,
-          name: result.name,
-          description: result.description,
-          priority: result.priority,
-          estimated_duration: result.estimated_duration,
-          suggested_date: result.suggested_date,
-          recurring: result.recurring,
+          name: result.name ?? null,
+          description: result.description ?? null,
+          priority: result.priority ?? null,
+          estimated_duration: result.estimated_duration != null ? String(result.estimated_duration) : null,
+          suggested_date: result.suggested_date ?? null,
+          recurring: result.recurring ?? null,
           timeout: false,
           duration_ms: duration,
           confidence_score: 0.8, // Default confidence for successful parses
