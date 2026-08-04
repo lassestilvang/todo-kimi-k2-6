@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo } from "react";
-import { Award, Flame, Target, Zap, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
