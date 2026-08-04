@@ -496,8 +496,8 @@ export async function createTask(input: CreateTaskInput & { sort_order?: number 
     const insertResult = db
       .prepare(
         `INSERT INTO tasks
-         (user_id, name, description, list_id, date, deadline, estimate, actual_time, priority, recurring, recurring_config, sort_order)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+         (user_id, name, description, list_id, date, deadline, estimate, actual_time, priority, recurring, recurring_config, sort_order, ai_provider, confidence_score)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .run(
         userId,
@@ -511,7 +511,9 @@ export async function createTask(input: CreateTaskInput & { sort_order?: number 
         sanitizedInput.priority || "none",
         sanitizedInput.recurring || "none",
         sanitizedInput.recurring_config || null,
-        sortOrder
+        sortOrder,
+        sanitizedInput.ai_provider || "keyword-parser",
+        sanitizedInput.confidence_score ?? 0.5
       );
 
     const taskId = insertResult.lastInsertRowid as number;
@@ -623,6 +625,14 @@ export async function updateTask(id: number, input: UpdateTaskInput): Promise<Ta
     if (input.completed !== Boolean(existing.completed)) {
       logTaskAction(id, input.completed ? "completed" : "uncompleted", `Task status updated`);
     }
+  }
+  if (input.ai_provider !== undefined) {
+    fields.push("ai_provider = ?");
+    values.push(input.ai_provider);
+  }
+  if (input.confidence_score !== undefined) {
+    fields.push("confidence_score = ?");
+    values.push(input.confidence_score);
   }
 
   if (fields.length > 0) {
