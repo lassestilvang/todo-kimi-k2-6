@@ -32,7 +32,7 @@ test.describe("Pomodoro Timer Component", () => {
     // Open time tracking tab
     await page.click('button:has-text("Time Tracking")');
 
-    await expect(page.locator('role=dialog, .pomodoro-timer')).toBeVisible();
+    await expect(page.locator('[data-testid="pomodoro-timer"], .pomodoro-timer, [role="dialog"]')).toBeVisible();
   });
 
   test("should start and pause timer", async ({ page }) => {
@@ -48,7 +48,7 @@ test.describe("Pomodoro Timer Component", () => {
     // Start timer
     await page.click('button:has-text("Start")');
 
-    await expect(page.locator('button:has-text("Pause"))').toBeVisible();
+    await expect(page.locator('button:has-text("Pause")')).toBeVisible();
   });
 
   test("should set custom pomodoro duration", async ({ page }) => {
