@@ -222,7 +222,7 @@ describe('TaskAttachments - Upload Flow Tests', () => {
 
   it('should handle upload failure with network error', async () => {
     vi.mocked(global.fetch).mockRejectedValue(new Error('Network error'));
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(vi.fn());
 
     render(<TaskAttachments task={mockTask} onAttachmentsChange={mockOnAttachmentsChange} />);
 
@@ -370,7 +370,7 @@ describe('TaskAttachments - Delete Flow Tests', () => {
 
   it('should handle delete network error', async () => {
     vi.mocked(global.fetch).mockRejectedValue(new Error('Network error'));
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(vi.fn());
 
     render(<TaskAttachments task={mockTask} onAttachmentsChange={mockOnAttachmentsChange} />);
 
