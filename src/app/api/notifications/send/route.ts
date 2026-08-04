@@ -1,7 +1,7 @@
 import { getDb } from "@/lib/db";
 import { sendTaskReminderEmail, sendDueSoonEmail, EmailTask } from "@/lib/email";
 import { logError } from "@/lib/logger";
-import { applyMiddleware, jsonResponse, errorResponse } from "@/lib/api-middleware";
+import { applyMiddleware, jsonResponse } from "@/lib/api-middleware";
 import { NextRequest } from "next/server";
 
 interface DbTaskRow {
