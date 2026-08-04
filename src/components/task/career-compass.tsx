@@ -3,12 +3,9 @@
 import { useState, useEffect, useMemo } from "react";
 import {
   Compass,
-  Target,
   Award,
   Lightbulb,
   CheckCircle,
-  AlertCircle,
-  TrendingUp,
   MapPin,
   GraduationCap,
 } from "lucide-react";
@@ -89,20 +86,6 @@ const careerPaths: Record<string, CareerPath> = {
     missingSkills: [],
     nextSteps: [],
   },
-};
-
-const skillKeywords: Record<string, string[]> = {
-  "design": ["design", "ui", "ux", "interface", "prototype"],
-  "development": ["code", "develop", "server", "api", "backend", "frontend"],
-  "research": ["research", "analyze", "study", "investigate", "data analysis"],
-  "writing": ["write", "document", "content", "report"],
-  "leadership": ["lead", "manage", "team", "coordinate", "organize"],
-  "planning": ["plan", "schedule", "strategy", "timeline"],
-  "communication": ["email", "present", "meeting", "discuss"],
-  "project-management": ["project", "milestone", "deliverable", "scope"],
-  "analytical": ["analyze", "metrics", "kpi", "report", "insight"],
-  "creative": ["create", "brainstorm", "innovate", "concept", "idea"],
-  "technical": ["setup", "configure", "deploy", "integration"],
 };
 
 export function CareerCompass({ skills = [] }: CareerCompassProps) {
@@ -196,7 +179,7 @@ export function CareerCompass({ skills = [] }: CareerCompassProps) {
               <GraduationCap className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
               <h4 className="font-medium mb-2">Complete more tasks to unlock career insights</h4>
               <p className="text-sm text-muted-foreground">
-                We'll match your skills to career opportunities as you grow
+                We will match your skills to career opportunities as you grow
               </p>
             </div>
           )}
