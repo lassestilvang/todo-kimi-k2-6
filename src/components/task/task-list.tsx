@@ -20,6 +20,7 @@ import {
   ThumbsUp,
   ThumbsDown,
 } from "lucide-react";
+import { AIStatusIndicator } from "@/components/task/ai-status-indicator";
 import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -623,6 +624,14 @@ export function TaskList({
                             >
                               {priorityConfig[task.priority].label}
                             </Badge>
+                          )}
+
+                          {/* AI Status Indicator */}
+                          {!task.completed && (
+                            <AIStatusIndicator
+                              aiProvider={task.ai_provider}
+                              confidenceScore={task.confidence_score}
+                            />
                           )}
 
                           {/* Vote Indicator */}
