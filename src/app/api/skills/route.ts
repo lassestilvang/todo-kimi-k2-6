@@ -173,6 +173,7 @@ export async function PATCH(request: NextRequest) {
     // Handle recommendations
     if (body.action === "recommendations") {
       const currentTasks = body.currentTasks || 10;
+      const db = getDb();
       const skills = db.prepare(`
         SELECT * FROM user_skills WHERE user_id = ?
       `).all(userId) as SkillRecord[];
