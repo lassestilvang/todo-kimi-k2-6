@@ -120,9 +120,9 @@ export async function POST(request: NextRequest) {
       .get(result.lastInsertRowid || existingContext?.id);
 
     return jsonResponse(newContext);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Failed to create habit context:", error);
-    return errorResponse(`Failed to create habit context: ${error.message || "Unknown error"}`, 500);
+    return errorResponse(`Failed to create habit context: ${error instanceof Error ? error.message : "Unknown error"}`, 500);
   }
 }
 
@@ -163,7 +163,7 @@ function calculateNewSuccessRate(
   currentRate: number,
   currentFrequency: number,
   newSuccess: boolean,
-  newFrequency: number
+  _newFrequency: number
 ): number {
   const totalSuccesses = (currentRate * currentFrequency) / 100 + (newSuccess ? 1 : 0);
   const totalRecords = currentFrequency + 1;
