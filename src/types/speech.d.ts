@@ -8,6 +8,10 @@ declare global {
     SpeechRecognition: typeof SpeechRecognition;
     webkitSpeechRecognition: typeof SpeechRecognition;
   }
+
+  interface Navigator {
+    speechSynthesis: SpeechSynthesis;
+  }
 }
 
 interface SpeechRecognitionEvent extends Event {
@@ -57,6 +61,46 @@ interface SpeechRecognitionResultList {
 interface SpeechRecognitionErrorEvent extends Event {
   readonly error: string;
   readonly message: string;
+}
+
+interface SpeechSynthesis {
+  speaking: boolean;
+  paused: boolean;
+  pending: boolean;
+  getVoices(): SpeechSynthesisVoice[];
+  speak(utterance: SpeechSynthesisUtterance): void;
+  pause(): void;
+  resume(): void;
+  cancel(): void;
+  volume: number;
+  rate: number;
+  pitch: number;
+}
+
+interface SpeechSynthesisUtterance extends EventTarget {
+  text: string;
+  lang: string;
+  voice: SpeechSynthesisVoice | null;
+  volume: number;
+  rate: number;
+  pitch: number;
+  onstart: ((this: SpeechSynthesisUtterance, ev: SpeechSynthesisEvent) => void) | null;
+  onend: ((this: SpeechSynthesisUtterance, ev: SpeechSynthesisEvent) => void) | null;
+  onerror: ((this: SpeechSynthesisUtterance, ev: SpeechSynthesisEvent) => void) | null;
+}
+
+interface SpeechSynthesisVoice {
+  name: string;
+  lang: string;
+  local: boolean;
+  default: boolean;
+  voiceURI: string;
+}
+
+interface SpeechSynthesisEvent extends Event {
+  charIndex: number;
+  elapsedTime: number;
+  name: string;
 }
 
 export {};
