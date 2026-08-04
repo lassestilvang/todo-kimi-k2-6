@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
     }>;
 
     return jsonResponse({ skills });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Failed to get skills:", error);
     return errorResponse("Failed to get skills", 500);
   }
@@ -89,11 +89,22 @@ export async function POST(request: NextRequest) {
     `).get(result.lastInsertRowid as number);
 
     return jsonResponse({ skill }, 201);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Failed to create skill:", error);
-    return errorResponse("Failed to create skill: " + error.message, 400);
+    return errorResponse("Failed to create skill: " + (error instanceof Error ? error.message : "Unknown error"), 400);
   }
 }
+
+// Type for database skill records
+type SkillRecord = {
+  id: number;
+  user_id: number;
+  skill_name: string;
+  proficiency_level: number;
+  evidence_task_ids: string | null;
+  last_used_at: string | null;
+  created_at: string;
+};
 
 // PATCH /api/skills - Increment skill experience or get recommendations
 export async function PATCH(request: NextRequest) {
@@ -120,7 +131,7 @@ export async function PATCH(request: NextRequest) {
       // Get existing skill or create new one
       let skill = db.prepare(`
         SELECT * FROM user_skills WHERE user_id = ? AND skill_name = ?
-      `).get(userId, parsed.data.skill_name) as any | undefined;
+      `).get(userId, parsed.data.skill_name) as SkillRecord | undefined;
 
       if (!skill) {
         // Create new skill
@@ -135,11 +146,11 @@ export async function PATCH(request: NextRequest) {
 
         skill = db.prepare(`
           SELECT * FROM user_skills WHERE id = ?
-        `).get(result.lastInsertRowid as number);
+        `).get(result.lastInsertRowid as number) as SkillRecord;
       } else {
         // Update existing skill
         const evidence = skill.evidence_task_ids
-          ? JSON.parse(skill.evidence_task_ids)
+          ? JSON.parse(skill.evidence_task_ids) as number[]
           : [];
 
         if (!evidence.includes(parsed.data.task_id)) {
@@ -164,7 +175,7 @@ export async function PATCH(request: NextRequest) {
       const currentTasks = body.currentTasks || 10;
       const skills = db.prepare(`
         SELECT * FROM user_skills WHERE user_id = ?
-      `).all(userId);
+      `).all(userId) as SkillRecord[];
 
       const skillKeywords: Record<string, string[]> = {
         "design": ["design", "ui", "ux", "interface", "prototype"],
@@ -177,8 +188,8 @@ export async function PATCH(request: NextRequest) {
         "problem-solving": ["debug", "fix", "solve", "troubleshoot"],
       };
 
-      const skillNames = new Set(skills.map((s: any) => s.skill_name.toLowerCase()));
-      const recommendations = Object.entries(skillKeywords).map(([skill, keywords]) => {
+      const skillNames = new Set(skills.map((s) => s.skill_name.toLowerCase()));
+      const recommendations = Object.entries(skillKeywords).map(([skill]) => {
         const isCovered = skillNames.has(skill);
         if (isCovered) {
           return { skill_name: skill, recommended: false, reason: "Already developing this skill" };
@@ -192,15 +203,15 @@ export async function PATCH(request: NextRequest) {
             ? "High demand skill with good opportunity for growth"
             : "Consider after mastering current skills"
         };
-      }).filter((r: any) => r.recommended);
+      }).filter((r) => r.recommended);
 
       return jsonResponse({ recommendations });
     }
 
     return errorResponse("Invalid action", 400);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Failed to increment/get recommendations:", error);
-    return errorResponse("Operation failed: " + error.message, 500);
+    return errorResponse("Operation failed: " + (error instanceof Error ? error.message : "Unknown error"), 500);
   }
 }
 
@@ -241,7 +252,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const setClauses: string[] = [];
-    const values: any[] = [];
+    const values: (string | number)[] = [];
 
     if (parsed.data.skill_name !== undefined) {
       setClauses.push("skill_name = ?");
@@ -274,9 +285,9 @@ export async function PUT(request: NextRequest) {
     `).get(id);
 
     return jsonResponse({ skill });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Failed to update skill:", error);
-    return errorResponse("Failed to update skill: " + error.message, 500);
+    return errorResponse("Failed to update skill: " + (error instanceof Error ? error.message : "Unknown error"), 500);
   }
 }
 
@@ -309,8 +320,8 @@ export async function DELETE(request: NextRequest) {
     }
 
     return jsonResponse({ success: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Failed to delete skill:", error);
-    return errorResponse("Failed to delete skill: " + error.message, 500);
+    return errorResponse("Failed to delete skill: " + (error instanceof Error ? error.message : "Unknown error"), 500);
   }
 }
