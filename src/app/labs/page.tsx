@@ -4,21 +4,16 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   Brain,
-  TestTube,
   Calculator,
   Zap,
   Smile,
   BarChart3,
   LayoutDashboard,
-  Calendar,
-  CheckCircle2,
   RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { ThemeProvider } from "@/components/theme-provider";
-import { toast } from "sonner";
 
 // Import our new components
 import { TaskFlowLabs } from "@/components/task/taskflow-labs";
@@ -146,7 +141,6 @@ export default function LabsPage() {
               tasks={tasks}
               onSchedule={(taskId, date) => {
                 console.log(`Scheduled task ${taskId} for ${date}`);
-                toast.success(`Task scheduled for ${date}`);
               }}
             />
           )}
