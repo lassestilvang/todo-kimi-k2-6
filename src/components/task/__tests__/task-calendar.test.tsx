@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, within } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { TaskCalendar } from "../task-calendar";
 import type { TaskWithRelations } from "@/types";
 
@@ -142,7 +142,7 @@ describe("TaskCalendar Component", () => {
     });
 
     it("should navigate to today when Today button clicked", () => {
-      const { container } = render(<TaskCalendar tasks={[]} onTaskClick={mockOnTaskClick} />);
+      render(<TaskCalendar tasks={[]} onTaskClick={mockOnTaskClick} />);
 
       const todayButton = screen.getByText("Today");
       fireEvent.click(todayButton);
@@ -204,7 +204,7 @@ describe("TaskCalendar Component", () => {
         createMockTask({ id: 3, name: "Task 3" }),
         createMockTask({ id: 4, name: "Task 4" }),
       ];
-      const { container } = render(<TaskCalendar tasks={tasks} onTaskClick={mockOnTaskClick} />);
+      render(<TaskCalendar tasks={tasks} onTaskClick={mockOnTaskClick} />);
 
       // Should show "+N more" for tasks beyond 3
       expect(screen.getByText("+1 more")).toBeInTheDocument();
