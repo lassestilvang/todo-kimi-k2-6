@@ -1,14 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Users, Settings, Share2, Shield, Crown, User, AlertCircle } from "lucide-react";
+import { ChevronLeft, Settings, Share2, Shield, Crown, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { WorkspaceMembers } from "@/components/task/workspace-members";
-import { toast } from "sonner";
 
 interface Workspace {
   id: number;
@@ -43,12 +40,7 @@ export default function WorkspacePage({ params }: WorkspacePageProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<WorkspaceMember | null>(null);
 
-  useEffect(() => {
-    fetchWorkspace();
-    fetchMembers();
-  }, [workspaceId]);
-
-  const fetchWorkspace = async () => {
+  const fetchWorkspace = useCallback(async () => {
     try {
       const res = await fetch(`/api/workspaces/${workspaceId}`);
       if (res.ok) {
@@ -58,9 +50,9 @@ export default function WorkspacePage({ params }: WorkspacePageProps) {
     } catch (error) {
       console.error(error);
     }
-  };
+  }, [workspaceId]);
 
-  const fetchMembers = async () => {
+  const fetchMembers = useCallback(async () => {
     try {
       const res = await fetch(`/api/workspaces/${workspaceId}/members`);
       if (res.ok) {
@@ -73,12 +65,17 @@ export default function WorkspacePage({ params }: WorkspacePageProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [workspaceId]);
 
   const handleMemberChange = (updatedMembers: WorkspaceMember[]) => {
     setMembers(updatedMembers);
     setCurrentUser(updatedMembers.find((m) => m.user_id === 1) || null);
   };
+
+  useEffect(() => {
+    fetchWorkspace();
+    fetchMembers();
+  }, [workspaceId, fetchWorkspace, fetchMembers]);
 
   if (isLoading) {
     return (
@@ -94,7 +91,7 @@ export default function WorkspacePage({ params }: WorkspacePageProps) {
         <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
         <h2 className="text-xl font-bold mb-2">Workspace Not Found</h2>
         <p className="text-muted-foreground mb-4">
-          The workspace you're looking for doesn't exist or you don't have access.
+          The workspace you are looking for does not exist or you do not have access.
         </p>
         <Button onClick={() => router.push("/")}>Go Home</Button>
       </div>
