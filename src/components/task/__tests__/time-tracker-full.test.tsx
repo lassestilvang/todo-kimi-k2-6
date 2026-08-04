@@ -14,7 +14,7 @@ vi.mock("lucide-react", () => ({
 
 // Mock UI components
 vi.mock("@/components/ui/button", () => ({
-  Button: ({ children, onClick, variant, disabled, size, className }: any) => (
+  Button: ({ children, onClick, variant, disabled, size: _size, className }: any) => (
     <button onClick={onClick} disabled={disabled} data-testid={`btn-${variant || "default"}`} className={className}>
       {children}
     </button>
