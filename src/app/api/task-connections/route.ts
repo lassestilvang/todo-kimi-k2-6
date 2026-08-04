@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getDb } from "@/lib/db";
 import { applyMiddleware, jsonResponse, errorResponse } from "@/lib/api-middleware";
 import type { TaskConnection } from "@/types";
