@@ -276,6 +276,18 @@ export function setupSchema(db: Database): void {
     );
   `);
 
+  // Habit streaks table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS habit_streaks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+      streak_count INTEGER DEFAULT 0,
+      last_completed TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
   // Habit completions table
   db.exec(`
     CREATE TABLE IF NOT EXISTS habit_completions (
