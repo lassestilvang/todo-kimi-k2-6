@@ -334,10 +334,58 @@ export function initializeSchema(db: Database) {
       priority TEXT,
       sort_field TEXT DEFAULT 'date' CHECK(sort_field IN ('name', 'date', 'deadline', 'priority', 'created_at', 'updated_at')),
       sort_direction TEXT DEFAULT 'asc' CHECK(sort_direction IN ('asc', 'desc')),
-      view_type TEXT DEFAULT 'today' CHECK(view_type IN ('today', 'next7', 'upcoming', 'all', 'list', 'blocked')),
+      view_type TEXT DEFAULT 'today' CHECK(view_type IN ('today', 'next7', 'upcoming', 'all', 'list', 'blocked', 'kanban', 'gantt', 'matrix', 'calendar', 'analytics', 'ai', 'focus', 'goals', 'investment', 'timeline')),
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
     CREATE INDEX IF NOT EXISTS idx_custom_views_user ON custom_views(user_id);
+
+    -- Workspaces table
+    CREATE TABLE IF NOT EXISTS workspaces (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      description TEXT,
+      created_by INTEGER REFERENCES users(id),
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_workspaces_created_by ON workspaces(created_by);
+
+    -- Workspace users table
+    CREATE TABLE IF NOT EXISTS workspace_users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      workspace_id INTEGER NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      role TEXT NOT NULL CHECK(role IN ('owner', 'admin', 'member', 'viewer')) DEFAULT 'member',
+      joined_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(workspace_id, user_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_workspace_users_workspace ON workspace_users(workspace_id);
+    CREATE INDEX IF NOT EXISTS idx_workspace_users_user ON workspace_users(user_id);
+
+    -- Public share links table (separate from task_shares)
+    CREATE TABLE IF NOT EXISTS shares (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+      token TEXT UNIQUE NOT NULL,
+      permission TEXT DEFAULT 'view' CHECK(permission IN ('view', 'edit')),
+      expires_at TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_shares_token ON shares(token);
+    CREATE INDEX IF NOT EXISTS idx_shares_task ON shares(task_id);
+
+    -- Collaboration events (comments, reactions, mentions)
+    CREATE TABLE IF NOT EXISTS collaboration (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      action TEXT NOT NULL,
+      entity_type TEXT NOT NULL,
+      entity_id INTEGER,
+      details TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_collaboration_task ON collaboration(task_id);
+    CREATE INDEX IF NOT EXISTS idx_collaboration_user ON collaboration(user_id);
 
     -- Habit tracking for recurring tasks
     CREATE TABLE IF NOT EXISTS habit_streaks (
