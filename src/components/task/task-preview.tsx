@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { format, parseISO } from "date-fns";
 import { Clock, Calendar, Tag, Repeat, CheckCircle2, ThumbsUp, ThumbsDown } from "lucide-react";
+import { AIStatusIndicator } from "@/components/task/ai-status-indicator";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { TaskWithRelations, List } from "@/types";
@@ -47,6 +48,14 @@ export function TaskPreview({ task, lists, isVisible, x, y }: TaskPreviewProps) 
               >
                 {pConfig.label}
               </Badge>
+            )}
+            {/* AI Status Indicator in preview */}
+            {!task.completed && (
+              <AIStatusIndicator
+                aiProvider={task.ai_provider}
+                confidenceScore={task.confidence_score}
+                className="ml-1"
+              />
             )}
           </div>
 
