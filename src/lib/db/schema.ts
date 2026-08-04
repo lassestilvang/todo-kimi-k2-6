@@ -62,7 +62,9 @@ export function setupSchema(db: Database): void {
       assignee_id INTEGER,
       created_by INTEGER,
       user_id INTEGER,
-      archived INTEGER DEFAULT 0
+      archived INTEGER DEFAULT 0,
+      ai_provider TEXT DEFAULT 'keyword-parser',
+      confidence_score REAL DEFAULT 0.5
     );
   `);
 
@@ -399,5 +401,40 @@ export function setupSchema(db: Database): void {
   db.exec(`
     INSERT OR IGNORE INTO lists (id, name, emoji, color, is_inbox, created_at)
     VALUES (1, 'Inbox', '📥', '#6366f1', 1, datetime('now'));
+  `);
+
+  // Workflows table for automation
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS workflows (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      description TEXT,
+      trigger_type TEXT NOT NULL,
+      trigger_config TEXT,
+      action_type TEXT NOT NULL,
+      action_config TEXT,
+      condition_json TEXT,
+      enabled INTEGER DEFAULT 1,
+      run_count INTEGER DEFAULT 0,
+      last_run_at TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  // Workflow executions table for tracking runs
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS workflow_executions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      workflow_id INTEGER REFERENCES workflows(id) ON DELETE CASCADE,
+      triggered_at TEXT NOT NULL,
+      status TEXT NOT NULL,
+      input_data TEXT,
+      result_data TEXT,
+      error_message TEXT,
+      duration_ms INTEGER,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
   `);
 }
