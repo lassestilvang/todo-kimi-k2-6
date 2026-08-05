@@ -65,7 +65,7 @@ describe('NextAuth Configuration', () => {
 
   describe('Secret Configuration', () => {
     it('uses NEXTAUTH_SECRET environment variable', () => {
-      process.env.NEXTAUTH_SECRET = 'my-secret';
+      (process.env as any).NEXTAUTH_SECRET = 'my-secret';
 
       const secret = process.env.NEXTAUTH_SECRET || 'fallback-secret-for-development';
 
@@ -123,7 +123,7 @@ describe('NextAuth Configuration', () => {
       const user = { id: 1, name: 'Test', email: 'test@test.com' };
 
       // Simulate the JWT callback logic
-      if (account?.access_token && user?.id) {
+      if ((account as any)?.access_token && user?.id) {
         // This won't execute
       }
 
