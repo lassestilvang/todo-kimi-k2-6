@@ -67,6 +67,8 @@ const mockTask: TaskWithRelations = {
   id: 1,
   name: "Test Task",
   description: "A test task",
+  notes: null,
+  user_id: 1,
   list_id: 1,
   date: "2024-01-15",
   deadline: null,
@@ -75,7 +77,7 @@ const mockTask: TaskWithRelations = {
   priority: "high",
   recurring: "none",
   recurring_config: null,
-  completed: 0,
+  completed: false,
   completed_at: null,
   created_at: "2024-01-01",
   updated_at: "2024-01-01",
@@ -89,6 +91,8 @@ const mockTask: TaskWithRelations = {
   blocked_by: [],
   time_entries: [],
   recurring_exceptions: [],
+  archived: false,
+  attachments: [],
 };
 
 const createMockTimeEntry = (overrides: any = {}): any => ({
