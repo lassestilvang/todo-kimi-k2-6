@@ -37,8 +37,6 @@ describe("Shares API Route - Integration Tests", () => {
       this._jsonBody = options.body;
     }
 
-    nextUrl = { searchParams: URLSearchParams.prototype };
-
     json () {
       return Promise.resolve(this._jsonBody);
     }
@@ -51,7 +49,7 @@ describe("Shares API Route - Integration Tests", () => {
 
     // Re-import to get the mocked version
     vi.resetModules();
-    mockSharing = await import("@/lib/actions/sharing");
+    mockSharing = (await import("@/lib/actions/sharing")) as any;
     route = await import("../route");
   });
 
