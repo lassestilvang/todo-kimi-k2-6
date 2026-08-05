@@ -2,7 +2,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Bot, Sparkles, Zap, Brain, Database } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 interface AIStatusIndicatorProps {
@@ -44,39 +44,41 @@ export function AIStatusIndicator({ aiProvider = "keyword-parser", confidenceSco
   const confidencePercent = Math.round(confidenceScore * 100);
 
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <div className={cn("inline-flex items-center gap-1", className)}>
-          <Badge
-            variant="outline"
-            className={cn(
-              "text-[10px] h-5 px-1.5 transition-all hover:shadow-sm",
-              config.color.replace("bg-", "bg-opacity-10"),
-              `hover:${config.color.replace("bg-", "bg-opacity-20")}`
-            )}
-          >
-            <Icon className="h-2.5 w-2.5 mr-0.5" />
-            {config.label}
-          </Badge>
-
-          {confidenceScore < 0.7 && (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger>
+          <div className={cn("inline-flex items-center gap-1", className)}>
             <Badge
               variant="outline"
-              className="text-[9px] h-4 px-1 bg-amber-50 text-amber-700 border-amber-200"
+              className={cn(
+                "text-[10px] h-5 px-1.5 transition-all hover:shadow-sm",
+                config.color.replace("bg-", "bg-opacity-10"),
+                `hover:${config.color.replace("bg-", "bg-opacity-20")}`
+              )}
             >
-              {confidencePercent}%
+              <Icon className="h-2.5 w-2.5 mr-0.5" />
+              {config.label}
             </Badge>
-          )}
-        </div>
-      </TooltipTrigger>
-      <TooltipContent>
-        <div className="space-y-1">
-          <p className="font-medium">{config.label} Parsing</p>
-          <p className="text-xs text-muted-foreground">{config.description}</p>
-          <div className="text-xs">Confidence: {confidencePercent}%</div>
-        </div>
-      </TooltipContent>
-    </Tooltip>
+
+            {confidenceScore < 0.7 && (
+              <Badge
+                variant="outline"
+                className="text-[9px] h-4 px-1 bg-amber-50 text-amber-700 border-amber-200"
+              >
+                {confidencePercent}%
+              </Badge>
+            )}
+          </div>
+        </TooltipTrigger>
+        <TooltipContent>
+          <div className="space-y-1">
+            <p className="font-medium">{config.label} Parsing</p>
+            <p className="text-xs text-muted-foreground">{config.description}</p>
+            <div className="text-xs">Confidence: {confidencePercent}%</div>
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
 
