@@ -145,14 +145,14 @@ describe("NextAuth Configuration - Authentication Tests", () => {
 
     it("should have debug mode set based on NODE_ENV", async () => {
       const originalEnv = process.env.NODE_ENV;
-      process.env.NODE_ENV = "development";
+      (process.env as any).NODE_ENV = "development";
 
       vi.resetModules();
       const { authOptions } = await import("../config");
       // debug is based on NODE_ENV
       expect(authOptions.debug).toBe(true);
 
-      process.env.NODE_ENV = originalEnv;
+      (process.env as any).NODE_ENV = originalEnv;
     });
   });
 });
