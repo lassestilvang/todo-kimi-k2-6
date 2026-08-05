@@ -42,14 +42,14 @@ describe("NextAuth Configuration - Authentication Tests", () => {
     it("should return null for missing email", async () => {
       const { authOptions } = await import("../config");
       const provider = authOptions.providers[0] as any;
-      const result = await provider.authorize({ password: "test" });
+      const result = await (provider as any).authorize({ password: "test" });
       expect(result).toBeNull();
     });
 
     it("should return null for missing password", async () => {
       const { authOptions } = await import("../config");
       const provider = authOptions.providers[0] as any;
-      const result = await provider.authorize({ email: "test@example.com" });
+      const result = await (provider as any).authorize({ email: "test@example.com" });
       expect(result).toBeNull();
     });
   });
