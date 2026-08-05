@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
 
 // Set up test environment first
-process.env.NODE_ENV = "test";
-process.env.NEXTAUTH_SECRET = "test-secret-key-for-testing";
+(process.env as any).NODE_ENV = "test";
+(process.env as any).NEXTAUTH_SECRET = "test-secret-key-for-testing";
 
 // Mock next-auth
 vi.mock("next-auth", () => ({
