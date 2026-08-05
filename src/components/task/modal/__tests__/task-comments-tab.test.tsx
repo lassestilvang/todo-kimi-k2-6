@@ -64,7 +64,7 @@ const mockTask: TaskWithRelations = {
   priority: "none",
   recurring: "none",
   recurring_config: null,
-  completed: 0,
+  completed: false,
   completed_at: null,
   created_at: "",
   updated_at: "",
@@ -73,9 +73,13 @@ const mockTask: TaskWithRelations = {
   subtasks: [],
   reminders: [],
   logs: [],
+  comments: [],
   attachments: [],
   blockers: [],
   blocked_by: [],
+  time_entries: [],
+  recurring_exceptions: [],
+  archived: false,
 };
 
 const mockComments: TaskComment[] = [
