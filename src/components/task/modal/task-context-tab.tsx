@@ -111,7 +111,7 @@ export function TaskContextTab({ task, contexts = [], onContextUpdate }: TaskCon
       </p>
 
       <div className="space-y-3">
-        <Select value={selectedContextType} onValueChange={setSelectedContextType}>
+        <Select value={selectedContextType} onValueChange={(v) => setSelectedContextType(v as string)}>
           <SelectTrigger>
             <SelectValue placeholder="Select context type" />
           </SelectTrigger>
@@ -194,7 +194,7 @@ export function TaskContextTab({ task, contexts = [], onContextUpdate }: TaskCon
                   <Badge
                     className="text-xs"
                     style={{
-                      backgroundColor: ((stats?.successRate || 0) > 70 ? 222666 : (stats?.successRate || 0) > 50 ? 245102 : 236100),
+                      backgroundColor: ((stats?.successRate || 0) > 70 ? "#de3030" : (stats?.successRate || 0) > 50 ? "#f59e0b" : "#e11d48"),
                       color: "white",
                     }}
                   >
