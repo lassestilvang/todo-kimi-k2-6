@@ -37,9 +37,9 @@ vi.mock('@/components/ui/badge', () => ({
 }));
 
 const mockAttachments: TaskAttachment[] = [
-  { id: 1, task_id: 1, filename: 'document.pdf', file_size: 1024, mime_type: 'application/pdf', url: '/files/1', created_at: '' },
-  { id: 2, task_id: 1, filename: 'image.png', file_size: 2048, mime_type: 'image/png', url: '/files/2', created_at: '' },
-  { id: 3, task_id: 1, filename: 'archive.zip', file_size: 4096, mime_type: 'application/zip', url: '/files/3', created_at: '' },
+  { id: 1, task_id: 1, filename: 'document.pdf', file_size: 1024, mime_type: 'application/pdf', url: '/files/1', created_at: new Date().toISOString() },
+  { id: 2, task_id: 1, filename: 'image.png', file_size: 2048, mime_type: 'image/png', url: '/files/2', created_at: new Date().toISOString() },
+  { id: 3, task_id: 1, filename: 'archive.zip', file_size: 4096, mime_type: 'application/zip', url: '/files/3', created_at: new Date().toISOString() },
 ];
 
 const mockTask: TaskWithRelations = {
@@ -47,6 +47,7 @@ const mockTask: TaskWithRelations = {
   name: 'Test Task',
   description: null,
   notes: null,
+  user_id: 1,
   list_id: 1,
   date: null,
   deadline: null,
@@ -55,7 +56,7 @@ const mockTask: TaskWithRelations = {
   priority: 'none',
   recurring: 'none',
   recurring_config: null,
-  completed: 0,
+  completed: false,
   completed_at: null,
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
@@ -69,6 +70,7 @@ const mockTask: TaskWithRelations = {
   blocked_by: [],
   time_entries: [],
   recurring_exceptions: [],
+  archived: false,
   attachments: mockAttachments,
 };
 
@@ -242,7 +244,7 @@ describe('TaskAttachments - Upload Flow Tests', () => {
   });
 
   it('should show uploading state during upload', async () => {
-    let resolveUpload: (value: any) => void;
+    let resolveUpload!: (value: any) => void;
     const uploadPromise = new Promise((resolve) => {
       resolveUpload = resolve;
     });
@@ -261,8 +263,8 @@ describe('TaskAttachments - Upload Flow Tests', () => {
       expect(global.fetch).toHaveBeenCalled();
     });
 
-    // Resolve the promise
-    (resolveUpload as any)({
+    // Resolve the promise - resolveUpload is assigned due to closure capture
+    resolveUpload({
       ok: true,
       json: () => Promise.resolve({
         id: 5,
@@ -408,7 +410,7 @@ describe('TaskAttachments - File Type Icons', () => {
       const taskWithFile = {
         ...mockTask,
         attachments: [
-          { id: 1, task_id: 1, filename, file_size: 100, mime_type: mimeType, url: '/files/1', created_at: '' },
+          { id: 1, task_id: 1, filename, file_size: 100, mime_type: mimeType || 'application/octet-stream', url: '/files/1', created_at: new Date().toISOString() },
         ],
       };
 
@@ -430,7 +432,7 @@ describe('TaskAttachments - File Size Display', () => {
     const smallTask = {
       ...mockTask,
       attachments: [
-        { id: 1, task_id: 1, filename: 'tiny.txt', file_size: 100, mime_type: 'text/plain', url: '/files/1', created_at: '' },
+        { id: 1, task_id: 1, filename: 'tiny.txt', file_size: 100, mime_type: 'text/plain', url: '/files/1', created_at: new Date().toISOString() },
       ],
     };
 
@@ -443,7 +445,7 @@ describe('TaskAttachments - File Size Display', () => {
     const kbTask = {
       ...mockTask,
       attachments: [
-        { id: 1, task_id: 1, filename: 'medium.pdf', file_size: 5120, mime_type: 'application/pdf', url: '/files/1', created_at: '' },
+        { id: 1, task_id: 1, filename: 'medium.pdf', file_size: 5120, mime_type: 'application/pdf', url: '/files/1', created_at: new Date().toISOString() },
       ],
     };
 
@@ -457,7 +459,7 @@ describe('TaskAttachments - File Size Display', () => {
     const largeTask = {
       ...mockTask,
       attachments: [
-        { id: 1, task_id: 1, filename: 'large.pdf', file_size: 1536000, mime_type: 'application/pdf', url: '/files/1', created_at: '' },
+        { id: 1, task_id: 1, filename: 'large.pdf', file_size: 1536000, mime_type: 'application/pdf', url: '/files/1', created_at: new Date().toISOString() },
       ],
     };
 
@@ -485,7 +487,7 @@ describe('TaskAttachments - Multiple Attachments', () => {
       file_size: 1000,
       mime_type: 'application/pdf',
       url: `/files/${i + 1}`,
-      created_at: '',
+      created_at: new Date().toISOString(),
     }));
 
     const largeTask = {
