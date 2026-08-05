@@ -7,12 +7,12 @@ import type { Task, DecisionEntry } from "@/types";
 vi.mock("@/components/ui/button", () => ({
   Button: ({ children, variant, size, onClick, className }: any) => (
     <button
-      variant={variant}
-      size={size}
       onClick={onClick}
       className={className}
       data-testid="button"
       type="button"
+      data-variant={variant}
+      data-size={size}
     >
       {children}
     </button>
@@ -104,7 +104,8 @@ const createMockTask = (overrides: Partial<Task> = {}): Task => ({
   priority: "high",
   recurring: "none",
   recurring_config: null,
-  completed: 0,
+  notes: null,
+  completed: false,
   completed_at: null,
   created_at: "2024-01-01",
   updated_at: "2024-01-01",
