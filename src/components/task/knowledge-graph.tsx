@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
+import { Progress } from "@/components/ui/progress";
 import {
   Network,
   Target,
@@ -783,7 +784,7 @@ export function KnowledgeGraph({ tasks, userId, onConnectionChange, className }:
                   </div>
                   <Progress value={(skill.proficiency_level / 5) * 100} className="h-2 mb-2" />
                   <div className="text-sm text-muted-foreground">
-                    Based on {skill.evidence_task_ids.length} task{skill.evidence_task_ids.length !== 1 ? 's' : ''}
+                    Based on {skill.evidence_task_ids ? JSON.parse(skill.evidence_task_ids).length : 0} task{skill.evidence_task_ids && JSON.parse(skill.evidence_task_ids).length !== 1 ? 's' : ''}
                   </div>
                 </CardContent>
               </Card>
@@ -833,7 +834,7 @@ export function KnowledgeGraph({ tasks, userId, onConnectionChange, className }:
               </div>
             </div>
 
-            <Select value={filterType} onValueChange={setFilterType}>
+            <Select value={filterType} onValueChange={(value) => setFilterType(value ?? "all")}>
               <SelectTrigger className="w-32">
                 <SelectValue placeholder="Filter by" />
               </SelectTrigger>
