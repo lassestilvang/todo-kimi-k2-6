@@ -97,7 +97,7 @@ describe("NextAuth Configuration - Authentication Tests", () => {
       const { authOptions } = await import("../config");
       const sessionCallback = authOptions.callbacks?.session;
 
-      const session = { user: { email: "test@example.com" } };
+      const session: any = { user: { email: "test@example.com" }, expires: new Date().toISOString() };
       const result = await sessionCallback?.({
         session,
         token: { id: "555" },
@@ -110,7 +110,7 @@ describe("NextAuth Configuration - Authentication Tests", () => {
       const { authOptions } = await import("../config");
       const sessionCallback = authOptions.callbacks?.session;
 
-      const session = { user: { email: "test@example.com" } };
+      const session: any = { user: { email: "test@example.com" }, expires: new Date().toISOString() };
       const result = await sessionCallback?.({
         session,
         token: {},
