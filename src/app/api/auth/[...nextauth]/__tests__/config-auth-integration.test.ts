@@ -80,7 +80,7 @@ describe("NextAuth Configuration - Callback and Structure Tests", () => {
       const { authOptions } = await import("../config");
       const sessionCallback = authOptions.callbacks?.session;
 
-      const mockSession = { user: { email: "no-id@test.com" } };
+      const mockSession: any = { user: { email: "no-id@test.com" }, expires: new Date().toISOString() };
       const result = await sessionCallback?.({
         session: mockSession,
         token: {},
@@ -93,7 +93,7 @@ describe("NextAuth Configuration - Callback and Structure Tests", () => {
       const { authOptions } = await import("../config");
       const sessionCallback = authOptions.callbacks?.session;
 
-      const mockSession = { user: {} };
+      const mockSession: any = { user: {} as any, expires: new Date().toISOString() };
       const result = await sessionCallback?.({
         session: mockSession,
         token: { id: "789" },
