@@ -88,7 +88,7 @@ describe("TaskList - Filtering Logic", () => {
     });
 
     it("should sort by priority", () => {
-      const priorityOrder = { critical: 0, high: 1, medium: 2, low: 3, none: 4 };
+      const priorityOrder: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3, none: 4 };
       const sorted = [...mockTasks].sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
       expect(sorted[0].priority).toBe("critical");
     });
