@@ -162,7 +162,7 @@ describe('TimeTracking - Comprehensive Coverage', () => {
 
   it('should handle entries with undefined duration by defaulting to 0', () => {
     const entriesWithUndefined: TimeEntry[] = [
-      { ...mockTimeEntries[0], duration_seconds: undefined, end_time: null },
+      { ...mockTimeEntries[0], duration_seconds: null, end_time: null },
     ];
     const totalTime = entriesWithUndefined.reduce((sum, entry) => sum + (entry.duration_seconds || 0), 0);
     expect(totalTime).toBe(0);
