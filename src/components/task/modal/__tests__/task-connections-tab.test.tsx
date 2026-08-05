@@ -5,13 +5,11 @@ import type { Task, TaskConnection } from "@/types";
 
 // Mock UI components
 vi.mock("@/components/ui/button", () => ({
-  Button: ({ children, variant, size, onClick, className }: any) => (
+  Button: ({ children, onClick, className, variant, size }: { children: React.ReactNode; onClick?: () => void; className?: string; variant?: string; size?: string }) => (
     <button
-      variant={variant}
-      size={size}
       onClick={onClick}
       className={className}
-      data-testid="button"
+      data-testid={`button-${variant || 'default'}-${size || 'default'}`}
       type="button"
     >
       {children}
@@ -43,7 +41,7 @@ vi.mock("@/components/ui/label", () => ({
 
 vi.mock("@/components/ui/badge", () => ({
   Badge: ({ children, variant, className }: any) => (
-    <span variant={variant} className={className} data-testid="badge">
+    <span data-testid={`badge-${variant || 'default'}`} className={className}>
       {children}
     </span>
   ),
@@ -94,6 +92,7 @@ const createMockTask = (overrides: Partial<Task> = {}): Task => ({
   id: 1,
   name: "Test Task",
   description: "A test task",
+  notes: null,
   user_id: 1,
   list_id: 1,
   date: "2024-01-15",
@@ -103,7 +102,7 @@ const createMockTask = (overrides: Partial<Task> = {}): Task => ({
   priority: "high",
   recurring: "none",
   recurring_config: null,
-  completed: 0,
+  completed: false,
   completed_at: null,
   created_at: "2024-01-01",
   updated_at: "2024-01-01",
