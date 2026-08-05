@@ -24,11 +24,13 @@ import { CareerCompass } from "@/components/task/career-compass";
 import { DecisionTracker } from "@/components/task/decision-tracker";
 import { DecisionAnalytics } from "@/components/task/decision-analytics";
 
+import type { Task, TaskWithRelations } from "@/types";
+
 type ActiveLab = "ai" | "skills" | "energy" | "stories" | "decision-journal" | "career-compass" | "project-planning";
 
 export default function LabsPage() {
   const [activeLab, setActiveLab] = useState<ActiveLab>("ai");
-  const [tasks, setTasks] = useState([]);
+  const [tasks, setTasks] = useState<TaskWithRelations[]>([]);
 
   useEffect(() => {
     fetch("/api/tasks?limit=20")
@@ -37,14 +39,21 @@ export default function LabsPage() {
       .catch(() => setTasks([]));
   }, []);
 
-  const labs = [
-    { id: "ai" as ActiveLab, name: "AI Playground", icon: Brain, description: "Compare AI models on task parsing" },
-    { id: "project-planning" as ActiveLab, name: "Project Planner", icon: BarChart3, description: "Generate project plans from natural language" },
-    { id: "skills" as ActiveLab, name: "Skills Tracker", icon: Calculator, description: "Track skill development" },
-    { id: "career-compass" as ActiveLab, name: "Career Compass", icon: LayoutDashboard, description: "AI-powered career guidance" },
-    { id: "energy" as ActiveLab, name: "Energy Scheduler", icon: Zap, description: "Optimize task timing" },
-    { id: "decision-journal" as ActiveLab, name: "Decision Journal", icon: Brain, description: "Track and analyze decisions" },
-    { id: "stories" as ActiveLab, name: "Success Stories", icon: Smile, description: "Reflect on completed tasks" },
+  interface LabItem {
+    id: ActiveLab;
+    name: string;
+    icon: typeof Brain;
+    description: string;
+  }
+
+  const labs: LabItem[] = [
+    { id: "ai", name: "AI Playground", icon: Brain, description: "Compare AI models on task parsing" },
+    { id: "project-planning", name: "Project Planner", icon: BarChart3, description: "Generate project plans from natural language" },
+    { id: "skills", name: "Skills Tracker", icon: Calculator, description: "Track skill development" },
+    { id: "career-compass", name: "Career Compass", icon: LayoutDashboard, description: "AI-powered career guidance" },
+    { id: "energy", name: "Energy Scheduler", icon: Zap, description: "Optimize task timing" },
+    { id: "decision-journal", name: "Decision Journal", icon: Brain, description: "Track and analyze decisions" },
+    { id: "stories", name: "Success Stories", icon: Smile, description: "Reflect on completed tasks" },
   ];
 
   return (
