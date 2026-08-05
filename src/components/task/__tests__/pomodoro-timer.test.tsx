@@ -47,6 +47,8 @@ describe("PomodoroTimer Component", () => {
     id: 1,
     name: "Test Task",
     description: "A test task",
+    user_id: 1,
+    notes: null,
     list_id: 1,
     date: null,
     deadline: null,
@@ -55,7 +57,7 @@ describe("PomodoroTimer Component", () => {
     priority: "high",
     recurring: "none",
     recurring_config: null,
-    completed: 0,
+    completed: false,
     completed_at: null,
     created_at: "2024-01-01",
     updated_at: "2024-01-01",
@@ -69,6 +71,8 @@ describe("PomodoroTimer Component", () => {
     blocked_by: [],
     time_entries: [],
     recurring_exceptions: [],
+    archived: false,
+    attachments: [],
   };
 
   beforeEach(() => {
