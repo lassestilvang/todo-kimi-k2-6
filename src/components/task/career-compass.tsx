@@ -123,8 +123,7 @@ export function CareerCompass({ skills = [] }: CareerCompassProps) {
   }, [skills]);
 
   useEffect(() => {
-    const { careerPaths: generatedPaths } = generateCareerPaths;
-    setRecommendations(generatedPaths);
+    setRecommendations(generateCareerPaths);
     setLoading(false);
   }, [generateCareerPaths]);
 
