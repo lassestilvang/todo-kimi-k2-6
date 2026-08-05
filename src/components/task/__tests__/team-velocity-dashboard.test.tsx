@@ -83,12 +83,16 @@ describe('TeamVelocityDashboard', () => {
     expect(screen.getByText('Track team performance and predict future capacity')).toBeInTheDocument();
   });
 
-  it('shows loading skeletons initially', () => {
+  it('shows loading skeletons initially', async () => {
     mockFetch.mockImplementation(() => new Promise(() => {}));
 
     render(<TeamVelocityDashboard />);
 
-    expect(screen.getByText('Team Velocity')).toBeInTheDocument();
+    // Loading state shows skeleton cards with animate-pulse class
+    await waitFor(() => {
+      const skeletons = document.querySelectorAll('.animate-pulse');
+      expect(skeletons.length).toBeGreaterThanOrEqual(3);
+    });
   });
 
   it('displays current velocity after loading', async () => {
