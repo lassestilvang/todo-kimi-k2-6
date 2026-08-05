@@ -39,13 +39,23 @@ export async function GET(request: NextRequest) {
   }
 
   const url = new URL(request.url);
+  const timeframeParam = url.searchParams.get("timeframe");
+  const validTimeframes = ["week", "month", "quarter", "year"] as const;
+  let timeframe: "week" | "month" | "quarter" | "year" = "month";
+  if (timeframeParam && validTimeframes.includes(timeframeParam as any)) {
+    timeframe = timeframeParam as "week" | "month" | "quarter" | "year";
+  }
+  const workspaceIdParam = url.searchParams.get("workspaceId");
   const params: TeamVelocityParams = {
-    timeframe: url.searchParams.get("timeframe") as "week" | "month" | "quarter" | "year" || "month",
-    workspaceId: url.searchParams.get("workspaceId") ? parseInt(url.searchParams.get("workspaceId")!) : undefined,
+    timeframe,
+    workspaceId: workspaceIdParam ? parseInt(workspaceIdParam) : undefined,
   };
 
   try {
-    const report = await getTeamVelocityReport(params.timeframe, params.workspaceId);
+    const report = await getTeamVelocityReport(
+      params.timeframe as "week" | "month" | "quarter" | "year",
+      params.workspaceId
+    );
     return jsonResponse({ report }, 200, middlewareResult.headers);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to fetch team velocity";
@@ -70,7 +80,7 @@ async function getTeamVelocityReport(timeframe: string, workspaceId?: number): P
   const capacity = await getTeamCapacity(db, workspaceId);
 
   // Generate burndown data
-  const burndown = generateBurndownData(db, dateRange.start, dateRange.end, workspaceId);
+  const burndown = await generateBurndownData(db, dateRange.start, dateRange.end, workspaceId);
 
   return {
     sprints,
