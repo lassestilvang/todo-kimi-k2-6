@@ -57,7 +57,7 @@ const mockTask: TaskWithRelations = {
   priority: "none",
   recurring: "none",
   recurring_config: null,
-  completed: 0,
+  completed: false,
   completed_at: null,
   created_at: "",
   updated_at: "",
@@ -68,6 +68,9 @@ const mockTask: TaskWithRelations = {
   logs: [],
   comments: [],
   attachments: [],
+  time_entries: [],
+  recurring_exceptions: [],
+  archived: false,
   blockers: [],
   blocked_by: [],
 };
@@ -173,8 +176,8 @@ describe("TaskDependencies Component", () => {
     const props = {
       ...defaultProps,
       allTasks: [
-        { ...mockTask, id: 1, name: "Incomplete Task", completed: 0 },
-        { ...mockTask, id: 2, name: "Completed Task", completed: 1 },
+        { ...mockTask, id: 1, name: "Incomplete Task", completed: false },
+        { ...mockTask, id: 2, name: "Completed Task", completed: true },
       ],
     };
 
