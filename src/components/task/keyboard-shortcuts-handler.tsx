@@ -1,12 +1,18 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import type { TaskWithRelations } from "@/types";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { KeyboardShortcuts } from "@/components/task/keyboard-shortcuts";
 import { CommandPalette } from "@/components/task/command-palette";
 import { Dialog } from "@/components/ui/dialog";
 
-export function KeyboardShortcutsHandler() {
+interface KeyboardShortcutsHandlerProps {
+  tasks?: TaskWithRelations[];
+  lists?: { id: number; name: string; emoji: string }[];
+}
+
+export function KeyboardShortcutsHandler({ tasks = [], lists = [] }: KeyboardShortcutsHandlerProps) {
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
 
@@ -44,6 +50,8 @@ export function KeyboardShortcutsHandler() {
         <KeyboardShortcuts />
       </Dialog>
       <CommandPalette
+        tasks={tasks}
+        lists={lists}
         open={commandPaletteOpen}
         onOpenChange={setCommandPaletteOpen}
       />
