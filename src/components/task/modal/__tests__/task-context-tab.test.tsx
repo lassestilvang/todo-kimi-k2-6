@@ -1,17 +1,15 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { TaskContextTab } from "../task-context-tab";
-import type { Task, HabitContext } from "@/types";
+import type { TaskWithRelations, HabitContext } from "@/types";
 
 // Mock UI components
 vi.mock("@/components/ui/button", () => ({
-  Button: ({ children, variant, size, onClick, className }: any) => (
+  Button: ({ children, onClick, className, variant, size }: { children: React.ReactNode; onClick?: () => void; className?: string; variant?: string; size?: string }) => (
     <button
-      variant={variant}
-      size={size}
       onClick={onClick}
       className={className}
-      data-testid="button"
+      data-testid={`button-${variant || 'default'}-${size || 'default'}`}
       type="button"
     >
       {children}
@@ -79,10 +77,11 @@ vi.mock("sonner", () => ({
 // Mock fetch
 global.fetch = vi.fn();
 
-const createMockTask = (overrides: Partial<Task> = {}): Task => ({
+const createMockTask = (overrides: Partial<TaskWithRelations> = {}): TaskWithRelations => ({
   id: 1,
   name: "Test Task",
   description: "A test task",
+  notes: null,
   user_id: 1,
   list_id: 1,
   date: "2024-01-15",
@@ -92,7 +91,7 @@ const createMockTask = (overrides: Partial<Task> = {}): Task => ({
   priority: "high",
   recurring: "none",
   recurring_config: null,
-  completed: 0,
+  completed: false,
   completed_at: null,
   created_at: "2024-01-01",
   updated_at: "2024-01-01",
@@ -117,7 +116,6 @@ const createMockContext = (overrides: Partial<HabitContext> = {}): HabitContext 
   user_id: 1,
   context_type: "time_of_day",
   context_value: "morning",
-  success: true,
   frequency: 5,
   success_rate: 80,
   created_at: "2024-01-01",
