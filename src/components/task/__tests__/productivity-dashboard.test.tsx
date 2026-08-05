@@ -95,6 +95,7 @@ describe('ProductivityDashboard', () => {
   it('shows productivity insights', () => {
     render(<ProductivityDashboard tasks={mockTasks} />);
     // May show insights even with partial data
-    expect(screen.getByRole('heading', { name: /completion rate/i })).toBeInTheDocument();
+    expect(screen.getByText('Completion Rate')).toBeInTheDocument();
+    expect(screen.getByText('50%')).toBeInTheDocument();
   });
 });
