@@ -65,7 +65,7 @@ const contextTypes = [
 
 export function TaskContextTab({ task, contexts = [], onContextUpdate }: TaskContextTabProps) {
   const [selectedContextType, setSelectedContextType] = useState<string>("time_of_day");
-  const [selectedContextValue, setSelectedContextValue] = useState<string>("");
+  const [selectedContextValue, setSelectedContextValue] = useState<string | null>(null);
   const [success, setSuccess] = useState(true);
 
   const currentContext = contexts.find(c => c.context_type === selectedContextType);
