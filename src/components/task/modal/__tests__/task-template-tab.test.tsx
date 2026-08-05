@@ -106,6 +106,7 @@ describe("TaskTemplateTab Component", () => {
       render(
         <TaskTemplateTab
           name="Test Task"
+          description=""
           listId="1"
           priority="medium"
           selectedLabels={[]}
@@ -128,6 +129,7 @@ describe("TaskTemplateTab Component", () => {
       render(
         <TaskTemplateTab
           name="Test Task"
+          description=""
           listId="1"
           priority="medium"
           selectedLabels={[]}
@@ -152,6 +154,7 @@ describe("TaskTemplateTab Component", () => {
       render(
         <TaskTemplateTab
           name="Test Task"
+          description=""
           listId="1"
           priority="medium"
           selectedLabels={[]}
@@ -179,6 +182,7 @@ describe("TaskTemplateTab Component", () => {
       render(
         <TaskTemplateTab
           name="Test Task"
+          description=""
           listId="1"
           priority="medium"
           selectedLabels={[]}
@@ -233,6 +237,7 @@ describe("TaskTemplateTab Component", () => {
       const { container } = render(
         <TaskTemplateTab
           name="Test Task"
+          description=""
           listId="1"
           priority="medium"
           selectedLabels={[]}
