@@ -1,17 +1,17 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { setupServer } from 'msw';
-import { rest } from 'msw';
+import { setupServer } from 'msw/node';
+import { rest } from 'msw/node';
 
 // Mock handlers for calendar API
 const handlers = [
-  rest.get('/api/calendar/sync', (req, res, ctx) => {
+  rest.get('/api/calendar/sync', (req: any, res: any, ctx: any) => {
     return res(ctx.json({
       events: [
         { id: '1', title: 'Sync Test', description: 'Calendar Sync Test', date: '2023-10-05T10:00:00Z' }
       ]
     }));
   }),
-  rest.post('/api/calendar/event', (req, res, ctx) => {
+  rest.post('/api/calendar/event', (req: any, res: any, ctx: any) => {
     return res(ctx.status(201), ctx.json({ id: '2', success: true }));
   }),
 ];
