@@ -32,8 +32,8 @@ Object.defineProperty(window, "localStorage", {
 vi.mock("@/components/ui/button", () => ({
   Button: ({ children, variant, size, onClick, className }: any) => (
     <button
-      variant={variant}
-      size={size}
+      data-variant={variant}
+      data-size={size}
       onClick={onClick}
       className={className}
       data-testid="button"
@@ -77,7 +77,7 @@ vi.mock("@/components/ui/dialog", () => ({
 
 vi.mock("@/components/ui/badge", () => ({
   Badge: ({ children, variant, className }: any) => (
-    <span variant={variant} className={className} data-testid="badge">
+    <span data-variant={variant} className={className} data-testid="badge">
       {children}
     </span>
   ),
