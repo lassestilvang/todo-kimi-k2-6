@@ -24,6 +24,7 @@ import {
   Zap,
   Smile,
   GraduationCap,
+  Lightbulb,
   type LucideIcon
 } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -97,7 +98,7 @@ const views: ViewItem[] = [
   { id: "skills", name: "Skills Tracker", icon: Calculator },
   { id: "energy", name: "Energy Scheduler", icon: Zap },
   { id: "stories", name: "Success Stories", icon: Smile },
-  { id: "decision-journal", name: "Decision Journal", icon: Brain },
+  { id: "decision-journal", name: "Decision Journal", icon: Lightbulb },
   { id: "career-compass", name: "Career Compass", icon: GraduationCap },
 ];
 
@@ -347,11 +348,12 @@ export function AppSidebar({
 
                 if (!view.icon || !view.name || !view.id) return null;
                 const Icon = view.icon;
-                const isActive = currentView === view.id;
+                const viewId = view.id;
+                const isActive = currentView === viewId;
                 return (
                   <button
-                    key={view.id}
-                    onClick={() => onViewChange(view.id)}
+                    key={viewId}
+                    onClick={() => onViewChange(viewId)}
                     className={cn(
                       "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
                       isActive
