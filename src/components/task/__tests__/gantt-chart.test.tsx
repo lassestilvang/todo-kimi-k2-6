@@ -11,7 +11,7 @@ vi.mock("lucide-react", () => ({
 // Mock UI components
 vi.mock("@/components/ui/badge", () => ({
   Badge: ({ children, variant, className }: any) => (
-    <span variant={variant} className={className} data-testid="badge">
+    <span className={className} data-testid="badge" data-variant={variant}>
       {children}
     </span>
   ),
@@ -23,6 +23,8 @@ describe("GanttChart Component", () => {
       id: 1,
       name: "Task 1",
       description: "First task",
+      user_id: 1,
+      notes: null,
       list_id: 1,
       date: "2024-07-01",
       deadline: "2024-07-05",
@@ -31,7 +33,7 @@ describe("GanttChart Component", () => {
       priority: "high",
       recurring: "none",
       recurring_config: null,
-      completed: 0,
+      completed: false,
       completed_at: null,
       created_at: "2024-01-01",
       updated_at: "2024-01-01",
@@ -45,11 +47,15 @@ describe("GanttChart Component", () => {
       blocked_by: [],
       time_entries: [],
       recurring_exceptions: [],
+      archived: false,
+      attachments: [],
     },
     {
       id: 2,
       name: "Task 2",
       description: "Second task",
+      user_id: 1,
+      notes: null,
       list_id: 1,
       date: "2024-07-10",
       deadline: null,
@@ -58,7 +64,7 @@ describe("GanttChart Component", () => {
       priority: "medium",
       recurring: "none",
       recurring_config: null,
-      completed: 0,
+      completed: false,
       completed_at: null,
       created_at: "2024-01-01",
       updated_at: "2024-01-01",
@@ -72,11 +78,15 @@ describe("GanttChart Component", () => {
       blocked_by: [],
       time_entries: [],
       recurring_exceptions: [],
+      archived: false,
+      attachments: [],
     },
     {
       id: 3,
       name: "Completed Task",
       description: "Done task",
+      user_id: 1,
+      notes: null,
       list_id: 1,
       date: "2024-07-01",
       deadline: "2024-07-03",
@@ -85,7 +95,7 @@ describe("GanttChart Component", () => {
       priority: "low",
       recurring: "none",
       recurring_config: null,
-      completed: 1,
+      completed: true,
       completed_at: "2024-01-01",
       created_at: "2024-01-01",
       updated_at: "2024-01-01",
@@ -99,11 +109,15 @@ describe("GanttChart Component", () => {
       blocked_by: [],
       time_entries: [],
       recurring_exceptions: [],
+      archived: false,
+      attachments: [],
     },
     {
       id: 4,
       name: "Blocked Task",
       description: "Has blockers",
+      user_id: 1,
+      notes: null,
       list_id: 1,
       date: "2024-07-15",
       deadline: "2024-07-20",
@@ -112,7 +126,7 @@ describe("GanttChart Component", () => {
       priority: "critical",
       recurring: "none",
       recurring_config: null,
-      completed: 0,
+      completed: false,
       completed_at: null,
       created_at: "2024-01-01",
       updated_at: "2024-01-01",
@@ -126,6 +140,8 @@ describe("GanttChart Component", () => {
       blocked_by: [],
       time_entries: [],
       recurring_exceptions: [],
+      archived: false,
+      attachments: [],
     },
   ];
 
