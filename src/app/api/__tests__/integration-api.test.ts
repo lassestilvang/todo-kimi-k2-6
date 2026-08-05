@@ -15,7 +15,7 @@ describe("API Integration Tests", () => {
     setDb(db);
 
     (process.env as any).NODE_ENV = "test";
-    process.env.NEXTAUTH_SECRET = "demo-secret";
+    (process.env as any).NEXTAUTH_SECRET = "demo-secret";
 
     // Initialize schema
     db.exec(`
