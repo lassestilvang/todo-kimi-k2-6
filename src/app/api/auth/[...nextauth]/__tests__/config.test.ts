@@ -40,25 +40,25 @@ describe("NextAuth Configuration", () => {
 
     it("should return null for missing credentials", async () => {
       const { authOptions } = await import("../config");
-      const result = await authOptions.providers[0].authorize(undefined);
+      const result = await (authOptions.providers[0].authorize as any)(undefined);
       expect(result).toBeNull();
     });
 
     it("should return null for missing email only", async () => {
       const { authOptions } = await import("../config");
-      const result = await authOptions.providers[0].authorize({ password: "test" });
+      const result = await (authOptions.providers[0].authorize as any)({ password: "test" });
       expect(result).toBeNull();
     });
 
     it("should return null for missing password only", async () => {
       const { authOptions } = await import("../config");
-      const result = await authOptions.providers[0].authorize({ email: "test@example.com" });
+      const result = await (authOptions.providers[0].authorize as any)({ email: "test@example.com" });
       expect(result).toBeNull();
     });
 
     it("should have authorize as a function that returns user or null", async () => {
       const { authOptions } = await import("../config");
-      const authorizeFn = authOptions.providers[0].authorize;
+      const authorizeFn = authOptions.providers[0].authorize as any;
 
       const nullResult = await authorizeFn({ email: "", password: "" });
       expect(nullResult).toBeNull();
@@ -69,13 +69,13 @@ describe("NextAuth Configuration", () => {
 
     it("should return null when email is empty string", async () => {
       const { authOptions } = await import("../config");
-      const result = await authOptions.providers[0].authorize({ email: "", password: "password" });
+      const result = await (authOptions.providers[0].authorize as any)({ email: "", password: "password" });
       expect(result).toBeNull();
     });
 
     it("should return null when password is empty string", async () => {
       const { authOptions } = await import("../config");
-      const result = await authOptions.providers[0].authorize({ email: "test@example.com", password: "" });
+      const result = await (authOptions.providers[0].authorize as any)({ email: "test@example.com", password: "" });
       expect(result).toBeNull();
     });
   });
