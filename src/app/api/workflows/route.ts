@@ -20,7 +20,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const userId = Number(session.user.id);
+  const userId = Number((session.user as { id?: string }).id);
+  if (!userId) {
+    return NextResponse.json({ error: "User ID missing from session" }, { status: 401 });
+  }
   const searchParams = request.nextUrl.searchParams;
 
   const id = searchParams.get("id");
@@ -53,7 +56,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const userId = Number(session.user.id);
+  const userId = Number((session.user as { id?: string }).id);
+  if (!userId) {
+    return NextResponse.json({ error: "User ID missing from session" }, { status: 401 });
+  }
   const body = await request.json();
 
   // Check if this is an execution request
@@ -84,7 +90,10 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const userId = Number(session.user.id);
+  const userId = Number((session.user as { id?: string }).id);
+  if (!userId) {
+    return NextResponse.json({ error: "User ID missing from session" }, { status: 401 });
+  }
   const searchParams = request.nextUrl.searchParams;
   const id = searchParams.get("id");
 
@@ -111,7 +120,10 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const userId = Number(session.user.id);
+  const userId = Number((session.user as { id?: string }).id);
+  if (!userId) {
+    return NextResponse.json({ error: "User ID missing from session" }, { status: 401 });
+  }
   const searchParams = request.nextUrl.searchParams;
   const id = searchParams.get("id");
 
@@ -140,7 +152,10 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const userId = Number(session.user.id);
+  const userId = Number((session.user as { id?: string }).id);
+  if (!userId) {
+    return NextResponse.json({ error: "User ID missing from session" }, { status: 401 });
+  }
   const searchParams = request.nextUrl.searchParams;
   const id = searchParams.get("id");
 
