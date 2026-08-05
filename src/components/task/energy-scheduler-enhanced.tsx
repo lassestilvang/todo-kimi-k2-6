@@ -213,8 +213,9 @@ export function EnergySchedulerEnhanced({ tasks, onSchedule }: EnergySchedulerPr
                         </div>
                       </div>
 
-                      <Select onValueChange={(date) => {
-                        onSchedule(task.id, date);
+                      <Select onValueChange={(date): void => {
+                        if (!date) return;
+                        onSchedule(task.id, String(date));
                         toast.success(`Scheduled "${task.name}"`);
                       }}>
                         <SelectTrigger className="w-36">
