@@ -392,8 +392,8 @@ export function CareerNavigator({ tasks, userId }: CareerNavigatorProps) {
                         <span>{resource.estimatedTime} estimated</span>
                       </div>
                     </div>
-                    <Button size="sm" asChild>
-                      <a href={resource.url} target="_blank" rel="noopener noreferrer">
+                    <Button size="sm" className="w-full justify-center">
+                      <a href={resource.url} target="_blank" rel="noopener noreferrer" className="block w-full">
                         Learn More
                       </a>
                     </Button>
