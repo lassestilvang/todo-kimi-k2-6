@@ -26,8 +26,8 @@ describe('TimeReport', () => {
 
   // Use dates within the current week for proper filtering
   const mockTimeEntries = [
-    { id: 1, task_id: 1, start_time: new Date().toISOString(), end_time: new Date().toISOString(), duration_seconds: 3600, description: 'Test task 1' },
-    { id: 2, task_id: 2, start_time: new Date().toISOString(), end_time: new Date().toISOString(), duration_seconds: 1800, description: 'Test task 2' },
+    { id: 1, task_id: 1, start_time: new Date().toISOString(), end_time: new Date().toISOString(), duration_seconds: 3600, description: 'Test task 1', created_at: new Date().toISOString() },
+    { id: 2, task_id: 2, start_time: new Date().toISOString(), end_time: new Date().toISOString(), duration_seconds: 1800, description: 'Test task 2', created_at: new Date().toISOString() },
   ];
 
   it('renders time report with data', () => {
@@ -63,7 +63,7 @@ describe('TimeReport', () => {
 
   it('handles entries with null duration', () => {
     const entriesWithNull = [
-      { id: 1, task_id: 1, start_time: new Date().toISOString(), end_time: new Date().toISOString(), duration_seconds: null, description: 'Test' },
+      { id: 1, task_id: 1, start_time: new Date().toISOString(), end_time: new Date().toISOString(), duration_seconds: null, description: 'Test', created_at: new Date().toISOString() },
     ];
     render(<TimeReport tasks={mockTasks} timeEntries={entriesWithNull} />);
     expect(screen.getByText('Total Time')).toBeInTheDocument();
@@ -71,7 +71,7 @@ describe('TimeReport', () => {
 
   it('handles entries with no matching task', () => {
     const entriesWithoutTask = [
-      { id: 1, task_id: 999, start_time: new Date().toISOString(), end_time: new Date().toISOString(), duration_seconds: 3600, description: 'Test' },
+      { id: 1, task_id: 999, start_time: new Date().toISOString(), end_time: new Date().toISOString(), duration_seconds: 3600, description: 'Test', created_at: new Date().toISOString() },
     ];
     render(<TimeReport tasks={mockTasks} timeEntries={entriesWithoutTask} />);
     expect(screen.getByText('Total Time')).toBeInTheDocument();
