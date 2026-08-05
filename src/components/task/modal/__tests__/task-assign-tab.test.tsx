@@ -73,8 +73,8 @@ describe("TaskAssignTab Component", () => {
     const props = {
       ...defaultProps,
       assignees: [
-        { user_id: 1, user_email: "user1@example.com", user_name: "User One", permission: "view" },
-        { user_id: 2, user_email: "user2@example.com", user_name: "User Two", permission: "edit" },
+        { user_id: 1, user_email: "user1@example.com", user_name: "User One", permission: "view" as const },
+        { user_id: 2, user_email: "user2@example.com", user_name: "User Two", permission: "edit" as const },
       ],
     };
 
@@ -98,7 +98,7 @@ describe("TaskAssignTab Component", () => {
     const props = {
       ...defaultProps,
       assignees: [
-        { user_id: 1, user_email: "user1@example.com", user_name: "User One", permission: "view" },
+        { user_id: 1, user_email: "user1@example.com", user_name: "User One", permission: "view" as const },
       ],
     };
 
@@ -112,7 +112,7 @@ describe("TaskAssignTab Component", () => {
     const props = {
       ...defaultProps,
       assignees: [
-        { user_id: 1, user_email: "user1@example.com", user_name: "User One", permission: "view" },
+        { user_id: 1, user_email: "user1@example.com", user_name: "User One", permission: "view" as const },
       ],
     };
 
