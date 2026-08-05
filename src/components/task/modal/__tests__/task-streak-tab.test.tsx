@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { TaskStreakTab } from "../task-streak-tab";
 import type { TaskWithRelations } from "@/types";
 
@@ -26,15 +26,17 @@ const createMockTask = (overrides: Partial<TaskWithRelations> = {}): TaskWithRel
   id: 1,
   name: "Test Habit Task",
   description: "A test habit task",
+  user_id: 1,
   list_id: 1,
   date: "2024-01-15",
   deadline: null,
   estimate: null,
   actual_time: null,
+  notes: null,
   priority: "medium",
   recurring: "daily",
   recurring_config: null,
-  completed: 0,
+  completed: false,
   completed_at: null,
   created_at: "2024-01-01",
   updated_at: "2024-01-01",
@@ -44,6 +46,7 @@ const createMockTask = (overrides: Partial<TaskWithRelations> = {}): TaskWithRel
   reminders: [],
   logs: [],
   comments: [],
+  attachments: [],
   blockers: [],
   blocked_by: [],
   time_entries: [],
@@ -73,7 +76,7 @@ describe("TaskStreakTab Component", () => {
         id: 42,
         name: "Custom Task Name",
         date: "2024-01-20",
-        completed: 1,
+        completed: true,
       });
       render(<TaskStreakTab task={task} />);
 
@@ -102,7 +105,7 @@ describe("TaskStreakTab Component", () => {
 
   describe("Completed Dates Handling", () => {
     it("should pass empty array for incomplete tasks", () => {
-      const task = createMockTask({ completed: 0 });
+      const task = createMockTask({ completed: false });
       render(<TaskStreakTab task={task} />);
 
       expect(screen.getByTestId("completed-dates")).toHaveTextContent("0");
@@ -110,7 +113,7 @@ describe("TaskStreakTab Component", () => {
 
     it("should pass completed date for completed tasks", () => {
       const task = createMockTask({
-        completed: 1,
+        completed: true,
         date: "2024-01-15"
       });
       render(<TaskStreakTab task={task} />);
@@ -167,7 +170,7 @@ describe("TaskStreakTab Component", () => {
       render(<TaskStreakTab task={task} />);
 
       const toggleButton = screen.getByTestId("date-toggle");
-      fireEventClick(toggleButton);
+      fireEvent.click(toggleButton);
     });
   });
 
@@ -182,8 +185,3 @@ describe("TaskStreakTab Component", () => {
     });
   });
 });
-
-// Helper function for fireEvent
-function fireEventClick(element: HTMLElement) {
-  element.click();
-}
