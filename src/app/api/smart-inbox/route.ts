@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import type { InboxSourceType } from "@/lib/actions/smart-inbox";
 import { applyMiddleware, errorResponse, jsonResponse } from "@/lib/api-middleware";
 import {
   getSmartInbox,
@@ -20,7 +21,7 @@ export async function GET(request: NextRequest) {
   const params: {
     limit?: number;
     status?: string;
-    sourceType?: string;
+    sourceType?: InboxSourceType;
   } = {};
 
   if (url.searchParams.has("limit")) {
@@ -30,7 +31,7 @@ export async function GET(request: NextRequest) {
     params.status = url.searchParams.get("status")!;
   }
   if (url.searchParams.has("sourceType")) {
-    params.sourceType = url.searchParams.get("sourceType")!;
+    params.sourceType = url.searchParams.get("sourceType")! as InboxSourceType;
   }
 
   try {
