@@ -97,22 +97,22 @@ describe("NextAuth Configuration", () => {
 
     it("should have debug mode based on NODE_ENV", async () => {
       const originalEnv = process.env.NODE_ENV;
-      process.env.NODE_ENV = "development";
+      (process.env as any).NODE_ENV = "development";
 
       const { authOptions } = await import("../config");
       expect(authOptions.debug).toBe(true);
 
-      process.env.NODE_ENV = originalEnv;
+      (process.env as any).NODE_ENV = originalEnv;
     });
 
     it("should have debug mode false in production", async () => {
       const originalEnv = process.env.NODE_ENV;
-      process.env.NODE_ENV = "production";
+      (process.env as any).NODE_ENV = "production";
 
       const { authOptions } = await import("../config");
       expect(authOptions.debug).toBe(false);
 
-      process.env.NODE_ENV = originalEnv;
+      (process.env as any).NODE_ENV = originalEnv;
     });
   });
 
@@ -151,7 +151,7 @@ describe("NextAuth Configuration", () => {
       const { authOptions } = await import("../config");
       const sessionCallback = authOptions.callbacks?.session;
 
-      const mockSession = { user: { email: "test@example.com" } };
+      const mockSession: any = { user: { email: "test@example.com" }, expires: new Date().toISOString() };
       const result = await sessionCallback?.({
         session: mockSession,
         token: {},
@@ -164,7 +164,7 @@ describe("NextAuth Configuration", () => {
       const { authOptions } = await import("../config");
       const sessionCallback = authOptions.callbacks?.session;
 
-      const mockSession = { user: {} };
+      const mockSession: any = { user: {} as any, expires: new Date().toISOString() };
       const result = await sessionCallback?.({
         session: mockSession,
         token: { id: "123" },
