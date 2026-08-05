@@ -7,8 +7,8 @@ import type { TaskWithRelations } from "@/types";
 vi.mock("@/components/ui/button", () => ({
   Button: ({ children, variant, size, onClick, className }: any) => (
     <button
-      variant={variant}
-      size={size}
+      data-variant={variant}
+      data-size={size}
       onClick={onClick}
       className={className}
       data-testid="button"
@@ -20,7 +20,7 @@ vi.mock("@/components/ui/button", () => ({
 
 vi.mock("@/components/ui/badge", () => ({
   Badge: ({ children, variant, className }: any) => (
-    <span variant={variant} className={className} data-testid="badge">
+    <span data-variant={variant} className={className} data-testid="badge">
       {children}
     </span>
   ),
@@ -41,6 +41,8 @@ const createMockTask = (overrides: Partial<TaskWithRelations> = {}): TaskWithRel
   id: 1,
   name: "Test Task",
   description: "A test task",
+  user_id: 1,
+  notes: null,
   list_id: 1,
   date: `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-15`, // Use current month date
   deadline: null,
@@ -49,7 +51,7 @@ const createMockTask = (overrides: Partial<TaskWithRelations> = {}): TaskWithRel
   priority: "high",
   recurring: "none",
   recurring_config: null,
-  completed: 0,
+  completed: false,
   completed_at: null,
   created_at: "2024-01-01",
   updated_at: "2024-01-01",
