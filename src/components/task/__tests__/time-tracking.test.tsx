@@ -149,13 +149,13 @@ describe('TimeTracking', () => {
   });
 
   it('should handle entries without description', () => {
-    const entriesNoDesc = [{ ...mockTimeEntries[0], description: undefined }];
+    const entriesNoDesc = [{ ...mockTimeEntries[0], description: null }];
     render(<TimeTracking {...defaultProps} timeEntries={entriesNoDesc} />);
     expect(screen.getByText('Time Tracking')).toBeInTheDocument();
   });
 
   it('should handle entries without duration', () => {
-    const entriesNoDuration = [{ ...mockTimeEntries[0], duration_seconds: undefined }];
+    const entriesNoDuration = [{ ...mockTimeEntries[0], duration_seconds: null }];
     render(<TimeTracking {...defaultProps} timeEntries={entriesNoDuration} />);
     expect(screen.getByText('Time Tracking')).toBeInTheDocument();
   });
