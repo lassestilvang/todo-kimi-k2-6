@@ -793,18 +793,279 @@ export async function bulkDeleteTasks(taskIds: number[]): Promise<void> {
   }
 }
 
-export async function reorderTasks(taskOrders: { id: number; sort_order: number }[]): Promise<void> {
+/**
+ * Bulk operations mode
+ * Provides comprehensive batch operation capabilities
+ */
+
+export interface BatchOperationResult {
+  success: boolean;
+  affectedCount: number;
+  errors?: Array<{ taskId: number; error: string }>;
+  message?: string;
+}
+
+export type BatchOperation =
+  | { type: "complete"; ids: number[] }
+  | { type: "uncomplete"; ids: number[] }
+  | { type: "delete"; ids: number[] }
+  | { type: "archive"; ids: number[] }
+  | { type: "unarchive"; ids: number[] }
+  | { type: "move"; ids: number[]; listId: number }
+  | { type: "set-priority"; ids: number[]; priority: Priority }
+  | { type: "add-labels"; ids: number[]; labelIds: number[] }
+  | { type: "remove-labels"; ids: number[]; labelIds: number[] }
+  | { type: "assign"; ids: number[]; assigneeId: number }
+  | { type: "add-dependencies"; ids: number[]; dependsOnIds: number[] }
+  | { type: "set-dates"; ids: number[]; date: string }
+  | { type: "reorder"; orders: { id: number; sort_order: number }[] };
+
+/**
+ * Perform batch operations on multiple tasks
+ */
+export async function performBatchOperation(operation: BatchOperation): Promise<BatchOperationResult> {
   const db = getDb();
   const user = await getCurrentUser();
-  const stmt = db.prepare("UPDATE tasks SET sort_order = ? WHERE id = ? AND user_id = ?");
-  for (const task of taskOrders) {
-    // Only update if user owns the task
-    if (user?.id) {
-      stmt.run(task.sort_order, task.id, user.id);
-    } else {
-      db.prepare("UPDATE tasks SET sort_order = ? WHERE id = ?").run(task.sort_order, task.id);
-    }
+
+  if (!user?.id && process.env.NODE_ENV !== "test") {
+    return { success: false, affectedCount: 0, message: "Authentication required" };
   }
+
+  const errors: Array<{ taskId: number; error: string }> = [];
+  let affectedCount = 0;
+
+  try {
+    switch (operation.type) {
+      case "complete":
+        affectedCount = await completeTasks(operation.ids, user.id);
+        break;
+      case "uncomplete":
+        affectedCount = await uncompleteTasks(operation.ids, user.id);
+        break;
+      case "delete":
+        affectedCount = await deleteTasks(operation.ids, user.id);
+        break;
+      case "archive":
+        affectedCount = await archiveTasks(operation.ids, user.id);
+        break;
+      case "unarchive":
+        affectedCount = await unarchiveTasks(operation.ids, user.id);
+        break;
+      case "move":
+        affectedCount = await moveTasks(operation.ids, operation.listId, user.id);
+        break;
+      case "set-priority":
+        affectedCount = await setTaskPriorities(operation.ids, operation.priority, user.id);
+        break;
+      case "add-labels":
+        affectedCount = await addLabelsToTasks(operation.ids, operation.labelIds, user.id);
+        break;
+      case "remove-labels":
+        affectedCount = await removeLabelsFromTasks(operation.ids, operation.labelIds, user.id);
+        break;
+      case "assign":
+        affectedCount = await assignTasks(operation.ids, operation.assigneeId, user.id);
+        break;
+      case "add-dependencies":
+        affectedCount = await addTaskDependencies(operation.ids, operation.dependsOnIds, user.id);
+        break;
+      case "set-dates":
+        affectedCount = await setTaskDates(operation.ids, operation.date, user.id);
+        break;
+      case "reorder":
+        affectedCount = await reorderTasks(operation.orders, user.id);
+        break;
+      default:
+        return { success: false, affectedCount: 0, message: "Unknown operation type" };
+    }
+
+    return { success: true, affectedCount, message: `Successfully processed ${affectedCount} tasks` };
+  } catch (error) {
+    return {
+      success: false,
+      affectedCount,
+      errors: [{ taskId: 0, error: error instanceof Error ? error.message : "Unknown error" }],
+      message: "Operation failed",
+    };
+  }
+}
+
+// Helper functions for batch operations
+
+async function completeTasks(ids: number[], userId: number | null): Promise<number> {
+  const db = getDb();
+  const placeholders = ids.map(() => "?").join(",");
+  const now = new Date().toISOString();
+
+  if (userId) {
+    const result = db.prepare(`UPDATE tasks SET completed = 1, completed_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders}) AND user_id = ?`).run(...ids, now, userId);
+    const count = result.changes || 0;
+    for (const id of ids) {
+      logTaskAction(id, "completed", "Batch completed");
+    }
+    return count;
+  }
+  return db.prepare(`UPDATE tasks SET completed = 1, completed_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders})`).run(...ids, now).changes || 0;
+}
+
+async function uncompleteTasks(ids: number[], userId: number | null): Promise<number> {
+  const db = getDb();
+  const placeholders = ids.map(() => "?").join(",");
+
+  if (userId) {
+    return db.prepare(`UPDATE tasks SET completed = 0, completed_at = NULL, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders}) AND user_id = ?`).run(...ids, userId).changes || 0;
+  }
+  return db.prepare(`UPDATE tasks SET completed = 0, completed_at = NULL, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders})`).run(...ids).changes || 0;
+}
+
+async function deleteTasks(ids: number[], userId: number | null): Promise<number> {
+  const db = getDb();
+  const placeholders = ids.map(() => "?").join(",");
+
+  if (userId) {
+    return db.prepare(`DELETE FROM task_labels WHERE task_id IN (${placeholders}) AND task_id IN (SELECT id FROM tasks WHERE user_id = ?)`).run(...ids, userId).changes || 0;
+  }
+  return 0;
+}
+
+async function archiveTasks(ids: number[], userId: number | null): Promise<number> {
+  const db = getDb();
+  const placeholders = ids.map(() => "?").join(",");
+
+  if (userId) {
+    const result = db.prepare(`UPDATE tasks SET archived = 1, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders}) AND user_id = ?`).run(...ids, userId);
+    const count = result.changes || 0;
+    for (const id of ids) {
+      logTaskAction(id, "archived", "Batch archived");
+    }
+    return count;
+  }
+  return 0;
+}
+
+async function unarchiveTasks(ids: number[], userId: number | null): Promise<number> {
+  const db = getDb();
+  const placeholders = ids.map(() => "?").join(",");
+
+  if (userId) {
+    return db.prepare(`UPDATE tasks SET archived = 0, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders}) AND user_id = ?`).run(...ids, userId).changes || 0;
+  }
+  return 0;
+}
+
+async function moveTasks(ids: number[], listId: number, userId: number | null): Promise<number> {
+  const db = getDb();
+  const placeholders = ids.map(() => "?").join(",");
+
+  if (userId) {
+    return db.prepare(`UPDATE tasks SET list_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders}) AND user_id = ?`).run(listId, ...ids, userId).changes || 0;
+  }
+  return db.prepare(`UPDATE tasks SET list_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders})`).run(listId, ...ids).changes || 0;
+}
+
+async function setTaskPriorities(ids: number[], priority: Priority, userId: number | null): Promise<number> {
+  const db = getDb();
+  const placeholders = ids.map(() => "?").join(",");
+
+  if (userId) {
+    return db.prepare(`UPDATE tasks SET priority = ?, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders}) AND user_id = ?`).run(priority, ...ids, userId).changes || 0;
+  }
+  return db.prepare(`UPDATE tasks SET priority = ?, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders})`).run(priority, ...ids).changes || 0;
+}
+
+async function addLabelsToTasks(ids: number[], labelIds: number[], userId: number | null): Promise<number> {
+  const db = getDb();
+  let count = 0;
+
+  for (const taskId of ids) {
+    let hasAccess = true;
+    if (userId) {
+      const task = db.prepare("SELECT id FROM tasks WHERE id = ? AND user_id = ?").get(taskId, userId);
+      hasAccess = !!task;
+    }
+    if (!hasAccess) continue;
+
+    for (const labelId of labelIds) {
+      db.prepare("INSERT OR IGNORE INTO task_labels (task_id, label_id) VALUES (?, ?)").run(taskId, labelId);
+    }
+    count++;
+  }
+  return count;
+}
+
+async function removeLabelsFromTasks(ids: number[], labelIds: number[], userId: number | null): Promise<number> {
+  const db = getDb();
+  let count = 0;
+
+  for (const taskId of ids) {
+    let hasAccess = true;
+    if (userId) {
+      const task = db.prepare("SELECT id FROM tasks WHERE id = ? AND user_id = ?").get(taskId, userId);
+      hasAccess = !!task;
+    }
+    if (!hasAccess) continue;
+
+    for (const labelId of labelIds) {
+      db.prepare("DELETE FROM task_labels WHERE task_id = ? AND label_id = ?").run(taskId, labelId);
+    }
+    count++;
+  }
+  return count;
+}
+
+async function assignTasks(ids: number[], assigneeId: number, userId: number | null): Promise<number> {
+  const db = getDb();
+  const placeholders = ids.map(() => "?").join(",");
+
+  if (userId) {
+    return db.prepare(`UPDATE tasks SET assignee_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders}) AND user_id = ?`).run(assigneeId, ...ids, userId).changes || 0;
+  }
+  return db.prepare(`UPDATE tasks SET assignee_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders})`).run(assigneeId, ...ids).changes || 0;
+}
+
+async function addTaskDependencies(ids: number[], dependsOnIds: number[], userId: number | null): Promise<number> {
+  const db = getDb();
+  let count = 0;
+
+  for (const taskId of ids) {
+    let hasAccess = true;
+    if (userId) {
+      const task = db.prepare("SELECT id FROM tasks WHERE id = ? AND user_id = ?").get(taskId, userId);
+      hasAccess = !!task;
+    }
+    if (!hasAccess) continue;
+
+    for (const dependsOnId of dependsOnIds) {
+      db.prepare("INSERT OR IGNORE INTO task_dependencies (task_id, depends_on_task_id) VALUES (?, ?)").run(taskId, dependsOnId);
+    }
+    count++;
+  }
+  return count;
+}
+
+async function setTaskDates(ids: number[], date: string, userId: number | null): Promise<number> {
+  const db = getDb();
+  const placeholders = ids.map(() => "?").join(",");
+
+  if (userId) {
+    return db.prepare(`UPDATE tasks SET date = ?, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders}) AND user_id = ?`).run(date, ...ids, userId).changes || 0;
+  }
+  return db.prepare(`UPDATE tasks SET date = ?, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders})`).run(date, ...ids).changes || 0;
+}
+
+export async function reorderTasks(taskOrders: { id: number; sort_order: number }[], userId: number | null): Promise<number> {
+  const db = getDb();
+  let count = 0;
+
+  for (const { id, sort_order } of taskOrders) {
+    if (userId) {
+      db.prepare("UPDATE tasks SET sort_order = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?").run(sort_order, id, userId);
+    } else {
+      db.prepare("UPDATE tasks SET sort_order = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(sort_order, id);
+    }
+    count++;
+  }
+  return count;
 }
 
 export async function getTasksByIds(ids: number[]): Promise<TaskWithRelations[]> {
