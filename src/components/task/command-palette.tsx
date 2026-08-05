@@ -95,7 +95,7 @@ interface CategoryItem {
 
 interface Category {
   name: string;
-  icon: React.ComponentNode;
+  icon: React.ComponentType<{ className?: string }>;
   items: CategoryItem[];
 }
 
@@ -120,7 +120,7 @@ const nlpParser = {
     },
     {
       pattern: /move\s+(task\s+)?(.+?)\s+to\s+(.+)/i,
-      action: (match: string, tasks: TaskWithRelations[], lists: { id: number; name: string }[]) => {
+      action: (match: string, tasks: TaskWithRelations[], lists: { id: number; name: string; emoji: string }[]) => {
         const parts = match.split(/\s+to\s+/);
         const taskName = parts[0]?.replace(/(move\s+)?/i, "").trim() || "";
         const listName = parts[1]?.trim() || "";
@@ -212,7 +212,7 @@ const nlpParser = {
     }
   ],
 
-  parse: (input: string, tasks: TaskWithRelations[], lists: { id: number; name: string; emoji: string }[][]): CommandAction | null => {
+  parse: (input: string, tasks: TaskWithRelations[], lists: { id: number; name: string; emoji: string }[]): CommandAction | null => {
     for (const pattern of nlpParser.patterns) {
       const match = input.match(pattern.pattern);
       if (match) {
@@ -273,11 +273,6 @@ export function CommandPalette({ tasks, lists, open, onOpenChange, onAction }: C
                   } else {
                     executeCommand(item.action(query));
                   }
-                }}
-                filter={(value, search) => {
-                  if (value.toLowerCase().includes(search.toLowerCase())) return 1;
-                  if (item.keyword.toLowerCase().includes(search.toLowerCase())) return 1;
-                  return 0;
                 }}
               >
                 {item.keyword}
