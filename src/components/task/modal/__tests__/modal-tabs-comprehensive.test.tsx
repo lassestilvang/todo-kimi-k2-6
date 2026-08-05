@@ -243,16 +243,16 @@ describe("Modal Tab Logic", () => {
   });
 
   describe("Task completion toggle logic", () => {
-    it("should toggle completion state from 0 to 1", () => {
-      const original = 0;
-      const toggled = original === 1 ? 0 : 1;
-      expect(toggled).toBe(1);
+    it("should toggle completion state from false to true", () => {
+      const original: boolean = false;
+      const toggled = !original;
+      expect(toggled).toBe(true);
     });
 
-    it("should toggle completion state from 1 to 0", () => {
-      const original = 1;
-      const toggled = original === 1 ? 0 : 1;
-      expect(toggled).toBe(0);
+    it("should toggle completion state from true to false", () => {
+      const original: boolean = true;
+      const toggled = !original;
+      expect(toggled).toBe(false);
     });
   });
 
