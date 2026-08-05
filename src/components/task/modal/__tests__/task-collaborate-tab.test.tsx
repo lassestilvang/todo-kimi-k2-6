@@ -45,6 +45,7 @@ const mockTask: TaskWithRelations = {
   name: 'Test Task',
   description: null,
   notes: null,
+  user_id: 1,
   list_id: 1,
   date: null,
   deadline: null,
@@ -53,7 +54,7 @@ const mockTask: TaskWithRelations = {
   priority: 'none',
   recurring: 'none',
   recurring_config: null,
-  completed: 0,
+  completed: false,
   completed_at: null,
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
@@ -67,6 +68,7 @@ const mockTask: TaskWithRelations = {
   blocked_by: [],
   time_entries: [],
   recurring_exceptions: [],
+  archived: false,
   attachments: [],
 };
 
@@ -76,6 +78,7 @@ const mockTaskWithAssignee: TaskWithRelations = {
     id: 2,
     email: 'assignee@example.com',
     name: 'Assignee User',
+    avatar_url: null,
     created_at: new Date().toISOString(),
   },
 };
@@ -86,6 +89,7 @@ const mockTaskWithAssigneeNoName: TaskWithRelations = {
     id: 3,
     email: 'no-name@example.com',
     name: null,
+    avatar_url: null,
     created_at: new Date().toISOString(),
   },
 };
@@ -165,13 +169,11 @@ describe('TaskCollaborateTab', () => {
     expect(badges.length).toBe(0);
   });
 
-  it('should copy share link to clipboard when clicked', () => {
+  it('should copy share link to clipboard when clicked', async () => {
     const mockClipboard = {
       writeText: vi.fn().mockResolvedValue(undefined),
     };
     Object.assign(navigator, { clipboard: mockClipboard });
-
-    const mockToast = vi.mocked(vi.doMock('sonner', () => ({ toast: { success: vi.fn() } }))?.toast);
 
     render(<TaskCollaborateTab task={mockTask} />);
 
