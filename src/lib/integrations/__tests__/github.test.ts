@@ -35,6 +35,7 @@ describe('GitHubConnector', () => {
         enabled: true,
         apiToken: 'token',
         repositories: 'repo1,repo2,repo3',
+        syncDirection: 'import',
       });
 
       expect((multiRepoConnector as any).repositories).toEqual(['repo1', 'repo2', 'repo3']);
@@ -163,6 +164,7 @@ describe('GitHubConnector', () => {
         enabled: true,
         apiToken: 'token',
         repositories: ['owner/repo1', 'owner/repo2'],
+        syncDirection: 'import',
       });
 
       const records = await multiRepoConnector.fetchRecords();
@@ -170,7 +172,7 @@ describe('GitHubConnector', () => {
     });
 
     it('should log warning for invalid repository format', async () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation();
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
       const invalidRepoConnector = new GitHubConnector({
         id: 'invalid',
@@ -179,6 +181,7 @@ describe('GitHubConnector', () => {
         enabled: true,
         apiToken: 'token',
         repositories: ['invalid-repo-format'],
+        syncDirection: 'import',
       });
 
       (fetch as any).mockResolvedValueOnce({
@@ -445,6 +448,7 @@ describe('GitHubConnector', () => {
         enabled: true,
         apiToken: 'token',
         repositories: '',
+        syncDirection: 'import',
       });
 
       await expect(noRepoConnector.searchIssues('query')).rejects.toThrow('No repositories configured');
