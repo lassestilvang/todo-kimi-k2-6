@@ -50,18 +50,18 @@ describe("Auth Actions", () => {
       expect(typeof getUserByEmail).toBe("function");
     });
 
-    it("should return undefined/null when user not found", async () => {
+    it("should return null when user not found", async () => {
       const user = await getUserByEmail("nonexistent@test.com");
       // Mock may return undefined or null
-      expect(user === null || user === undefined || user === false).toBe(true);
+      expect(user === null || user === undefined).toBe(true);
     });
 
     it("should return user when found", async () => {
       db.prepare("INSERT INTO users (email, name) VALUES (?, ?)").run("found@test.com", "Found User");
 
       const user = await getUserByEmail("found@test.com");
-      // Mock behavior may vary
-      expect(user !== undefined || user === null).toBe(true);
+      expect(user).not.toBeNull();
+      expect(user?.email).toBe("found@test.com");
     });
   });
 
