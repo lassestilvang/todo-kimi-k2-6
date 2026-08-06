@@ -36,13 +36,13 @@ describe("task-helpers - Full Branch Coverage", () => {
 
     it("should handle null details", () => {
       const details = null;
-      const sanitized = details ? details.toString() : null;
+      const sanitized = details ? String(details) : null;
       expect(sanitized).toBeNull();
     });
 
     it("should handle undefined details", () => {
       const details = undefined;
-      const sanitized = details ? details.toString() : null;
+      const sanitized = details ? String(details) : null;
       expect(sanitized).toBeNull();
     });
 
