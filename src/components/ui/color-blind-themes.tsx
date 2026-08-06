@@ -89,7 +89,7 @@ export function ColorBlindThemes({ className, onChange }: ColorBlindThemesProps)
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
-      <DropdownMenuTrigger asChild>
+      <DropdownMenuTrigger>
         <Button
           variant="ghost"
           size="sm"
