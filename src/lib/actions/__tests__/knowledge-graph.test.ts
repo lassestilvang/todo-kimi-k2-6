@@ -9,8 +9,8 @@ const originalNodeEnv = process.env.NODE_ENV;
 const originalNextAuthSecret = process.env.NEXTAUTH_SECRET;
 
 beforeAll(() => {
-  process.env.NODE_ENV = 'test';
-  process.env.NEXTAUTH_SECRET = 'demo-secret';
+  (process.env as any).NODE_ENV = 'test';
+  (process.env as any).NEXTAUTH_SECRET = 'demo-secret';
 });
 
 afterEach(() => {
@@ -93,11 +93,12 @@ describe('Knowledge Graph Actions', () => {
 
   describe('updateSkillProficiency', () => {
     it('creates new skill if not exists', async () => {
+      const now = new Date().toISOString();
       await updateSkillProficiency(1, {
         id: 1,
         name: 'Test Task',
         description: 'A test task with design work',
-        labels: [{ id: 1, name: 'design', icon: '🎨', color: '#ff6b6b' }],
+        labels: [{ id: 1, name: 'design', icon: '🎨', color: '#ff6b6b', created_at: now }],
         completed: true,
         priority: 'high',
         date: '2024-01-15',
@@ -111,6 +112,20 @@ describe('Knowledge Graph Actions', () => {
         blocked_by: [],
         time_entries: [],
         recurring_exceptions: [],
+        user_id: 1,
+        notes: null,
+        estimate: null,
+        actual_time: null,
+        recurring: 'none',
+        recurring_config: null,
+        deadline: null,
+        created_at: now,
+        updated_at: now,
+        archived: false,
+        sort_order: 0,
+        ai_provider: undefined,
+        confidence_score: undefined,
+        completed_at: now,
       });
 
       // Skill should be created
