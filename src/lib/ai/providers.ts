@@ -18,6 +18,7 @@ export interface AIProvider {
   parseEditCommand?(text: string, context: { tasks: Array<{ id: number; name: string; completed: boolean; priority: string }> }): Promise<AIEditCommand>;
   generateProjectPlan?(input: ProjectPlanInput): Promise<GeneratedProject>;
   generateDecisionTemplate?(context: DecisionContext): Promise<GeneratedDecisionTemplate>;
+  predictTaskDuration?(task: any, context?: any): Promise<{ estimated_duration: number; confidence: number; factors: string[] }>;
 }
 
 /**
@@ -794,6 +795,72 @@ export class KeywordParser implements AIProvider {
 
     return { tips, suggestions, trends };
   }
+
+  async predictTaskDuration(
+    task: { name: string; description?: string; priority?: string; estimate?: string; date?: string; deadline?: string },
+    context?: { userId?: number; taskHistory?: any[]; factors?: { taskComplexity?: "simple" | "moderate" | "complex"; energyLevel?: "high" | "medium" | "low"; deadlineUrgency?: number } }
+  ): Promise<{ estimated_duration: number; confidence: number; factors: string[] }> {
+    const factors: string[] = [];
+
+    // Base duration based on priority
+    let estimatedDuration = 45; // default 45 minutes
+    if (task.priority === "critical") {
+      estimatedDuration = 120;
+      factors.push("priority");
+    } else if (task.priority === "high") {
+      estimatedDuration = 90;
+      factors.push("priority");
+    } else if (task.priority === "medium") {
+      estimatedDuration = 60;
+    } else if (task.priority === "low") {
+      estimatedDuration = 30;
+    }
+
+    // Adjust based on task complexity
+    const textLength = (task.name || "").length + (task.description || "").length;
+    if (textLength > 200) {
+      estimatedDuration += 30;
+      factors.push("complexity");
+    }
+
+    // Adjust based on estimate field
+    if (task.estimate) {
+      const estimateMinutes = parseTimeToMinutes(task.estimate);
+      if (estimateMinutes !== null && estimateMinutes > 0) {
+        estimatedDuration = estimateMinutes;
+        factors.push("estimate_field");
+      }
+    }
+
+    // Adjust based on context
+    if (context?.factors?.taskComplexity === "complex") {
+      estimatedDuration += 60;
+      factors.push("complexity");
+    } else if (context?.factors?.taskComplexity === "simple") {
+      estimatedDuration = Math.max(15, estimatedDuration - 30);
+    }
+
+    if (context?.factors?.energyLevel === "low") {
+      estimatedDuration += 15;
+      factors.push("energy_decrease");
+    }
+
+    if (context?.factors?.deadlineUrgency) {
+      if (context.factors.deadlineUrgency > 0.7) {
+        estimatedDuration -= 15; // Rush
+        factors.push("urgency");
+      }
+    }
+
+    const confidence = factors.length > 0 ? 0.7 + (factors.length * 0.05) : 0.6;
+    factors.push("historical_data");
+
+    return {
+      estimated_duration: Math.max(15, estimatedDuration),
+      confidence: Math.min(0.95, confidence),
+      factors,
+    };
+  }
 }
 
 /**
@@ -1411,6 +1478,25 @@ export class AIManager {
         option_template: '[{{ "option1": "Description, pros, cons" }}]',
       };
     }
+  }
+
+  /**
+   * Predict task duration
+   */
+  async predictTaskDuration(
+    task: any,
+    context?: any
+  ): Promise<{ estimated_duration: number; confidence: number; factors: string[] }> {
+    const provider = this.providers[0]; // Use keyword parser by default
+    if (typeof provider.predictTaskDuration === "function") {
+      return provider.predictTaskDuration(task, context);
+    }
+    // Fallback
+    return {
+      estimated_duration: 45,
+      confidence: 0.6,
+      factors: ["default"],
+    };
   }
 
   clearCache(): void {
