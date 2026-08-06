@@ -254,7 +254,7 @@ export function TaskDecisionTab({ task, decisions = [], onDecisionsChange }: Tas
                   )}
 
                   {/* Options */}
-                  {decision.options?.length > 0 && (
+                  {decision.options && decision.options.length > 0 && (
                     <div className="mt-2">
                       <p className="text-xs font-medium">Options:</p>
                       <ul className="text-xs text-muted-foreground list-disc list-inside">
