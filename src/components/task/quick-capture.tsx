@@ -64,12 +64,11 @@ export function QuickCapture({ onTaskCreate, lists }: QuickCaptureProps) {
 
   // Pulse animation for attention
   useEffect(() => {
-    if (!isOpen) {
-      const interval = setInterval(() => {
-        setIsPulsing((prev) => !prev);
-      }, 3000);
-      return () => clearInterval(interval);
-    }
+    if (isOpen) return;
+    const interval = setInterval(() => {
+      setIsPulsing((prev) => !prev);
+    }, 3000);
+    return () => clearInterval(interval);
   }, [isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
