@@ -79,7 +79,7 @@ export function VoiceCommands({ className, onTaskCreate }: VoiceCommandsProps) {
   const [lastResult, setLastResult] = useState<VoiceCommand | null>(null);
   const [history, setHistory] = useState<VoiceCommandHistory[]>([]);
   const [speaking, setSpeaking] = useState(false);
-  const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
+  const [recognition, setRecognition] = useState<any>(null);
   const [muted, setMuted] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -98,10 +98,10 @@ export function VoiceCommands({ className, onTaskCreate }: VoiceCommandsProps) {
     recognitionInstance.interimResults = true;
     recognitionInstance.lang = "en-US";
 
-    recognitionInstance.onresult = (event) => {
+    recognitionInstance.onresult = (event: any) => {
       const transcript = Array.from(event.results)
-        .map(result => result[0])
-        .map(result => result.transcript)
+        .map((result: any) => result[0])
+        .map((result: any) => result.transcript)
         .join("");
 
       if (event.results[0].isFinal) {
@@ -109,7 +109,7 @@ export function VoiceCommands({ className, onTaskCreate }: VoiceCommandsProps) {
       }
     };
 
-    recognitionInstance.onerror = (event) => {
+    recognitionInstance.onerror = (event: any) => {
       console.error("Speech recognition error:", event.error);
       toast.error(`Speech recognition error: ${event.error}`);
     };
