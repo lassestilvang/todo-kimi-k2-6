@@ -35,6 +35,7 @@ describe('NotionConnector', () => {
         enabled: true,
         apiToken: 'token',
         databaseIds: 'db1,db2,db3',
+        syncDirection: 'import',
       });
 
       // Access private property for testing
@@ -215,6 +216,7 @@ describe('NotionConnector', () => {
         enabled: true,
         apiToken: 'token',
         databaseIds: undefined,
+        syncDirection: 'import',
       });
 
       await expect(noDbConnector.pushTask({ title: 'Test' })).rejects.toThrow(
@@ -375,6 +377,9 @@ describe('NotionConnector', () => {
         priority: 'high' as const,
         assignee: 'user@example.com',
         externalUrl: 'https://notion.co/page',
+        parentPage: 'parent-db-id',
+        properties: {},
+        createdAt: new Date().toISOString(),
       };
 
       const result = connector.mapToTask(record);
