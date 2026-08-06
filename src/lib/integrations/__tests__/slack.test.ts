@@ -35,6 +35,7 @@ describe('SlackConnector', () => {
         enabled: true,
         apiToken: 'token',
         defaultChannelId: 'C99999999',
+        syncDirection: 'import',
       });
 
       expect((customConnector as any).defaultChannelId).toBe('C99999999');
@@ -110,6 +111,7 @@ describe('SlackConnector', () => {
         name: 'Slack',
         enabled: true,
         apiToken: 'token',
+        syncDirection: 'import',
       });
 
       await expect(noChannelConnector.fetchRecords()).rejects.toThrow(
