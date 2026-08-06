@@ -112,7 +112,7 @@ export async function createHabitLoop(
     cue: input.cue,
     reward: input.reward,
     stacking: [],
-    reflection_prompt: input.reflection_prompt || null,
+    reflection_prompt: input.reflection_prompt || "",
     enabled: true,
     streak_count: 0,
     completion_rate: 0,
@@ -445,11 +445,11 @@ export async function analyzeHabitLoop(habitLoopId: number): Promise<{
   // Generate suggestions
   const suggestions: string[] = [];
 
-  if (habit.loop.streak_count < 7) {
+  if (habitLoop.streak_count < 7) {
     suggestions.push("Build consistency first - aim for 7 consecutive days");
   }
 
-  if (habit.completion_rate < 0.3) {
+  if (habitLoop.completion_rate < 0.3) {
     suggestions.push("Start small - reduce the habit to 2-5 minutes initially");
   }
 
