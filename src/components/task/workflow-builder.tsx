@@ -354,7 +354,7 @@ export function WorkflowBuilder({ className }: WorkflowBuilderProps) {
                         </Button>
 
                         <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
+                          <DropdownMenuTrigger>
                             <Button variant="ghost" size="sm">
                               <Settings className="h-4 w-4" />
                             </Button>
@@ -365,7 +365,7 @@ export function WorkflowBuilder({ className }: WorkflowBuilderProps) {
                               Edit
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => setShowExecutions(wf)}>
+                            <DropdownMenuItem onClick={() => { setSelectedWorkflow(wf); setShowExecutions(true); }}>
                               <History className="h-4 w-4 mr-2" />
                               View Executions
                             </DropdownMenuItem>
@@ -419,7 +419,7 @@ export function WorkflowBuilder({ className }: WorkflowBuilderProps) {
             <div className="space-y-3">
               <div>
                 <label className="text-sm font-medium mb-2 block">Trigger</label>
-                <Select value={triggerType} onValueChange={setTriggerType}>
+                <Select value={triggerType} onValueChange={(v) => setTriggerType(v || triggerType)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select trigger" />
                   </SelectTrigger>
@@ -438,7 +438,7 @@ export function WorkflowBuilder({ className }: WorkflowBuilderProps) {
 
               <div>
                 <label className="text-sm font-medium mb-2 block">Action</label>
-                <Select value={actionType} onValueChange={setActionType}>
+                <Select value={actionType} onValueChange={(v) => setActionType(v || actionType)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select action" />
                   </SelectTrigger>
@@ -474,7 +474,7 @@ export function WorkflowBuilder({ className }: WorkflowBuilderProps) {
 
               <div>
                 <label className="text-sm font-medium mb-2 block">Priority</label>
-                <Select value={taskPriority} onValueChange={setTaskPriority}>
+                <Select value={taskPriority} onValueChange={(v) => setTaskPriority(v || taskPriority)}>
                   <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="Select priority" />
                   </SelectTrigger>
