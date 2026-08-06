@@ -244,7 +244,7 @@ export async function findRelatedTasks(
  */
 export async function extractInsightsFromTask(taskId: number): Promise<string[]> {
   const cacheKey = `insights:${taskId}`;
-  const cached = aiCache.get(cacheKey);
+  const cached = aiCache.get<string[]>(cacheKey);
   if (cached) {
     return cached;
   }
@@ -270,16 +270,14 @@ export async function extractInsightsFromTask(taskId: number): Promise<string[]>
     return [];
   }
 
-  const ai = getAIManager();
+  const ai = await getAIManager();
   const insights = await ai.generateInsights([
     {
       name: task.name,
-      description: task.description || "",
       completed: task.completed,
       priority: task.priority,
       date: task.date,
       deadline: task.deadline,
-      timeEntries: task.time_entries,
     }
   ]);
 
@@ -287,10 +285,10 @@ export async function extractInsightsFromTask(taskId: number): Promise<string[]>
 
   // Store insights in database
   for (const insight of result) {
-    await createTaskInsight(taskId, 'lesson_learned', insight);
+    await createTaskInsight(taskId, 'lesson_learned' as any, insight);
   }
 
-  aiCache.set(cacheKey, result, 3600); // Cache for 1 hour
+  aiCache.set(cacheKey, result);
   return result;
 }
 
