@@ -103,8 +103,8 @@ describe("API Middleware Logic Tests", () => {
     });
 
     it("should handle missing authorization header", () => {
-      const authHeader = null;
-      const token = authHeader?.replace("Bearer ", "") || null;
+      const authHeader: string | null = null;
+      const token = authHeader ? (authHeader as string).replace("Bearer ", "") : null;
       expect(token).toBeNull();
     });
   });
