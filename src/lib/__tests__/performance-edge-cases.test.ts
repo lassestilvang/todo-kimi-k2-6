@@ -3,10 +3,10 @@ import { describe, it, expect, vi } from "vitest";
 describe("Performance and Timing Edge Cases", () => {
   describe("Debounce and Throttle", () => {
     it("should debounce rapid function calls", () => {
-      const debounce = (fn: () => void, delay: number) => {
-        let timeout: ReturnType<typeof setTimeout>;
-        return (...args: any[]) => {
-          clearTimeout(timeout);
+      const debounce = <T extends unknown[]>(fn: (...args: T) => void, delay: number) => {
+        let timeout: ReturnType<typeof setTimeout> | null = null;
+        return (...args: T) => {
+          clearTimeout(timeout!);
           timeout = setTimeout(() => fn(...args), delay);
         };
       };
@@ -23,7 +23,7 @@ describe("Performance and Timing Edge Cases", () => {
 
     it("should throttle function calls", () => {
       const throttle = (fn: () => void, limit: number) => {
-        let inThrottle: ReturnType<typeof setTimeout>;
+        let inThrottle: ReturnType<typeof setTimeout> | null = null;
         return () => {
           if (!inThrottle) {
             fn();
@@ -139,6 +139,7 @@ describe("Performance and Timing Edge Cases", () => {
       // Proper concurrency limiter
       const semaphore = {
         count: 0,
+        inThrottle: null as any,
         async acquire() {
           return new Promise<void>((resolve) => {
             const tryAcquire = () => {
