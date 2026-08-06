@@ -5,26 +5,20 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 
 interface TaskScheduleProps {
-  date: string;
-  deadline: string;
-  estimate: string;
-  actualTime: string;
-  onDateChange: (date: string) => void;
-  onDeadlineChange: (deadline: string) => void;
-  onEstimateChange: (estimate: string) => void;
-  onActualTimeChange: (actualTime: string) => void;
+  task: {
+    date: string | null;
+    deadline: string | null;
+    estimate: string | null;
+    notes: string | null;
+  };
+  lists: { id: number; name: string; emoji: string; color: string }[];
 }
 
-export function TaskSchedule({
-  date,
-  deadline,
-  estimate,
-  actualTime,
-  onDateChange,
-  onDeadlineChange,
-  onEstimateChange,
-  onActualTimeChange,
-}: TaskScheduleProps) {
+export function TaskSchedule({ task }: TaskScheduleProps) {
+  const date = task.date || "";
+  const deadline = task.deadline || "";
+  const estimate = task.estimate || "";
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
@@ -36,7 +30,6 @@ export function TaskSchedule({
           <Input
             type="date"
             value={date}
-            onChange={(e) => onDateChange(e.target.value)}
           />
         </div>
         <div className="space-y-2">
@@ -47,7 +40,6 @@ export function TaskSchedule({
           <Input
             type="datetime-local"
             value={deadline}
-            onChange={(e) => onDeadlineChange(e.target.value)}
           />
         </div>
       </div>
@@ -58,15 +50,13 @@ export function TaskSchedule({
           <Input
             type="time"
             value={estimate}
-            onChange={(e) => onEstimateChange(e.target.value)}
           />
         </div>
         <div className="space-y-2">
           <Label>Actual Time (HH:mm)</Label>
           <Input
             type="time"
-            value={actualTime}
-            onChange={(e) => onActualTimeChange(e.target.value)}
+            value=""
           />
         </div>
       </div>
