@@ -10,12 +10,6 @@ import {
 } from "../google";
 import type { Task } from "../../../types";
 
-// Type for mock fetch
-type MockFetch = {
-  mockResolvedValue: (value: { ok: boolean; json: () => Promise<unknown> }) => void;
-  mockRejectedValue: (value: Error) => void;
-};
-
 describe("Google Calendar Integration", () => {
   let mockConfig: {
     accessToken: string;
@@ -29,7 +23,7 @@ describe("Google Calendar Integration", () => {
       refreshToken: "test-refresh-token",
       expiresAt: "2026-12-31T23:59:59Z",
     };
-    global.fetch = vi.fn() as unknown as MockFetch;
+    global.fetch = vi.fn() as any;
   });
 
   afterEach(() => {
@@ -43,7 +37,7 @@ describe("Google Calendar Integration", () => {
         { id: "event2", summary: "Test Event 2" },
       ];
 
-      (global.fetch as MockFetch).mockResolvedValue({
+      (global.fetch as any).mockResolvedValue({
         ok: true,
         json: async () => ({ items: mockEvents }),
       });
@@ -109,6 +103,8 @@ describe("Google Calendar Integration", () => {
       created_at: "2026-06-01T00:00:00Z",
       updated_at: "2026-06-01T00:00:00Z",
       sort_order: 0,
+      user_id: 1,
+      archived: false,
     };
 
     it("should create a calendar event from a task", async () => {
@@ -172,6 +168,8 @@ describe("Google Calendar Integration", () => {
       created_at: "2026-06-01T00:00:00Z",
       updated_at: "2026-06-01T00:00:00Z",
       sort_order: 0,
+      user_id: 1,
+      archived: false,
     };
 
     it("should update a calendar event", async () => {
@@ -302,6 +300,11 @@ describe("Google Calendar Integration", () => {
         created_at: "2026-06-01T00:00:00Z",
         updated_at: "2026-06-01T00:00:00Z",
         sort_order: 0,
+        user_id: 1,
+        archived: false,
+        blockers: [],
+        blocked_by: [],
+        recurring_exceptions: [],
       },
       {
         id: 2,
@@ -321,6 +324,11 @@ describe("Google Calendar Integration", () => {
         created_at: "2026-06-01T00:00:00Z",
         updated_at: "2026-06-01T00:00:00Z",
         sort_order: 0,
+        user_id: 1,
+        archived: false,
+        blockers: [],
+        blocked_by: [],
+        recurring_exceptions: [],
       },
     ];
 
