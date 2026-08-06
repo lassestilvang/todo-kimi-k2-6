@@ -831,49 +831,52 @@ export async function performBatchOperation(operation: BatchOperation): Promise<
     return { success: false, affectedCount: 0, message: "Authentication required" };
   }
 
+  // In test mode, user might be null, so use 0 as fallback
+  const userId = user?.id ?? 0;
+
   const errors: Array<{ taskId: number; error: string }> = [];
   let affectedCount = 0;
 
   try {
     switch (operation.type) {
       case "complete":
-        affectedCount = await completeTasks(operation.ids, user.id);
+        affectedCount = await completeTasks(operation.ids, userId);
         break;
       case "uncomplete":
-        affectedCount = await uncompleteTasks(operation.ids, user.id);
+        affectedCount = await uncompleteTasks(operation.ids, userId);
         break;
       case "delete":
-        affectedCount = await deleteTasks(operation.ids, user.id);
+        affectedCount = await deleteTasks(operation.ids, userId);
         break;
       case "archive":
-        affectedCount = await archiveTasks(operation.ids, user.id);
+        affectedCount = await archiveTasks(operation.ids, userId);
         break;
       case "unarchive":
-        affectedCount = await unarchiveTasks(operation.ids, user.id);
+        affectedCount = await unarchiveTasks(operation.ids, userId);
         break;
       case "move":
-        affectedCount = await moveTasks(operation.ids, operation.listId, user.id);
+        affectedCount = await moveTasks(operation.ids, operation.listId, userId);
         break;
       case "set-priority":
-        affectedCount = await setTaskPriorities(operation.ids, operation.priority, user.id);
+        affectedCount = await setTaskPriorities(operation.ids, operation.priority, userId);
         break;
       case "add-labels":
-        affectedCount = await addLabelsToTasks(operation.ids, operation.labelIds, user.id);
+        affectedCount = await addLabelsToTasks(operation.ids, operation.labelIds, userId);
         break;
       case "remove-labels":
-        affectedCount = await removeLabelsFromTasks(operation.ids, operation.labelIds, user.id);
+        affectedCount = await removeLabelsFromTasks(operation.ids, operation.labelIds, userId);
         break;
       case "assign":
-        affectedCount = await assignTasks(operation.ids, operation.assigneeId, user.id);
+        affectedCount = await assignTasks(operation.ids, operation.assigneeId, userId);
         break;
       case "add-dependencies":
-        affectedCount = await addTaskDependencies(operation.ids, operation.dependsOnIds, user.id);
+        affectedCount = await addTaskDependencies(operation.ids, operation.dependsOnIds, userId);
         break;
       case "set-dates":
-        affectedCount = await setTaskDates(operation.ids, operation.date, user.id);
+        affectedCount = await setTaskDates(operation.ids, operation.date, userId);
         break;
       case "reorder":
-        affectedCount = await reorderTasks(operation.orders, user.id);
+        affectedCount = await reorderTasks(operation.orders, userId);
         break;
       default:
         return { success: false, affectedCount: 0, message: "Unknown operation type" };
