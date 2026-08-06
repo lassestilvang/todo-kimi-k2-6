@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getTeamVelocityReport, getSprintHistory, calculatePriorityScore } from '../team-metrics';
+import { getTeamVelocityReport, getSprintHistory } from '../team-metrics';
 
 // Mock the database module
 vi.mock('@/lib/db', () => ({
