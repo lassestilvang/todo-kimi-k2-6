@@ -59,7 +59,7 @@ export function useCollaboration({
           wsRef.current?.send(JSON.stringify({
             type: "user_joined",
             userId,
-            userName: userName || `User ${userId}`,
+            userName: userName ?? `User ${userId}`,
             taskId,
           }));
         };
@@ -103,44 +103,55 @@ export function useCollaboration({
   const handleMessage = useCallback((data: CollaborationEvent) => {
     switch (data.type) {
       case "user_joined":
-        if (data.userId && data.userName) {
+        if (data.userId !== undefined && data.userName) {
           setPresenceUsers(prev => [
             ...prev,
-            { userId: data.userId, userName: data.userName, joinedAt: new Date() }
+            { userId: data.userId!, userName: data.userName!, joinedAt: new Date() }
           ]);
         }
         break;
 
       case "user_left":
-        if (data.userId) {
-          setPresenceUsers(prev => prev.filter(u => u.userId !== data.userId));
+        const leftUserId = data.userId;
+        if (leftUserId !== undefined) {
+          setPresenceUsers(prev => prev.filter(u => u.userId !== leftUserId));
           setCursorPositions(prev => {
-            const { [data.userId]: _, ...rest } = prev;
-            return rest;
+            const result: Record<number, { line: number; column: number }> = {};
+            for (const key in prev) {
+              const userId = Number(key);
+              if (userId !== leftUserId && prev[key]) {
+                result[userId] = prev[key]!;
+              }
+            }
+            return result;
           });
         }
         break;
 
       case "cursor_position":
-        if (data.userId && data.cursor && taskId) {
+        const cursorUserId = data.userId;
+        if (cursorUserId !== undefined && data.cursor && taskId) {
+          const cursor = data.cursor;
           setCursorPositions(prev => ({
             ...prev,
-            [data.userId]: data.cursor!
+            [cursorUserId]: { line: cursor.line, column: cursor.column }
           }));
         }
         break;
 
       case "typing_start":
-        if (data.userId) {
-          setTypingUsers(prev => new Set([...prev, data.userId!]));
+        const startUserId = data.userId;
+        if (startUserId !== undefined) {
+          setTypingUsers(prev => new Set([...Array.from(prev), startUserId]));
         }
         break;
 
       case "typing_stop":
-        if (data.userId) {
+        const stopUserId = data.userId;
+        if (stopUserId !== undefined) {
           setTypingUsers(prev => {
             const newSet = new Set(prev);
-            newSet.delete(data.userId!);
+            newSet.delete(stopUserId);
             return newSet;
           });
         }
