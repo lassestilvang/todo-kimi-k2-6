@@ -220,7 +220,7 @@ export function TaskInvestmentPortfolio({ tasks, completedTasks = [] }: TaskInve
               <LineChart data={weeklyCompletionData}>
                 <XAxis dataKey="day" />
                 <YAxis domain={[0, 100]} hide />
-                <Tooltip formatter={(value: number) => `${value}%`} />
+                <Tooltip formatter={(value: any) => `${value}%`} />
                 <Line
                   type="monotone"
                   dataKey="rate"
@@ -306,15 +306,13 @@ export function TaskInvestmentPortfolio({ tasks, completedTasks = [] }: TaskInve
                   domain={[0, 100]}
                 />
                 <Tooltip
-                  formatter={(value: number, name: string) => [value, name]}
-                  formatter2={(value: number, name: string) => [value, name]}
-                  content={(props) => (
+                  content={(props: any) => (
                     <div className="bg-background border rounded p-2">
                       {props.payload && (
                         <>
                           <div className="font-medium">{props.payload.name}</div>
                           <div className="text-sm text-muted-foreground">
-                            Risk: {props.payload.x} | ROI: {props.payload.y}
+                            Risk: {String(props.payload.x)} | ROI: {String(props.payload.y)}
                           </div>
                         </>
                       )}
@@ -323,13 +321,13 @@ export function TaskInvestmentPortfolio({ tasks, completedTasks = [] }: TaskInve
                 />
                 <Scatter data={scatterData} shape="circle" />
                 <ReferenceLine
-                  X={50}
+                  x={50}
                   stroke="gray"
                   strokeDasharray="3 3"
                   label="Average Risk"
                 />
                 <ReferenceLine
-                  Y={50}
+                  y={50}
                   stroke="gray"
                   strokeDasharray="3 3"
                   label="Average ROI"
