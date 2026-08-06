@@ -388,10 +388,9 @@ export function TaskFlowVisualization({
             const dependents = calculateDependents(task.id);
 
             return (
-              <TooltipProvider key={task.id}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex items-start gap-4">
+              <Tooltip key={task.id}>
+                <TooltipTrigger>
+                  <div className="flex items-start gap-4">
                       {/* Timeline marker */}
                       <div className="flex-shrink-0 z-10">
                         <div
@@ -503,8 +502,7 @@ export function TaskFlowVisualization({
                       {task.completed ? "Completed" : "In Progress"}
                     </p>
                   </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              </Tooltip>
             );
           })}
         </div>
@@ -660,7 +658,7 @@ export function TaskFlowVisualization({
                 />
               </div>
 
-              <Select value={filter} onValueChange={setFilter}>
+              <Select value={filter} onValueChange={(v) => setFilter(v || filter)}>
                 <SelectTrigger className="w-[180px]">
                   <Filter className="h-4 w-4 mr-2" />
                   <SelectValue />
