@@ -57,6 +57,7 @@ describe("WebSocket Server", () => {
         id: 2,
         name: "New Task",
         description: null,
+        notes: null,
         list_id: 1,
         date: null,
         deadline: null,
@@ -78,6 +79,10 @@ describe("WebSocket Server", () => {
         attachments: [],
         time_entries: [],
         recurring_exceptions: [],
+        blockers: [],
+        blocked_by: [],
+        user_id: 1,
+        archived: false,
       };
 
       const message = mockBroadcast("task_created", { taskId: task.id, task });
