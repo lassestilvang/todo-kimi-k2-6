@@ -3,6 +3,7 @@ import { generateTimeBlockedSchedule, detectScheduleConflicts, rescheduleWithBuf
 import { setupTestDb, cleanupTestDb, createTestTasks } from '@/test/test-utils';
 import { setDb, getDb } from '@/lib/db';
 import { createTestDb } from '@/lib/db/test-db';
+import type { TaskWithRelations } from '@/types';
 
 // Mock the AI providers module
 vi.mock('@/lib/ai/providers', () => ({
@@ -36,6 +37,42 @@ vi.mock('@/lib/ai/providers', () => ({
   }),
 }));
 
+function createMockTask(overrides: Partial<TaskWithRelations> = {}): TaskWithRelations {
+  const now = new Date().toISOString();
+  return {
+    id: 1,
+    user_id: null,
+    name: "Test Task",
+    description: null,
+    notes: null,
+    list_id: null,
+    date: null,
+    deadline: null,
+    estimate: null,
+    actual_time: null,
+    priority: "medium",
+    recurring: "none",
+    recurring_config: null,
+    completed: false,
+    completed_at: null,
+    created_at: now,
+    updated_at: now,
+    sort_order: 0,
+    archived: false,
+    labels: [],
+    subtasks: [],
+    reminders: [],
+    logs: [],
+    comments: [],
+    attachments: [],
+    blockers: [],
+    blocked_by: [],
+    time_entries: [],
+    recurring_exceptions: [],
+    ...overrides,
+  } as TaskWithRelations;
+}
+
 describe('Scheduling Actions', () => {
   beforeEach(async () => {
     const testDb = createTestDb();
@@ -64,7 +101,7 @@ describe('Scheduling Actions', () => {
       expect(Array.isArray(schedule)).toBe(true);
       expect(schedule.length).toBeGreaterThan(0);
 
-      schedule.forEach(block => {
+      schedule.forEach((block: any) => {
         expect(block.taskId).toBeDefined();
         expect(block.startTime).toBeDefined();
         expect(block.endTime).toBeDefined();
@@ -90,8 +127,8 @@ describe('Scheduling Actions', () => {
     it('detects time overlaps between tasks', async () => {
       // Test with tasks that have times compatible with the existing schedule
       const tasks = [
-        { id: 1, name: 'Task 1', date: '09:00', estimate: '1:00', priority: 'high' },
-        { id: 2, name: 'Task 2', date: '10:30', estimate: '1:00', priority: 'medium' }
+        createMockTask({ id: 1, name: 'Task 1', date: '09:00', estimate: '1:00', priority: 'high' }),
+        createMockTask({ id: 2, name: 'Task 2', date: '10:30', estimate: '1:00', priority: 'medium' })
       ];
 
       const existingSchedule = [
@@ -108,8 +145,8 @@ describe('Scheduling Actions', () => {
     });
 
     it('returns no conflicts for non-overlapping schedules', async () => {
-      const tasks = [];
-      const existingSchedule = [];
+      const tasks: TaskWithRelations[] = [];
+      const existingSchedule: any[] = [];
 
       const { conflicts } = await detectScheduleConflicts(tasks, existingSchedule);
 
@@ -127,37 +164,21 @@ describe('Scheduling Actions', () => {
       });
 
       expect(Array.isArray(scheduledTasks)).toBe(true);
-      scheduledTasks.forEach(task => {
-        expect(task.bufferMinutes).toBe(bufferMinutes);
+      scheduledTasks.forEach(block => {
+        expect(block.bufferMinutes).toBe(bufferMinutes);
       });
     });
   });
 
   describe('predictTaskDuration', () => {
     it('predicts realistic task duration', async () => {
-      const task = {
+      const task = createMockTask({
         id: 1,
         name: 'Design homepage mockup',
         description: 'Create wireframes for new homepage design',
-        priority: 'high' as const,
-        completed: false,
-        date: null,
-        deadline: null,
-        labels: [],
-        subtasks: [],
-        time_entries: [],
-        logs: [],
-        comments: [],
-        attachments: [],
-        blockers: [],
-        blocked_by: [],
+        priority: 'high',
         list_id: 1,
-        recurring: 'none',
-        recurring_config: null,
-        recurring_exceptions: [],
-        estimate: null,
-        actual_time: null
-      };
+      });
 
       // This test requires AI integration - skip in test environment
       // The function falls back to a default duration calculation
@@ -205,10 +226,10 @@ describe('Scheduling Actions', () => {
 });
 
 // Helper functions
-async function getTestTasks() {
+async function getTestTasks(): Promise<TaskWithRelations[]> {
   return [
-    { id: 1, name: 'Design homepage', priority: 'critical', completed: false, time_entries: [] },
-    { id: 2, name: 'Write documentation', priority: 'high', completed: false, time_entries: [] },
-    { id: 3, name: 'Code review', priority: 'medium', completed: false, time_entries: [] }
+    createMockTask({ id: 1, name: 'Design homepage', priority: 'critical' }),
+    createMockTask({ id: 2, name: 'Write documentation', priority: 'high' }),
+    createMockTask({ id: 3, name: 'Code review', priority: 'medium' })
   ];
 }
