@@ -15,7 +15,6 @@ import {
   Check,
   Settings,
   History,
-  DragOverlay,
   CheckCircle2,
   AlertCircle,
   List,
@@ -44,6 +43,7 @@ interface WorkflowNode {
   subtype: "manual" | "task_created" | "task_completed" | "due_date" | "schedule" | "create_task" | "update_task" | "send_notification" | "log_message" | "webhook";
   label: string;
   description: string;
+  icon?: React.ComponentType<{ className?: string }>;
   config?: Record<string, any>;
 }
 
@@ -204,7 +204,8 @@ export function VisualWorkflowBuilder({ className }: { className?: string }) {
     if (over.id === "palette-drop-zone") {
       const newType = active.data?.current?.type as keyof typeof ACTION_NODES | keyof typeof TRIGGER_NODES;
       const subtype = active.data?.current?.subtype;
-      const nodeList = newType?.startsWith("action") ? ACTION_NODES : TRIGGER_NODES;
+      const typeStr = String(newType || "");
+      const nodeList = typeStr.startsWith("action") ? ACTION_NODES : TRIGGER_NODES;
       const node = (nodeList as WorkflowNode[]).find(n => n.id === subtype || n.subtype === subtype);
       if (node) {
         setWorkflowNodes([...workflowNodes, { ...node, id: `node-${Date.now()}` }]);
@@ -216,7 +217,7 @@ export function VisualWorkflowBuilder({ className }: { className?: string }) {
     const oldIndex = workflowNodes.findIndex(n => n.id === active.id);
     const newIndex = workflowNodes.findIndex(n => n.id === over.id);
 
-    if (oldIndex !== newIndex && oldIndex > -1 && newIndex > -1) {
+    if (oldIndex !== -1 && newIndex > -1) {
       setWorkflowNodes(arrayMove(workflowNodes, oldIndex, newIndex));
     }
   };
@@ -324,8 +325,8 @@ export function VisualWorkflowBuilder({ className }: { className?: string }) {
                 </h3>
                 <div className="space-y-2">
                   {TRIGGER_NODES.map(node => (
-                    <Tooltip key={node.id} provider="ripple">
-                      <TooltipTrigger asChild>
+                    <Tooltip key={node.id}>
+                      <TooltipTrigger>
                         <div
                           className="p-2 rounded border bg-orange-50 hover:shadow cursor-move"
                           draggable
@@ -352,8 +353,8 @@ export function VisualWorkflowBuilder({ className }: { className?: string }) {
                   {ACTION_NODES.map(node => {
                     const Icon = node.icon;
                     return (
-                      <Tooltip key={node.id} provider="ripple">
-                        <TooltipTrigger asChild>
+                      <Tooltip key={node.id}>
+                        <TooltipTrigger>
                           <div
                             className="p-2 rounded border bg-blue-50 hover:shadow cursor-move"
                             draggable
