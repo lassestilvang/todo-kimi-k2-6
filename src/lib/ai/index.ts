@@ -333,6 +333,7 @@ export async function generateDecisionTemplate(
   userId: number,
   context: DecisionContext
 ): Promise<GeneratedDecisionTemplate> {
-  const ai = getAIManager();
-  return ai.generateDecisionTemplate(context);
+  const ai = await getAIManager();
+  const result = await ai.generateDecisionTemplate(context);
+  return { ...result, provider: "keyword-parser" };
 }
