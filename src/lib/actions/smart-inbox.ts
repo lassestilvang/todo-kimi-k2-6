@@ -16,6 +16,7 @@ export interface InboxSource {
   due_date?: string;
   priority: "critical" | "high" | "medium" | "low" | "none";
   confidence: number;
+  priority_score?: number;
   status: "pending" | "processing" | "converted" | "dismissed";
   metadata: string; // JSON string with additional data
   created_at: string;
@@ -86,7 +87,7 @@ export async function getSmartInbox(options?: {
     ${whereClause}
     ORDER BY priority_score DESC, created_at DESC
     LIMIT ?
-  `).all(...params, limit) as IncomingSource[];
+  `).all(...params, limit) as InboxSource[];
 
   // Count by status
   const counts = await db.prepare(`
@@ -111,12 +112,14 @@ export async function getSmartInbox(options?: {
       due_date: source.due_date,
       priority: source.priority,
       confidence: source.confidence,
+      priority_score: source.priority_score,
       status: source.status,
       metadata: source.metadata,
       created_at: source.created_at,
       updated_at: source.updated_at,
     },
-    priority_score: source.priority_score,
+    matches: [],
+    priority_score: source.priority_score ?? 0,
   }));
 
   return {
