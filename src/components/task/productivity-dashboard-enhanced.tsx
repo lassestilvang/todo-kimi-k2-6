@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip as ReTooltip, BarChart as ReBarChart, Bar, CartesianGrid, AreaChart, Area } from "recharts";
 import { format, subDays, startOfWeek, subWeeks, parseISO, getWeek } from "date-fns";
 import type { TaskWithRelations } from "@/types";
@@ -215,7 +216,7 @@ export function ProductivityDashboardEnhanced({ tasks, goals, teamVelocity }: Pr
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
         <StatCard title="Completion Rate" value={`${Math.round((tasks.filter((t) => t.completed).length / Math.max(tasks.length, 1)) * 100)}%`} icon={CheckCircle2} />
         <StatCard title="Current Streak" value={streakData.currentStreak.toString()} icon={Flame} />
-        <StatCard title="Longest Streak" value={streakData.longestStreak.toString()} icon="star" iconComponent={() => <Award className="h-4 w-4" />} />
+        <StatCard title="Longest Streak" value={streakData.longestStreak.toString()} iconComponent={() => <Award className="h-4 w-4" />} />
         <StatCard title="Total Tasks" value={tasks.length.toString()} icon={Target} />
         <StatCard title="Completed" value={tasks.filter((t) => t.completed).length.toString()} icon={CheckCircle2} />
         <StatCard title="Overdue" value={tasks.filter((t) => t.deadline && new Date(t.deadline) < new Date() && !t.completed).length.toString()} icon={AlertCircle} />
@@ -330,7 +331,7 @@ export function ProductivityDashboardEnhanced({ tasks, goals, teamVelocity }: Pr
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="week" />
                 <YAxis domain={[0, 100]} />
-                <ReTooltip formatter={(value: number) => [`${value}%`, "Rate"]} />
+                <ReTooltip formatter={(value) => [`${value}%`, "Rate"]} />
                 <Area
                   type="monotone"
                   dataKey="rate"
@@ -466,7 +467,10 @@ interface StatCardProps {
 function StatCard({ title, value, icon: Icon, iconComponent }: StatCardProps) {
   const renderIcon = () => {
     if (Icon) return <Icon className="h-4 w-4" />;
-    if (iconComponent) return <iconComponent className="h-4 w-4" />;
+    if (iconComponent) {
+      const Component = iconComponent;
+      return <Component className="h-4 w-4" />;
+    }
     return <Target className="h-4 w-4" />;
   };
 
