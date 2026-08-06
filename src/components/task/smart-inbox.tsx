@@ -6,7 +6,7 @@ import {
   Calendar,
   Mail,
   MessageSquare,
-  Github,
+  GitBranch,
   Check,
   X,
   Trash2,
@@ -22,14 +22,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -80,7 +72,7 @@ const SOURCE_ICONS: Record<InboxSourceType, React.ReactNode> = {
   calendar: <Calendar className="h-4 w-4" />,
   email: <Mail className="h-4 w-4" />,
   slack: <MessageSquare className="h-4 w-4" />,
-  github: <Github className="h-4 w-4" />,
+  github: <GitBranch className="h-4 w-4" />,
   manual: <Plus className="h-4 w-4" />,
   integration: <RefreshCw className="h-4 w-4" />,
 };
@@ -385,7 +377,7 @@ export function SmartInbox({ className }: SmartInboxProps) {
                               Score: {item.priority_score}
                             </Badge>
                             <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
+                              <DropdownMenuTrigger>
                                 <Button variant="ghost" size="sm">
                                   <X className="h-4 w-4" />
                                 </Button>
