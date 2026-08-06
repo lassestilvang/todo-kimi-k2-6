@@ -115,41 +115,35 @@ describe("useTaskMutations Hook - Comprehensive Coverage", () => {
     it("should have onError callback for create task", () => {
       const context = { previousTasks: [{ id: 1, name: "Task" }] };
       // Simulate error handler logic
-      if (context?.previousTasks) {
-        // Would restore previousTasks
-        expect(context.previousTasks.length).toBe(1);
-      }
+      expect(context.previousTasks.length).toBe(1);
     });
 
     it("should have onError callback for update task", () => {
-      const context = { previousTasks: [] };
-      if (context?.previousTasks) {
-        expect(context.previousTasks.length).toBe(0);
-      }
+      const context = { previousTasks: [] as any };
+      expect(context.previousTasks.length).toBe(0);
     });
 
     it("should have onError callback for delete task", () => {
-      const context = undefined;
+      const context: { previousTasks?: any } | undefined = undefined;
       // Would not restore
-      expect(context?.previousTasks).toBeUndefined();
+      expect(context).toBeUndefined();
     });
 
     it("should have onError callback for toggle complete", () => {
-      const context = { previousTasks: null };
-      if (context?.previousTasks) {
-        // Would restore previousTasks
-      }
+      const context = { previousTasks: null as any };
+      // Would restore previousTasks
+      expect(context.previousTasks).toBeNull();
     });
 
     it("should have onError callback for archive task", () => {
-      const context = { previousTasks: [] };
+      const context = { previousTasks: [] as any };
       if (context?.previousTasks) {
         expect(true).toBe(true);
       }
     });
 
     it("should have onError callback for unarchive task", () => {
-      const context = { previousTasks: [] };
+      const context = { previousTasks: [] as any };
       if (context?.previousTasks) {
         expect(true).toBe(true);
       }
