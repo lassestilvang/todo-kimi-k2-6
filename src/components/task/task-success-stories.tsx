@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 
 interface Task {
@@ -214,7 +215,7 @@ export function TaskSuccessStories({ task, onComplete }: TaskSuccessStoriesProps
                   onChange={(e) => setStory({ ...story, tags: e.target.value })}
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Tags: {getSuggestedTags().size > 0 ? getSuggestedTags().join(", ") : "Add your own"}
+                  Tags: {getSuggestedTags().length > 0 ? getSuggestedTags().join(", ") : "Add your own"}
                 </p>
               </div>
             </div>
