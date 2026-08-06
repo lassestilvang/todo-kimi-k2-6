@@ -20,6 +20,7 @@ import {
   shouldSendNotification,
   validateSmtpConfig,
   sanitizeEmail,
+  type EmailTask,
 } from "../index";
 
 describe("email", () => {
@@ -185,11 +186,10 @@ describe("email", () => {
 
   describe("sendTaskReminderEmail", () => {
     it("should send reminder email and return boolean", async () => {
-      const task = {
+      const task: EmailTask = {
         id: 1,
         name: "Test Task",
         deadline: "2024-12-31",
-        completed: false,
         description: "Test description",
       };
 
@@ -198,11 +198,11 @@ describe("email", () => {
     });
 
     it("should send email without description", async () => {
-      const task = {
+      const task: EmailTask = {
         id: 1,
         name: "Test Task",
+        description: null,
         deadline: null,
-        completed: false,
       };
 
       const result = await sendTaskReminderEmail("user@test.com", task);
@@ -210,10 +210,11 @@ describe("email", () => {
     });
 
     it("should send email without deadline", async () => {
-      const task = {
+      const task: EmailTask = {
         id: 1,
         name: "Test Task",
         description: "No deadline",
+        deadline: null,
       };
 
       const result = await sendTaskReminderEmail("user@test.com", task);
@@ -223,9 +224,10 @@ describe("email", () => {
 
   describe("sendDueSoonEmail", () => {
     it("should send due soon email and return boolean", async () => {
-      const task = {
+      const task: EmailTask = {
         id: 1,
         name: "Urgent Task",
+        description: null,
         deadline: "2024-01-15",
       };
 
@@ -234,9 +236,11 @@ describe("email", () => {
     });
 
     it("should send email without deadline", async () => {
-      const task = {
+      const task: EmailTask = {
         id: 1,
         name: "Task without deadline",
+        description: null,
+        deadline: null,
       };
 
       const result = await sendDueSoonEmail("user@test.com", task);
@@ -303,7 +307,7 @@ describe("email", () => {
       delete process.env.SMTP_PASS;
       delete process.env.EMAIL_FROM;
 
-      const task = { id: 1, name: "Test" };
+      const task: EmailTask = { id: 1, name: "Test", description: null, deadline: null };
 
       // Should still work with defaults - resend defaults
       const result = await sendTaskReminderEmail("test@test.com", task);
@@ -313,7 +317,7 @@ describe("email", () => {
     it("should use custom SMTP port from environment", async () => {
       process.env.SMTP_PORT = "465";
 
-      const task = { id: 1, name: "Test" };
+      const task: EmailTask = { id: 1, name: "Test", description: null, deadline: null };
       const result = await sendTaskReminderEmail("test@test.com", task);
       expect(result).toBe(true);
     });
@@ -321,7 +325,7 @@ describe("email", () => {
 
   describe("email template generation", () => {
     it("should generate correct subject for reminder", async () => {
-      const task = { id: 1, name: "Reminder Task" };
+      const task: EmailTask = { id: 1, name: "Reminder Task", description: null, deadline: null };
 
       const result = await sendTaskReminderEmail("test@test.com", task);
       expect(result).toBe(true);
