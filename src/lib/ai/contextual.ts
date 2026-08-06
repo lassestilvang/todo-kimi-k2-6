@@ -340,10 +340,11 @@ export function detectScheduleConflicts(
     const conflictingSlots = calendarSlots.filter(slot => {
       const slotStart = new Date(slot.start);
       const slotEnd = new Date(slot.end);
+      const deadlineTime = taskDeadline.getTime();
 
       // Check if conflict exists near deadline
       return (taskDeadline >= slotStart && taskDeadline <= slotEnd) ||
-             (slotStart >= taskDeadline - 24 * 60 * 60 * 1000 && slotStart <= taskDeadline + 24 * 60 * 60 * 1000);
+             (slotStart >= new Date(deadlineTime - 24 * 60 * 60 * 1000) && slotStart <= new Date(deadlineTime + 24 * 60 * 60 * 1000));
     });
 
     if (conflictingSlots.length > 0) {
@@ -351,7 +352,11 @@ export function detectScheduleConflicts(
         taskId: task.id,
         taskName: task.name,
         deadline: taskDeadline,
-        existingSchedule: conflictingSlots,
+        existingSchedule: conflictingSlots.map(slot => ({
+          taskName: slot.title,
+          startTime: new Date(slot.start),
+          endTime: new Date(slot.end),
+        })),
       });
     }
   }
