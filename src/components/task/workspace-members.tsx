@@ -192,7 +192,7 @@ export function WorkspaceMembers({
               )}
             </Button>
             <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-              <DialogTrigger asChild>
+              <DialogTrigger>
                 <Button variant="ghost" size="sm">
                   <UserPlus className="h-4 w-4" />
                 </Button>
@@ -282,7 +282,7 @@ export function WorkspaceMembers({
                       <>
                         <Select
                           value={member.role}
-                          onValueChange={(value) => handleRoleChange(member, value)}
+                          onValueChange={(value) => value && handleRoleChange(member, value)}
                         >
                           <SelectTrigger className="h-7">
                             <SelectValue />
