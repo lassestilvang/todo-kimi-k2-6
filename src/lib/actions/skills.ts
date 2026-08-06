@@ -108,7 +108,7 @@ export async function updateSkill(id: number, userId: number, updates: Partial<O
       SELECT * FROM user_skills WHERE id = ?
     `).get(id) as UserSkill | undefined;
 
-    return skill;
+    return skill ?? null;
   } catch (error) {
     logError("Failed to update skill", undefined, error instanceof Error ? error : new Error(String(error)));
     return null;
@@ -185,7 +185,7 @@ export async function incrementSkillExperience(
       }
     }
 
-    return skill;
+    return skill ?? null;
   } catch (error) {
     logError("Failed to increment skill experience", undefined, error instanceof Error ? error : new Error(String(error)));
     return null;
