@@ -403,7 +403,7 @@ describe("Providers Comprehensive Coverage", () => {
         { id: 6, name: "High 6", completed: false, priority: "high" },
       ];
       const result = await parser.generateInsights(tasks as any);
-      expect(result.suggestions.some(s => s.includes("high-priority"))).toBe(true);
+      expect(result.suggestions.some((s: string) => s.includes("high-priority"))).toBe(true);
     });
 
     it("should analyze overdue tasks", async () => {
@@ -414,7 +414,7 @@ describe("Providers Comprehensive Coverage", () => {
         { id: 2, name: "Overdue 2", completed: false, priority: "medium", deadline: pastDate },
       ];
       const result = await parser.generateInsights(tasks as any);
-      expect(result.suggestions.some(s => s.includes("overdue"))).toBe(true);
+      expect(result.suggestions.some((s: string) => s.includes("overdue"))).toBe(true);
     });
 
     it("should analyze tasks due this week", async () => {
@@ -424,7 +424,7 @@ describe("Providers Comprehensive Coverage", () => {
         { id: 1, name: "This Week", completed: false, priority: "medium", deadline: futureDate },
       ];
       const result = await parser.generateInsights(tasks as any);
-      expect(result.tips.some(t => t.includes("due this week"))).toBe(true);
+      expect(result.tips.some((t: string) => t.includes("due this week"))).toBe(true);
     });
 
     it("should return trends with completion rate", async () => {
@@ -434,7 +434,7 @@ describe("Providers Comprehensive Coverage", () => {
         { id: 2, name: "Task 2", completed: false, priority: "medium" },
       ];
       const result = await parser.generateInsights(tasks as any);
-      expect(result.trends.some(t => t.includes("completion rate"))).toBe(true);
+      expect(result.trends.some((t: string) => t.includes("completion rate"))).toBe(true);
     });
   });
 
