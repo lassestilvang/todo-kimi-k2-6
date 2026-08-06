@@ -20,15 +20,15 @@ describe('Session utilities', () => {
   });
 
   afterEach(() => {
-    process.env.NODE_ENV = originalNodeEnv;
-    process.env.NEXTAUTH_SECRET = originalNextAuthSecret;
+    (process.env as any).NODE_ENV = originalNodeEnv;
+    (process.env as any).NEXTAUTH_SECRET = originalNextAuthSecret;
     // Restore global.window check
     delete (global as any).window;
   });
 
   describe('getCurrentUser in test environment', () => {
     it('should return null in test environment with no demo mode', async () => {
-      process.env.NODE_ENV = 'test';
+      (process.env as any).NODE_ENV = 'test';
       delete process.env.NEXTAUTH_SECRET;
 
       const { getCurrentUser } = await import('../session');
@@ -39,8 +39,8 @@ describe('Session utilities', () => {
     });
 
     it('should return demo user in test environment with demo secret', async () => {
-      process.env.NODE_ENV = 'test';
-      process.env.NEXTAUTH_SECRET = 'demo-secret';
+      (process.env as any).NODE_ENV = 'test';
+      (process.env as any).NEXTAUTH_SECRET = 'demo-secret';
 
       const { getCurrentUser } = await import('../session');
       const user = await getCurrentUser();
@@ -52,7 +52,7 @@ describe('Session utilities', () => {
     });
 
     it('should return demo user when window is defined (browser)', async () => {
-      process.env.NODE_ENV = 'development';
+      (process.env as any).NODE_ENV = 'development';
       (global as any).window = {};
 
       const { getCurrentUser } = await import('../session');
@@ -63,7 +63,7 @@ describe('Session utilities', () => {
     });
 
     it('should return demo user in development mode without NEXTAUTH_SECRET', async () => {
-      process.env.NODE_ENV = 'development';
+      (process.env as any).NODE_ENV = 'development';
       delete process.env.NEXTAUTH_SECRET;
 
       const { getCurrentUser } = await import('../session');
@@ -76,7 +76,7 @@ describe('Session utilities', () => {
 
   describe('requireUserId', () => {
     it('should throw error when no user in test environment', async () => {
-      process.env.NODE_ENV = 'test';
+      (process.env as any).NODE_ENV = 'test';
       delete process.env.NEXTAUTH_SECRET;
 
       const { requireUserId } = await import('../session');
@@ -85,8 +85,8 @@ describe('Session utilities', () => {
     });
 
     it('should return user id when user exists', async () => {
-      process.env.NODE_ENV = 'test';
-      process.env.NEXTAUTH_SECRET = 'demo-secret';
+      (process.env as any).NODE_ENV = 'test';
+      (process.env as any).NEXTAUTH_SECRET = 'demo-secret';
 
       const { requireUserId } = await import('../session');
       const userId = await requireUserId();
