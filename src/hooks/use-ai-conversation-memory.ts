@@ -27,7 +27,7 @@ const MAX_CONTEXT_MESSAGES = 10;
 const CONTEXT_EXPIRY_MS = 30 * 60 * 1000; // 30 minutes
 
 export function useAIConversationMemory(userId?: number) {
-  const [context, setContext] = useState<ConversationContext>({ messages: [] });
+  const [context, setContext] = useState<ConversationContext>({ messages: [], recentTasks: [] });
 
   // Load context from localStorage on mount
   useEffect(() => {
@@ -43,7 +43,7 @@ export function useAIConversationMemory(userId?: number) {
         setContext({ ...parsed, messages: freshMessages });
       } catch {
         // Invalid storage, start fresh
-        setContext({ messages: [] });
+        setContext({ messages: [], recentTasks: [] });
       }
     }
   }, [userId]);
@@ -158,7 +158,7 @@ export function useAIConversationMemory(userId?: number) {
 
   // Clear context
   const clearContext = useCallback(() => {
-    setContext({ messages: [] });
+    setContext({ messages: [], recentTasks: [] });
     localStorage.removeItem("ai-conversation-context");
   }, []);
 
