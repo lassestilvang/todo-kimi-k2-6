@@ -132,7 +132,7 @@ export function TaskSnoozeDialog({ task, onSnooze, allTasks }: TaskSnoozeDialogP
 
   return (
     <Popover>
-      <PopoverTrigger asChild>
+      <PopoverTrigger>
         <Button variant="ghost" size="sm" className="h-7 px-2" title="Snooze task">
           <Clock className="h-3.5 w-3.5" />
         </Button>
@@ -176,7 +176,7 @@ export function TaskSnoozeDialog({ task, onSnooze, allTasks }: TaskSnoozeDialogP
 
           <div className="border-t pt-2">
             <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
-              <PopoverTrigger asChild>
+              <PopoverTrigger>
                 <Button variant="outline" size="sm" className="w-full justify-start">
                   <CalendarIcon className="h-3.5 w-3.5 mr-1.5" />
                   Pick a specific date
