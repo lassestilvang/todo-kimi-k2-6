@@ -48,7 +48,7 @@ describe("API Middleware", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Default mock implementation for verify - returns valid user
-    vi.mocked(jwt.verify).mockReturnValue({ id: 1, email: "test@example.com" });
+    vi.mocked(jwt.verify).mockImplementation(() => ({ id: 1, email: "test@example.com" }));
     mockRequest = new NextRequest("http://localhost/api/test", {
       method: "GET",
       headers: new Headers({
@@ -107,6 +107,7 @@ describe("API Middleware", () => {
         allowed: false,
         remaining: 0,
         resetTime: Date.now(),
+        limit: 100,
       });
 
       const result = await applyMiddleware(mockRequest);
