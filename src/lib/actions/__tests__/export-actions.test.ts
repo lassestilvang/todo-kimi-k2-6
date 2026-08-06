@@ -1,6 +1,47 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { setDb, resetDb } from "@/lib/db";
 import { createTestDb } from "@/lib/db/test-db";
+import type { TaskWithRelations } from "@/types";
+
+function createMockTask(overrides: Partial<TaskWithRelations> = {}): TaskWithRelations {
+  const now = new Date().toISOString();
+  return {
+    id: 1,
+    user_id: null,
+    name: "Test Task",
+    description: null,
+    notes: null,
+    list_id: null,
+    date: null,
+    deadline: null,
+    estimate: null,
+    actual_time: null,
+    priority: "none",
+    recurring: "none",
+    recurring_config: null,
+    completed: false,
+    completed_at: null,
+    created_at: now,
+    updated_at: now,
+    sort_order: 0,
+    archived: false,
+    labels: [],
+    subtasks: [],
+    reminders: [],
+    logs: [],
+    comments: [],
+    attachments: [],
+    blockers: [],
+    blocked_by: [],
+    time_entries: [],
+    recurring_exceptions: [],
+    ...overrides,
+  } as TaskWithRelations;
+}
+
+function createMockList(id: number, name: string, isInbox = false) {
+  return { id, name, emoji: "📦", color: "#000", is_inbox: isInbox, created_at: new Date().toISOString() };
+}
 
 describe("Export Actions", () => {
   beforeEach(() => {
@@ -116,38 +157,13 @@ describe("Export Actions", () => {
 
     it("should import data with arrays", async () => {
       const { importData } = await import("../export");
+      const now = new Date().toISOString();
       const data = {
-        lists: [{ id: 1, name: "Test List", emoji: "📦", color: "#000", is_inbox: 0, created_at: "" }],
-        labels: [{ id: 1, name: "Test Label", icon: "🏷️", color: "#000", created_at: "" }],
-        tasks: [{
-          id: 1,
-          name: "Test Task",
-          description: null,
-          list_id: 1,
-          date: null,
-          deadline: null,
-          estimate: null,
-          actual_time: null,
-          priority: "none",
-          recurring: "none",
-          recurring_config: null,
-          completed: 0,
-          completed_at: null,
-          created_at: "",
-          updated_at: "",
-          sort_order: 0,
-          labels: [],
-          subtasks: [],
-          reminders: [],
-          logs: [],
-          comments: [],
-          attachments: [],
-          blockers: [],
-          blocked_by: [],
-          time_entries: [],
-        }],
-        templates: [{ id: 1, name: "Template", description: null, list_id: null, priority: "none", label_ids: [], subtasks: [], created_at: "" }],
-        time_entries: [{ id: 1, task_id: 1, start_time: "", end_time: null, duration_seconds: null, description: null, created_at: "" }],
+        lists: [createMockList(1, "Test List", true)],
+        labels: [{ id: 1, name: "Test Label", icon: "🏷️", color: "#000", created_at: now }],
+        tasks: [createMockTask({ id: 1, name: "Test Task", list_id: 1 })],
+        templates: [{ id: 1, name: "Template", description: null, list_id: null, priority: "none" as const, label_ids: [], subtasks: [], category_id: null, created_at: now }],
+        time_entries: [{ id: 1, task_id: 1, start_time: now, end_time: null, duration_seconds: null, description: null, created_at: now }],
       };
 
       const result = await importData(data);
@@ -159,34 +175,11 @@ describe("Export Actions", () => {
       const { importData } = await import("../export");
       const data = {
         lists: [],
-        labels: [{ id: 1, name: "Urgent", icon: "⚡", color: "#ff0000", created_at: "" }],
-        tasks: [{
-          id: 1,
-          name: "Task with labels",
-          description: null,
-          list_id: null,
-          date: null,
-          deadline: null,
-          estimate: null,
-          actual_time: null,
-          priority: "high",
-          recurring: "none",
-          recurring_config: null,
-          completed: 0,
-          completed_at: null,
-          created_at: "",
-          updated_at: "",
-          sort_order: 0,
-          labels: [{ id: 1, name: "Urgent", icon: "⚡", color: "#ff0000", created_at: "" }],
-          subtasks: [],
-          reminders: [],
-          logs: [],
-          comments: [],
-          attachments: [],
-          blockers: [],
-          blocked_by: [],
-          time_entries: [],
-        }],
+        labels: [{ id: 1, name: "Urgent", icon: "⚡", color: "#ff0000", created_at: new Date().toISOString() }],
+        tasks: [createMockTask({
+          id: 1, name: "Task with labels", priority: "high",
+          labels: [{ id: 1, name: "Urgent", icon: "⚡", color: "#ff0000", created_at: new Date().toISOString() }],
+        })],
         templates: [],
         time_entries: [],
       };
@@ -197,39 +190,17 @@ describe("Export Actions", () => {
 
     it("should import tasks with subtasks", async () => {
       const { importData } = await import("../export");
+      const now = new Date().toISOString();
       const data = {
         lists: [],
         labels: [],
-        tasks: [{
-          id: 1,
-          name: "Task with subtasks",
-          description: null,
-          list_id: null,
-          date: null,
-          deadline: null,
-          estimate: null,
-          actual_time: null,
-          priority: "medium",
-          recurring: "none",
-          recurring_config: null,
-          completed: 0,
-          completed_at: null,
-          created_at: "",
-          updated_at: "",
-          sort_order: 0,
-          labels: [],
+        tasks: [createMockTask({
+          id: 1, name: "Task with subtasks", priority: "medium" as const,
           subtasks: [
-            { id: 1, task_id: 1, name: "Subtask 1", completed: false, created_at: "" },
-            { id: 2, task_id: 1, name: "Subtask 2", completed: true, created_at: "" },
+            { id: 1, task_id: 1, name: "Subtask 1", completed: false, created_at: now },
+            { id: 2, task_id: 1, name: "Subtask 2", completed: true, created_at: now },
           ],
-          reminders: [],
-          logs: [],
-          comments: [],
-          attachments: [],
-          blockers: [],
-          blocked_by: [],
-          time_entries: [],
-        }],
+        })],
         templates: [],
         time_entries: [],
       };
@@ -240,39 +211,17 @@ describe("Export Actions", () => {
 
     it("should import tasks with reminders", async () => {
       const { importData } = await import("../export");
+      const now = new Date().toISOString();
       const data = {
         lists: [],
         labels: [],
-        tasks: [{
-          id: 1,
-          name: "Task with reminders",
-          description: null,
-          list_id: null,
-          date: "2024-07-15",
-          deadline: null,
-          estimate: null,
-          actual_time: null,
-          priority: "low",
-          recurring: "none",
-          recurring_config: null,
-          completed: 0,
-          completed_at: null,
-          created_at: "",
-          updated_at: "",
-          sort_order: 0,
-          labels: [],
-          subtasks: [],
+        tasks: [createMockTask({
+          id: 1, name: "Task with reminders", priority: "low" as const, date: "2024-07-15",
           reminders: [
-            { id: 1, task_id: 1, remind_at: "2024-07-14T09:00:00Z", created_at: "" },
-            { id: 2, task_id: 1, remind_at: "2024-07-15T09:00:00Z", created_at: "" },
+            { id: 1, task_id: 1, remind_at: "2024-07-14T09:00:00Z", created_at: now },
+            { id: 2, task_id: 1, remind_at: "2024-07-15T09:00:00Z", created_at: now },
           ],
-          logs: [],
-          comments: [],
-          attachments: [],
-          blockers: [],
-          blocked_by: [],
-          time_entries: [],
-        }],
+        })],
         templates: [],
         time_entries: [],
       };
@@ -283,39 +232,14 @@ describe("Export Actions", () => {
 
     it("should import time entries with all fields", async () => {
       const { importData } = await import("../export");
+      const now = new Date().toISOString();
       const data = {
         lists: [],
         labels: [],
-        tasks: [{
-          id: 1,
-          name: "Task with time entry",
-          description: null,
-          list_id: null,
-          date: null,
-          deadline: null,
-          estimate: null,
-          actual_time: null,
-          priority: "none",
-          recurring: "none",
-          recurring_config: null,
-          completed: 0,
-          completed_at: null,
-          created_at: "",
-          updated_at: "",
-          sort_order: 0,
-          labels: [],
-          subtasks: [],
-          reminders: [],
-          logs: [],
-          comments: [],
-          attachments: [],
-          blockers: [],
-          blocked_by: [],
-          time_entries: [],
-        }],
+        tasks: [createMockTask({ id: 1, name: "Task with time entry" })],
         templates: [],
         time_entries: [
-          { id: 1, task_id: 1, start_time: "2024-07-15T09:00:00Z", end_time: "2024-07-15T10:00:00Z", duration_seconds: 3600, description: "Work session", created_at: "" },
+          { id: 1, task_id: 1, start_time: "2024-07-15T09:00:00Z", end_time: "2024-07-15T10:00:00Z", duration_seconds: 3600, description: "Work session", created_at: now },
         ],
       };
 
