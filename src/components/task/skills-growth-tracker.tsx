@@ -345,7 +345,7 @@ export function SkillsGrowthTracker({ tasks = [] }: SkillsGrowthTrackerProps) {
           {hasSkills ? (
             <div className="space-y-3">
               {skills.map((skill) => {
-                const isCollapsed = collapsedSkills.has(skill.id);
+                const isCollapsed = collapsedSkills.has(String(skill.id));
                 const level = Math.max(1, skill.proficiency_level);
 
                 return (
