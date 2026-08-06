@@ -35,6 +35,7 @@ describe('GmailConnector', () => {
         enabled: true,
         apiToken: 'token',
         userId: 'user123',
+        syncDirection: 'import',
       });
 
       expect((customConnector as any).userId).toBe('user123');
@@ -120,7 +121,7 @@ describe('GmailConnector', () => {
         }),
       });
 
-      await connector.fetchRecords(undefined, { maxResults: 10, labelIds: ['CATEGORY_WORK'] });
+      await connector.fetchRecords(undefined, { limit: 10 });
 
       expect(fetch).toHaveBeenCalled();
     });
