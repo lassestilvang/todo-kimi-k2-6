@@ -229,14 +229,14 @@ describe('Integration Actions', () => {
     });
 
     it('throws error for unsupported integration type', async () => {
-      const integration = await connectIntegration(
-        { id: 1 },
-        'unsupported_type',
-        'Unsupported',
-        {}
-      );
+      // Create an integration directly in the database with an unsupported type
+      const db = getDb();
+      db.exec(`
+        INSERT INTO integrations (id, user_id, type, name, config, enabled, sync_direction, created_at)
+        VALUES (999, 1, 'unsupported_type', 'Unsupported', '{}', 1, 'bidirectional', datetime('now'))
+      `);
 
-      await expect(syncTasksFromIntegration({ id: 1 }, integration.id))
+      await expect(syncTasksFromIntegration({ id: 1 }, 999))
         .rejects.toThrow('Integration type unsupported_type not yet implemented');
     });
   });
@@ -286,14 +286,14 @@ describe('Integration Actions', () => {
     });
 
     it('returns error for unsupported integration type', async () => {
-      const integration = await connectIntegration(
-        { id: 1 },
-        'unsupported_type',
-        'Unsupported',
-        {}
-      );
+      // Create an integration directly in the database with an unsupported type
+      const db = getDb();
+      db.exec(`
+        INSERT INTO integrations (id, user_id, type, name, config, enabled, sync_direction, created_at)
+        VALUES (999, 1, 'unsupported_type', 'Unsupported', '{}', 1, 'bidirectional', datetime('now'))
+      `);
 
-      const result = await syncTasksToIntegration({ id: 1 }, integration.id, [1]);
+      const result = await syncTasksToIntegration({ id: 1 }, 999, [1]);
 
       expect(result.success).toBe(false);
       expect(result.errors).toBeDefined();
@@ -305,7 +305,7 @@ describe('Integration Actions', () => {
       await expect(updateIntegrationMapping(
         { id: 1 },
         1,
-        { id: 9999, field_mappings: {} }
+        { id: 9999, field_mappings: {} } as any
       )).rejects.toThrow('Task mapping not found or not accessible');
     });
   });
