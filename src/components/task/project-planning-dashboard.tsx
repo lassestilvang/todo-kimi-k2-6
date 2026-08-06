@@ -4,7 +4,6 @@ import { useState, useMemo } from "react";
 import {
   FolderGit,
   Calendar,
-  Badge,
   Briefcase,
   Settings,
   Play,
@@ -12,8 +11,11 @@ import {
   CheckCircle2,
   Plus,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  AlertCircle
 } from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -195,7 +197,7 @@ export function ProjectPlanningDashboard({ projectName, projectDescription }: Pr
                 Create a project plan to get started with structured project management
               </p>
               <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-                <DialogTrigger asChild>
+                <DialogTrigger>
                   <Button onClick={handleOpenDialog}>
                     <Plus className="h-4 w-4 mr-2" />
                     Create Project Plan
