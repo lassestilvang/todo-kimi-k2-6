@@ -5,7 +5,7 @@ describe("Database Driver", () => {
   let db: Database;
 
   beforeEach(() => {
-    db = createDatabase(":memory:");
+    db = createDatabase()
   });
 
   afterEach(() => {
@@ -104,7 +104,7 @@ describe("Database Driver", () => {
     it("should create database with bun:sqlite in Bun runtime", () => {
       // This test verifies that the Bun runtime path works
       // The createDatabase function tries better-sqlite3 first, then falls back to bun:sqlite
-      const db = createDatabase(":memory:");
+      const db = createDatabase()
       expect(db).toBeDefined();
       expect(typeof db.prepare).toBe("function");
       expect(typeof db.exec).toBe("function");
@@ -113,7 +113,7 @@ describe("Database Driver", () => {
     });
 
     it("should handle multiple close calls without error", () => {
-      const db = createDatabase(":memory:");
+      const db = createDatabase()
       db.close();
       // Second close should not throw
       expect(() => db.close()).not.toThrow();
@@ -122,7 +122,7 @@ describe("Database Driver", () => {
 
   describe("Database Edge Cases", () => {
     it("should handle very long SQL statements", () => {
-      const db = createDatabase(":memory:");
+      const db = createDatabase()
       const longTable = "CREATE TABLE very_long_table_name_with_many_characters (" +
         "id INTEGER PRIMARY KEY, " +
         "data".repeat(100) + " TEXT)";
@@ -131,7 +131,7 @@ describe("Database Driver", () => {
     });
 
     it("should handle concurrent inserts", () => {
-      const db = createDatabase(":memory:");
+      const db = createDatabase()
       db.exec("CREATE TABLE test (id INTEGER PRIMARY KEY, value TEXT)");
 
       for (let i = 0; i < 100; i++) {
