@@ -184,27 +184,27 @@ describe("API Middleware - Full Branch Coverage", () => {
     });
 
     it("should handle missing authorization header", () => {
-      const authHeader = null;
-      const token = authHeader?.replace("Bearer ", "") || null;
+      const authHeader: string | null = null;
+      const token = authHeader ? (authHeader as string).replace("Bearer ", "") : null;
       expect(token).toBeNull();
     });
 
     it("should handle lowercase bearer prefix", () => {
       const authHeader = "bearer my-token-123";
-      const token = authHeader?.replace(/Bearer /i, "") || null;
+      const token = authHeader.replace(/Bearer /i, "") || null;
       expect(token).toBe("my-token-123");
     });
 
     it("should handle malformed authorization header without Bearer", () => {
       const authHeader = "Basic abc123";
-      const token = authHeader?.replace("Bearer ", "") || null;
+      const token = authHeader.replace("Bearer ", "") || null;
       expect(token).toBe("Basic abc123");
     });
 
     it("should handle empty authorization header", () => {
       const authHeader = "";
       // Empty string with || null returns null (empty string is falsy after replace)
-      const token = authHeader?.replace("Bearer ", "") || null;
+      const token = authHeader.replace("Bearer ", "") || null;
       expect(token).toBe(null);
     });
   });
