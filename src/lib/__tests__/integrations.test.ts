@@ -148,7 +148,7 @@ describe("integrations", () => {
       const result = await sendDiscordNotification("https://discord.com/api/webhooks/test", {
         taskId: 1,
         taskName: "Test Task",
-        action: "assigned",
+        action: "created",
         assignee: { id: 1, name: "John Doe", email: "john@example.com" },
       });
 
