@@ -8,8 +8,8 @@ import {
 
 // Set up demo mode for authentication
 beforeAll(() => {
-  process.env.NODE_ENV = 'test';
-  process.env.NEXTAUTH_SECRET = 'demo-secret';
+  (process.env as any).NODE_ENV = 'test';
+  (process.env as any).NEXTAUTH_SECRET = 'demo-secret';
 });
 
 describe("Dependency Actions - Comprehensive", () => {
@@ -60,8 +60,8 @@ describe("Dependency Actions - Comprehensive", () => {
     });
 
     it("should allow different task IDs", () => {
-      const taskId = 1;
-      const dependsOnTaskId = 2;
+      const taskId: number = 1;
+      const dependsOnTaskId: number = 2;
       const isCircular = taskId === dependsOnTaskId;
       expect(isCircular).toBe(false);
     });
