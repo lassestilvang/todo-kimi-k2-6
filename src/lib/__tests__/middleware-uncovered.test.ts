@@ -19,7 +19,7 @@ describe("Error Handler - Uncovered Branches", () => {
   });
 
   it("should handle null error", () => {
-    const error = null;
+    const error = null as unknown;
     const message = error instanceof Error ? error.message : "Unknown error";
     expect(message).toBe("Unknown error");
   });
