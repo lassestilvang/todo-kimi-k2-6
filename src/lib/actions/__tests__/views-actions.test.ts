@@ -35,7 +35,7 @@ describe("Views Actions", () => {
       const { createCustomView } = await import("../views");
       const view = await createCustomView(1, {
         name: "Full View",
-        filter_preset: "today",
+        filter_preset: "this_week",
         list_id: 5,
         label_ids: [1, 2, 3],
         priority: "high",
@@ -45,7 +45,7 @@ describe("Views Actions", () => {
       });
 
       expect(view.name).toBe("Full View");
-      expect(view.filter_preset).toBe("today");
+      expect(view.filter_preset).toBe("this_week");
       expect(view.list_id).toBe(5);
       expect(view.label_ids).toEqual([1, 2, 3]);
       expect(view.priority).toBe("high");
