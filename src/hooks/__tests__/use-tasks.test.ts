@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useTasks } from "../use-tasks";
+import type { List, Label, FilterPreset } from "@/types";
 
 describe("useTasks", () => {
   const createMockTask = (overrides: Partial<any> = {}): any => ({
@@ -22,12 +23,12 @@ describe("useTasks", () => {
     ...overrides,
   });
 
-  const mockLists = [
-    { id: 1, name: "Inbox", emoji: "📥", color: "#6366f1", is_inbox: 1, created_at: "" },
-    { id: 2, name: "Work", emoji: "💼", color: "#3b82f6", is_inbox: 0, created_at: "" },
+  const mockLists: List[] = [
+    { id: 1, name: "Inbox", emoji: "📥", color: "#6366f1", is_inbox: true, created_at: "" },
+    { id: 2, name: "Work", emoji: "💼", color: "#3b82f6", is_inbox: false, created_at: "" },
   ];
 
-  const mockLabels = [
+  const mockLabels: Label[] = [
     { id: 1, name: "Urgent", icon: "🔥", color: "#ef4444", created_at: "" },
     { id: 2, name: "Work", icon: "💼", color: "#3b82f6", created_at: "" },
   ];
@@ -105,7 +106,7 @@ describe("useTasks", () => {
       );
 
       act(() => {
-        result.current.setLists([{ id: 1, name: "New List" }]);
+        result.current.setLists([{ id: 1, name: "New List", emoji: "📝", color: "#6366f1", is_inbox: false, created_at: "" }]);
       });
 
       expect(result.current.lists.length).toBe(1);
@@ -119,7 +120,7 @@ describe("useTasks", () => {
       );
 
       act(() => {
-        result.current.setLabels([{ id: 1, name: "New Label" }]);
+        result.current.setLabels([{ id: 1, name: "New Label", icon: "🏷️", color: "#6366f1", created_at: "" }]);
       });
 
       expect(result.current.labels.length).toBe(1);
@@ -439,17 +440,13 @@ describe("useTasks", () => {
         useTasks({ initialTasks: [], initialLists: [], initialLabels: [] })
       );
 
-      const preset = {
-        id: 1,
-        name: "Important",
-        filter: { priority: "high", completed: false },
-      };
+      const preset: FilterPreset = "needs_attention";
 
       act(() => {
         result.current.handleFilterPresetChange(preset);
       });
 
-      expect(result.current.currentFilterPreset).toEqual(preset);
+      expect(result.current.currentFilterPreset).toBe(preset);
     });
 
     it("should set view to 'all' when preset is set", () => {
@@ -457,11 +454,7 @@ describe("useTasks", () => {
         useTasks({ initialTasks: [], initialLists: [], initialLabels: [] })
       );
 
-      const preset = {
-        id: 1,
-        name: "Important",
-        filter: { priority: "high" },
-      };
+      const preset: FilterPreset = "completed";
 
       act(() => {
         result.current.handleFilterPresetChange(preset);
