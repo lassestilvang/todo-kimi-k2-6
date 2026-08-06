@@ -35,7 +35,7 @@ export async function generateTimeBlockedSchedule(
   // Generate schedule slots
   const schedule = await createTimeBlocks(sortedTasks, workHours, energyProfile, constraints.deadline);
 
-  aiCache.set(cacheKey, schedule, 1800); // Cache for 30 minutes
+  aiCache.set(cacheKey, schedule); // Cache for default TTL
   return schedule;
 }
 
@@ -95,14 +95,13 @@ export async function rescheduleWithBuffer(
   for (const task of tasks) {
     // Create a time block for the task
     const duration = estimateTaskDuration(task);
-    const startTime = currentTime;
-    const endTime = startTime + duration + bufferMinutes;
+    let startTime = currentTime;
+    let endTime = startTime + duration + bufferMinutes;
 
     // If end time exceeds work hours, move to next day or adjust
     if (endTime > workHours.end * 60) {
       // Move to next day
-      currentTime = workHours.start * 60;
-      startTime = currentTime;
+      startTime = workHours.start * 60;
       endTime = startTime + duration + bufferMinutes;
     }
 
@@ -145,10 +144,10 @@ export async function predictTaskDuration(
   }
 
   // AI-powered duration prediction
-  const ai = getAIManager();
+  const ai = await getAIManager();
   const prediction = await ai.predictTaskDuration(task, context || {});
 
-  aiCache.set(cacheKey, prediction, 900); // Cache for 15 minutes
+  aiCache.set(cacheKey, prediction); // Cache for default TTL
   return prediction;
 }
 
@@ -165,7 +164,7 @@ export async function suggestOptimalTimes(
   }
 ): Promise<any[]> {
   const cacheKey = `optimal-times:${taskId}`;
-  const cached = aiCache.get(cacheKey);
+  const cached = aiCache.get<any[]>(cacheKey);
   if (cached) {
     return cached;
   }
@@ -182,7 +181,7 @@ export async function suggestOptimalTimes(
   // Generate optimal time suggestions
   const suggestions = generateTimeSuggestions(task, energyProfile, constraints);
 
-  aiCache.set(cacheKey, suggestions, 600); // Cache for 10 minutes
+  aiCache.set(cacheKey, suggestions); // Cache for default TTL
   return suggestions;
 }
 
@@ -211,7 +210,7 @@ export async function analyzeAvailability(
     energyRecommendations: generateEnergyRecommendations(events, tasks || []),
   };
 
-  aiCache.set(cacheKey, analysis, 3600); // Cache for 1 hour
+  aiCache.set(cacheKey, analysis); // Cache for default TTL
   return analysis;
 }
 
@@ -228,7 +227,7 @@ async function getUserEnergyProfile(userId: number): Promise<any> {
   // Generate energy profile based on task history
   const profile = await generateEnergyProfile(userId);
 
-  aiCache.set(cacheKey, profile, 7200); // Cache for 2 hours
+  aiCache.set(cacheKey, profile); // Cache for default TTL
   return profile;
 }
 
@@ -248,7 +247,7 @@ async function getUserCalendarEvents(userId: number, timeRange: { start: string;
 /**
  * Get task by ID
  */
-async function getTaskById(taskId: number): Promise<TaskWithRelations | null> {
+async function getTaskById(taskId: number): Promise<TaskWithRelations | undefined> {
   const { getTaskById } = await import("@/lib/actions/tasks");
   return getTaskById(taskId);
 }
@@ -735,6 +734,6 @@ async function generateEnergyProfile(userId: number): Promise<any> {
  * AI Manager helper
  */
 async function getAIManager() {
-  const { getAIManager } = await import("@/lib/ai/providers");
-  return getAIManager();
+  const { AIManager } = await import("@/lib/ai/providers");
+  return new AIManager();
 }
