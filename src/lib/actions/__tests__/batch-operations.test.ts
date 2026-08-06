@@ -15,11 +15,16 @@ vi.mock("@/lib/session", () => ({
 
 vi.mock("../tasks", () => ({
   performBatchOperation: vi.fn(async (operation: BatchOperation) => {
-    // Simple mock implementation
-    if (operation.ids.length === 0) {
+    // Simple mock implementation - handle reorder differently
+    if (operation.type === "reorder") {
+      const ids = operation.orders.map(o => o.id);
+      return { success: true, affectedCount: ids.length };
+    }
+    const ids = "ids" in operation ? operation.ids : [];
+    if (ids.length === 0) {
       return { success: true, affectedCount: 0 };
     }
-    return { success: true, affectedCount: operation.ids.length };
+    return { success: true, affectedCount: ids.length };
   }),
 }));
 
