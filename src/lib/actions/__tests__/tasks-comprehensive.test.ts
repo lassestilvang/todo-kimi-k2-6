@@ -57,8 +57,8 @@ import {
 
 // Set up demo mode for authentication
 beforeAll(() => {
-  process.env.NODE_ENV = 'test';
-  process.env.NEXTAUTH_SECRET = 'demo-secret';
+  (process.env as any).NODE_ENV = 'test';
+  (process.env as any).NEXTAUTH_SECRET = 'demo-secret';
 });
 
 describe("Task Actions - Comprehensive Tests", () => {
@@ -327,15 +327,17 @@ describe("Task Actions - Comprehensive Tests", () => {
 
       it("should mark task as completed", async () => {
         const task = await createTask({ name: "Test" });
-        const completed = await updateTask(task.id, { completed: 1 });
-        expect(completed.completed === 1 || completed.completed === true).toBe(true);
+        const completed = await updateTask(task.id, { completed: true });
+        expect(completed.completed).toBe(true);
         expect(completed.completed_at).not.toBeNull();
       });
 
       it("should uncomplete a task", async () => {
-        const task = await createTask({ name: "Test", completed: 1 });
-        const updated = await updateTask(task.id, { completed: 0 });
-        expect(updated.completed === 0 || updated.completed === false).toBe(true);
+        const task = await createTask({ name: "Test" });
+        // First complete the task
+        await updateTask(task.id, { completed: true });
+        const updated = await updateTask(task.id, { completed: false });
+        expect(updated.completed).toBe(false);
         expect(updated.completed_at).toBeNull();
       });
 
@@ -369,8 +371,8 @@ describe("Task Actions - Comprehensive Tests", () => {
       });
 
       it("should mark tasks as completed", async () => {
-        const task1 = await createTask({ name: "Task 1", completed: false });
-        const task2 = await createTask({ name: "Task 2", completed: false });
+        const task1 = await createTask({ name: "Task 1" });
+        const task2 = await createTask({ name: "Task 2" });
 
         await bulkUpdateTasks([task1.id, task2.id], { completed: true });
 
@@ -389,7 +391,7 @@ describe("Task Actions - Comprehensive Tests", () => {
           { id: task2.id, sort_order: 0 },
           { id: task1.id, sort_order: 1 },
           { id: task3.id, sort_order: 2 },
-        ]);
+        ], 1);
 
         const tasks = await getTasks({ includeCompleted: true });
         // Mock behavior may vary - just verify we get an array
@@ -462,7 +464,7 @@ describe("Task Actions - Comprehensive Tests", () => {
 
       it("should handle non-custom recurring without config", async () => {
         await createTask({ name: "Daily No Config", date: "2026-07-15" });
-        db.prepare("UPDATE tasks SET recurring = 'daily', recurring_config = null WHERE name = ?", "Daily No Config");
+        db.prepare("UPDATE tasks SET recurring = 'daily', recurring_config = null WHERE name = ?").run("Daily No Config");
 
         const count = await generateRecurringTasks();
         expect(count).toBeGreaterThanOrEqual(0);
@@ -482,7 +484,7 @@ describe("Task Actions - Comprehensive Tests", () => {
       it("should handle weekdays recurring task", async () => {
         // Create a weekdays recurring task
         await createTask({ name: "Weekdays Task", date: "2026-07-15" });
-        db.prepare("UPDATE tasks SET recurring = 'weekdays', recurring_config = '{}' WHERE name = ?", "Weekdays Task");
+        db.prepare("UPDATE tasks SET recurring = 'weekdays', recurring_config = '{}' WHERE name = ?").run("Weekdays Task");
 
         const count = await generateRecurringTasks();
         expect(count).toBeGreaterThanOrEqual(0);
@@ -490,7 +492,7 @@ describe("Task Actions - Comprehensive Tests", () => {
 
       it("should handle yearly recurring task", async () => {
         await createTask({ name: "Yearly Task", date: "2026-07-15" });
-        db.prepare("UPDATE tasks SET recurring = 'yearly', recurring_config = '{}' WHERE name = ?", "Yearly Task");
+        db.prepare("UPDATE tasks SET recurring = 'yearly', recurring_config = '{}' WHERE name = ?").run("Yearly Task");
 
         const count = await generateRecurringTasks();
         expect(count).toBeGreaterThanOrEqual(0);
@@ -498,7 +500,7 @@ describe("Task Actions - Comprehensive Tests", () => {
 
       it("should handle monthly recurring task", async () => {
         await createTask({ name: "Monthly Task", date: "2026-07-15" });
-        db.prepare("UPDATE tasks SET recurring = 'monthly', recurring_config = '{}' WHERE name = ?", "Monthly Task");
+        db.prepare("UPDATE tasks SET recurring = 'monthly', recurring_config = '{}' WHERE name = ?").run("Monthly Task");
 
         const count = await generateRecurringTasks();
         expect(count).toBeGreaterThanOrEqual(0);
@@ -671,10 +673,11 @@ describe("Task Actions - Comprehensive Tests", () => {
 
     describe("importData", () => {
       it("should import data", async () => {
+        const now = new Date().toISOString();
         const data = {
-          lists: [{ id: 5, name: "Imported", emoji: "📦", color: "#000", is_inbox: 0, created_at: "" }],
-          labels: [{ id: 5, name: "Imported", icon: "📦", color: "#000", created_at: "" }],
-          tasks: [{ id: 100, name: "Imported Task", description: null, list_id: 5, date: null, deadline: null, estimate: null, actual_time: null, priority: "none", recurring: "none", recurring_config: null, completed: 0, completed_at: null, created_at: "", updated_at: "", sort_order: 0, labels: [], subtasks: [], reminders: [], logs: [], comments: [], attachments: [], blockers: [], blocked_by: [], time_entries: [] }],
+          lists: [{ id: 5, name: "Imported", emoji: "📦", color: "#000", is_inbox: false, created_at: now }],
+          labels: [{ id: 5, name: "Imported", icon: "📦", color: "#000", created_at: now }],
+          tasks: [{ id: 100, name: "Imported Task", description: null, list_id: 5, date: null, deadline: null, estimate: null, actual_time: null, priority: "none" as const, recurring: "none" as const, recurring_config: null, completed: false, completed_at: null, created_at: now, updated_at: now, sort_order: 0, user_id: 1, notes: null, archived: false, labels: [], subtasks: [], reminders: [], logs: [], comments: [], attachments: [], blockers: [], blocked_by: [], time_entries: [], recurring_exceptions: [] }],
           templates: [],
           time_entries: [],
         };
