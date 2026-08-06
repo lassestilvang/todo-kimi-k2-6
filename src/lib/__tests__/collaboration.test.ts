@@ -11,6 +11,44 @@ import {
 } from "@/lib/collaboration";
 import type { TaskWithRelations, User } from "@/types";
 
+function createMockTask(overrides: Partial<TaskWithRelations> = {}): TaskWithRelations {
+  const now = new Date().toISOString();
+  return {
+    id: 1,
+    user_id: null,
+    name: "Test Task",
+    description: null,
+    notes: null,
+    list_id: null,
+    date: null,
+    deadline: null,
+    estimate: null,
+    actual_time: null,
+    priority: "medium",
+    recurring: "none",
+    recurring_config: null,
+    completed: false,
+    completed_at: null,
+    created_at: now,
+    updated_at: now,
+    sort_order: 0,
+    archived: false,
+    labels: [],
+    subtasks: [],
+    reminders: [],
+    logs: [],
+    comments: [],
+    attachments: [],
+    blockers: [],
+    blocked_by: [],
+    time_entries: [],
+    recurring_exceptions: [],
+    created_by: 1,
+    assignee_id: null,
+    ...overrides,
+  } as TaskWithRelations;
+}
+
 describe("Collaboration utilities", () => {
   describe("parseMentions", () => {
     it("should parse mentions from text", () => {
@@ -108,27 +146,40 @@ describe("Collaboration utilities", () => {
   });
 
   describe("canPerformAction", () => {
-    const mockUser: User = { id: 1, email: "test@example.com", name: "Test User" };
+    const mockUser: User = { id: 1, email: "test@example.com", name: "Test User", avatar_url: null, created_at: new Date().toISOString() };
     const mockTask: TaskWithRelations = {
       id: 1,
+      user_id: null,
       name: "Test Task",
-      created_by: 1,
-      assignee_id: null,
-      completed: false,
-      deadline: null,
-      priority: "medium",
       description: null,
+      notes: null,
       list_id: null,
       date: null,
-      recurrence: null,
-      estimated_duration: null,
-      actual_duration: null,
-      position: 0,
+      deadline: null,
+      estimate: null,
+      actual_time: null,
+      priority: "medium",
+      recurring: "none",
+      recurring_config: null,
+      completed: false,
+      completed_at: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      sort_order: 0,
+      archived: false,
       labels: [],
+      subtasks: [],
+      reminders: [],
+      logs: [],
       comments: [],
-      created_at: new Date(),
-      updated_at: new Date(),
-    };
+      attachments: [],
+      blockers: [],
+      blocked_by: [],
+      time_entries: [],
+      recurring_exceptions: [],
+      created_by: 1,
+      assignee_id: null,
+    } as TaskWithRelations;
 
     it("should return true for view action when user is null (demo mode)", () => {
       const result = canPerformAction(null, mockTask);
@@ -142,7 +193,7 @@ describe("Collaboration utilities", () => {
     });
 
     it("should return true for non-owner user (placeholder implementation)", () => {
-      const otherUser: User = { id: 2, email: "other@example.com", name: "Other User" };
+      const otherUser: User = { id: 2, email: "other@example.com", name: "Other User", avatar_url: null, created_at: new Date().toISOString() };
       const result = canPerformAction(otherUser, mockTask);
       expect(result).toBe(true);
     });
@@ -151,9 +202,9 @@ describe("Collaboration utilities", () => {
   describe("groupTasksByAssignee", () => {
     it("should group tasks by assignee id", () => {
       const tasks: TaskWithRelations[] = [
-        { ...{} as TaskWithRelations, id: 1, name: "Task 1", assignee_id: 1, completed: false, deadline: null, priority: "medium", created_by: 1, created_at: new Date(), updated_at: new Date() },
-        { ...{} as TaskWithRelations, id: 2, name: "Task 2", assignee_id: 1, completed: false, deadline: null, priority: "medium", created_by: 1, created_at: new Date(), updated_at: new Date() },
-        { ...{} as TaskWithRelations, id: 3, name: "Task 3", assignee_id: 2, completed: false, deadline: null, priority: "medium", created_by: 1, created_at: new Date(), updated_at: new Date() },
+        createMockTask({ id: 1, name: "Task 1", assignee_id: 1, priority: "medium" }),
+        createMockTask({ id: 2, name: "Task 2", assignee_id: 1, priority: "medium" }),
+        createMockTask({ id: 3, name: "Task 3", assignee_id: 2, priority: "medium" }),
       ];
 
       const grouped = groupTasksByAssignee(tasks);
@@ -164,7 +215,7 @@ describe("Collaboration utilities", () => {
 
     it("should handle tasks with no assignee", () => {
       const tasks: TaskWithRelations[] = [
-        { ...{} as TaskWithRelations, id: 1, name: "Task 1", assignee_id: null, completed: false, deadline: null, priority: "medium", created_by: 1, created_at: new Date(), updated_at: new Date() },
+        createMockTask({ id: 1, name: "Task 1", assignee_id: null, priority: "medium" }),
       ];
 
       const grouped = groupTasksByAssignee(tasks);
@@ -181,7 +232,7 @@ describe("Collaboration utilities", () => {
     it("should return tasks assigned to user with deadline in future", () => {
       const futureDate = new Date(Date.now() + 86400000).toISOString();
       const tasks: TaskWithRelations[] = [
-        { ...{} as TaskWithRelations, id: 1, name: "Task 1", assignee_id: 1, completed: false, deadline: futureDate, priority: "medium", created_by: 1, created_at: new Date(), updated_at: new Date() },
+        createMockTask({ id: 1, name: "Task 1", assignee_id: 1, deadline: futureDate, priority: "medium" }),
       ];
 
       const pending = getPendingAssignments(tasks, 1);
@@ -191,7 +242,7 @@ describe("Collaboration utilities", () => {
     it("should exclude completed tasks", () => {
       const futureDate = new Date(Date.now() + 86400000).toISOString();
       const tasks: TaskWithRelations[] = [
-        { ...{} as TaskWithRelations, id: 1, name: "Task 1", assignee_id: 1, completed: true, deadline: futureDate, priority: "medium", created_by: 1, created_at: new Date(), updated_at: new Date() },
+        createMockTask({ id: 1, name: "Task 1", assignee_id: 1, completed: true, deadline: futureDate, priority: "medium" }),
       ];
 
       const pending = getPendingAssignments(tasks, 1);
@@ -201,7 +252,7 @@ describe("Collaboration utilities", () => {
     it("should exclude tasks with past deadline", () => {
       const pastDate = new Date(Date.now() - 86400000).toISOString();
       const tasks: TaskWithRelations[] = [
-        { ...{} as TaskWithRelations, id: 1, name: "Task 1", assignee_id: 1, completed: false, deadline: pastDate, priority: "medium", created_by: 1, created_at: new Date(), updated_at: new Date() },
+        createMockTask({ id: 1, name: "Task 1", assignee_id: 1, completed: false, deadline: pastDate, priority: "medium" }),
       ];
 
       const pending = getPendingAssignments(tasks, 1);
@@ -211,7 +262,7 @@ describe("Collaboration utilities", () => {
     it("should exclude tasks not assigned to user", () => {
       const futureDate = new Date(Date.now() + 86400000).toISOString();
       const tasks: TaskWithRelations[] = [
-        { ...{} as TaskWithRelations, id: 1, name: "Task 1", assignee_id: 999, completed: false, deadline: futureDate, priority: "medium", created_by: 1, created_at: new Date(), updated_at: new Date() },
+        createMockTask({ id: 1, name: "Task 1", assignee_id: 999, completed: false, deadline: futureDate, priority: "medium" }),
       ];
 
       const pending = getPendingAssignments(tasks, 1);
@@ -220,7 +271,7 @@ describe("Collaboration utilities", () => {
 
     it("should handle tasks without deadline", () => {
       const tasks: TaskWithRelations[] = [
-        { ...{} as TaskWithRelations, id: 1, name: "Task 1", assignee_id: 1, completed: false, deadline: null, priority: "medium", created_by: 1, created_at: new Date(), updated_at: new Date() },
+        createMockTask({ id: 1, name: "Task 1", assignee_id: 1, deadline: null, priority: "medium" }),
       ];
 
       const pending = getPendingAssignments(tasks, 1);
