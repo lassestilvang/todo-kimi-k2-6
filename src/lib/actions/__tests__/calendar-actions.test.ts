@@ -50,6 +50,8 @@ describe("Calendar Sync Actions", () => {
       await saveCalendarSync(1, {
         provider: "google",
         access_token: "initial-token",
+        refresh_token: "refresh-token",
+        expires_at: "2025-01-01",
         enabled: true,
       });
 
@@ -57,6 +59,8 @@ describe("Calendar Sync Actions", () => {
       await saveCalendarSync(1, {
         provider: "google",
         access_token: "updated-token",
+        refresh_token: "refresh-token",
+        expires_at: "2025-01-01",
         enabled: true,
       });
 
