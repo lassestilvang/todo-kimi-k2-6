@@ -3,6 +3,7 @@
 import { getDb } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
 import type { DecisionEntry, DecisionOption, DecisionTemplate, Task } from "@/types";
+import type { GeneratedDecisionTemplate } from "@/lib/ai/index";
 import { aiCache } from "@/lib/ai/providers";
 
 /**
@@ -135,7 +136,7 @@ export async function getUserDecisionHistory(
   // For each entry, get the associated options
   for (const entry of entries) {
     entry.options = await getDecisionOptionsForEntry(entry.id);
-    entry.tasks = await getTaskForDecision(entry.id);
+    (entry as any).tasks = await getTaskForDecision(entry.id);
   }
 
   return entries;
@@ -158,7 +159,7 @@ export async function getTaskDecisions(taskId: number): Promise<DecisionEntry[]>
 
   for (const entry of entries) {
     entry.options = await getDecisionOptionsForEntry(entry.id);
-    entry.tasks = await getTaskForDecision(entry.id);
+    (entry as any).tasks = await getTaskForDecision(entry.id);
   }
 
   return entries;
@@ -291,7 +292,7 @@ export async function analyzeDecisionOutcomes(
     recommendations: generateDecisionRecommendations(decisions, options),
   };
 
-  aiCache.set(cacheKey, analysis, 3600); // Cache for 1 hour
+  aiCache.set(cacheKey, analysis);
   return analysis;
 }
 
@@ -305,15 +306,15 @@ export async function generateDecisionTemplate(
     task?: { name: string; priority?: string; deadline?: string };
     environment?: string;
   }
-): Promise<DecisionTemplate> {
-  const ai = getAIManager();
-  const result = await ai.generateDecisionTemplate(userId, context);
+): Promise<GeneratedDecisionTemplate> {
+  const ai = await getAIManager();
+  const result = await ai.generateDecisionTemplate(context);
 
   // Cache the result
   const cacheKey = `decision-template:${userId}:${context.decisionType || 'general'}`;
-  aiCache.set(cacheKey, result, 1800); // Cache for 30 minutes
+  aiCache.set(cacheKey, result);
 
-  return result;
+  return { ...result, provider: "keyword-parser" };
 }
 
 /**
@@ -380,7 +381,7 @@ async function getDecisionEntryById(decisionId: number): Promise<DecisionEntry |
   if (!entry) return null;
 
   entry.options = await getDecisionOptionsForEntry(entry.id);
-  entry.tasks = await getTaskForDecision(entry.id);
+  (entry as any).tasks = await getTaskForDecision(entry.id);
 
   return entry;
 }
@@ -473,7 +474,17 @@ function calculateOutcomeQuality(decisions: DecisionEntry[]): any {
  */
 function identifyDecisionPatterns(decisions: DecisionEntry[]): any {
   // Group decisions by type and analyze patterns
-  const patterns = {
+  interface PatternType {
+    count: number;
+    outcome_quality: number[];
+    average_outcome?: number;
+  }
+
+  const patterns: {
+    by_decision_type: Record<string, PatternType>;
+    by_time_of_day: Record<string, PatternType>;
+    by_task_context: Record<string, PatternType>;
+  } = {
     by_decision_type: {},
     by_time_of_day: {},
     by_task_context: {},
@@ -494,25 +505,26 @@ function identifyDecisionPatterns(decisions: DecisionEntry[]): any {
     const date = new Date(decision.created_at);
     const hour = date.getHours();
 
-    if (!patterns.by_time_of_day[hour]) {
-      patterns.by_time_of_day[hour] = { count: 0, outcome_quality: [] };
+    const hourKey = hour.toString();
+    if (!patterns.by_time_of_day[hourKey]) {
+      patterns.by_time_of_day[hourKey] = { count: 0, outcome_quality: [] };
     }
 
-    patterns.by_time_of_day[hour].count++;
+    patterns.by_time_of_day[hourKey].count++;
     if (decision.outcome_rating !== null) {
-      patterns.by_time_of_day[hour].outcome_quality.push(decision.outcome_rating);
+      patterns.by_time_of_day[hourKey].outcome_quality.push(decision.outcome_rating);
     }
   });
 
   // Calculate average outcomes by pattern
   for (const key in patterns.by_decision_type) {
     const type = patterns.by_decision_type[key];
-    type.average_outcome = type.outcome_quality.reduce((sum, r) => sum + r, 0) / type.outcome_quality.length || 0;
+    type.average_outcome = type.outcome_quality.reduce((sum, r) => sum + r, 0) / (type.outcome_quality.length || 1);
   }
 
   for (const key in patterns.by_time_of_day) {
     const hour = patterns.by_time_of_day[key];
-    hour.average_outcome = hour.outcome_quality.reduce((sum, r) => sum + r, 0) / hour.outcome_quality.length || 0;
+    hour.average_outcome = hour.outcome_quality.reduce((sum, r) => sum + r, 0) / (hour.outcome_quality.length || 1);
   }
 
   return patterns;
@@ -523,18 +535,20 @@ function identifyDecisionPatterns(decisions: DecisionEntry[]): any {
  */
 function extractLearningInsights(decisions: DecisionEntry[]): any {
   const insights = {
-    good_decision_makers: [], // Decision types where user has high success rate
-    learning_opportunities: [], // Decision types where user struggles
+    good_decision_makers: [] as Array<{ decision_type: string; success_rate: number }>,
+    learning_opportunities: [] as Array<{ decision_type: string; success_rate: number; improvement_areas: string[] }>,
     timing_insights: [], // Best times to make certain decisions
     context_insights: [], // When certain contexts lead to better outcomes
   };
 
+  // Get unique decision types
+  const decisionTypes = [...new Set(decisions.map(d => d.decision_type))];
+
   // Analyze success rates by decision type
-  for (const [decisionType, data] of Object.entries(decisions)) {
+  for (const decisionType of decisionTypes) {
     const typedDecisions = decisions.filter(d => d.decision_type === decisionType);
 
     const successful = typedDecisions.filter(d => d.outcome_rating && d.outcome_rating > 0);
-    const unsuccessful = typedDecisions.filter(d => d.outcome_rating && d.outcome_rating <= 0);
 
     const successRate = successful.length / Math.max(typedDecisions.length, 1);
 
