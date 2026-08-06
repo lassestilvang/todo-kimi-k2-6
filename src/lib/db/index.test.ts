@@ -58,7 +58,7 @@ describe("Database Module", () => {
   describe("initializeSchema", () => {
     it("should create all required tables when database is initialized", () => {
       // Create a fresh in-memory database
-      const freshDb = createDatabase(":memory:");
+      const freshDb = createDatabase()
 
       // Initialize schema directly
       initializeSchema(freshDb);
