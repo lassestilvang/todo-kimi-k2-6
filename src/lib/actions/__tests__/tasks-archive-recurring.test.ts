@@ -486,7 +486,7 @@ describe('Task Actions - Archive/Recurring Functions', () => {
       await reorderTasks([
         { id: Number(task2.lastInsertRowid), sort_order: 0 },
         { id: Number(task1.lastInsertRowid), sort_order: 1 },
-      ]);
+      ], 1);
 
       // Verify reorder happened
       expect(true).toBe(true);
@@ -494,7 +494,7 @@ describe('Task Actions - Archive/Recurring Functions', () => {
 
     it('should work without authenticated user in test mode', async () => {
       (getCurrentUser as any).mockReturnValue(null);
-      process.env.NODE_ENV = 'test';
+      (process.env as any).NODE_ENV = 'test';
 
       const task = db
         .prepare(
@@ -502,7 +502,7 @@ describe('Task Actions - Archive/Recurring Functions', () => {
         )
         .run('Task', 1, 0);
 
-      await reorderTasks([{ id: Number(task.lastInsertRowid), sort_order: 5 }]);
+      await reorderTasks([{ id: Number(task.lastInsertRowid), sort_order: 5 }], 1);
       expect(true).toBe(true);
     });
   });
