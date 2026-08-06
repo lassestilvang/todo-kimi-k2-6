@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useTheme } from "next-themes";
-import type { Theme } from "@/types";
+
+type Theme = "light" | "dark" | "system";
 
 interface ThemeScheduledProviderProps {
   children: React.ReactNode;
