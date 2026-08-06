@@ -16,7 +16,7 @@ const EmailWebhookSchema = z.object({
   body: z.string(),
   html_body: z.string().optional(),
   received_at: z.string().datetime(),
-  headers: z.record(z.string()).optional(),
+  headers: z.record(z.string(), z.string()).optional(),
   label_ids: z.array(z.string()).optional(),
   thread_id: z.string().optional(),
   external_url: z.string().url().optional(),
@@ -84,7 +84,7 @@ export async function processEmail(
   const email = parsedEmail.data;
 
   // Check if email should be excluded
-  if (shouldExcludeEmail(email, options?.excludeKeywords)) {
+  if (shouldExcludeEmail(email, options?.exclude_keywords)) {
     return {
       success: false,
       skipped: true,
@@ -109,6 +109,7 @@ export async function processEmail(
   if (options?.auto_create === false) {
     return {
       success: true,
+      skipped: false,
       confidence: parsed.confidence || 0.8,
       parsed_fields: parsed.parsed_fields,
     };
@@ -139,6 +140,7 @@ export async function processEmail(
 
     return {
       success: true,
+      skipped: false,
       task,
       confidence: parsed.confidence || 0.8,
       parsed_fields: parsed.parsed_fields,
@@ -257,7 +259,7 @@ export async function getEmailIntegrations(): Promise<Array<{
   enabled: boolean;
   last_sync_at: string | null;
   created_at: string;
-}> & { provider: string }> {
+}>> {
   const db = getDb();
   const user = await getCurrentUser();
 
@@ -267,7 +269,15 @@ export async function getEmailIntegrations(): Promise<Array<{
     SELECT ei.*, 'gmail' as provider
     FROM email_integrations ei
     WHERE ei.user_id = ?
-  `).all(user.id) as any[];
+  `).all(user.id) as Array<{
+    id: number;
+    user_id: number;
+    provider: string;
+    config: Record<string, unknown>;
+    enabled: boolean;
+    last_sync_at: string | null;
+    created_at: string;
+  }>;
 }
 
 /**
