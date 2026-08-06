@@ -93,7 +93,7 @@ export function TaskSnippets({ onInsertSnippet, className }: TaskSnippetsProps) 
           Task Snippets
         </h3>
         <Dialog open={isCreating} onOpenChange={setIsCreating}>
-          <DialogTrigger asChild>
+          <DialogTrigger>
             <Button variant="outline" size="sm">
               <Plus className="h-3 w-3 mr-1" />
               New Snippet
