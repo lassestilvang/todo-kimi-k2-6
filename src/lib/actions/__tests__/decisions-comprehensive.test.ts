@@ -19,13 +19,13 @@ const originalNodeEnv = process.env.NODE_ENV;
 const originalNextAuthSecret = process.env.NEXTAUTH_SECRET;
 
 beforeAll(() => {
-  process.env.NODE_ENV = 'test';
-  process.env.NEXTAUTH_SECRET = 'demo-secret';
+  (process.env as any).NODE_ENV = 'test';
+  (process.env as any).NEXTAUTH_SECRET = 'demo-secret';
 });
 
 afterAll(() => {
-  process.env.NODE_ENV = originalNodeEnv;
-  process.env.NEXTAUTH_SECRET = originalNextAuthSecret;
+  (process.env as any).NODE_ENV = originalNodeEnv;
+  (process.env as any).NEXTAUTH_SECRET = originalNextAuthSecret;
 });
 
 describe('Decisions - Comprehensive Tests', () => {
@@ -69,8 +69,8 @@ describe('Decisions - Comprehensive Tests', () => {
         outcome_notes: 'It worked well',
         outcome_rating: 1,
         options: [
-          { option_text: 'Approach A', pros: ['Pros A'], cons: ['Cons A'] },
-          { option_text: 'Approach B', pros: ['Pros B'], cons: ['Cons B'] },
+          { option_text: 'Approach A', pros: JSON.stringify(['Pros A']), cons: JSON.stringify(['Cons A', 'Cons B']) } as any,
+          { option_text: 'Approach B', pros: JSON.stringify(['Pros B']), cons: JSON.stringify(['Cons B']) } as any,
         ],
       });
 
@@ -89,6 +89,7 @@ describe('Decisions - Comprehensive Tests', () => {
         task_id: 1,
         decision_type: 'tool',
         question: 'Which tool to use?',
+        options: [],
       });
 
       expect(entry.id).toBeGreaterThan(0);
@@ -98,6 +99,7 @@ describe('Decisions - Comprehensive Tests', () => {
       const { entry } = await createDecisionEntry({
         decision_type: 'priority',
         question: 'Priority question',
+        options: [],
       });
 
       expect(entry).toBeDefined();
@@ -109,9 +111,9 @@ describe('Decisions - Comprehensive Tests', () => {
         decision_type: 'approach',
         question: 'Multi-option question',
         options: [
-          { option_text: 'Option 1' },
-          { option_text: 'Option 2' },
-          { option_text: 'Option 3' },
+          { option_text: 'Option 1' } as any,
+          { option_text: 'Option 2' } as any,
+          { option_text: 'Option 3' } as any,
         ],
       });
 
@@ -124,8 +126,8 @@ describe('Decisions - Comprehensive Tests', () => {
         decision_type: 'priority',
         question: 'Decision with pros/cons',
         options: [
-          { option_text: 'Option A', pros: ['Good point 1', 'Good point 2'], cons: ['Bad point 1'] },
-          { option_text: 'Option B', pros: ['Another pro'], cons: ['Con 1', 'Con 2'] },
+          { option_text: 'Option A', pros: JSON.stringify(['Good point 1', 'Good point 2']), cons: JSON.stringify(['Bad point 1']) } as any,
+          { option_text: 'Option B', pros: JSON.stringify(['Another pro']), cons: JSON.stringify(['Con 1', 'Con 2']) } as any,
         ],
       });
 
@@ -173,8 +175,8 @@ describe('Decisions - Comprehensive Tests', () => {
     it('returns decisions filtered by date range', async () => {
       await createDecisionEntry({
         task_id: 1,
-        decision_type: 'test',
-        question: 'Test question',
+        decision_type: 'priority',
+        question: 'Priority decision',
         options: [],
       });
 
@@ -189,15 +191,15 @@ describe('Decisions - Comprehensive Tests', () => {
     it('returns decisions with limit', async () => {
       await createDecisionEntry({
         task_id: 1,
-        decision_type: 'test1',
-        question: 'Question 1',
+        decision_type: 'approach',
+        question: 'Approach 1',
         options: [],
       });
 
       await createDecisionEntry({
         task_id: 1,
-        decision_type: 'test2',
-        question: 'Question 2',
+        decision_type: 'tool',
+        question: 'Tool decision',
         options: [],
       });
 
@@ -210,7 +212,7 @@ describe('Decisions - Comprehensive Tests', () => {
     it('returns decisions for a task', async () => {
       await createDecisionEntry({
         task_id: 1,
-        decision_type: 'test',
+        decision_type: 'priority',
         question: 'Test question',
         options: [],
       });
@@ -227,9 +229,9 @@ describe('Decisions - Comprehensive Tests', () => {
     it('returns decisions with options', async () => {
       await createDecisionEntry({
         task_id: 1,
-        decision_type: 'test',
+        decision_type: 'priority',
         question: 'Question with options',
-        options: [{ option_text: 'Option 1' }, { option_text: 'Option 2' }],
+        options: [{ option_text: 'Option 1' } as any, { option_text: 'Option 2' } as any],
       });
 
       const decisions = await getTaskDecisions(1);
@@ -291,7 +293,7 @@ describe('Decisions - Comprehensive Tests', () => {
   describe('deleteDecisionEntry', () => {
     it('deletes a decision entry', async () => {
       const { entry } = await createDecisionEntry({
-        decision_type: 'test',
+        decision_type: 'priority',
         question: 'To be deleted',
         options: [],
       });
@@ -335,7 +337,7 @@ describe('Decisions - Comprehensive Tests', () => {
     });
 
     it('filters by decision type', async () => {
-      const result = await analyzeDecisionOutcomes(1, { decisionType: 'test' });
+      const result = await analyzeDecisionOutcomes(1, { decisionType: 'priority' });
       expect(result).toBeDefined();
     });
 
@@ -469,7 +471,7 @@ describe('Decisions - Comprehensive Tests', () => {
   describe('Edge Cases', () => {
     it('handles decision with null task_id', async () => {
       const { entry } = await createDecisionEntry({
-        decision_type: 'test',
+        decision_type: 'priority',
         question: 'Question without task',
         options: [],
       });
@@ -479,7 +481,7 @@ describe('Decisions - Comprehensive Tests', () => {
 
     it('handles decision with empty rationale', async () => {
       const { entry } = await createDecisionEntry({
-        decision_type: 'test',
+        decision_type: 'priority',
         question: 'Test question',
         rationale: '',
         options: [],
@@ -490,7 +492,7 @@ describe('Decisions - Comprehensive Tests', () => {
 
     it('handles decision with null outcome rating', async () => {
       const { entry } = await createDecisionEntry({
-        decision_type: 'test',
+        decision_type: 'priority',
         question: 'Test question',
         options: [],
       });
