@@ -224,14 +224,14 @@ describe("useTasks hook - Edge Cases", () => {
   describe("List and label filtering", () => {
     it("should handle multiple label filters", () => {
       const tasks = [
-        createMockTask({ id: 1, labels: [{ id: 1 }] }),
-        createMockTask({ id: 2, labels: [{ id: 2 }] }),
+        createMockTask({ id: 1, labels: [{ id: 1, name: "Label 1", icon: "🏷️", color: "#6366f1", created_at: "" }] }),
+        createMockTask({ id: 2, labels: [{ id: 2, name: "Label 2", icon: "🏷️", color: "#6366f1", created_at: "" }] }),
       ];
 
       const { result } = renderHook(() => useTasks({
         initialTasks: tasks,
         initialLists: [],
-        initialLabels: [{ id: 1, name: "Label 1" }],
+        initialLabels: [{ id: 1, name: "Label 1", icon: "🏷️", color: "#6366f1", created_at: "" }],
       }));
 
       act(() => {
@@ -244,12 +244,12 @@ describe("useTasks hook - Edge Cases", () => {
     });
 
     it("should toggle labels correctly", () => {
-      const tasks = [createMockTask({ id: 1, labels: [{ id: 1 }] })];
+      const tasks = [createMockTask({ id: 1, labels: [{ id: 1, name: "Label 1", icon: "🏷️", color: "#6366f1", created_at: "" }] })];
 
       const { result } = renderHook(() => useTasks({
         initialTasks: tasks,
         initialLists: [],
-        initialLabels: [{ id: 1, name: "Label 1" }],
+        initialLabels: [{ id: 1, name: "Label 1", icon: "🏷️", color: "#6366f1", created_at: "" }],
       }));
 
       act(() => {
