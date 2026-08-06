@@ -18,8 +18,8 @@ const originalNodeEnv = process.env.NODE_ENV;
 const originalNextAuthSecret = process.env.NEXTAUTH_SECRET;
 
 beforeAll(() => {
-  process.env.NODE_ENV = 'test';
-  process.env.NEXTAUTH_SECRET = 'demo-secret';
+  (process.env as any).NODE_ENV = 'test';
+  (process.env as any).NEXTAUTH_SECRET = 'demo-secret';
 });
 
 describe('Decision Journal Actions', () => {
@@ -41,8 +41,8 @@ describe('Decision Journal Actions', () => {
         chosen_option_id: 1,
         rationale: 'High impact project with tight deadline',
         options: [
-          { option_text: 'Do it now', pros: ['Immediate progress'], cons: ['High energy required'] },
-          { option_text: 'Schedule it', pros: ['Better planning'], cons: ['May delay'] },
+          { option_text: 'Do it now', pros: JSON.stringify(['Immediate progress']), cons: JSON.stringify(['High energy required']) } as any,
+          { option_text: 'Schedule it', pros: JSON.stringify(['Better planning']), cons: JSON.stringify(['May delay']) } as any,
         ],
       });
 
@@ -72,17 +72,18 @@ describe('Decision Journal Actions', () => {
       const { entry } = await createDecisionEntry({
         decision_type: 'tool',
         question: 'Which tool should I use?',
+        options: [],
       });
 
       expect(entry).toBeDefined();
       // task_id may be undefined or null depending on mock behavior
-      expect(entry.task_id === null || entry.task_id === undefined || entry.task_id === null).toBe(true);
+      expect(entry.task_id === null || entry.task_id === undefined).toBe(true);
     });
 
     it('throws error for unauthenticated user', async () => {
       // Clear demo mode to test authentication requirement
       const originalSecret = process.env.NEXTAUTH_SECRET;
-      process.env.NEXTAUTH_SECRET = '';
+      (process.env as any).NEXTAUTH_SECRET = '';
 
       // Need to reimport to pick up the new env var
       vi.resetModules();
@@ -95,7 +96,7 @@ describe('Decision Journal Actions', () => {
         options: []
       })).rejects.toThrow('Authentication required');
 
-      process.env.NEXTAUTH_SECRET = originalSecret;
+      (process.env as any).NEXTAUTH_SECRET = originalSecret;
     });
   });
 
