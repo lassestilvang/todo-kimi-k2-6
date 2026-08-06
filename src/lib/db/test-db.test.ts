@@ -39,8 +39,8 @@ describe("Test Database", () => {
     db.prepare("INSERT INTO test (value) VALUES (?)").run(2);
     db.prepare("INSERT INTO test (value) VALUES (?)").run(3);
 
-    const all = db.prepare("SELECT COUNT(*) as count FROM test").get();
-    expect(all.count).toBeGreaterThanOrEqual(3);
+    const all = db.prepare("SELECT COUNT(*) as count FROM test").get() as any;
+    expect(all?.count).toBeGreaterThanOrEqual(3);
     db.close();
   });
 
@@ -53,8 +53,8 @@ describe("Test Database", () => {
       db.prepare("INSERT INTO test (value) VALUES (?)").run(2);
     });
 
-    const all = db.prepare("SELECT COUNT(*) as count FROM test").get();
-    expect(all.count).toBeGreaterThanOrEqual(1);
+    const all = db.prepare("SELECT COUNT(*) as count FROM test").get() as any;
+    expect(all?.count).toBeGreaterThanOrEqual(1);
     db.close();
   });
 
