@@ -99,7 +99,7 @@ describe("integrations module", () => {
       mockFetch.mockResolvedValue({ ok: true });
 
       const { sendSlackNotification } = await import("@/lib/integrations/index");
-      const actions = ["created", "updated", "completed", "due_soon", "overdue"];
+      const actions = ["created", "updated", "completed", "due_soon", "overdue"] as const;
 
       for (const action of actions) {
         await sendSlackNotification(
