@@ -10,7 +10,7 @@ const EmailWebhookSchema = z.object({
   body: z.string(),
   html_body: z.string().optional(),
   received_at: z.string().datetime(),
-  headers: z.record(z.string()).optional(),
+  headers: z.record(z.string(), z.string()).optional(),
   label_ids: z.array(z.string()).optional(),
   thread_id: z.string().optional(),
   external_url: z.string().url().optional(),
@@ -170,7 +170,8 @@ export function extractDueDate(text: string): string | undefined {
   for (const { pattern, transformer } of patterns) {
     const match = text.match(pattern);
     if (match) {
-      return transformer(match);
+      const result = transformer(match);
+      return result ?? undefined;
     }
   }
 
