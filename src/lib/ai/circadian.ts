@@ -12,7 +12,7 @@ export async function analyzeUserEnergyPatterns(
   dateRange?: { start: string; end: string }
 ): Promise<any> {
   const cacheKey = `energy-patterns:${userId}:${dateRange?.start || 'all'}`;
-  const cached = aiCache.get(cacheKey);
+  const cached = aiCache.get<any>(cacheKey);
   if (cached) {
     return cached;
   }
@@ -36,7 +36,7 @@ export async function analyzeUserEnergyPatterns(
     recovery_needs: analyzeRecoveryNeeds(dailyPatterns),
   };
 
-  aiCache.set(cacheKey, energyProfile, 3600); // Cache for 1 hour
+  aiCache.set(cacheKey, energyProfile);
   return energyProfile;
 }
 
@@ -54,7 +54,7 @@ export async function suggestOptimalTaskTimes(
   }
 ): Promise<any[]> {
   const cacheKey = `optimal-times:${userId}:${task.id}`;
-  const cached = aiCache.get(cacheKey);
+  const cached = aiCache.get<any[]>(cacheKey);
   if (cached) {
     return cached;
   }
@@ -69,7 +69,7 @@ export async function suggestOptimalTaskTimes(
   // Generate optimal time suggestions
   const suggestions = generateTimeSuggestions(task, patterns, constraints);
 
-  aiCache.set(cacheKey, suggestions, 1800); // Cache for 30 minutes
+  aiCache.set(cacheKey, suggestions);
   return suggestions;
 }
 
@@ -82,7 +82,7 @@ export async function detectEnergyPeaks(
   timeWindow: 'day' | 'week' | 'month' = 'day'
 ): Promise<any> {
   const cacheKey = `energy-peaks:${userId}:${timeWindow}`;
-  const cached = aiCache.get(cacheKey);
+  const cached = aiCache.get<any>(cacheKey);
   if (cached) {
     return cached;
   }
@@ -96,7 +96,7 @@ export async function detectEnergyPeaks(
     energy_recovery_recommendations: patterns.recovery_needs,
   };
 
-  aiCache.set(cacheKey, peaks, 2400); // Cache for 40 minutes
+  aiCache.set(cacheKey, peaks);
   return peaks;
 }
 
@@ -115,7 +115,7 @@ function analyzeDayPattern(dayTasks: any[], date: string): any {
       return new Date(task.date).getHours();
     }
     return null;
-  }).filter(time => time !== null);
+  }).filter((time): time is number => time !== null);
 
   // Calculate pattern metrics
   const pattern = {
@@ -148,7 +148,7 @@ function groupTasksByDate(tasks: any[]): Record<string, any[]> {
       date = task.date;
     } else if (task.logs && task.logs.length > 0) {
       // Extract date from task logs (most recent completion)
-      const completionLogs = task.logs.filter(log => log.action === 'completed');
+      const completionLogs = task.logs.filter((log: { action: string }) => log.action === 'completed');
       if (completionLogs.length > 0) {
         date = new Date(completionLogs[0].created_at).toISOString().split('T')[0];
       } else {
@@ -174,7 +174,7 @@ function extractTaskTimeFromLogs(task: any): number | null {
   if (!task.logs || task.logs.length === 0) return null;
 
   // Find completion time
-  const completionLog = task.logs.find(log => log.action === 'completed');
+  const completionLog = task.logs.find((log: { action: string }) => log.action === 'completed');
   if (completionLog) {
     return new Date(completionLog.created_at).getHours();
   }
@@ -199,7 +199,7 @@ function calculateAverageTaskDuration(tasks: any[]): number {
 
   tasks.forEach(task => {
     if (task.time_entries && task.time_entries.length > 0) {
-      const taskDuration = task.time_entries.reduce((sum, entry) => {
+      const taskDuration = task.time_entries.reduce((sum: number, entry: { duration_seconds?: number }) => {
         if (entry.duration_seconds) {
           return sum + entry.duration_seconds;
         }
@@ -219,19 +219,18 @@ function calculateAverageTaskDuration(tasks: any[]): number {
 /**
  * Find most frequent value in array
  */
-function mostFrequent(arr: any[]): any {
+function mostFrequent(arr: number[]): number | null {
   if (arr.length === 0) return null;
 
-  const frequency: Record<string, number> = {};
+  const frequency: Record<number, number> = {};
   let maxFreq = 0;
-  let mostFrequent: any = null;
+  let mostFrequent: number = 0;
 
   arr.forEach(value => {
-    const key = value.toString();
-    frequency[key] = (frequency[key] || 0) + 1;
+    frequency[value] = (frequency[value] || 0) + 1;
 
-    if (frequency[key] > maxFreq) {
-      maxFreq = frequency[key];
+    if (frequency[value] > maxFreq) {
+      maxFreq = frequency[value];
       mostFrequent = value;
     }
   });
@@ -311,12 +310,12 @@ function detectEnergyCycles(dailyPatterns: any[]): any {
 
   // Analyze weekly cycles
   const weeklyCycles = Object.entries(dayOfWeekPatterns).map(([dayOfWeek, patterns]) => {
-    const avgCompletionRate = patterns.reduce((sum, p) => sum + p.completion_rate, 0) / patterns.length;
+    const avgCompletionRate = patterns.reduce((sum: number, p: { completion_rate: number }) => sum + p.completion_rate, 0) / patterns.length;
 
     return {
       day_of_week: parseInt(dayOfWeek),
       average_completion_rate: Math.round(avgCompletionRate * 100),
-      typical_task_count: patterns.reduce((sum, p) => sum + p.total_tasks, 0) / patterns.length,
+      typical_task_count: patterns.reduce((sum: number, p: { total_tasks: number }) => sum + p.total_tasks, 0) / patterns.length,
     };
   });
 
@@ -334,7 +333,7 @@ function detectEnergyCycles(dailyPatterns: any[]): any {
   return {
     weekly_patterns: weeklyCycles,
     recovery_days: recoveryDays,
-    suggested_rest_days: recoveryDays.slice(0, 2).map(d => d.day_name),
+    suggested_rest_days: recoveryDays.slice(0, 2).map((d: any) => d.day_name),
   };
 }
 
@@ -430,7 +429,7 @@ function identifyOptimalWorkWindows(dailyPatterns: any[]): any {
  * Analyze recovery needs based on task patterns
  */
 function analyzeRecoveryNeeds(dailyPatterns: any[]): any {
-  const recoveryRecommendations = [];
+  const recoveryRecommendations: any[] = [];
 
   dailyPatterns.forEach(pattern => {
     // Days with high completion but little rest
@@ -469,7 +468,7 @@ function analyzeRecoveryNeeds(dailyPatterns: any[]): any {
  * Calculate optimal break times based on productivity patterns
  */
 function calculateOptimalBreakTimes(energyProfile: any): any[] {
-  const breakTimes = [];
+  const breakTimes: any[] = [];
 
   // If user has identified peak hours, schedule breaks around them
   if (energyProfile.peak_hours && energyProfile.peak_hours.length > 0) {
@@ -501,7 +500,7 @@ function calculateOptimalBreakTimes(energyProfile: any): any[] {
  * Generate burnout recommendations based on risk assessments
  */
 function generateBurnoutRecommendations(burnoutIndicators: any[]): any[] {
-  const recommendations = [];
+  const recommendations: any[] = [];
 
   const highRiskDays = burnoutIndicators.filter(indicator => indicator.risk_level === 'high');
 
@@ -540,7 +539,7 @@ function generateTimeSuggestions(
   energyProfile: any,
   constraints?: any
 ): any[] {
-  const suggestions = [];
+  const suggestions: any[] = [];
 
   // Base suggestion using optimal work hours
   const optimalHours = energyProfile.optimal_work_hours || { start: 9, end: 17 };
@@ -608,7 +607,7 @@ function calculateTimeConfidence(task: any, energyProfile: any, constraints?: an
  * Generate human-readable reason for time suggestion
  */
 function generateTimeReason(task: any, energyProfile: any, constraints?: any, suggestionIndex?: number): string {
-  const reasons = [];
+  const reasons: string[] = [];
 
   if (task.priority === 'critical') {
     reasons.push('Critical task prioritized early');
