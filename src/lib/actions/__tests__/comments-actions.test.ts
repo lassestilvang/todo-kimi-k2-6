@@ -5,8 +5,8 @@ import type { CreateCommentInput } from "@/types";
 
 // Set up demo mode for authentication
 beforeAll(() => {
-  process.env.NODE_ENV = 'test';
-  process.env.NEXTAUTH_SECRET = 'demo-secret';
+  (process.env as any).NODE_ENV = 'test';
+  (process.env as any).NEXTAUTH_SECRET = 'demo-secret';
 });
 
 describe("Comments Actions - Comprehensive Tests", () => {
