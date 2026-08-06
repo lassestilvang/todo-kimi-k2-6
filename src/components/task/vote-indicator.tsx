@@ -122,7 +122,7 @@ export function VoteIndicator({
       <div className={cn("flex items-center gap-1", className)}>
         {/* Upvote button */}
         <Tooltip>
-          <TooltipTrigger asChild>
+          <TooltipTrigger>
             <Button
               variant="ghost"
               size="sm"
@@ -159,7 +159,7 @@ export function VoteIndicator({
 
         {/* Downvote button */}
         <Tooltip>
-          <TooltipTrigger asChild>
+          <TooltipTrigger>
             <Button
               variant="ghost"
               size="sm"
