@@ -236,8 +236,8 @@ export async function updateIntegrationMapping(
     throw new Error("Task mapping not found or not accessible");
   }
 
-  const currentMappings = mapping.field_mappings ? JSON.parse(mapping.field_mappings) : {};
-  const newMappings = updates.field_mappings ? { ...currentMappings, ...updates.field_mappings } : currentMappings;
+  const currentMappings: Record<string, string> = mapping.field_mappings ? JSON.parse(mapping.field_mappings) : {};
+  const newMappings: Record<string, string> = updates.field_mappings ? { ...currentMappings, ...(updates.field_mappings as Record<string, string>) } : currentMappings;
 
   const result = db
     .prepare(
@@ -274,20 +274,22 @@ export async function getIntegrationSyncStatus(
   const statusPromises = integrations.map(async (integration) => {
     const config = JSON.parse(integration.config || "{}");
 
-    let taskCount = 0;
-    let lastSync = null;
+    let taskCount: number = 0;
+    let lastSync: string | undefined = undefined;
     let syncStatus = "unknown";
 
     try {
-      taskCount = db
+      const countResult = db
         .prepare("SELECT COUNT(*) as count FROM task_mappings WHERE integration_id = ?")
-        .get(integration.id) as { count: number };
+        .get(integration.id);
+
+      taskCount = countResult?.count || 0;
 
       const lastMapping = db
         .prepare("SELECT last_sync_at FROM task_mappings WHERE integration_id = ? ORDER BY last_sync_at DESC LIMIT 1")
         .get(integration.id) as { last_sync_at: string } | undefined;
 
-      lastSync = lastMapping?.last_sync_at || null;
+      lastSync = lastMapping?.last_sync_at;
 
       // Determine sync status based on last sync and task count
       if (taskCount === 0) {
@@ -308,8 +310,10 @@ export async function getIntegrationSyncStatus(
       syncStatus = "error";
     }
 
+    // Create the result object with proper typing
+    const { config: _, ...integrationWithoutConfig } = integration;
     return {
-      ...integration,
+      ...integrationWithoutConfig,
       config: JSON.stringify(config),
       sync_status: syncStatus,
       last_sync: lastSync,
