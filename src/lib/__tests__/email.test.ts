@@ -11,7 +11,7 @@ vi.mock("nodemailer", () => {
   };
 });
 
-import { sendTaskReminderEmail, sendDueSoonEmail, sendTaskSharedEmail, sendWeeklyDigest } from "../email";
+import { sendTaskReminderEmail, sendDueSoonEmail, sendTaskSharedEmail, sendWeeklyDigest } from "@/lib/email";
 
 describe("email (legacy)", () => {
   const originalEnv = { ...process.env };
@@ -47,6 +47,7 @@ describe("email (legacy)", () => {
       const task = {
         id: 1,
         name: "Test Task",
+        description: null,
         deadline: null,
       };
 
@@ -60,6 +61,7 @@ describe("email (legacy)", () => {
       const task = {
         id: 1,
         name: "Urgent Task",
+        description: null,
         deadline: "2024-01-15",
       };
 
@@ -70,14 +72,7 @@ describe("email (legacy)", () => {
 
   describe("sendTaskSharedEmail", () => {
     it("should send shared email with task and inviter name", async () => {
-      const task = {
-        id: 123,
-        name: "Shared Task",
-        description: "Task description",
-        deadline: "2024-12-31",
-      };
-
-      const result = await sendTaskSharedEmail("invitee@test.com", task, "John Doe");
+      const result = await sendTaskSharedEmail("invitee@test.com", "Shared Task", "John Doe", "view");
       expect(result).toBeDefined();
     });
   });
@@ -104,7 +99,7 @@ describe("email (legacy)", () => {
       delete process.env.SMTP_PASS;
       delete process.env.EMAIL_FROM;
 
-      const task = { id: 1, name: "Test" };
+      const task = { id: 1, name: "Test", description: null, deadline: null };
       const result = await sendTaskReminderEmail("test@test.com", task);
       expect(result).toBeDefined();
     });
