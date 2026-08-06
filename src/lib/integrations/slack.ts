@@ -82,7 +82,7 @@ export class SlackConnector extends BaseConnector {
       for (const message of messages) {
         try {
           const mappedRecord = await this.mapSlackMessageToTask(message, channelId);
-          if (mappedRecord && this.isTaskCandidate(message)) {
+          if (mappedRecord && await this.isTaskCandidate(message)) {
             records.push(mappedRecord);
           }
         } catch (error) {
