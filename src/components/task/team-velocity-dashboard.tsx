@@ -53,7 +53,7 @@ interface TeamMember {
   email: string;
   avatarUrl?: string;
   taskCount: number;
-  completionRate: number;
+  completionRate?: number;
 }
 
 export function TeamVelocityDashboard({ workspaceId, teamMembers: initialMembers }: TeamVelocityDashboardProps) {
