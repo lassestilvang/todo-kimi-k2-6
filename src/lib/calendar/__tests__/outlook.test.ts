@@ -1,18 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import type { Task } from "../../../types";
 
-// Type for mock fetch
-type MockFetch = {
-  mockResolvedValue: (value: { ok: boolean; json: () => Promise<unknown> }) => void;
-  mockRejectedValue: (value: Error) => void;
-};
-
 describe("Outlook Calendar Integration", () => {
   let mockConfig: { accessToken: string };
 
   beforeEach(() => {
     mockConfig = { accessToken: "test-access-token" };
-    global.fetch = vi.fn() as unknown as MockFetch;
+    global.fetch = vi.fn() as any;
   });
 
   afterEach(() => {
@@ -87,6 +81,11 @@ describe("Outlook Calendar Integration", () => {
       created_at: "2026-06-01T00:00:00Z",
       updated_at: "2026-06-01T00:00:00Z",
       sort_order: 0,
+      user_id: 1,
+      archived: false,
+      blockers: [],
+      blocked_by: [],
+      recurring_exceptions: [],
     };
 
     it("should create an Outlook event from a task", async () => {
@@ -166,6 +165,11 @@ describe("Outlook Calendar Integration", () => {
       created_at: "2026-06-01T00:00:00Z",
       updated_at: "2026-06-01T00:00:00Z",
       sort_order: 0,
+      user_id: 1,
+      archived: false,
+      blockers: [],
+      blocked_by: [],
+      recurring_exceptions: [],
     };
 
     it("should update an Outlook event", async () => {
@@ -302,7 +306,7 @@ describe("Outlook Calendar Integration", () => {
 
   describe("createOutlookEvent error paths", () => {
     it("should handle task with null description", async () => {
-      const taskWithNullDesc = {
+      const taskWithNullDesc: Task = {
         id: 1,
         name: "Test Task",
         description: null,
@@ -320,6 +324,11 @@ describe("Outlook Calendar Integration", () => {
         created_at: "2026-06-01T00:00:00Z",
         updated_at: "2026-06-01T00:00:00Z",
         sort_order: 0,
+        user_id: 1,
+        archived: false,
+        blockers: [],
+        blocked_by: [],
+        recurring_exceptions: [],
       };
 
       vi.mocked(global.fetch as any).mockResolvedValue({
@@ -352,6 +361,11 @@ describe("Outlook Calendar Integration", () => {
         created_at: "2026-06-01T00:00:00Z",
         updated_at: "2026-06-01T00:00:00Z",
         sort_order: 0,
+        user_id: 1,
+        archived: false,
+        blockers: [],
+        blocked_by: [],
+        recurring_exceptions: [],
       };
 
       vi.mocked(global.fetch as any).mockResolvedValue({
@@ -385,6 +399,11 @@ describe("Outlook Calendar Integration", () => {
         created_at: "2026-06-01T00:00:00Z",
         updated_at: "2026-06-01T00:00:00Z",
         sort_order: 0,
+        user_id: 1,
+        archived: false,
+        blockers: [],
+        blocked_by: [],
+        recurring_exceptions: [],
       };
 
       vi.mocked(global.fetch as any).mockResolvedValue({
@@ -419,6 +438,11 @@ describe("Outlook Calendar Integration", () => {
       created_at: "2026-06-01T00:00:00Z",
       updated_at: "2026-06-01T00:00:00Z",
       sort_order: 0,
+      user_id: 1,
+      archived: false,
+      blockers: [],
+      blocked_by: [],
+      recurring_exceptions: [],
     };
 
     it("should handle update error without statusText", async () => {
