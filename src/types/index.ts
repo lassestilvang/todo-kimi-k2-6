@@ -210,6 +210,9 @@ export interface TaskWithRelations extends Task {
   blocked_by: TaskDependency[];
   time_entries: TimeEntry[];
   recurring_exceptions: RecurringException[];
+  habit_contexts?: HabitContext[];
+  decisions?: DecisionEntry[];
+  connections?: TaskConnection[];
   workspace_id?: number | null;
   vote_count?: number;
   ai_provider?: string;
@@ -460,6 +463,7 @@ export interface DecisionEntry {
   outcome: string | null;
   outcome_notes: string | null;
   outcome_rating: number | null; // -1 to 1
+  options?: DecisionOption[];
   created_at: string;
   updated_at: string;
 }
