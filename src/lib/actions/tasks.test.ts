@@ -49,8 +49,8 @@ import { initializeSchema } from "../db/index";
 
 // Set up demo mode for authentication
 beforeAll(() => {
-  process.env.NODE_ENV = 'test';
-  process.env.NEXTAUTH_SECRET = 'demo-secret';
+  (process.env as any).NODE_ENV = 'test';
+  (process.env as any).NEXTAUTH_SECRET = 'demo-secret';
 });
 
 describe("Task Actions", () => {
@@ -184,10 +184,10 @@ describe("Task Actions", () => {
       const task = await createTask({ name: "Toggle Me" });
       expect(task).toBeDefined();
 
-      const completed = await updateTask(task.id, { completed: 1 });
+      const completed = await updateTask(task.id, { completed: true });
       expect(completed).toBeDefined();
 
-      const uncompleted = await updateTask(task.id, { completed: 0 });
+      const uncompleted = await updateTask(task.id, { completed: false });
       expect(uncompleted).toBeDefined();
     });
 
