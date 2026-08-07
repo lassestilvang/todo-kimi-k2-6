@@ -11,7 +11,7 @@ export type InboxSourceType = "calendar" | "email" | "slack" | "github" | "manua
 export function calculatePriorityScore(
   priority: string,
   dueDate?: string,
-  confidence: number = 50
+  confidence = 50
 ): number {
   let score = confidence;
 
