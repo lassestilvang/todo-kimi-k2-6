@@ -257,13 +257,42 @@ export function createMockDatabase(): MockDatabase {
                   );
                 }
 
-                const columns = whereClause.match(/([\w.]+)\s*=\s*\?/gi) || [];
-                return allRecords.find(r =>
-                  columns.every((col, idx) => {
-                    const cleanCol = col.replace(/^[a-z]+\./i, '').replace(/\s*=\s*\?\s*$/i, '');
-                    return r && r[cleanCol] === params[idx];
-                  })
+                // Parse all conditions: both parameterized (?,) and literal values
+                const paramConditions: Array<{ column: string; paramIndex: number }> = [];
+                const literalConditions: Array<{ column: string; value: unknown }> = [];
+
+                // Extract parameterized conditions: column = ?
+                const paramMatches = [...whereClause.matchAll(/([\w.]+)\s*=\s*\?/gi)];
+                paramMatches.forEach((match, idx) => {
+                  const col = match[1].replace(/^[a-z]+\./i, '');
+                  paramConditions.push({ column: col, paramIndex: idx });
+                });
+
+                // Extract literal numeric conditions: column = 123 (not followed by ?)
+                const literalMatches = [...whereClause.matchAll(/([\w.]+)\s*=\s*(\d+)\b(?!\s*\?)/gi)];
+                literalMatches.forEach((match) => {
+                  const col = match[1].replace(/^[a-z]+\./i, '');
+                  const val = Number(match[2]);
+                  literalConditions.push({ column: col, value: val });
+                });
+
+                // First, filter by parameterized conditions
+                let result = allRecords.find(r =>
+                  r && paramConditions.every(cond =>
+                    r[cond.column] === params[cond.paramIndex]
+                  )
                 );
+
+                if (!result) return undefined;
+
+                // Then filter by literal conditions
+                for (const cond of literalConditions) {
+                  if (result[cond.column] !== cond.value) {
+                    return undefined;
+                  }
+                }
+
+                return result;
               }
             }
             return table instanceof Map ? Array.from(table.values())[0] : undefined;
@@ -289,13 +318,39 @@ export function createMockDatabase(): MockDatabase {
                 );
               }
 
-              const columns = whereClause.match(/([\w.]+)\s*=\s*\?/gi) || [];
-              return allRecords.filter(r =>
-                columns.every((col, idx) => {
-                  const cleanCol = col.replace(/^[a-z]+\./i, '').replace(/\s*=\s*\?\s*$/i, '');
-                  return r && r[cleanCol] === params[idx];
-                })
-              );
+              // Parse all conditions: both parameterized (?,) and literal values
+              const paramConditions: Array<{ column: string; paramIndex: number }> = [];
+              const literalConditions: Array<{ column: string; value: unknown }> = [];
+
+              // Extract parameterized conditions: column = ?
+              const paramMatches = [...whereClause.matchAll(/([\w.]+)\s*=\s*\?/gi)];
+              paramMatches.forEach((match, idx) => {
+                const col = match[1].replace(/^[a-z]+\./i, '');
+                paramConditions.push({ column: col, paramIndex: idx });
+              });
+
+              // Extract literal numeric conditions: column = 123 (not followed by ?)
+              const literalMatches = [...whereClause.matchAll(/([\w.]+)\s*=\s*(\d+)\b(?!\s*\?)/gi)];
+              literalMatches.forEach((match) => {
+                const col = match[1].replace(/^[a-z]+\./i, '');
+                const val = Number(match[2]);
+                literalConditions.push({ column: col, value: val });
+              });
+
+              // Filter by both parameterized and literal conditions
+              return allRecords.filter(r => {
+                // Check parameterized conditions
+                const paramMatch = paramConditions.every(cond =>
+                  r && r[cond.column] === params[cond.paramIndex]
+                );
+                if (!paramMatch) return false;
+
+                // Check literal conditions
+                const literalMatch = literalConditions.every(cond =>
+                  r && r[cond.column] === cond.value
+                );
+                return literalMatch;
+              });
             }
             return allRecords;
           },
