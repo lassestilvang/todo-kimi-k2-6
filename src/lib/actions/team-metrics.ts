@@ -122,7 +122,7 @@ async function getTeamMembers(db: ReturnType<typeof getDb>, workspaceId?: number
   }
 }
 
-async function getVelocityTrend(db: ReturnType<typeof getDb>, workspaceId?: number, timeframe: string = "month"): Promise<number> {
+async function getVelocityTrend(db: ReturnType<typeof getDb>, workspaceId?: number, timeframe = "month"): Promise<number> {
   // Compare current period with previous period
   const now = new Date();
   const currentPeriodStart = new Date();
@@ -225,7 +225,7 @@ async function getCapacityUtilization(db: ReturnType<typeof getDb>, workspaceId?
   return Math.round(utilization);
 }
 
-async function getUpcomingDeadlines(db: ReturnType<typeof getDb>, workspaceId?: number, days: number = 14): Promise<Array<{
+async function getUpcomingDeadlines(db: ReturnType<typeof getDb>, workspaceId?: number, days = 14): Promise<Array<{
   task_id: number;
   task_name: string;
   assignee: string;
@@ -296,7 +296,7 @@ async function getBlockers(db: ReturnType<typeof getDb>, workspaceId?: number): 
 }
 
 // Get sprint velocity history for burndown chart
-export async function getSprintHistory(workspaceId?: number, limit: number = 12): Promise<Array<{
+export async function getSprintHistory(workspaceId?: number, limit = 12): Promise<Array<{
   sprint_id: number;
   name: string;
   start_date: string;
