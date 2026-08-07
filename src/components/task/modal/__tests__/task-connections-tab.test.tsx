@@ -9,7 +9,7 @@ vi.mock("@/components/ui/button", () => ({
     <button
       onClick={onClick}
       className={className}
-      data-testid={`button-${variant || 'default'}-${size || 'default'}`}
+      data-testid={`button`}
       type="button"
     >
       {children}
@@ -41,7 +41,7 @@ vi.mock("@/components/ui/label", () => ({
 
 vi.mock("@/components/ui/badge", () => ({
   Badge: ({ children, variant, className }: any) => (
-    <span data-testid={`badge-${variant || 'default'}`} className={className}>
+    <span data-testid={`badge`} className={className}>
       {children}
     </span>
   ),
