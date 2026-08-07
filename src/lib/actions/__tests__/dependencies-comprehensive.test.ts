@@ -60,9 +60,10 @@ describe("Dependency Actions - Comprehensive", () => {
     });
 
     it("should allow different task IDs", () => {
-      const taskId: number = 1;
-      const dependsOnTaskId: number = 2;
+      const taskId = 1;
+      const dependsOnTaskId = 2;
       const isCircular = taskId === dependsOnTaskId;
+      // Testing that different task IDs don't create circular dependencies
       expect(isCircular).toBe(false);
     });
   });
