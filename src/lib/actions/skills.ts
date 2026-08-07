@@ -140,7 +140,7 @@ export async function incrementSkillExperience(
   userId: number,
   skillName: string,
   taskId: number,
-  experience: number = 1
+  experience = 1
 ): Promise<UserSkill | null> {
   try {
     const db = getDb();
