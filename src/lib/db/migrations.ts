@@ -238,6 +238,198 @@ export const migrations: Record<number, string> = {
     CREATE INDEX IF NOT EXISTS idx_user_skills_user ON user_skills(user_id);
     CREATE UNIQUE INDEX IF NOT EXISTS idx_user_skills_unique ON user_skills(user_id, skill_name);
   `,
+  23: `
+    -- Add smart Inbox Sources table for external task sources
+    CREATE TABLE IF NOT EXISTS smart_inbox_sources (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      source_type TEXT NOT NULL CHECK(source_type IN ('calendar', 'email', 'slack', 'github', 'manual', 'integration')),
+      external_id TEXT NOT NULL,
+      title TEXT NOT NULL,
+      description TEXT,
+      due_date TEXT,
+      priority TEXT DEFAULT 'medium' CHECK(priority IN ('critical', 'high', 'medium', 'low', 'none')),
+      confidence INTEGER DEFAULT 50,
+      priority_score INTEGER DEFAULT 0,
+      status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'processing', 'converted', 'dismissed')),
+      metadata TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_smart_inbox_user ON smart_inbox_sources(user_id);
+    CREATE INDEX IF NOT EXISTS idx_smart_inbox_status ON smart_inbox_sources(status);
+    CREATE INDEX IF NOT EXISTS idx_smart_inbox_priority ON smart_inbox_sources(priority_score DESC);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_smart_inbox_external ON smart_inbox_sources(user_id, source_type, external_id);
+  `,
+  24: `
+    -- Add AI prediction fields to smart_inbox_sources
+    ALTER TABLE smart_inbox_sources ADD COLUMN predicted_priority TEXT DEFAULT 'medium' CHECK(predicted_priority IN ('critical', 'high', 'medium', 'low', 'none'));
+    ALTER TABLE smart_inbox_sources ADD COLUMN predicted_due_date TEXT;
+    ALTER TABLE smart_inbox_sources ADD COLUMN suggested_labels TEXT;
+    ALTER TABLE smart_inbox_sources ADD COLUMN ai_reasoning TEXT;
+    CREATE INDEX IF NOT EXISTS idx_smart_inbox_predicted_priority ON smart_inbox_sources(predicted_priority);
+  `,
+  25: `
+    -- Add user_energy_profiles table for smart scheduler
+    CREATE TABLE IF NOT EXISTS user_energy_profiles (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      profile_data TEXT NOT NULL,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_energy_profiles_user ON user_energy_profiles(user_id);
+  `,
+  26: `
+    -- Add calendar_events table for scheduler integration
+    CREATE TABLE IF NOT EXISTS calendar_events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      title TEXT NOT NULL,
+      description TEXT,
+      date TEXT NOT NULL,
+      start_time TEXT,
+      end_time TEXT,
+      location TEXT,
+      source TEXT DEFAULT 'manual',
+      external_id TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_calendar_events_user ON calendar_events(user_id);
+    CREATE INDEX IF NOT EXISTS idx_calendar_events_date ON calendar_events(date);
+    CREATE INDEX IF NOT EXISTS idx_calendar_events_source ON calendar_events(source);
+  `,
+  27: `
+    -- Add velocity_entries table for team analytics
+    CREATE TABLE IF NOT EXISTS velocity_entries (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      date TEXT NOT NULL,
+      completed_count INTEGER DEFAULT 0,
+      planned_count INTEGER DEFAULT 0,
+      story_points INTEGER DEFAULT 0,
+      notes TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_velocity_user_date ON velocity_entries(user_id, date);
+  `,
+  28: `
+    -- Add knowledge_entries table
+    CREATE TABLE IF NOT EXISTS knowledge_entries (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      title TEXT NOT NULL,
+      content TEXT NOT NULL,
+      type TEXT NOT NULL CHECK(type IN ('lesson_learned', 'best_practice', 'tip', 'insight', 'tool', 'template')),
+      category TEXT,
+      related_task_id INTEGER REFERENCES tasks(id) ON DELETE SET NULL,
+      tags TEXT,
+      confidence REAL DEFAULT 0.5,
+      source TEXT DEFAULT 'manual' CHECK(source IN ('manual', 'ai_extracted', 'task_completion')),
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_knowledge_user ON knowledge_entries(user_id);
+    CREATE INDEX IF NOT EXISTS idx_knowledge_type ON knowledge_entries(type);
+    CREATE INDEX IF NOT EXISTS idx_knowledge_category ON knowledge_entries(category);
+  `,
+  29: `
+    -- Add evolution_steps table
+    CREATE TABLE IF NOT EXISTS evolution_steps (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      entry_id INTEGER NOT NULL REFERENCES knowledge_entries(id) ON DELETE CASCADE,
+      version INTEGER NOT NULL,
+      content TEXT NOT NULL,
+      changes TEXT NOT NULL,
+      confidence_score REAL DEFAULT 0.5,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      created_by INTEGER REFERENCES users(id) ON DELETE SET NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_evolution_entry ON evolution_steps(entry_id);
+  `,
+  30: `
+    -- Add pomodoro_timers table for focus mode
+    CREATE TABLE IF NOT EXISTS pomodoro_timers (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      task_id INTEGER REFERENCES tasks(id) ON DELETE SET NULL,
+      duration_minutes INTEGER NOT NULL DEFAULT 25,
+      remaining_seconds INTEGER NOT NULL,
+      status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'paused', 'completed', 'cancelled')),
+      started_at TEXT,
+      completed_at TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_pomodoro_user ON pomodoro_timers(user_id);
+    CREATE INDEX IF NOT EXISTS idx_pomodoro_status ON pomodoro_timers(status);
+  `,
+  31: `
+    -- Add distraction_blocks table
+    CREATE TABLE IF NOT EXISTS distraction_blocks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      source TEXT NOT NULL CHECK(source IN ('time', 'keyword', 'manual')),
+      pattern TEXT NOT NULL,
+      duration_minutes INTEGER NOT NULL,
+      expires_at TEXT,
+      reason TEXT,
+      blocked_count INTEGER DEFAULT 0,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_distractions_user_active ON distraction_blocks(user_id);
+  `,
+  32: `
+    -- Add focus_sessions table
+    CREATE TABLE IF NOT EXISTS focus_sessions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      task_id INTEGER REFERENCES tasks(id) ON DELETE SET NULL,
+      type TEXT NOT NULL CHECK(type IN ('pomodoro', 'deep_work', 'creative_flow', 'break')),
+      duration_minutes INTEGER NOT NULL,
+      status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('planned', 'active', 'completed', 'cancelled', 'interrupted')),
+      started_at TEXT,
+      completed_at TEXT,
+      interruption_count INTEGER DEFAULT 0,
+      notes TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_focus_sessions_user ON focus_sessions(user_id);
+    CREATE INDEX IF NOT EXISTS idx_focus_sessions_status ON focus_sessions(status);
+  `,
+  33: `
+    -- Add focus_session_history for analytics
+    CREATE TABLE IF NOT EXISTS focus_session_history (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      session_id INTEGER NOT NULL,
+      type TEXT NOT NULL,
+      duration_minutes INTEGER NOT NULL,
+      completed_at TEXT NOT NULL,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_focus_history_user ON focus_session_history(user_id);
+  `,
+  34: `
+    -- Add user_personas table for productivity personas
+    CREATE TABLE IF NOT EXISTS user_personas (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      type TEXT NOT NULL CHECK(type IN ('deep_work', 'sprint_runner', 'steady_stream', 'creative_genius', 'strategic_planner')),
+      work_hours TEXT,
+      energy_pattern TEXT,
+      preferred_working_styles TEXT,
+      focus_traits TEXT,
+      productivity_signals TEXT,
+      recommendations TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_user_personas_user ON user_personas(user_id);
+  `,
 };
 
 export async function runMigrations(): Promise<void> {
@@ -258,7 +450,11 @@ export async function runMigrations(): Promise<void> {
   const executedIds = new Set(executed.map((m) => m.id));
 
   // Run pending migrations
-  for (const [id, sql] of Object.entries(migrations)) {
+  const migrationEntries = Object.entries(migrations);
+  // Sort by migration ID number
+  migrationEntries.sort((a, b) => parseInt(a[0]) - parseInt(b[0]));
+
+  for (const [id, sql] of migrationEntries) {
     const migrationId = parseInt(id);
     if (!executedIds.has(migrationId)) {
       console.log(`Running migration ${migrationId}...`);
@@ -282,5 +478,6 @@ export function getPendingMigrations(): number[] {
 
   return Object.keys(migrations)
     .map((id) => parseInt(id))
-    .filter((id) => !executedIds.has(id));
+    .filter((id) => !executedIds.has(id))
+    .sort((a, b) => a - b);
 }
