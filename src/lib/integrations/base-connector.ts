@@ -164,7 +164,7 @@ export abstract class BaseConnector implements IntegrationConnector {
 
   abstract fetchRecords(since?: Date, options?: { limit?: number; cursor?: string }): Promise<ExternalRecord[]>;
 
-  mapToTask(record: ExternalRecord, fieldMappings?: Record<string, string>): {
+  mapToTask(record: ExternalRecord, _fieldMappings?: Record<string, string>): {
     title: string;
     description?: string;
     dueDate?: string;
