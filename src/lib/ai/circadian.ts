@@ -224,7 +224,7 @@ function mostFrequent(arr: number[]): number | null {
 
   const frequency: Record<number, number> = {};
   let maxFreq = 0;
-  let mostFrequent: number = 0;
+  let mostFrequent = 0;
 
   arr.forEach(value => {
     frequency[value] = (frequency[value] || 0) + 1;
@@ -545,7 +545,7 @@ function generateTimeSuggestions(
   const optimalHours = energyProfile.optimal_work_hours || { start: 9, end: 17 };
 
   // Calculate suggested date and time
-  let suggestedDate = new Date().toISOString().split('T')[0];
+  const suggestedDate = new Date().toISOString().split('T')[0];
   let suggestedHour = optimalHours.start;
 
   // Adjust based on deadline pressure
