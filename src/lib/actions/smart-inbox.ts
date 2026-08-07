@@ -18,6 +18,10 @@ export interface InboxSource {
   confidence: number;
   priority_score?: number;
   status: "pending" | "processing" | "converted" | "dismissed";
+  predicted_priority?: "critical" | "high" | "medium" | "low" | "none";
+  predicted_due_date?: string;
+  suggested_labels?: string; // JSON string in database
+  ai_reasoning?: string;
   metadata: string; // JSON string with additional data
   created_at: string;
   updated_at: string;
@@ -30,6 +34,10 @@ export interface SmartInboxItem {
   matches: string[];
   priority_score: number;
   ai_suggestion?: string;
+  predicted_priority?: "critical" | "high" | "medium" | "low" | "none";
+  predicted_due_date?: string;
+  suggested_labels?: string; // JSON string in database
+  ai_reasoning?: string;
 }
 
 export interface SmartInboxResponse {
@@ -114,12 +122,20 @@ export async function getSmartInbox(options?: {
       confidence: source.confidence,
       priority_score: source.priority_score,
       status: source.status,
+      predicted_priority: source.predicted_priority,
+      predicted_due_date: source.predicted_due_date,
+      suggested_labels: source.suggested_labels,
+      ai_reasoning: source.ai_reasoning,
       metadata: source.metadata,
       created_at: source.created_at,
       updated_at: source.updated_at,
     },
     matches: [],
     priority_score: source.priority_score ?? 0,
+    predicted_priority: source.predicted_priority,
+    predicted_due_date: source.predicted_due_date,
+    suggested_labels: source.suggested_labels,
+    ai_reasoning: source.ai_reasoning,
   }));
 
   return {
