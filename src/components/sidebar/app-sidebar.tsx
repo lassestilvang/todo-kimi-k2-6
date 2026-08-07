@@ -25,6 +25,8 @@ import {
   Smile,
   GraduationCap,
   Lightbulb,
+  Plug2,
+  Brain,
   type LucideIcon
 } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -93,10 +95,12 @@ const views: ViewItem[] = [
   { id: "analytics", name: "Analytics", icon: BarChart3 },
   { id: "investment", name: "Technology Portfolio", icon: TrendingUp },
   { separator: true, label: "Labs" },
+  { id: "energy", name: "Energy Scheduler", icon: Zap },
+  { id: "knowledge", name: "Knowledge Vault", icon: Brain },
+  { id: "integrations", name: "Integrations", icon: Plug2 },
   { id: "labs", name: "AI Playground", icon: TestTube },
   { id: "project-planning", name: "Project Planner", icon: GraduationCap },
   { id: "skills", name: "Skills Tracker", icon: Calculator },
-  { id: "energy", name: "Energy Scheduler", icon: Zap },
   { id: "stories", name: "Success Stories", icon: Smile },
   { id: "decision-journal", name: "Decision Journal", icon: Lightbulb },
   { id: "career-compass", name: "Career Compass", icon: GraduationCap },
