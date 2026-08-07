@@ -81,7 +81,7 @@ export async function detectScheduleConflicts(
  */
 export async function rescheduleWithBuffer(
   tasks: TaskWithRelations[],
-  bufferMinutes: number = 15,
+  bufferMinutes = 15,
   constraints?: {
     workHours?: { start: number; end: number };
     userId?: number;
