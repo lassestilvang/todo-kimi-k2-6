@@ -12,7 +12,7 @@ export async function createTaskConnection(
   sourceTaskId: number,
   targetTaskId: number,
   connectionType: string,
-  strength: number = 0.5,
+  strength = 0.5,
   notes?: string
 ): Promise<{
   id: number;
@@ -186,7 +186,7 @@ export async function getConnectionStrength(
  */
 export async function findRelatedTasks(
   taskId: number,
-  limit: number = 10,
+  limit = 10,
   connectionTypes: string[] = ['prerequisite', 'inspiration', 'similar', 'related', 'learned_from', 'contrast']
 ): Promise<TaskWithRelations[]> {
   const db = getDb();
@@ -332,7 +332,7 @@ export async function recordHabitContext(
   taskId: number,
   contextType: 'time_of_day' | 'location' | 'mood' | 'energy_level' | 'external_trigger',
   contextValue: string,
-  success: boolean = true
+  success = true
 ): Promise<void> {
   const db = getDb();
   const user = await getCurrentUser();
@@ -461,7 +461,7 @@ async function updateSingleSkill(userId: number, skillName: string, task: TaskWi
       evidence_task_ids: string | null;
     } | undefined;
 
-  let evidenceTaskIds = existing?.evidence_task_ids ? JSON.parse(existing.evidence_task_ids) : [];
+  const evidenceTaskIds = existing?.evidence_task_ids ? JSON.parse(existing.evidence_task_ids) : [];
 
   if (!existing?.id) {
     evidenceTaskIds.push(task.id);
