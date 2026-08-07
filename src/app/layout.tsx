@@ -10,6 +10,7 @@ import { QueryProvider } from "@/components/query-provider";
 import { SessionProvider } from "@/components/session-provider";
 import { WebVitalsTracker } from "@/components/web-vitals";
 import { initSentry } from "@/lib/sentry";
+import { I18nProvider } from "@/i18n/provider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -43,7 +44,9 @@ export default function RootLayout({
               <QueryProvider>
                 <NotificationProvider>
                   <TooltipProvider delay={0}>
-                    {children}
+                    <I18nProvider>
+                      {children}
+                    </I18nProvider>
                   </TooltipProvider>
                 </NotificationProvider>
               </QueryProvider>
