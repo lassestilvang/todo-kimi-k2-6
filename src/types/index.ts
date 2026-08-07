@@ -544,7 +544,7 @@ export interface CreateIntegrationInput {
   user_id: number;
   type: IntegrationType;
   name: string;
-  config?: Record<string, any>;
+  config?: Record<string, unknown>;
   sync_direction?: "import" | "export" | "bidirectional";
 }
 
@@ -553,7 +553,7 @@ export interface CreateTaskMappingInput {
   external_task_id: string;
   local_task_id?: number;
   field_mappings?: Record<string, string>;
-  sync_rules?: Record<string, any>;
+  sync_rules?: Record<string, unknown>;
 }
 
 export interface CreateDecisionTemplateInput {
