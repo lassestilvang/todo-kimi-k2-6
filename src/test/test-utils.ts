@@ -1,5 +1,4 @@
-import { Database } from 'better-sqlite3';
-import { setupSchema } from '@/lib/db/schema';
+import type { Task } from '@/types';
 import { initializeSchema } from '@/lib/db/index';
 import { createMockDatabase } from '@/lib/db/mock-driver';
 
@@ -9,7 +8,7 @@ export async function setupTestDb(): Promise<ReturnType<typeof createMockDatabas
   // Always create a fresh database for test isolation
   testDb = createMockDatabase();
   // Use the full schema that includes all tables (including knowledge graph tables)
-  initializeSchema(testDb as any);
+  initializeSchema(testDb as Parameters<typeof initializeSchema>[0]);
   return testDb;
 }
 
@@ -20,7 +19,7 @@ export async function cleanupTestDb(): Promise<void> {
   }
 }
 
-export async function createTestTasks(): Promise<any[]> {
+export async function createTestTasks(): Promise<Task[]> {
   const db = testDb;
   if (!db) {
     throw new Error('Database not initialized. Call setupTestDb first.');
@@ -58,16 +57,23 @@ export async function createTestTasks(): Promise<any[]> {
   `);
 
   return [
-    { id: 1, name: 'Design homepage mockup', description: 'Create wireframes', priority: 'high', completed: false, user_id: 1 },
-    { id: 2, name: 'Write project documentation', description: 'Document API', priority: 'medium', completed: true, user_id: 1 },
-    { id: 3, name: 'Code review pending PRs', description: 'Review PRs', priority: 'low', completed: true, user_id: 1 }
+    { id: 1, name: 'Design homepage mockup', description: 'Create wireframes', priority: 'high', completed: false, user_id: 1, date: '2024-01-15', list_id: null, notes: null, deadline: null, estimate: null, actual_time: null, recurring: 'none', recurring_config: null, completed_at: null, created_at: '', updated_at: '', sort_order: 0, archived: false },
+    { id: 2, name: 'Write project documentation', description: 'Document API', priority: 'medium', completed: true, user_id: 1, date: '2024-01-16', list_id: null, notes: null, deadline: null, estimate: null, actual_time: null, recurring: 'none', recurring_config: null, completed_at: '2024-01-25', created_at: '', updated_at: '', sort_order: 1, archived: false },
+    { id: 3, name: 'Code review pending PRs', description: 'Review PRs', priority: 'low', completed: true, user_id: 1, date: '2024-01-17', list_id: null, notes: null, deadline: null, estimate: null, actual_time: null, recurring: 'none', recurring_config: null, completed_at: '2024-01-18', created_at: '', updated_at: '', sort_order: 2, archived: false }
   ];
 }
 
 // Test utilities
 export const waitFor = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-export const mockResponse = (data: any, status = 200) => ({
+export type MockResponse<T = unknown> = {
+  ok: boolean;
+  status: number;
+  json: () => Promise<T>;
+  text: () => Promise<string>;
+};
+
+export const mockResponse = <T = unknown>(data: T, status = 200): MockResponse<T> => ({
   ok: status >= 200 && status < 300,
   status,
   json: async () => data,
