@@ -7,7 +7,7 @@
  *        https://www.googleapis.com/auth/gmail.modify
  */
 
-import { BaseConnector, IntegrationConfig, ExternalRecord, EmailRecord } from './base-connector';
+import { BaseConnector, IntegrationConfig, EmailRecord } from './base-connector';
 
 export class GmailConnector extends BaseConnector {
   readonly id = 'gmail';
@@ -15,7 +15,7 @@ export class GmailConnector extends BaseConnector {
   readonly name = 'Gmail';
 
   private apiToken: string;
-  private userId: string = 'me';
+  private userId = 'me';
 
   constructor(config: IntegrationConfig & { apiToken: string; userId?: string }) {
     super(config);
@@ -47,7 +47,7 @@ export class GmailConnector extends BaseConnector {
     const records: EmailRecord[] = [];
 
     // Build query for messages
-    let query = `newer_than:${this.formatDateDelta(since)}`;
+    const query = `newer_than:${this.formatDateDelta(since)}`;
 
     // List messages
     const listResponse = await this.gmailApiFetch(`https://gmail.googleapis.com/gmail/v1/users/${this.userId}/messages?q=${encodeURIComponent(query)}${options?.limit ? `&maxResults=${options.limit}` : ''}`);
@@ -107,7 +107,7 @@ export class GmailConnector extends BaseConnector {
     };
   }
 
-  async pushTask(task: {
+  async pushTask(_task: {
     title: string;
     description?: string;
     dueDate?: string;
