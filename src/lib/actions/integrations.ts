@@ -274,7 +274,7 @@ export async function getIntegrationSyncStatus(
   const statusPromises = integrations.map(async (integration) => {
     const config = JSON.parse(integration.config || "{}");
 
-    let taskCount: number = 0;
+    let taskCount = 0;
     let lastSync: string | undefined = undefined;
     let syncStatus = "unknown";
 
@@ -356,7 +356,7 @@ export async function getUserTaskMappings(
   const db = getDb();
 
   let query = "SELECT * FROM task_mappings WHERE integration_id IN (SELECT id FROM integrations WHERE user_id = ?)";
-  let params = [user.id];
+  const params = [user.id];
 
   if (integrationId) {
     query += " AND integration_id = ?";
