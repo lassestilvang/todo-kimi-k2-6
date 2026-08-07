@@ -7,9 +7,6 @@
 
 import { getDb } from "@/lib/db";
 import { revalidatePath } from "next/cache";
-import { z } from "zod";
-
-const db = getDb();
 
 // Trigger types
 export type TriggerType = "manual" | "cron" | "schedule" | "task_created" | "task_completed" | "due_date";
@@ -23,25 +20,21 @@ export type WorkflowStatus = "active" | "paused" | "error";
 // Workflow execution status
 export type ExecutionStatus = "running" | "completed" | "failed" | "skipped";
 
-// Schema definitions
-export const createWorkflowSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  description: z.string().optional(),
-  trigger_type: z.enum(["manual", "cron", "schedule", "task_created", "task_completed", "due_date"]),
-  trigger_config: z.any().optional(),
-  action_type: z.enum(["create_task", "update_task", "send_notification", "log_message", "webhook"]),
-  action_config: z.any().optional(),
-  condition_json: z.any().optional(),
-  enabled: z.boolean().optional(),
-});
-
-export const workflowExecutionSchema = z.object({
-  workflow_id: z.number(),
-  input_data: z.any().optional(),
-});
+// Type for workflow creation data
+export interface CreateWorkflowData {
+  name: string;
+  description?: string;
+  trigger_type: TriggerType;
+  trigger_config?: Record<string, unknown>;
+  action_type: ActionType;
+  action_config?: Record<string, unknown>;
+  condition_json?: Record<string, unknown>;
+  enabled?: boolean;
+}
 
 // Get all workflows for a user
 export async function getWorkflows(userId: number) {
+  const db = getDb();
   const stmt = db.prepare(`
     SELECT * FROM workflows
     WHERE user_id = ?
@@ -52,6 +45,7 @@ export async function getWorkflows(userId: number) {
 
 // Get a single workflow
 export async function getWorkflow(id: number, userId: number) {
+  const db = getDb();
   const stmt = db.prepare(`
     SELECT * FROM workflows
     WHERE id = ? AND user_id = ?
@@ -62,9 +56,14 @@ export async function getWorkflow(id: number, userId: number) {
 // Create a new workflow
 export async function createWorkflow(
   userId: number,
-  data: z.infer<typeof createWorkflowSchema>
+  data: { name: string; description?: string; trigger_type: TriggerType; trigger_config?: Record<string, unknown>; action_type: ActionType; action_config?: Record<string, unknown>; condition_json?: Record<string, unknown>; enabled?: boolean }
 ) {
-  const validated = createWorkflowSchema.parse(data);
+  const db = getDb();
+
+  // Validate required fields
+  if (!data.name || data.name.trim() === "") {
+    throw new Error("Name is required");
+  }
 
   const stmt = db.prepare(`
     INSERT INTO workflows (user_id, name, description, trigger_type, trigger_config, action_type, action_config, condition_json, enabled, created_at, updated_at)
@@ -73,25 +72,26 @@ export async function createWorkflow(
 
   const result = stmt.run(
     userId,
-    validated.name,
-    validated.description || null,
-    validated.trigger_type,
-    JSON.stringify(validated.trigger_config || {}),
-    validated.action_type,
-    JSON.stringify(validated.action_config || {}),
-    validated.condition_json ? JSON.stringify(validated.condition_json) : null
+    data.name,
+    data.description || null,
+    data.trigger_type,
+    JSON.stringify(data.trigger_config || {}),
+    data.action_type,
+    JSON.stringify(data.action_config || {}),
+    data.condition_json ? JSON.stringify(data.condition_json) : null
   );
 
   revalidatePath(`/workflows`);
-  return { id: result.lastInsertRowid as number, ...validated };
+  return { id: result.lastInsertRowid as number, ...data };
 }
 
 // Update a workflow
 export async function updateWorkflow(
   userId: number,
   id: number,
-  data: Partial<z.infer<typeof createWorkflowSchema>>
+  data: Partial<{ name: string; description?: string; trigger_type: TriggerType; trigger_config?: Record<string, unknown>; action_type: ActionType; action_config?: Record<string, unknown>; condition_json?: Record<string, unknown>; enabled?: boolean }>
 ) {
+  const db = getDb();
   const workflow = await getWorkflow(id, userId);
   if (!workflow) {
     throw new Error("Workflow not found");
@@ -131,6 +131,7 @@ export async function updateWorkflow(
 
 // Delete a workflow
 export async function deleteWorkflow(id: number, userId: number) {
+  const db = getDb();
   const stmt = db.prepare(`
     DELETE FROM workflows
     WHERE id = ? AND user_id = ?
@@ -143,6 +144,7 @@ export async function deleteWorkflow(id: number, userId: number) {
 
 // Toggle workflow enabled status
 export async function toggleWorkflow(id: number, userId: number) {
+  const db = getDb();
   const workflow = await getWorkflow(id, userId);
   if (!workflow) {
     throw new Error("Workflow not found");
@@ -165,6 +167,7 @@ export async function executeWorkflow(
   inputData?: any,
   userId?: number
 ) {
+  const db = getDb();
   const startTime = Date.now();
 
   // Get workflow
@@ -229,21 +232,22 @@ export async function executeWorkflow(
 
 // Execute an action based on type
 async function executeAction(workflow: any, inputData?: any) {
+  const db = getDb();
   const actionType = workflow.action_type as ActionType;
   const actionConfig = JSON.parse(workflow.action_config || '{}');
 
   switch (actionType) {
     case "create_task":
-      return await createTaskFromWorkflow(actionConfig, inputData);
+      return await createTaskFromWorkflow(db, actionConfig, inputData);
 
     case "update_task":
-      return await updateTaskFromWorkflow(actionConfig, inputData);
+      return await updateTaskFromWorkflow(db, actionConfig, inputData);
 
     case "send_notification":
       return await sendNotification(actionConfig, inputData);
 
     case "log_message":
-      return await logMessage(actionConfig, inputData);
+      return await logMessage(db, actionConfig, inputData);
 
     case "webhook":
       return await callWebhook(actionConfig, inputData);
@@ -254,7 +258,7 @@ async function executeAction(workflow: any, inputData?: any) {
 }
 
 // Create task from workflow
-async function createTaskFromWorkflow(config: any, inputData?: any) {
+async function createTaskFromWorkflow(db: ReturnType<typeof getDb>, config: any, inputData?: any) {
   const name = config.task_name || inputData?.task_name || "Workflow Task";
   const description = config.description || inputData?.description || "";
   const projectId = config.project_id || inputData?.project_id;
@@ -277,7 +281,7 @@ async function createTaskFromWorkflow(config: any, inputData?: any) {
 }
 
 // Update task from workflow
-async function updateTaskFromWorkflow(config: any, inputData?: any) {
+async function updateTaskFromWorkflow(db: ReturnType<typeof getDb>, config: any, inputData?: any) {
   const taskId = config.task_id || inputData?.task_id;
   if (!taskId) {
     throw new Error("Task ID is required for update action");
@@ -342,7 +346,7 @@ async function sendNotification(config: any, inputData?: any) {
 }
 
 // Log message
-async function logMessage(config: any, inputData?: any) {
+async function logMessage(db: ReturnType<typeof getDb>, config: any, inputData?: any) {
   const message = config.message || inputData?.message || "Workflow execution";
   const level = config.level || "info";
 
@@ -390,6 +394,7 @@ export async function getWorkflowExecutions(
   workflowId: number,
   options?: { limit?: number; status?: ExecutionStatus }
 ) {
+  const db = getDb();
   let query = `
     SELECT * FROM workflow_executions
     WHERE workflow_id = ?
