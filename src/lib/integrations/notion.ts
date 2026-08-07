@@ -6,7 +6,7 @@
  * Scope: pages:read, pages:write, databases:read
  */
 
-import { BaseConnector, IntegrationConfig, ExternalRecord, NotionPageRecord } from './base-connector';
+import { BaseConnector, IntegrationConfig, NotionPageRecord } from './base-connector';
 
 export class NotionConnector extends BaseConnector {
   readonly id = 'notion';
