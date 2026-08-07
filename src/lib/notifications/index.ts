@@ -14,14 +14,14 @@ import type { Reminder, Task, User } from "@/types";
 export async function getUsersWithNotifications(): Promise<Array<User & { preferences: { notifications?: boolean } }>> {
   const db = getDb();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const users = db
     .prepare(`
       SELECT u.*,
              json_extract(u.preferences, '$.notifications') as notifications_enabled
       FROM users u
     `)
-    .all() as any as Array<User>;
+    .all() as Array<User & { preferences: { notifications?: boolean } }>;
 
   // Transform to expected format
   return users.map((u: User) => ({
@@ -59,28 +59,27 @@ export async function getReminderWithDetails(
 
   if (!result) return null;
 
-   
   return {
     id: result.id,
     task_id: result.task_id,
     remind_at: result.remind_at,
     created_at: result.created_at,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     task: {
       id: result.task_id,
       name: result.task_name,
       description: result.task_description,
       deadline: result.task_deadline,
-      priority: result.task_priority,
-    } as any as Task,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      priority: result.task_priority as Task['priority'],
+    },
     user: {
       id: 0,
       email: result.user_email,
       name: result.user_name,
+      avatar_url: null,
+      created_at: new Date().toISOString(),
       preferences: JSON.parse(result.preferences || "{}"),
-    } as any as User,
-  } as Reminder & { task: Task; user: User };
+    },
+  } as unknown as Reminder & { task: Task; user: User };
 }
 
 /**
