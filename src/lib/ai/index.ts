@@ -72,6 +72,33 @@ export async function parseTaskInput(input: AITaskInput): Promise<TaskSuggestion
   return ai.parseTask(input);
 }
 
+/**
+ * Parse natural language text into task-like structure for inbox triage
+ * Returns a simplified task structure with priority, labels, due_date, etc.
+ */
+export async function parseNaturalLanguageTask(text: string): Promise<{
+  name: string;
+  description?: string;
+  priority?: "critical" | "high" | "medium" | "low" | "none";
+  due_date?: string;
+  labels?: string[];
+  confidence?: number;
+  matches?: string[];
+}> {
+  const ai = getAIManager();
+  const result = await ai.parseTask({ text });
+
+  return {
+    name: result.name,
+    description: result.description ?? undefined,
+    priority: result.priority || "medium",
+    due_date: result.deadline ?? result.suggested_date ?? undefined,
+    labels: result.list_name ? [result.list_name] : [],
+    confidence: result.provider === "keyword-parser" ? 50 : 80,
+    matches: [],
+  };
+}
+
 // Smart scheduling - suggest optimal times for tasks
 export async function suggestTaskSchedule(
   tasks: Array<{
