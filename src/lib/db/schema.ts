@@ -409,6 +409,35 @@ export function setupSchema(db: Database): void {
     );
   `);
 
+  // Smart Inbox Sources table (for external task sources like calendar, email, etc.)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS smart_inbox_sources (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      source_type TEXT NOT NULL CHECK(source_type IN ('calendar', 'email', 'slack', 'github', 'manual', 'integration')),
+      external_id TEXT NOT NULL,
+      title TEXT NOT NULL,
+      description TEXT,
+      due_date TEXT,
+      priority TEXT DEFAULT 'medium' CHECK(priority IN ('critical', 'high', 'medium', 'low', 'none')),
+      confidence INTEGER DEFAULT 50,
+      priority_score INTEGER DEFAULT 0,
+      status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'processing', 'converted', 'dismissed')),
+      predicted_priority TEXT DEFAULT 'medium' CHECK(predicted_priority IN ('critical', 'high', 'medium', 'low', 'none')),
+      predicted_due_date TEXT,
+      suggested_labels TEXT,
+      ai_reasoning TEXT,
+      metadata TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_smart_inbox_user ON smart_inbox_sources(user_id);
+    CREATE INDEX IF NOT EXISTS idx_smart_inbox_status ON smart_inbox_sources(status);
+    CREATE INDEX IF NOT EXISTS idx_smart_inbox_priority ON smart_inbox_sources(priority_score DESC);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_smart_inbox_external ON smart_inbox_sources(user_id, source_type, external_id);
+    CREATE INDEX IF NOT EXISTS idx_smart_inbox_predicted_priority ON smart_inbox_sources(predicted_priority);
+  `);
+
   // Insert default inbox list
   db.exec(`
     INSERT OR IGNORE INTO lists (id, name, emoji, color, is_inbox, created_at)
