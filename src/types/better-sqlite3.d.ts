@@ -1,20 +1,20 @@
+ 
 declare module 'better-sqlite3' {
   export interface Database {
     prepare(sql: string): Statement;
     exec(sql: string): void;
-    all(sql: string, ...params: any[]): any[];
-    get(sql: string, ...params: any[]): any;
-    run(sql: string, ...params: any[]): { changes: number; lastInsertRowid: number };
+    all<T = unknown>(sql: string, ...params: unknown[]): T[];
+    get<T = unknown>(sql: string, ...params: unknown[]): T | undefined;
+    run(sql: string, ...params: unknown[]): { changes: number; lastInsertRowid: number };
     close(): void;
-    constructor(path: string, options?: { fileMode?: number; journalMode?: number; verbose?: boolean });
   }
 
   export interface Statement {
-    all(...params: any[]): any[];
-    get(...params: any[]): any;
-    run(...params: any[]): { changes: number; lastInsertRowid: number };
-    iterate(...params: any[]): IterableIterator<any>;
-    columns(): any[];
+    all<T = unknown>(...params: unknown[]): T[];
+    get<T = unknown>(...params: unknown[]): T | undefined;
+    run(...params: unknown[]): { changes: number; lastInsertRowid: number };
+    iterate<T = unknown>(...params: unknown[]): IterableIterator<T>;
+    columns(): unknown[];
     plainString: string;
     unstableToString(): string;
     free(): void;
@@ -31,8 +31,7 @@ declare module 'better-sqlite3' {
     verbose?: boolean;
   }
 
-  type DatabaseConstructor = new (path: string, options?: DatabaseOptions) => Database;
-
-  const Database: DatabaseConstructor;
+   
+  const Database: new (path: string, options?: DatabaseOptions) => Database;
   export default Database;
 }
