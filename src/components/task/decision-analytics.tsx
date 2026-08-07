@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   BarChart3,
   TrendingUp,
@@ -97,11 +97,7 @@ export function DecisionAnalytics({ taskId }: DecisionAnalyticsProps) {
   const [timeRange, setTimeRange] = useState<"7d" | "30d" | "90d" | "all">("30d");
   const [metric, setMetric] = useState<"trend" | "rating" | "outcome" | "type">("trend");
 
-  useEffect(() => {
-    loadDecisions();
-  }, [timeRange, taskId]);
-
-  const loadDecisions = async () => {
+  const loadDecisions = useCallback(async () => {
     try {
       const params = new URLSearchParams();
       if (taskId) params.set("task_id", String(taskId));
@@ -117,7 +113,11 @@ export function DecisionAnalytics({ taskId }: DecisionAnalyticsProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [taskId]);
+
+  useEffect(() => {
+    loadDecisions();
+  }, [timeRange, taskId, loadDecisions]);
 
   const filteredDecisions = useMemo(() => {
     const now = new Date();
@@ -157,6 +157,9 @@ export function DecisionAnalytics({ taskId }: DecisionAnalyticsProps) {
       .map(([date, count]) => ({ date, count }));
 
     // Type distribution
+    const typeWithOutcomes = (type: string) =>
+      filteredDecisions.filter(d => d.decision_type === type && d.outcome).length;
+
     const typeDistribution = decisionTypes.map(type => {
       const typeDecisions = filteredDecisions.filter(d => d.decision_type === type.value);
       const typeRated = typeDecisions.filter(d => d.outcome_rating !== null);
@@ -172,9 +175,6 @@ export function DecisionAnalytics({ taskId }: DecisionAnalyticsProps) {
         ratingColor: type.ratingColor,
       };
     });
-
-    const typeWithOutcomes = (type: string) =>
-      filteredDecisions.filter(d => d.decision_type === type && d.outcome).length;
 
     // Best and worst decisions
     const bestDecisions = [...rated]
