@@ -26,6 +26,8 @@ import { TaskInvestmentPortfolio } from "@/components/task/task-investment-portf
 import { MobileSidebar } from "@/components/task/mobile-sidebar";
 import { GoalsDashboard } from "@/components/task/goals-dashboard";
 import { AIAssistant } from "@/components/task/ai-assistant";
+import { KnowledgeGraph } from "@/components/task/knowledge-graph";
+import { IntegrationMarketplace } from "@/components/task/integration-marketplace";
 import { useTasks } from "@/hooks/use-tasks";
 import type { TaskWithRelations, FilterPreset, Template, Goal, Workspace } from "@/types";
 import { toast } from "sonner";
@@ -56,6 +58,8 @@ export default function Home() {
     energy: "Energy Scheduler",
     decision_journal: "Decision Journal",
     career_compass: "Career Compass",
+    knowledge: "Knowledge Vault",
+    integrations: "Integration Marketplace",
   };
   const [templates, setTemplates] = useState<Template[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -495,6 +499,26 @@ export default function Home() {
           open={true}
           onOpenChange={(open) => !open && handleViewChange("today")}
         />
+      );
+    }
+
+    if (currentView === "knowledge") {
+      return (
+        <div className="p-6">
+          <KnowledgeGraph
+            tasks={tasks}
+            userId={1}
+            className="h-full"
+          />
+        </div>
+      );
+    }
+
+    if (currentView === "integrations") {
+      return (
+        <div className="p-6">
+          <IntegrationMarketplace userId={1} />
+        </div>
       );
     }
 
