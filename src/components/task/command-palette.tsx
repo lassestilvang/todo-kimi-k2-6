@@ -8,6 +8,11 @@ import {
   List as ListIcon,
   Search,
   Clock,
+  Plus,
+  Calendar,
+  Target,
+  Users,
+  Lightbulb,
 } from "lucide-react";
 import {
   CommandDialog,
@@ -16,7 +21,9 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
+  CommandShortcut,
 } from "@/components/ui/command";
+import { Badge } from "@/components/ui/badge";
 import type { TaskWithRelations } from "@/types";
 
 interface CommandPaletteProps {
@@ -83,6 +90,33 @@ const categories = [
       { name: "Focus mode", keyword: "focus", action: () => ({ type: "go_to_view" as const, payload: "focus" }) },
       { name: "Pomodoro timer", keyword: "pomodoro", action: () => ({ type: "go_to_view" as const, payload: "pomodoro" }) },
       { name: "Goals Dashboard", keyword: "goals", action: () => ({ type: "go_to_view" as const, payload: "goals" }) },
+    ],
+  },
+  {
+    name: "Scheduler",
+    icon: Calendar,
+    items: [
+      { name: "Auto-schedule tasks", keyword: "schedule", action: () => ({ type: "go_to_view" as const, payload: "scheduler" }) },
+      { name: "Find free time slots", keyword: "free time", action: () => ({ type: "go_to_view" as const, payload: "scheduler" }) },
+    ],
+  },
+  {
+    name: "Team",
+    icon: Users,
+    items: [
+      { name: "Team Command Center", keyword: "team", action: () => ({ type: "go_to_view" as const, payload: "team" }) },
+      { name: "Team velocity", keyword: "velocity", action: () => ({ type: "go_to_view" as const, payload: "team" }) },
+      { name: "Knowledge Vault", keyword: "knowledge", action: () => ({ type: "go_to_view" as const, payload: "knowledge" }) },
+    ],
+  },
+  {
+    name: "AI & Insights",
+    icon: Lightbulb,
+    items: [
+      { name: "AI parse task", keyword: "ai parse", action: () => ({ type: "open_ai" as const, payload: "parse" }) },
+      { name: "Generate project plan", keyword: "project", action: () => ({ type: "open_ai" as const, payload: "project" }) },
+      { name: "Decision template", keyword: "decision", action: () => ({ type: "open_ai" as const, payload: "decision" }) },
+      { name: "Ask AI", keyword: "ask", action: () => ({ type: "open_ai" as const, payload: "" }) },
     ],
   },
 ];
