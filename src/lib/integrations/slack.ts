@@ -153,7 +153,7 @@ export class SlackConnector extends BaseConnector {
     };
   }
 
-  private extractTitle(text: string, ts: string): string | null {
+  private extractTitle(text: string, _ts: string): string | null {
     // Try to extract title from various formats
     const patterns = [
       /todo:\s*(.+)/i,
@@ -187,7 +187,6 @@ export class SlackConnector extends BaseConnector {
   private extractDescription(text: string): string | undefined {
     // Return full text minus the title prefix
     const lines = text.split('\n');
-    const titleLine = lines[0] || '';
 
     // Remove common task prefixes from description
     const descLines = lines.slice(1).filter((line) => line.trim().length > 0);
@@ -499,7 +498,7 @@ export class SlackConnector extends BaseConnector {
     return data.ok === true;
   }
 
-  async pushTask(task: {
+  async pushTask(_task: {
     title: string;
     description?: string;
     dueDate?: string;
