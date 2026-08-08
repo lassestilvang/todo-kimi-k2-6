@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Plus, BarChart3, WifiOff } from "lucide-react";
+import { Plus, BarChart3, WifiOff, Brain, Battery, Lightbulb, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,13 @@ import { IntegrationMarketplace } from "@/components/task/integration-marketplac
 import { useTasks } from "@/hooks/use-tasks";
 import type { TaskWithRelations, FilterPreset, Template, Goal, Workspace } from "@/types";
 import { toast } from "sonner";
+import {
+  CognitiveLoadIndicator,
+  EnergyBudgetWidget,
+  CrossAppSyncHub,
+  DecisionShadowTracker,
+  MoodAdaptiveTaskViews
+} from "@/components/task/enhanced-productivity-dashboard";
 
 export default function Home() {
   const { status } = useSession();
@@ -53,6 +61,7 @@ export default function Home() {
     timeline: "Timeline",
     ai: tNav("ai"),
     analytics: tNav("analytics"),
+    analytics_enhanced: "Enhanced Analytics",
     goals: tNav("goals"),
     investment: "Task Investment Portfolio",
     energy: "Energy Scheduler",
@@ -388,6 +397,87 @@ export default function Home() {
             tasks={tasks}
             completedTasks={completedTasks}
           />
+        </div>
+      );
+    }
+
+    if (currentView === "analytics_enhanced") {
+      return (
+        <div className="space-y-6 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold flex items-center gap-2">
+                <Brain className="h-8 w-8 text-purple-500" />
+                Enhanced Productivity Hub
+              </h1>
+              <p className="text-muted-foreground mt-1">
+                AI-powered insights for optimal performance
+              </p>
+            </div>
+          </div>
+
+          {/* Overview Cards */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Cognitive Load</CardTitle>
+                <Brain className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">Stable</div>
+                <p className="text-xs text-muted-foreground">
+                  75% completion rate
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Energy Budget</CardTitle>
+                <Battery className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  78/100
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Decisions Made</CardTitle>
+                <Lightbulb className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">12</div>
+                <p className="text-xs text-muted-foreground">
+                  Avg rating: 3.8/5
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">External Sources</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">5</div>
+                <p className="text-xs text-muted-foreground">
+                  Pending conversion
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Enhanced Productivity Components */}
+          <div className="space-y-6">
+            <CognitiveLoadIndicator />
+            <EnergyBudgetWidget />
+            <DecisionShadowTracker />
+            <CrossAppSyncHub />
+            <MoodAdaptiveTaskViews tasks={tasks} />
+          </div>
         </div>
       );
     }
