@@ -54,7 +54,7 @@ export default function MeetingAssistantPage() {
       } else {
         throw new Error("Failed to extract action items");
       }
-    } catch (error) {
+    } catch {
       // Fallback to local extraction
       const { extractActionItems: localExtract } = await import("@/lib/ai/meeting-transcription");
       const items = await localExtract(transcript, meetingTitle);
@@ -71,7 +71,7 @@ export default function MeetingAssistantPage() {
     try {
       // In a real implementation, this would call the task creation API
       toast.success(`Would create ${actionItems.length} task(s) from action items`);
-    } catch (error) {
+    } catch {
       toast.error("Failed to convert to tasks");
     }
   };
