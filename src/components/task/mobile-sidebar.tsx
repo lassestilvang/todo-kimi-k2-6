@@ -16,6 +16,7 @@ import {
   Repeat,
   BarChart3,
   Bot,
+  Brain,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
@@ -66,6 +67,8 @@ const views = [
   { id: "matrix", name: "Priority Matrix", icon: LayoutGrid },
   { id: "gantt", name: "Gantt Chart", icon: BarChart3 },
   { id: "ai", name: "AI Assistant", icon: Bot },
+  { id: "analytics", name: "Analytics", icon: BarChart3 },
+  { id: "analytics_enhanced", name: "Enhanced Analytics", icon: Brain },
 ];
 
 export function MobileSidebar({
