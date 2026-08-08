@@ -84,7 +84,7 @@ describe('TeamVelocityDashboard', () => {
   });
 
   it('shows loading skeletons initially', async () => {
-    mockFetch.mockImplementation(() => new Promise(() => {}));
+    mockFetch.mockImplementation(() => new Promise(() => { void 0; }));
 
     render(<TeamVelocityDashboard />);
 
