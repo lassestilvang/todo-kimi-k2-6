@@ -168,8 +168,8 @@ function createNoOpDatabase(): Database {
       get: () => undefined,
       all: () => [],
     }),
-    exec: () => {},
-    close: () => {},
+    exec: () => { void 0; },
+    close: () => { void 0; },
     transaction: <T>(fn: () => T): T => fn(),
   };
 }
