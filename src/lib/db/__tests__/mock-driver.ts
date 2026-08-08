@@ -62,7 +62,7 @@ export function createMockDatabase(): Database {
         get: (...params: unknown[]) => {
           // Handle COUNT queries
           if (sql.toUpperCase().includes("COUNT(*)")) {
-            return { count: table.rows.length } as any;
+            return { count: table.rows.length } as { count: number };
           }
 
           // Handle WHERE conditions for filtering
