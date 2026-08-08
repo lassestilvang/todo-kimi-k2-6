@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { processEmail, EmailToTaskResult } from "@/lib/actions/email-to-task";
+import { processEmail } from "@/lib/actions/email-to-task";
 import { checkRateLimit, getClientKey, rateLimits } from "@/lib/rate-limiter";
 
 // Webhook handler for email-to-task integration
