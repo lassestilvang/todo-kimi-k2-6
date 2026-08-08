@@ -78,8 +78,8 @@ describe("Dependencies Actions - Comprehensive Tests", () => {
     });
 
     it("should log task action after adding dependency", async () => {
-      await addTaskDependency(10, 5);
-      expect(taskHelpers.logTaskAction).toHaveBeenCalledWith(10, "dependency_added", "Task now blocked by task 5");
+      await addTaskDependency(100, 5);
+      expect(taskHelpers.logTaskAction).toHaveBeenCalledWith(100, "dependency_added", "Task now blocked by task 5");
     });
 
     it("should throw error when task_id equals depends_on_task_id (self-dependency)", async () => {
