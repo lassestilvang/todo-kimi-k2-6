@@ -120,7 +120,7 @@ export function CareerCompass({ skills = [] }: CareerCompassProps) {
 
     // Sort by match score
     return paths.sort((a, b) => b.matchScore - a.matchScore);
-  }, [skills]);
+  }, [skillNames]);
 
   useEffect(() => {
     setRecommendations(generateCareerPaths);
