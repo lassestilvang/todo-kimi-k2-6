@@ -8,12 +8,9 @@ import {
   Trash2,
   Move,
   Tag,
-  Calendar,
   ArrowUpDown,
   RefreshCw,
-  Send,
   AlertTriangle,
-  Users,
 } from "lucide-react";
 import {
   Dialog,
@@ -65,7 +62,6 @@ export function BatchOperationModal({
   const selectedTasks = tasks.filter(t => selectedIds.has(t.id));
   const pendingTasks = selectedTasks.filter(t => !t.completed);
   const completedTasks = selectedTasks.filter(t => t.completed);
-  const activeTasks = selectedTasks.filter(t => !t.archived);
 
   const handleOperation = async () => {
     setIsProcessing(true);
@@ -388,7 +384,7 @@ export function BatchOperationModal({
           {requireConfirmation && (
             <div className="mt-4">
               <h4 className="font-medium mb-2">
-                Type "{confirmationInput}" to confirm
+                Type <code>{confirmationInput}</code> to confirm
               </h4>
               <Input
                 value={confirmationInput}
