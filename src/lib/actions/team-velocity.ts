@@ -78,7 +78,16 @@ export async function getTeamMembers(workspaceId: number): Promise<TeamMember[]>
     ORDER BY wu.joined_at ASC
   `);
 
-  const rows = stmts.all(workspaceId) as any[];
+  interface TeamMemberRow {
+  id: number;
+  user_id: number;
+  role: "owner" | "admin" | "member" | "viewer";
+  joined_at: string;
+  name: string | null;
+  email: string;
+}
+
+  const rows = stmts.all(workspaceId) as TeamMemberRow[];
 
   return rows.map(row => ({
     id: row.id,
@@ -119,9 +128,22 @@ export async function getTeamVelocity(
     ${memberFilter ? "AND assignee_id = ?" : ""}
   `);
 
+  interface TaskRow {
+  id: number;
+  name: string;
+  completed: number;
+  completed_at: string | null;
+  created_at: string;
+  assignee_id: number | null;
+  estimated_minutes: number | null;
+  actual_minutes: number | null;
+  workspace_id: number;
+  status?: string | null;
+}
+
   const allTasks = memberFilter
-    ? tasks.all(workspaceId, memberFilter) as any[]
-    : tasks.all(workspaceId) as any[];
+    ? tasks.all(workspaceId, memberFilter) as TaskRow[]
+    : tasks.all(workspaceId) as TaskRow[];
 
   // Calculate velocity (completed tasks per day)
   const completedTasks = allTasks.filter(t => t.completed && t.completed_at);
@@ -130,13 +152,14 @@ export async function getTeamVelocity(
   // Group by date
   const dailyCompletions = new Map<string, number>();
   completedTasks.forEach(task => {
-    const date = task.completed_at.split('T')[0];
-    const current = dailyCompletions.get(date) || 0;
-    dailyCompletions.set(date, current + 1);
+    if (task.completed_at) {
+      const date = task.completed_at.split('T')[0];
+      const current = dailyCompletions.get(date) || 0;
+      dailyCompletions.set(date, current + 1);
+    }
   });
 
-  const daysWithWork = Array.from(dailyCompletions.values());
-  const totalDays = new Set(completedTasks.map(t => t.completed_at.split('T')[0])).size;
+  const totalDays = new Set(completedTasks.map(t => t.completed_at?.split('T')[0])).size;
 
   const velocity = totalDays > 0
     ? Math.round(completedCount / totalDays * 10) / 10
@@ -162,7 +185,7 @@ export async function getTeamVelocity(
   // Calculate average cycle time
   const cycleTimes = completedTasks.map(t => {
     const created = new Date(t.created_at);
-    const completed = new Date(t.completed_at);
+    const completed = t.completed_at ? new Date(t.completed_at) : created;
     return (completed.getTime() - created.getTime()) / (1000 * 60 * 60 * 24);
   });
   const averageCycleTime = cycleTimes.length > 0
@@ -196,12 +219,16 @@ export async function getTeamVelocity(
   }).sort((a, b) => b.velocity - a.velocity).slice(0, 5);
 
   // Get blockers (tasks with dependencies)
+  interface BlockerRow {
+    id: number;
+    name: string;
+  }
   const blockers = db.prepare(`
     SELECT t.id, t.name
     FROM task_dependencies td
     JOIN tasks t ON td.task_id = t.id
     WHERE t.workspace_id = ? AND td.type = 'hard'
-  `).all(workspaceId) as any[];
+  `).all(workspaceId) as BlockerRow[];
 
   return {
     teamId: workspaceId,
@@ -234,6 +261,12 @@ export async function getTeamActivity(
   const startStr = startDate.toISOString().split('T')[0];
 
   // Get daily activity
+  interface ActivityRow {
+    date: string;
+    actions: number;
+    completions: number;
+    creations: number;
+  }
   const activities = db.prepare(`
     SELECT
       date(created_at) as date,
@@ -244,18 +277,22 @@ export async function getTeamActivity(
     WHERE workspace_id = ? AND date >= ?
     GROUP BY date(created_at)
     ORDER BY date
-  `).all(workspaceId, startStr) as any[];
+  `).all(workspaceId, startStr) as ActivityRow[];
 
   // Get comments count
+  interface CommentCountRow {
+    date: string;
+    comments: number;
+  }
   const commentCounts = db.prepare(`
     SELECT date(created_at) as date, COUNT(*) as comments
     FROM task_comments
     WHERE workspace_id = ?
     GROUP BY date(created_at)
-  `).all(workspaceId) as any[];
+  `).all(workspaceId) as CommentCountRow[];
 
   const commentMap = new Map<string, number>();
-  commentCounts.forEach((c: any) => {
+  commentCounts.forEach((c) => {
     commentMap.set(c.date, c.comments);
   });
 
@@ -267,7 +304,7 @@ export async function getTeamActivity(
     d.setDate(d.getDate() - (days - 1 - i));
     const dateStr = d.toISOString().split('T')[0];
 
-    const activity = activities.find((a: any) => a.date === dateStr);
+    const activity = activities.find((a) => a.date === dateStr);
 
     result.push({
       date: dateStr,
@@ -289,8 +326,6 @@ export async function getTeamSizeDistribution(workspaceId: number): Promise<{
   mid: number;
   senior: number;
 }> {
-  const db = getDb();
-
   // In a real implementation, this would analyze task complexity and completion patterns
   const members = await getTeamMembers(workspaceId);
   const velocityData = await getTeamVelocityReport(workspaceId);
@@ -359,12 +394,31 @@ export async function getTeamWorkloadDistribution(workspaceId: number): Promise<
 }> {
   const db = getDb();
 
+  interface WorkloadTask {
+  id: number;
+  workspace_id: number;
+  user_id: number;
+  name: string;
+  completed: number;
+  created_at: string;
+  assignee_id: number | null;
+  status: string | null;
+  estimated_minutes: number | null;
+  actual_minutes: number | null;
+  project_id: number | null;
+  label_ids: string | null;
+  deadline: string | null;
+  priority: number | null;
+  description: string | null;
+  updated_at: string | null;
+  user_name: string | null;
+}
   const allTasks = db.prepare(`
     SELECT t.*, u.name as user_name
     FROM tasks t
     LEFT JOIN users u ON t.assignee_id = u.id
     WHERE t.workspace_id = ?
-  `).all(workspaceId) as any[];
+  `).all(workspaceId) as WorkloadTask[];
 
   const totalTasks = allTasks.length;
   const completed = allTasks.filter(t => t.completed).length;
@@ -415,7 +469,6 @@ export async function predictTeamCapacity(
   confidence: number;
 }> {
   const report = await getTeamVelocityReport(workspaceId);
-  const workload = await getTeamWorkloadDistribution(workspaceId);
   const members = await getTeamMembers(workspaceId);
 
   // Base velocity
