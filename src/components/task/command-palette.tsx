@@ -2,15 +2,12 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
-  UserCheck,
   Brain,
   BarChart3,
+  Calendar,
+  Clock,
   List as ListIcon,
   Search,
-  Clock,
-  Plus,
-  Calendar,
-  Target,
   Users,
   Lightbulb,
 } from "lucide-react";
@@ -21,9 +18,7 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-  CommandShortcut,
 } from "@/components/ui/command";
-import { Badge } from "@/components/ui/badge";
 import type { TaskWithRelations } from "@/types";
 
 interface CommandPaletteProps {
@@ -113,25 +108,11 @@ const categories = [
     name: "AI & Insights",
     icon: Lightbulb,
     items: [
-      { name: "AI parse task", keyword: "ai parse", action: () => ({ type: "open_ai" as const, payload: "parse" }) },
-      { name: "Generate project plan", keyword: "project", action: () => ({ type: "open_ai" as const, payload: "project" }) },
-      { name: "Decision template", keyword: "decision", action: () => ({ type: "open_ai" as const, payload: "decision" }) },
-      { name: "Ask AI", keyword: "ask", action: () => ({ type: "open_ai" as const, payload: "" }) },
+      { name: "Ask AI general question", keyword: "ask", action: () => ({ type: "open_ai" as const, payload: "" }) },
     ],
   },
 ];
 
-interface CategoryItem {
-  name: string;
-  keyword: string;
-  action: (query: string | (() => { type: string; payload: unknown })) => CommandAction;
-}
-
-interface Category {
-  name: string;
-  icon: React.ComponentType<{ className?: string }>;
-  items: CategoryItem[];
-}
 
 // Simple NLP command parser
 const nlpParser = {
