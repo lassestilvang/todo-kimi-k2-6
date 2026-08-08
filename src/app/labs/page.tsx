@@ -24,7 +24,7 @@ import { CareerCompass } from "@/components/task/career-compass";
 import { DecisionTracker } from "@/components/task/decision-tracker";
 import { DecisionAnalytics } from "@/components/task/decision-analytics";
 
-import type { Task, TaskWithRelations } from "@/types";
+import type { TaskWithRelations } from "@/types";
 
 type ActiveLab = "ai" | "skills" | "energy" | "stories" | "decision-journal" | "career-compass" | "project-planning";
 
