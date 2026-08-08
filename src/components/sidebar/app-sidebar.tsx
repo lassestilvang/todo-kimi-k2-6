@@ -93,6 +93,7 @@ const views: ViewItem[] = [
   { id: "ai", name: "AI Assistant", icon: Bot },
   { id: "calendar", name: "Calendar", icon: Calendar },
   { id: "analytics", name: "Analytics", icon: BarChart3 },
+  { id: "analytics_enhanced", name: "Enhanced Analytics", icon: Brain },
   { id: "investment", name: "Technology Portfolio", icon: TrendingUp },
   { separator: true, label: "Labs" },
   { id: "energy", name: "Energy Scheduler", icon: Zap },
