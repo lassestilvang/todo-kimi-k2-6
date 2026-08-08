@@ -3,7 +3,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   BarChart3,
-  TrendingUp,
   Brain,
   Lightbulb,
   FileText,
@@ -14,7 +13,6 @@ import {
   ThumbsUp,
   ThumbsDown,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -194,7 +192,7 @@ export function DecisionAnalytics({ taskId }: DecisionAnalyticsProps) {
       bestDecisions,
       worstDecisions,
     };
-  }, [filteredDecisions, timeRange]);
+  }, [filteredDecisions]);
 
   if (loading) {
     return (
@@ -209,7 +207,7 @@ export function DecisionAnalytics({ taskId }: DecisionAnalyticsProps) {
     <div className="space-y-6">
       {/* Header Controls */}
       <div className="flex gap-4 items-center">
-        <Select value={timeRange} onValueChange={(v) => setTimeRange(v as any)}>
+        <Select value={timeRange} onValueChange={(v) => setTimeRange(v as "7d" | "30d" | "90d" | "all")}>
           <SelectTrigger className="w-40">
             <SelectValue placeholder="Time range" />
           </SelectTrigger>
@@ -221,7 +219,7 @@ export function DecisionAnalytics({ taskId }: DecisionAnalyticsProps) {
           </SelectContent>
         </Select>
 
-        <Select value={metric} onValueChange={(v) => setMetric(v as any)}>
+        <Select value={metric} onValueChange={(v) => setMetric(v as "trend" | "rating" | "outcome" | "type")}>
           <SelectTrigger className="w-40">
             <SelectValue placeholder="View by" />
           </SelectTrigger>
