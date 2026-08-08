@@ -41,9 +41,11 @@ export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const timeframeParam = url.searchParams.get("timeframe");
   const validTimeframes = ["week", "month", "quarter", "year"] as const;
+  const isValidTimeframe = (value: string | null): value is "week" | "month" | "quarter" | "year" =>
+    value !== null && validTimeframes.includes(value as "week" | "month" | "quarter" | "year");
   let timeframe: "week" | "month" | "quarter" | "year" = "month";
-  if (timeframeParam && validTimeframes.includes(timeframeParam as any)) {
-    timeframe = timeframeParam as "week" | "month" | "quarter" | "year";
+  if (timeframeParam && isValidTimeframe(timeframeParam)) {
+    timeframe = timeframeParam;
   }
   const workspaceIdParam = url.searchParams.get("workspaceId");
   const params: TeamVelocityParams = {
@@ -53,7 +55,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const report = await getTeamVelocityReport(
-      params.timeframe as "week" | "month" | "quarter" | "year",
+      timeframe,
       params.workspaceId
     );
     return jsonResponse({ report }, 200, middlewareResult.headers);
@@ -163,9 +165,16 @@ async function getSprints(db: ReturnType<typeof import("@/lib/db").getDb>, start
     GROUP BY strftime('%Y-%W', t.created_at)
     ORDER BY week_start
     LIMIT 12
-  `).all(...params) as any[];
+  `).all(...params) as {
+    week_id: string;
+    week_start: string;
+    week_end: string;
+    planned: number;
+    completed: number;
+    avg_estimate: number;
+  }[];
 
-  return weeklyTasks.map((row: any, index: number) => {
+  return weeklyTasks.map((row, index: number) => {
     const planned = row.planned || 0;
     const completed = row.completed || 0;
     const completionRate = planned > 0 ? Math.round((completed / planned) * 100) : 0;
@@ -251,6 +260,12 @@ async function generateBurndownData(db: ReturnType<typeof import("@/lib/db").get
     : [start, end];
 
   // Get all tasks in period and their completion dates
+  interface TaskRow {
+    id: number;
+    completed: number;
+    completed_at: string | null;
+    created_at: string;
+  }
   const tasks = await db.prepare(`
     SELECT
       t.id,
@@ -259,7 +274,7 @@ async function generateBurndownData(db: ReturnType<typeof import("@/lib/db").get
       t.created_at
     FROM tasks t
     ${whereClause}
-  `).all(...params) as any[];
+  `).all(...params) as TaskRow[];
 
   // Calculate daily burndown
   const dailyStats = new Map<string, { remaining: number; created: number }>();
@@ -273,18 +288,20 @@ async function generateBurndownData(db: ReturnType<typeof import("@/lib/db").get
   }
 
   // Update based on completion
-  tasks.forEach((task: any) => {
+  tasks.forEach((task) => {
     const createdAt = task.created_at.split("T")[0];
     const completedAt = task.completed && task.completed_at ? task.completed_at.split("T")[0] : null;
 
-    if (dailyStats.has(createdAt)) {
-      const stats = dailyStats.get(createdAt)!;
+    const stats = dailyStats.get(createdAt);
+    if (stats) {
       stats.created = (stats.created || 0) + 1;
     }
 
-    if (completedAt && dailyStats.has(completedAt)) {
-      const stats = dailyStats.get(completedAt)!;
-      stats.remaining = (stats.remaining || tasks.length) - 1;
+    if (completedAt) {
+      const completedStats = dailyStats.get(completedAt);
+      if (completedStats) {
+        completedStats.remaining = (completedStats.remaining || tasks.length) - 1;
+      }
     }
   });
 
