@@ -6,10 +6,7 @@ import {
   Clock,
   TrendingUp,
   Calculator,
-  BarChart3,
   Activity,
-  CheckCircle2,
-  AlertCircle,
   Plus,
   RefreshCw,
 } from "lucide-react";
