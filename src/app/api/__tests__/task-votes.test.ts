@@ -60,19 +60,19 @@ describe('Task Votes API', () => {
     // Create test user
     const db = getDb();
     db.exec(`
-      INSERT INTO users (id, email, name, created_at) VALUES (1, 'test@example.com', 'Test User', datetime('now'))
+      INSERT INTO users (id, email, name, created_at) VALUES (1, 'test@example.com', 'Test User', '2024-01-01T00:00:00.000Z')
     `);
 
     // Create test task
     db.exec(`
       INSERT INTO tasks (id, user_id, name, description, list_id, date, deadline, priority, recurring, completed, created_at, updated_at, sort_order, archived)
-      VALUES (1, 1, 'Test Task', 'A test task', 1, '2024-01-15', '2024-01-20', 'high', 'none', 0, datetime('now'), datetime('now'), 0, 0)
+      VALUES (1, 1, 'Test Task', 'A test task', 1, '2024-01-15', '2024-01-20', 'high', 'none', 0, '2024-01-01T00:00:00.000Z', '2024-01-01T00:00:00.000Z', 0, 0)
     `);
 
     // Create test task for voting
     db.exec(`
       INSERT INTO tasks (id, user_id, name, description, list_id, date, deadline, priority, recurring, completed, created_at, updated_at, sort_order, archived)
-      VALUES (2, 1, 'Another Task', 'Another task', 1, '2024-01-16', '2024-01-21', 'medium', 'none', 0, datetime('now'), datetime('now'), 1, 0)
+      VALUES (2, 1, 'Another Task', 'Another task', 1, '2024-01-16', '2024-01-21', 'medium', 'none', 0, '2024-01-01T00:00:00.000Z', '2024-01-01T00:00:00.000Z', 1, 0)
     `);
   });
 
@@ -85,7 +85,7 @@ describe('Task Votes API', () => {
       // Create some votes
       const db = getDb();
       db.exec(`
-        INSERT INTO task_votes (task_id, user_id, value, created_at) VALUES (2, 1, 1, datetime('now'))
+        INSERT INTO task_votes (task_id, user_id, value, created_at) VALUES (2, 1, 1, '2024-01-01T00:00:00.000Z')
       `);
 
       const request = createMockRequest('/api/task-votes', 'GET');
@@ -112,7 +112,7 @@ describe('Task Votes API', () => {
       // Create a vote
       const db = getDb();
       db.exec(`
-        INSERT INTO task_votes (task_id, user_id, value, created_at) VALUES (2, 1, 1, datetime('now'))
+        INSERT INTO task_votes (task_id, user_id, value, created_at) VALUES (2, 1, 1, '2024-01-01T00:00:00.000Z')
       `);
 
       const request = createMockRequest('/api/task-votes?task_id=2&user_id=1', 'GET');
@@ -138,7 +138,7 @@ describe('Task Votes API', () => {
       // Create initial vote
       const db = getDb();
       db.exec(`
-        INSERT INTO task_votes (task_id, user_id, value, created_at) VALUES (2, 1, 1, datetime('now'))
+        INSERT INTO task_votes (task_id, user_id, value, created_at) VALUES (2, 1, 1, '2024-01-01T00:00:00.000Z')
       `);
 
       const request = createMockRequest('/api/task-votes', 'POST', {
@@ -189,7 +189,7 @@ describe('Task Votes API', () => {
       // Create a vote
       const db = getDb();
       db.exec(`
-        INSERT INTO task_votes (task_id, user_id, value, created_at) VALUES (2, 1, 1, datetime('now'))
+        INSERT INTO task_votes (task_id, user_id, value, created_at) VALUES (2, 1, 1, '2024-01-01T00:00:00.000Z')
       `);
 
       const request = createMockRequest('/api/task-votes?task_id=2', 'DELETE');
