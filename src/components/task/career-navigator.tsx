@@ -5,7 +5,6 @@ import {
   Brain,
   Target,
   Lightbulb,
-  Users,
   MapPin,
   CheckCircle2,
   Trophy,
@@ -44,7 +43,7 @@ interface LearningResource {
   estimatedTime: string;
 }
 
-export function CareerNavigator({ tasks, userId }: CareerNavigatorProps) {
+export function CareerNavigator({ tasks }: CareerNavigatorProps) {
   // Extract skills from completed tasks
   const skills = useMemo((): Skill[] => {
     const skillMap = new Map<string, { count: number; tasks: typeof tasks }>();
