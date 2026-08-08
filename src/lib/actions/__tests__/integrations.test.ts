@@ -43,13 +43,13 @@ describe('Integration Actions', () => {
     // Create test user
     const db = getDb();
     db.exec(`
-      INSERT INTO users (id, email, name, created_at) VALUES (1, 'test@example.com', 'Test User', datetime('now'))
+      INSERT INTO users (id, email, name, created_at) VALUES (1, 'test@example.com', 'Test User', '2024-01-01T00:00:00.000Z')
     `);
 
     // Create test task
     db.exec(`
       INSERT INTO tasks (id, user_id, name, description, list_id, date, deadline, priority, recurring, completed, created_at, updated_at, sort_order, archived)
-      VALUES (1, 1, 'Test Task', 'A test task', 1, '2024-01-15', '2024-01-20', 'high', 'none', 0, datetime('now'), datetime('now'), 0, 0)
+      VALUES (1, 1, 'Test Task', 'A test task', 1, '2024-01-15', '2024-01-20', 'high', 'none', 0, '2024-01-01T00:00:00.000Z', '2024-01-01T00:00:00.000Z', 0, 0)
     `);
   });
 
@@ -233,7 +233,7 @@ describe('Integration Actions', () => {
       const db = getDb();
       db.exec(`
         INSERT INTO integrations (id, user_id, type, name, config, enabled, sync_direction, created_at)
-        VALUES (999, 1, 'unsupported_type', 'Unsupported', '{}', 1, 'bidirectional', datetime('now'))
+        VALUES (999, 1, 'unsupported_type', 'Unsupported', '{}', 1, 'bidirectional', '2024-01-01T00:00:00.000Z')
       `);
 
       await expect(syncTasksFromIntegration({ id: 1 }, 999))
@@ -290,7 +290,7 @@ describe('Integration Actions', () => {
       const db = getDb();
       db.exec(`
         INSERT INTO integrations (id, user_id, type, name, config, enabled, sync_direction, created_at)
-        VALUES (999, 1, 'unsupported_type', 'Unsupported', '{}', 1, 'bidirectional', datetime('now'))
+        VALUES (999, 1, 'unsupported_type', 'Unsupported', '{}', 1, 'bidirectional', '2024-01-01T00:00:00.000Z')
       `);
 
       const result = await syncTasksToIntegration({ id: 1 }, 999, [1]);
@@ -323,7 +323,7 @@ describe('Integration Actions', () => {
       const db = getDb();
       db.exec(`
         INSERT INTO task_mappings (integration_id, local_task_id, external_task_id, field_mappings, created_at)
-        VALUES (${integration.id}, 1, 'ext-123', '{}', datetime('now'))
+        VALUES (${integration.id}, 1, 'ext-123', '{}', '2024-01-01T00:00:00.000Z')
       `);
 
       const mappings = await getUserTaskMappings({ id: 1 }, integration.id);
@@ -372,7 +372,7 @@ describe('Integration Actions', () => {
       const db = getDb();
       db.exec(`
         INSERT INTO task_mappings (integration_id, local_task_id, external_task_id, field_mappings, created_at)
-        VALUES (${integration.id}, 1, 'ext-123', '{}', datetime('now'))
+        VALUES (${integration.id}, 1, 'ext-123', '{}', '2024-01-01T00:00:00.000Z')
       `);
 
       // Should not throw
