@@ -5,16 +5,12 @@ import {
   Brain,
   Lightbulb,
   FileText,
-  Save,
   RefreshCw,
   Search,
   Filter,
-  Copy,
   Trash2,
-  Edit,
   Check,
-  AlertCircle,
-  HelpCircle
+  AlertCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -74,11 +70,6 @@ export function DecisionTemplateBuilder({ taskName, onDecision }: DecisionTempla
     decision_type: "approach",
   });
 
-  // Load templates
-  useEffect(() => {
-    loadTemplates();
-  }, []);
-
   const loadTemplates = async () => {
     try {
       const response = await fetch("/api/decision-templates");
@@ -92,6 +83,11 @@ export function DecisionTemplateBuilder({ taskName, onDecision }: DecisionTempla
       setLoading(false);
     }
   };
+
+  // Load templates
+  useEffect(() => {
+    loadTemplates();
+  }, []);
 
   const filteredTemplates = templates.filter(t => {
     const matchesSearch = t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
