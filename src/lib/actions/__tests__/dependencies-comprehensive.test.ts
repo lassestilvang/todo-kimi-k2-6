@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi, beforeAll } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, beforeAll } from "vitest";
 import { createTestDb } from "@/lib/db/test-db";
 import { setDb, resetDb } from "@/lib/db";
 import {
@@ -60,11 +60,11 @@ describe("Dependency Actions - Comprehensive", () => {
     });
 
     it("should allow different task IDs", () => {
+      // Different task IDs should not be circular
       const taskId = 1;
       const dependsOnTaskId = 2;
-      const isCircular = taskId === dependsOnTaskId;
-      // Testing that different task IDs don't create circular dependencies
-      expect(isCircular).toBe(false);
+      // Test that different IDs are not equal
+      expect(taskId).not.toBe(dependsOnTaskId);
     });
   });
 
@@ -92,7 +92,7 @@ describe("Dependency Actions - Comprehensive", () => {
       try {
         const result = await addTaskDependency(1, 2);
         expect(result).toBeDefined();
-      } catch (e) {
+      } catch {
         // Mock may not handle this correctly - just verify function exists
         expect(typeof addTaskDependency).toBe("function");
       }
@@ -144,7 +144,7 @@ describe("Dependency Actions - Comprehensive", () => {
         expect(dep.task_id).toBe(1);
         expect(dep.depends_on_task_id).toBe(2);
         expect(typeof dep.created_at).toBe("string");
-      } catch (e) {
+      } catch {
         // Mock may not handle this correctly - just verify function exists
         expect(typeof addTaskDependency).toBe("function");
       }
