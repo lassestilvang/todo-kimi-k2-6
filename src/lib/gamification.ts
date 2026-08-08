@@ -3,7 +3,7 @@
  * Achievements, streaks, and reward-based progression
  */
 
-import type { Task, TaskWithRelations, Goal } from "@/types";
+import type { TaskWithRelations, Goal } from "@/types";
 
 export type AchievementTier = "bronze" | "silver" | "gold" | "platinum" | "legendary";
 
@@ -263,7 +263,7 @@ export function calculateSkillPoints(tasks: TaskWithRelations[]): Record<string,
 export function calculateStreakDays(tasks: TaskWithRelations[]): number {
   const completedDates = tasks
     .filter((t) => t.completed && t.completed_at)
-    .map((t) => t.completed_at!.split("T")[0]);
+    .map((t) => (t.completed_at as string).split("T")[0]);
 
   const uniqueDates = [...new Set(completedDates)].sort().reverse();
 
@@ -293,7 +293,7 @@ export function calculateStreakDays(tasks: TaskWithRelations[]): number {
 function getActiveDays(tasks: TaskWithRelations[]): number {
   const dates = tasks
     .filter((t) => t.completed && t.completed_at)
-    .map((t) => t.completed_at!.split("T")[0]);
+    .map((t) => (t.completed_at as string).split("T")[0]);
 
   return [...new Set(dates)].length;
 }
