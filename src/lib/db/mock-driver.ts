@@ -51,15 +51,18 @@ export function createMockDatabase(): MockDatabase {
     schemaTables.forEach(name => tables.set(name, new Map()));
 
     // Create default inbox
-    tables.get("lists")!.set(1, {
-      id: 1,
-      name: "Inbox",
-      emoji: "📥",
-      color: "#6366f1",
-      is_inbox: 1,
-      user_id: null as number | null,
-      created_at: new Date().toISOString()
-    });
+    const listsTable = tables.get("lists");
+    if (listsTable) {
+      listsTable.set(1, {
+        id: 1,
+        name: "Inbox",
+        emoji: "📥",
+        color: "#6366f1",
+        is_inbox: 1,
+        user_id: null as number | null,
+        created_at: new Date().toISOString()
+      });
+    }
   }
 
   // Initialize tables with schema on creation
@@ -75,8 +78,6 @@ export function createMockDatabase(): MockDatabase {
     const fromMatch = sql.match(/FROM\s+(\w+)/i);
     // Handle DELETE FROM table ...
     const deleteMatch = sql.match(/DELETE\s+FROM\s+(\w+)/i);
-    // Handle INSERT OR REPLACE INTO table ...
-    const insertReplaceMatch = sql.match(/INSERT\s+(?:OR\s+REPLACE)?\s+INTO\s+\w+\s*(?:$|\s)/i);
 
     const tableName = intoMatch?.[1] || updateMatch?.[1] || fromMatch?.[1] || deleteMatch?.[1];
     return tableName?.toLowerCase() || null;
@@ -86,60 +87,6 @@ export function createMockDatabase(): MockDatabase {
     const match = sql.match(/INTO\s+\w+\s*\(([^)]+)\)/i);
     if (!match) return [];
     return match[1].split(',').map(c => c.trim());
-  }
-
-  // Parse WHERE clause conditions: returns array of {column, value}
-  // Also returns the number of WHERE parameters consumed
-  function parseWhereConditions(sql: string, params: unknown[]): { column: string; value: unknown }[] {
-    const whereMatch = sql.match(/WHERE\s+(.+?)(?:\s+ORDER\s+BY|\s+LIMIT|$)/i);
-    if (!whereMatch) return [];
-
-    const whereClause = whereMatch[1];
-    const conditions: { column: string; value: unknown }[] = [];
-
-    // Match conditions like "column = ?" with parameter
-    const paramMatches = [...whereClause.matchAll(/([\w.]+)\s*=\s*\?/gi)];
-
-    // Match conditions like "column = value" where value is a literal (string or number, NOT SQL keywords)
-    const literalMatches = [...whereClause.matchAll(/([\w.]+)\s*=\s*(?:'([^']*)'|(?!ORDER|LIMIT|OFFSET)(?:\b|^)(\w+))/gi)];
-
-    // Track which params we've used for parameterized conditions
-    const paramConditions: Record<string, unknown> = {};
-    paramMatches.forEach((match, idx) => {
-      const col = match[1].replace(/^[a-z]+\./i, '');
-      paramConditions[col] = params[idx];
-    });
-
-    // Combine conditions - add param conditions first
-    const allUsedCols = new Set<string>();
-    paramMatches.forEach(m => {
-      const col = m[1].replace(/^[a-z]+\./i, '');
-      allUsedCols.add(col);
-    });
-
-    // Add literal conditions (not already covered by param conditions)
-    literalMatches.forEach(match => {
-      const col = match[1].replace(/^[a-z]+\./i, '');
-      // match[2] is quoted string, match[3] is unquoted value
-      const val = match[2] !== undefined ? match[2] : match[3];
-
-      // Skip if already handled as param or no value
-      if (allUsedCols.has(col) || !val) return;
-
-      let value: unknown = val;
-      // Handle numeric literals
-      if (/^\d+$/.test(val)) {
-        value = Number(val);
-      }
-      conditions.push({ column: col, value });
-    });
-
-    // Add param conditions
-    Object.entries(paramConditions).forEach(([col, val]) => {
-      conditions.push({ column: col, value: val });
-    });
-
-    return conditions;
   }
 
   return {
@@ -223,7 +170,6 @@ export function createMockDatabase(): MockDatabase {
                   val = Number(valueToken);
                 } else if (valueToken?.startsWith("'") || valueToken?.startsWith('"')) {
                   // String literal (remove quotes)
-                  const quote = valueToken[0];
                   val = valueToken.slice(1, -1);
                 } else {
                   val = valueToken;
@@ -277,22 +223,22 @@ export function createMockDatabase(): MockDatabase {
                 });
 
                 // First, filter by parameterized conditions
-                let result = allRecords.find(r =>
+                const firstResult = allRecords.find(r =>
                   r && paramConditions.every(cond =>
                     r[cond.column] === params[cond.paramIndex]
                   )
                 );
 
-                if (!result) return undefined;
+                if (!firstResult) return undefined;
 
                 // Then filter by literal conditions
                 for (const cond of literalConditions) {
-                  if (result[cond.column] !== cond.value) {
+                  if (firstResult[cond.column] !== cond.value) {
                     return undefined;
                   }
                 }
 
-                return result;
+                return firstResult;
               }
             }
             return table instanceof Map ? Array.from(table.values())[0] : undefined;
@@ -682,6 +628,47 @@ export function createMockDatabase(): MockDatabase {
 
             const allRecords = Array.from(table.values());
 
+            // Handle WHERE with multiple conditions (e.g., id = ? AND user_id = ? AND enabled = 1)
+            const whereMatch = sql.match(/WHERE\s+(.+?)(?:\s+ORDER|\s+LIMIT|$)/i);
+            if (whereMatch && params.length > 0) {
+              const whereClause = whereMatch[1];
+
+              // Parse multiple conditions
+              const conditions: Array<{ column: string; value: unknown }> = [];
+              let paramIdx = 0;
+
+              // Handle chained conditions like "id = ? AND user_id = ?"
+              const conditionsMatch = whereClause.match(/([\w.]+)\s*=\s*\?/gi);
+              if (conditionsMatch) {
+                conditionsMatch.forEach(match => {
+                  // Extract just the column name from the match
+                  const colMatch = match.match(/^([\w.]+)\s*=\s*\?/i);
+                  if (colMatch) {
+                    const columnName = colMatch[1].replace(/^[a-z]+\./i, '');
+                    conditions.push({ column: columnName, value: params[paramIdx++] });
+                  }
+                });
+              }
+
+              // Handle literal conditions like "enabled = 1" in the WHERE clause
+              const literalMatches = [...whereClause.matchAll(/([\w.]+)\s*=\s*(\d+)\b(?!\s*\?)/gi)];
+              literalMatches.forEach(match => {
+                const col = match[1].replace(/^[a-z]+\./i, '');
+                const val = Number(match[2]);
+                conditions.push({ column: col, value: val });
+              });
+
+              // Filter records matching all conditions
+              if (conditions.length > 0) {
+                const result = allRecords.find(r =>
+                  r && conditions.every(cond => r[cond.column] === cond.value)
+                );
+
+                if (result) return result;
+                return undefined;
+              }
+            }
+
             // Handle simple WHERE id = ? pattern
             const whereIdMatch = sql.match(/WHERE\s+id\s*=\s*\?/i);
             if (whereIdMatch && params.length > 0) {
@@ -801,17 +788,17 @@ export function createMockDatabase(): MockDatabase {
 
                 // Handle date = ? pattern
                 const dateMatch = whereClause.match(/date\s*=\s*\?/i);
-                if (dateMatch) {
+                if (dateMatch && dateMatch.index !== undefined) {
                   // Find the index of date in WHERE clause
-                  const paramCountBeforeDate = (whereClause.substring(0, dateMatch.index!).match(/\?/g) || []).length;
+                  const paramCountBeforeDate = (whereClause.substring(0, dateMatch.index).match(/\?/g) || []).length;
                   const date = params[paramCountBeforeDate];
                   result = result.filter(r => r && r.date === date);
                 }
 
                 // Handle date >= ? pattern (for upcoming/next7 views)
                 const dateGteMatch = whereClause.match(/date\s*>\s*\?/i);
-                if (dateGteMatch) {
-                  const paramCountBeforeDate = (whereClause.substring(0, dateGteMatch.index!).match(/\?/g) || []).length;
+                if (dateGteMatch && dateGteMatch.index !== undefined) {
+                  const paramCountBeforeDate = (whereClause.substring(0, dateGteMatch.index).match(/\?/g) || []).length;
                   const date = params[paramCountBeforeDate] as string;
 
                   result = result.filter((r: any) => r && r.date >= date);
@@ -1016,10 +1003,17 @@ export function createMockDatabase(): MockDatabase {
 
         // Handle INSERT via exec (used in tests)
         if (trimmedStmt.toLowerCase().includes("insert")) {
-          const tableName = parseTableName(trimmedStmt);
+          // Replace SQL functions with their values
+          let processedStmt = trimmedStmt;
+          // Replace datetime('now') with current ISO timestamp
+          processedStmt = processedStmt.replace(/datetime\s*\(\s*'now'\s*\)/gi, new Date().toISOString());
+          // Replace CURRENT_TIMESTAMP with current ISO timestamp
+          processedStmt = processedStmt.replace(/CURRENT_TIMESTAMP/gi, new Date().toISOString());
+
+          const tableName = parseTableName(processedStmt);
           const table = tableName && tables.get(tableName.toLowerCase());
-          const columns = parseColumns(trimmedStmt);
-          const valuesMatch = trimmedStmt.match(/VALUES\s*\(([^)]+)\)/i);
+          const columns = parseColumns(processedStmt);
+          const valuesMatch = processedStmt.match(/VALUES\s*\(([^)]+)\)/i);
 
           if (table && valuesMatch && columns.length > 0) {
             const valuesStr = valuesMatch[1];
@@ -1063,7 +1057,8 @@ export function createMockDatabase(): MockDatabase {
       }
     },
 
-    close: () => {},
+    // Mock database - no-op close for testing environments where native bindings unavailable
+    close: () => { /* no-op */ },
 
     transaction<T>(fn: () => T): T {
       return fn();
