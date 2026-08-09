@@ -3,43 +3,80 @@ import { getTasks } from "@/lib/actions";
 import { getCalendarSync, deleteCalendarSync } from "@/lib/actions/calendar";
 import { syncTasksToCalendar, getAuthUrl } from "@/lib/calendar";
 import type { Task } from "@/types";
+import { applyMiddleware, errorResponse, jsonResponse } from "@/lib/api-middleware";
 
 export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams;
-  const action = searchParams.get("action");
-
-  if (action === "auth") {
-    // Redirect to Google OAuth
-    const state = Math.random().toString(36).substring(2, 15);
-    const authUrl = getAuthUrl("google", state);
-    return Response.redirect(authUrl);
+  // Use middleware for auth if needed
+  const middleware = await applyMiddleware(request, { requireAuth: true });
+  if (middleware.error) {
+    return middleware.error;
   }
 
-  return NextResponse.json({ message: "Calendar sync endpoint" });
+  const userId = middleware.auth?.userId;
+  if (!userId) {
+    return errorResponse("Authentication required", 401);
+  }
+
+  const searchParams = request.nextUrl.searchParams;
+  const action = searchParams.get("action");
+  const provider = searchParams.get("provider") || "google";
+
+  if (action === "auth") {
+    // Generate OAuth URL for the specified provider
+    const state = generateState();
+    const authUrl = getAuthUrl(provider as "google" | "outlook", state);
+    return Response.json({ authUrl, state, provider });
+  }
+
+  // Get sync status for all providers
+  const googleSync = await getCalendarSyncByProvider(userId, "google");
+  const outlookSync = await getCalendarSyncByProvider(userId, "outlook");
+
+  return jsonResponse({
+    providers: {
+      google: {
+        enabled: !!googleSync?.enabled,
+        expiresAt: googleSync?.expires_at ? new Date(googleSync.expires_at).toISOString() : null,
+      },
+      outlook: {
+        enabled: !!outlookSync?.enabled,
+        expiresAt: outlookSync?.expires_at ? new Date(outlookSync.expires_at).toISOString() : null,
+      },
+    },
+  });
 }
 
 export async function POST(request: NextRequest) {
+  const middleware = await applyMiddleware(request, { requireAuth: true });
+  if (middleware.error) {
+    return middleware.error;
+  }
+
+  const userId = middleware.auth?.userId;
+  if (!userId) {
+    return errorResponse("Authentication required", 401);
+  }
+
   try {
     const body = await request.json();
-    const { tasks: taskIds } = body;
+    const { provider = "google", taskId } = body;
 
-    // Get stored calendar config (using default user ID 1)
-    // In a production app, get userId from session
-    const userId = 1;
-    const calendarConfig = await getCalendarSync(userId);
+    // Get stored calendar config for the specific provider
+    const calendarConfig = await getCalendarSyncByProvider(userId, provider as "google" | "outlook");
 
     if (!calendarConfig) {
-      return NextResponse.json({ error: "Calendar not configured. Please connect your calendar first." }, { status: 400 });
+      return errorResponse("Calendar not configured. Please connect your calendar first.", 400);
     }
 
     // Get tasks to sync
-    const allTasks = await getTasks({ includeCompleted: true });
-    const tasksToSync = taskIds
-      ? allTasks.filter((t) => taskIds.includes(t.id))
-      : allTasks;
+    const tasks = await getTasks({ includeCompleted: true });
+    const tasksToSync = taskId
+      ? tasks.filter((t) => t.id === taskId)
+      : tasks.filter((t) => t.deadline);
 
-    // Filter tasks with dates
-    const tasksWithDates = tasksToSync.filter((t) => t.date);
+    if (tasksToSync.length === 0) {
+      return jsonResponse({ created: 0, updated: 0, errors: [] });
+    }
 
     const result = await syncTasksToCalendar(
       {
@@ -48,26 +85,81 @@ export async function POST(request: NextRequest) {
         refreshToken: calendarConfig.refresh_token || undefined,
         expiresAt: calendarConfig.expires_at || undefined,
       },
-      tasksWithDates as Task[]
+      tasksToSync as Task[]
     );
 
-    return NextResponse.json(result);
+    return jsonResponse(result);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Sync failed";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return errorResponse(message, 500);
   }
 }
 
-export async function DELETE(_request: NextRequest) {
+export async function DELETE(request: NextRequest) {
+  const middleware = await applyMiddleware(request, { requireAuth: true });
+  if (middleware.error) {
+    return middleware.error;
+  }
+
+  const userId = middleware.auth?.userId;
+  if (!userId) {
+    return errorResponse("Authentication required", 401);
+  }
+
+  const searchParams = request.nextUrl.searchParams;
+  const provider = searchParams.get("provider") || "google";
+
   try {
-    // Get user ID (default to 1 for demo mode)
-    const userId = 1;
-
-    await deleteCalendarSync(userId);
-
-    return NextResponse.json({ message: "Calendar sync disconnected" });
+    await disconnectCalendarSync(userId, provider as "google" | "outlook");
+    return jsonResponse({ message: "Calendar sync disconnected" });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Disconnect failed";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return errorResponse(message, 500);
   }
+}
+
+/**
+ * Generate a random state string for OAuth
+ */
+function generateState(): string {
+  return Buffer.from(Math.random().toString(36).substring(2)).toString("hex");
+}
+
+/**
+ * Get calendar sync by provider
+ */
+async function getCalendarSyncByProvider(
+  userId: number,
+  provider: "google" | "outlook"
+): Promise<ReturnType<typeof getCalendarSync> | null> {
+  const db = (await import("@/lib/db")).getDb();
+  const result = db
+    .prepare("SELECT * FROM calendar_sync WHERE user_id = ? AND provider = ?")
+    .get(userId, provider);
+  return result
+    ? {
+        id: result.id,
+        user_id: result.user_id,
+        provider: result.provider,
+        access_token: result.access_token,
+        refresh_token: result.refresh_token,
+        expires_at: result.expires_at,
+        enabled: result.enabled,
+        created_at: result.created_at,
+      }
+    : null;
+}
+
+/**
+ * Disconnect calendar sync for a provider
+ */
+async function disconnectCalendarSync(
+  userId: number,
+  provider: "google" | "outlook"
+): Promise<void> {
+  const db = (await import("@/lib/db")).getDb();
+  db.prepare("UPDATE calendar_sync SET enabled = 0 WHERE user_id = ? AND provider = ?").run(
+    userId,
+    provider
+  );
 }
