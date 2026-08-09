@@ -18,7 +18,8 @@ export async function POST(request: NextRequest) {
 
     if (body.action === "recommend") {
       const date = body.date || new Date().toISOString().split("T")[0];
-      const recommendations = await getMoodBasedTaskRecommendations(1, date);
+      const userId = middleware.auth?.userId ?? 1;
+      const recommendations = await getMoodBasedTaskRecommendations(userId, date);
       return NextResponse.json({
         primary_mood: recommendations.reasoning.includes("High energy") ? "energized" :
                      recommendations.reasoning.includes("Lower energy") ? "tired" : "balanced",
@@ -44,9 +45,10 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const date = searchParams.get("date") || new Date().toISOString().split("T")[0];
+  const userId = middleware.auth?.userId ?? 1;
 
   try {
-    const recommendations = await getMoodBasedTaskRecommendations(1, date);
+    const recommendations = await getMoodBasedTaskRecommendations(userId, date);
     return NextResponse.json({
       primary_mood: recommendations.reasoning.includes("High energy") ? "energized" :
                    recommendations.reasoning.includes("Lower energy") ? "tired" : "balanced",
