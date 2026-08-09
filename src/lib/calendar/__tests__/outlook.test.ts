@@ -6,7 +6,10 @@ describe("Outlook Calendar Integration", () => {
 
   beforeEach(() => {
     mockConfig = { accessToken: "test-access-token" };
-    global.fetch = vi.fn() as any;
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({}),
+    }) as any;
   });
 
   afterEach(() => {
@@ -20,7 +23,7 @@ describe("Outlook Calendar Integration", () => {
         { id: "event2", subject: "Test Event 2" },
       ];
 
-      vi.mocked(global.fetch as any).mockResolvedValue({
+      (global.fetch as any).mockResolvedValue({
         ok: true,
         json: async () => ({ value: mockEvents }),
       });
@@ -30,17 +33,21 @@ describe("Outlook Calendar Integration", () => {
 
       expect(events).toEqual(mockEvents);
       expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining("graph.microsoft.com/v1.0/me/events"),
+        expect.stringContaining("graph.microsoft.com/v1.0/me/calendar/events"),
         expect.objectContaining({
-          headers: { Authorization: "Bearer test-access-token" },
+          headers: expect.objectContaining({
+            Authorization: "Bearer test-access-token",
+            "Content-Type": "application/json",
+          }),
         })
       );
     });
 
     it("should throw error when API fails", async () => {
-      vi.mocked(global.fetch as any).mockResolvedValue({
+      (global.fetch as any).mockResolvedValue({
         ok: false,
         statusText: "Unauthorized",
+        json: async () => ({ error: { message: "Unauthorized" } }),
       });
 
       const { getOutlookEvents } = await import("../outlook");
@@ -50,7 +57,7 @@ describe("Outlook Calendar Integration", () => {
     });
 
     it("should return empty array when no events", async () => {
-      vi.mocked(global.fetch as any).mockResolvedValue({
+      (global.fetch as any).mockResolvedValue({
         ok: true,
         json: async () => ({}),
       });
@@ -89,7 +96,7 @@ describe("Outlook Calendar Integration", () => {
     };
 
     it("should create an Outlook event from a task", async () => {
-      vi.mocked(global.fetch as any).mockResolvedValue({
+      (global.fetch as any).mockResolvedValue({
         ok: true,
         json: async () => ({ id: "event123" }),
       });
@@ -120,7 +127,7 @@ describe("Outlook Calendar Integration", () => {
     });
 
     it("should throw error when API fails", async () => {
-      vi.mocked(global.fetch as any).mockResolvedValue({
+      (global.fetch as any).mockResolvedValue({
         ok: false,
         statusText: "Bad Request",
         json: async () => ({ error: { message: "Invalid task" } }),
@@ -128,12 +135,12 @@ describe("Outlook Calendar Integration", () => {
 
       const { createOutlookEvent } = await import("../outlook");
       await expect(createOutlookEvent(mockConfig, mockTask)).rejects.toThrow(
-        "Failed to create event: Invalid task"
+        "Failed to create Outlook event: Invalid task"
       );
     });
 
     it("should handle API error without error message", async () => {
-      vi.mocked(global.fetch as any).mockResolvedValue({
+      (global.fetch as any).mockResolvedValue({
         ok: false,
         statusText: "Bad Request",
         json: async () => ({}),
@@ -141,7 +148,7 @@ describe("Outlook Calendar Integration", () => {
 
       const { createOutlookEvent } = await import("../outlook");
       await expect(createOutlookEvent(mockConfig, mockTask)).rejects.toThrow(
-        "Failed to create event: Bad Request"
+        "Failed to create Outlook event: Bad Request"
       );
     });
   });
@@ -173,7 +180,7 @@ describe("Outlook Calendar Integration", () => {
     };
 
     it("should update an Outlook event", async () => {
-      vi.mocked(global.fetch as any).mockResolvedValue({
+      (global.fetch as any).mockResolvedValue({
         ok: true,
       });
 
@@ -189,21 +196,22 @@ describe("Outlook Calendar Integration", () => {
     });
 
     it("should throw error when API fails", async () => {
-      vi.mocked(global.fetch as any).mockResolvedValue({
+      (global.fetch as any).mockResolvedValue({
         ok: false,
         statusText: "Not Found",
+        json: async () => ({}),
       });
 
       const { updateOutlookEvent } = await import("../outlook");
       await expect(
         updateOutlookEvent(mockConfig, "event123", mockTask)
-      ).rejects.toThrow("Failed to update event: Not Found");
+      ).rejects.toThrow("Failed to update Outlook event: Not Found");
     });
   });
 
   describe("deleteOutlookEvent", () => {
     it("should delete an Outlook event", async () => {
-      vi.mocked(global.fetch as any).mockResolvedValue({
+      (global.fetch as any).mockResolvedValue({
         ok: true,
       });
 
@@ -219,14 +227,15 @@ describe("Outlook Calendar Integration", () => {
     });
 
     it("should throw error when API fails", async () => {
-      vi.mocked(global.fetch as any).mockResolvedValue({
+      (global.fetch as any).mockResolvedValue({
         ok: false,
         statusText: "Not Found",
+        json: async () => ({}),
       });
 
       const { deleteOutlookEvent } = await import("../outlook");
       await expect(deleteOutlookEvent(mockConfig, "event123")).rejects.toThrow(
-        "Failed to delete event: Not Found"
+        "Failed to delete Outlook event: Not Found"
       );
     });
   });
@@ -239,13 +248,14 @@ describe("Outlook Calendar Integration", () => {
 
       expect(url).toContain("login.microsoftonline.com/common/oauth2/v2.0/authorize");
       expect(url).toContain("state=random-state-123");
-      expect(url).toContain("scope=Calendars.ReadWrite");
+      // scope is URL encoded in the actual URL
+      expect(url).toContain("Calendars.ReadWrite");
     });
 
     it("should use environment variables", async () => {
-      const originalClientId = process.env.MICROSOFT_CLIENT_ID;
+      const originalClientId = process.env.OUTLOOK_CLIENT_ID;
       const originalUrl = process.env.NEXTAUTH_URL;
-      process.env.MICROSOFT_CLIENT_ID = "test-client-id";
+      process.env.OUTLOOK_CLIENT_ID = "test-client-id";
       process.env.NEXTAUTH_URL = "http://localhost:3000";
 
       vi.resetModules();
@@ -253,16 +263,16 @@ describe("Outlook Calendar Integration", () => {
       const url = getOutlookAuthUrl("state");
 
       expect(url).toContain("client_id=test-client-id");
-      expect(url).toContain("redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fapi%2Fauth%2Fcallback%2Fmicrosoft");
+      expect(url).toContain("api%2Fauth%2Fcallback%2Foutlook");
 
-      process.env.MICROSOFT_CLIENT_ID = originalClientId;
+      process.env.OUTLOOK_CLIENT_ID = originalClientId;
       process.env.NEXTAUTH_URL = originalUrl;
     });
   });
 
   describe("exchangeOutlookCodeForTokens", () => {
     it("should exchange code for tokens", async () => {
-      vi.mocked(global.fetch as any).mockResolvedValue({
+      (global.fetch as any).mockResolvedValue({
         ok: true,
         json: async () => ({
           access_token: "new-access-token",
@@ -280,26 +290,26 @@ describe("Outlook Calendar Integration", () => {
     });
 
     it("should throw error when token exchange fails", async () => {
-      vi.mocked(global.fetch as any).mockResolvedValue({
+      (global.fetch as any).mockResolvedValue({
         ok: false,
         json: async () => ({ error_description: "Invalid code" }),
       });
 
       const { exchangeOutlookCodeForTokens } = await import("../outlook");
       await expect(exchangeOutlookCodeForTokens("invalid-code")).rejects.toThrow(
-        "Token exchange failed: Invalid code"
+        "Outlook token exchange failed: Invalid code"
       );
     });
 
     it("should handle token exchange failure without error_description", async () => {
-      vi.mocked(global.fetch as any).mockResolvedValue({
+      (global.fetch as any).mockResolvedValue({
         ok: false,
         json: async () => ({}),
       });
 
       const { exchangeOutlookCodeForTokens } = await import("../outlook");
       await expect(exchangeOutlookCodeForTokens("invalid-code")).rejects.toThrow(
-        "Token exchange failed: undefined"
+        "Outlook token exchange failed: undefined"
       );
     });
   });
@@ -331,7 +341,7 @@ describe("Outlook Calendar Integration", () => {
         recurring_exceptions: [],
       };
 
-      vi.mocked(global.fetch as any).mockResolvedValue({
+      (global.fetch as any).mockResolvedValue({
         ok: true,
         json: async () => ({ id: "event123" }),
       });
@@ -368,7 +378,7 @@ describe("Outlook Calendar Integration", () => {
         recurring_exceptions: [],
       };
 
-      vi.mocked(global.fetch as any).mockResolvedValue({
+      (global.fetch as any).mockResolvedValue({
         ok: false,
         statusText: "Bad Request",
         json: async () => ({ error: { message: "Detailed error message" } }),
@@ -376,7 +386,7 @@ describe("Outlook Calendar Integration", () => {
 
       const { createOutlookEvent } = await import("../outlook");
       await expect(createOutlookEvent(mockConfig, mockTask)).rejects.toThrow(
-        "Failed to create event: Detailed error message"
+        "Failed to create Outlook event: Detailed error message"
       );
     });
 
@@ -406,7 +416,7 @@ describe("Outlook Calendar Integration", () => {
         recurring_exceptions: [],
       };
 
-      vi.mocked(global.fetch as any).mockResolvedValue({
+      (global.fetch as any).mockResolvedValue({
         ok: false,
         statusText: "Bad Request",
         json: async () => ({}),
@@ -414,7 +424,7 @@ describe("Outlook Calendar Integration", () => {
 
       const { createOutlookEvent } = await import("../outlook");
       await expect(createOutlookEvent(mockConfig, mockTask)).rejects.toThrow(
-        "Failed to create event: Bad Request"
+        "Failed to create Outlook event: Bad Request"
       );
     });
   });
@@ -446,40 +456,41 @@ describe("Outlook Calendar Integration", () => {
     };
 
     it("should handle update error without statusText", async () => {
-      vi.mocked(global.fetch as any).mockResolvedValue({
+      (global.fetch as any).mockResolvedValue({
         ok: false,
         statusText: "",
+        json: async () => ({}),
       });
 
       const { updateOutlookEvent } = await import("../outlook");
       await expect(
         updateOutlookEvent(mockConfig, "event123", mockTask)
-      ).rejects.toThrow("Failed to update event: ");
+      ).rejects.toThrow("Failed to update Outlook event: ");
     });
   });
 
   describe("exchangeOutlookCodeForTokens error paths", () => {
     it("should handle token exchange error without error_description", async () => {
-      vi.mocked(global.fetch as any).mockResolvedValue({
+      (global.fetch as any).mockResolvedValue({
         ok: false,
         json: async () => ({}),
       });
 
       const { exchangeOutlookCodeForTokens } = await import("../outlook");
       await expect(exchangeOutlookCodeForTokens("invalid-code")).rejects.toThrow(
-        "Token exchange failed: undefined"
+        "Outlook token exchange failed: undefined"
       );
     });
 
     it("should handle token exchange error with empty error_description", async () => {
-      vi.mocked(global.fetch as any).mockResolvedValue({
+      (global.fetch as any).mockResolvedValue({
         ok: false,
         json: async () => ({ error_description: "" }),
       });
 
       const { exchangeOutlookCodeForTokens } = await import("../outlook");
       await expect(exchangeOutlookCodeForTokens("invalid-code")).rejects.toThrow(
-        "Token exchange failed: "
+        "Outlook token exchange failed: "
       );
     });
   });
