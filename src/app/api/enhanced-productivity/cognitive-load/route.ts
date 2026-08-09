@@ -32,7 +32,12 @@ export async function GET(request: NextRequest) {
   try {
     const userId = middleware.auth?.userId ?? 1;
     const analysis = await getCognitiveLoadAnalysis(userId, days);
-    return NextResponse.json(analysis);
+    return NextResponse.json({
+      ...analysis,
+      userId,
+      period: `${days} days`,
+      dataPoints: true
+    });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to get cognitive load analysis" },
