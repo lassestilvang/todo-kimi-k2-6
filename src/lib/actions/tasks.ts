@@ -18,6 +18,7 @@ import type {
 import { listSchema, labelSchema, sanitizeString } from "@/lib/validation";
 import { logTaskAction } from "@/lib/actions/task-helpers";
 import { getTaskRelations } from "@/lib/db/relations";
+import { broadcastTaskUpdate, logActivity } from "@/lib/actions/realtime";
 
 /**
  * Check for potential duplicate tasks by comparing names.
@@ -470,7 +471,7 @@ export async function getTasks(options?: GetTasksOptions): Promise<TaskWithRelat
 export async function createTask(input: CreateTaskInput & { sort_order?: number }): Promise<TaskWithRelations> {
   const db = getDb();
   const user = await getCurrentUser();
-  const userId = user?.id ?? null;
+  const userId = user?.id ?? 0;
 
   // Sanitize input to prevent XSS
   const sanitizedInput = {
@@ -561,7 +562,25 @@ export async function createTask(input: CreateTaskInput & { sort_order?: number 
   });
 
   const taskId = typeof result === "number" ? result : await result;
-  return getTaskById(taskId) as Promise<TaskWithRelations>;
+  const task = await getTaskById(taskId);
+
+  if (task) {
+    // Broadcast task creation for real-time updates
+    await broadcastTaskUpdate(taskId, userId, {
+      id: task.id,
+      name: task.name,
+      description: task.description,
+      list_id: task.list_id,
+      date: task.date,
+      deadline: task.deadline,
+      priority: task.priority,
+      completed: task.completed,
+      assignee_id: task.assignee_id,
+      archived: task.archived,
+    }, "created");
+  }
+
+  return task!;
 }
 
 export async function updateTask(id: number, input: UpdateTaskInput): Promise<TaskWithRelations> {
@@ -682,23 +701,52 @@ export async function updateTask(id: number, input: UpdateTaskInput): Promise<Ta
     }
   }
 
-  return getTaskById(id) as Promise<TaskWithRelations>;
+  const task = await getTaskById(id);
+
+  if (task) {
+    // Broadcast task update for real-time updates
+    await broadcastTaskUpdate(id, user?.id ?? 0, {
+      id: task.id,
+      name: task.name,
+      description: task.description,
+      list_id: task.list_id,
+      date: task.date,
+      deadline: task.deadline,
+      priority: task.priority,
+      completed: task.completed,
+      assignee_id: task.assignee_id,
+      archived: task.archived,
+    }, "updated");
+  }
+
+  return task!;
 }
 
 export async function deleteTask(id: number): Promise<void> {
   const db = getDb();
   const user = await getCurrentUser();
+  const userId = user?.id ?? 0;
 
   // Verify user ownership before deleting
+  let hasAccess = false;
   if (user?.id) {
     const existing = db.prepare("SELECT id FROM tasks WHERE id = ? AND user_id = ?").get(id, user.id);
-    if (!existing) {
-      throw new Error("Task not found or access denied");
-    }
-    db.prepare("DELETE FROM tasks WHERE id = ? AND user_id = ?").run(id, user.id);
+    hasAccess = !!existing;
   } else {
-    db.prepare("DELETE FROM tasks WHERE id = ?").run(id);
+    hasAccess = true;
   }
+
+  if (!hasAccess) {
+    throw new Error("Task not found or access denied");
+  }
+
+  db.prepare("DELETE FROM tasks WHERE id = ? AND user_id = ?").run(id, userId);
+
+  // Broadcast task deletion for real-time updates
+  await broadcastTaskUpdate(id, userId, {
+    id,
+    deleted: true,
+  }, "deleted");
 }
 
 export async function bulkUpdateTasks(
@@ -782,6 +830,8 @@ export async function bulkDeleteTasks(taskIds: number[]): Promise<void> {
 
   if (taskIds.length === 0) return;
 
+  const userId = user?.id ?? 0;
+
   // Batch delete using IN clause for better performance
   const placeholders = taskIds.map(() => "?").join(",");
 
@@ -790,6 +840,14 @@ export async function bulkDeleteTasks(taskIds: number[]): Promise<void> {
     db.prepare(`DELETE FROM tasks WHERE id IN (${placeholders}) AND user_id = ?`).run(...taskIds, user.id);
   } else {
     db.prepare(`DELETE FROM tasks WHERE id IN (${placeholders})`).run(...taskIds);
+  }
+
+  // Broadcast task deletions for real-time updates
+  for (const taskId of taskIds) {
+    await broadcastTaskUpdate(taskId, userId, {
+      id: taskId,
+      deleted: true,
+    }, "deleted");
   }
 }
 
@@ -839,45 +897,149 @@ export async function performBatchOperation(operation: BatchOperation): Promise<
 
   try {
     switch (operation.type) {
-      case "complete":
+      case "complete": {
         affectedCount = await completeTasks(operation.ids, userId);
+        // Broadcast completion for realtime updates
+        for (const id of operation.ids) {
+          await broadcastTaskUpdate(id, userId, {
+            id,
+            completed: true,
+          }, "completed");
+        }
         break;
-      case "uncomplete":
+      }
+      case "uncomplete": {
         affectedCount = await uncompleteTasks(operation.ids, userId);
+        // Broadcast uncompletion for realtime updates
+        for (const id of operation.ids) {
+          await broadcastTaskUpdate(id, userId, {
+            id,
+            completed: false,
+          }, "updated");
+        }
         break;
-      case "delete":
+      }
+      case "delete": {
         affectedCount = await deleteTasks(operation.ids, userId);
+        // Broadcast deletions for realtime updates
+        for (const id of operation.ids) {
+          await broadcastTaskUpdate(id, userId, {
+            id,
+            deleted: true,
+          }, "deleted");
+        }
         break;
-      case "archive":
+      }
+      case "archive": {
         affectedCount = await archiveTasks(operation.ids, userId);
+        // Broadcast archiving for realtime updates
+        for (const id of operation.ids) {
+          await broadcastTaskUpdate(id, userId, {
+            id,
+            archived: true,
+          }, "updated");
+        }
         break;
-      case "unarchive":
+      }
+      case "unarchive": {
         affectedCount = await unarchiveTasks(operation.ids, userId);
+        // Broadcast unarchiving for realtime updates
+        for (const id of operation.ids) {
+          await broadcastTaskUpdate(id, userId, {
+            id,
+            archived: false,
+          }, "updated");
+        }
         break;
-      case "move":
+      }
+      case "move": {
         affectedCount = await moveTasks(operation.ids, operation.listId, userId);
+        // Broadcast move for realtime updates
+        for (const id of operation.ids) {
+          await broadcastTaskUpdate(id, userId, {
+            id,
+            list_id: operation.listId,
+          }, "updated");
+        }
         break;
-      case "set-priority":
+      }
+      case "set-priority": {
         affectedCount = await setTaskPriorities(operation.ids, operation.priority, userId);
+        // Broadcast priority change for realtime updates
+        for (const id of operation.ids) {
+          await broadcastTaskUpdate(id, userId, {
+            id,
+            priority: operation.priority,
+          }, "updated");
+        }
         break;
-      case "add-labels":
+      }
+      case "add-labels": {
         affectedCount = await addLabelsToTasks(operation.ids, operation.labelIds, userId);
+        // Broadcast label addition for realtime updates
+        for (const id of operation.ids) {
+          await broadcastTaskUpdate(id, userId, {
+            id,
+            label_ids: operation.labelIds,
+          }, "updated");
+        }
         break;
-      case "remove-labels":
+      }
+      case "remove-labels": {
         affectedCount = await removeLabelsFromTasks(operation.ids, operation.labelIds, userId);
+        // Broadcast label removal for realtime updates
+        for (const id of operation.ids) {
+          await broadcastTaskUpdate(id, userId, {
+            id,
+            label_ids: operation.labelIds,
+          }, "updated");
+        }
         break;
-      case "assign":
+      }
+      case "assign": {
         affectedCount = await assignTasks(operation.ids, operation.assigneeId, userId);
+        // Broadcast assignment for realtime updates
+        for (const id of operation.ids) {
+          await broadcastTaskUpdate(id, userId, {
+            id,
+            assignee_id: operation.assigneeId,
+          }, "updated");
+        }
         break;
-      case "add-dependencies":
+      }
+      case "add-dependencies": {
         affectedCount = await addTaskDependencies(operation.ids, operation.dependsOnIds, userId);
+        // Broadcast dependency addition for realtime updates
+        for (const id of operation.ids) {
+          await broadcastTaskUpdate(id, userId, {
+            id,
+            depends_on_task_ids: operation.dependsOnIds,
+          }, "updated");
+        }
         break;
-      case "set-dates":
+      }
+      case "set-dates": {
         affectedCount = await setTaskDates(operation.ids, operation.date, userId);
+        // Broadcast date change for realtime updates
+        for (const id of operation.ids) {
+          await broadcastTaskUpdate(id, userId, {
+            id,
+            date: operation.date,
+          }, "updated");
+        }
         break;
-      case "reorder":
+      }
+      case "reorder": {
         affectedCount = await reorderTasks(operation.orders, userId);
+        // Broadcast reorder for realtime updates
+        for (const { id, sort_order } of operation.orders) {
+          await broadcastTaskUpdate(id, userId, {
+            id,
+            sort_order,
+          }, "updated");
+        }
         break;
+      }
       default:
         return { success: false, affectedCount: 0, message: "Unknown operation type" };
     }
