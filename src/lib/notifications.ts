@@ -10,13 +10,6 @@ function validateSmtpHost(host: string): boolean {
 }
 
 /**
- * Sanitize email addresses to prevent header injection
- */
-function sanitizeEmail(email: string): string {
-  return email.replace(/[\r\n<>,;:\\]/g, "");
-}
-
-/**
  * Validate email configuration at module load time
  */
 const smtpHost = process.env.SMTP_HOST || "smtp.resend.dev";
