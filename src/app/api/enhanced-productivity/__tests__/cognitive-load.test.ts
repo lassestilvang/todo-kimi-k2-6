@@ -46,6 +46,7 @@ const createMockRequest = (url: string, method: string, body?: any) => {
 
   return {
     nextUrl: urlObj,
+    url: urlObj.toString(),
     method,
     json: () => Promise.resolve(body),
     headers,
