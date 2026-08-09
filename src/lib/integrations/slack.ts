@@ -6,7 +6,7 @@
  * Scope: channels:read, chat:write, users:read, groups:read
  */
 
-import { BaseConnector, IntegrationConfig, ExternalRecord, SlackMessageRecord } from './base-connector';
+import { BaseConnector, IntegrationConfig, SlackMessageRecord } from './base-connector';
 
 export class SlackConnector extends BaseConnector {
   readonly id = 'slack';
