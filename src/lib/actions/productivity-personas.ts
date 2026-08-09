@@ -499,12 +499,12 @@ function parseDuration(duration: string | null): number | null {
 /**
  * Get productivity persona types for selection
  */
-export function getPersonaTypes(): Array<{
+export async function getPersonaTypes(): Promise<Array<{
   id: PersonaType;
   name: string;
   description: string;
   icon: string;
-}> {
+}>> {
   return [
     {
       id: "deep_work",
