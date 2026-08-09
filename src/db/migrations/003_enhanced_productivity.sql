@@ -111,7 +111,7 @@ CREATE TABLE IF NOT EXISTS external_task_sync_history (
 );
 
 -- Decision Shadows: Track alternatives and opportunity costs
-CREATE TABLE IF NOT society_decision_shadows (
+CREATE TABLE IF NOT EXISTS decision_shadows (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   parent_task_id INTEGER REFERENCES tasks(id), -- Optional: link to related task
@@ -167,6 +167,22 @@ CREATE TABLE IF NOT EXISTS mood_task_associations (
   mood_rating_at_completion INTEGER CHECK (mood_rating_at_completion BETWEEN 1 AND 5),
   context_notes TEXT,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+-- User Personas for productivity profiling
+CREATE TABLE IF NOT EXISTS user_personas (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  type TEXT NOT NULL CHECK (type IN ('deep_work', 'sprint_runner', 'steady_stream', 'creative_genius', 'strategic_planner')),
+  work_hours TEXT, -- JSON {start: number, end: number}
+  energy_pattern TEXT, -- JSON with primary_peak, secondary_peak, energy_levels
+  preferred_working_styles TEXT, -- JSON array
+  focus_traits TEXT, -- JSON array
+  productivity_signals TEXT, -- JSON with high_energy, low_energy
+  recommendations TEXT, -- JSON with task_assignment, scheduling, focus
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Create indexes for performance
