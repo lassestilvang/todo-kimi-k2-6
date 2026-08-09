@@ -7,8 +7,8 @@ import {
   getCSPNonce,
   AuthResult,
 } from "../../api-middleware";
-import { NextRequest, NextResponse } from "next/server";
-import jwt from "jsonwebtoken";
+import { NextRequest } from "next/server";
+import jwt from "jsonwebtoken"; // used in tests
 
 // Mock dependencies
 vi.mock("@/lib/rate-limiter", () => ({
