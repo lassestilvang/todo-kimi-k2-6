@@ -1144,6 +1144,117 @@ Only return valid JSON.
       return [];
     }
   }
+
+  async generateProjectPlan(input: ProjectPlanInput): Promise<GeneratedProject> {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error("OPENAI_API_KEY not configured");
+    }
+
+    const prompt = `
+Generate a detailed project plan from this description:
+
+Project Name: ${input.projectName}
+Description: ${input.description || "No description provided"}
+Constraints: ${JSON.stringify(input.constraints || {})}
+
+Return JSON:
+{
+  "name": "Project Name",
+  "description": "Description",
+  "phases": [
+    {"name": "Phase 1", "description": "...", "duration_days": 10, "priority": "high", "deadline": "YYYY-MM-DD"}
+  ],
+  "total_duration_days": 30
+}
+Only return valid JSON.
+`;
+
+    try {
+      const response = await fetch(`${this.baseURL}/chat/completions`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: this.model,
+          messages: [{ role: "user", content: prompt }],
+          temperature: 0.5,
+          max_tokens: 1000,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate project plan");
+      }
+
+      const data = await response.json();
+      const content = data.choices[0]?.message?.content || "{}";
+      return JSON.parse(content);
+    } catch {
+      // Fallback to keyword parser
+      return new KeywordParser().generateProjectPlan(input);
+    }
+  }
+
+  async generateDecisionTemplate(context: DecisionContext): Promise<GeneratedDecisionTemplate> {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error("OPENAI_API_KEY not configured");
+    }
+
+    const prompt = `
+Generate a decision template for: ${context.decisionType || "general"}
+
+Context:
+- Task: ${context.task?.name}
+- Deadline: ${context.task?.deadline}
+
+Return JSON:
+{
+  "name": "Decision Template Name",
+  "prompt_template": "Template for AI reasoning",
+  "option_template": "[{\"option\": \"description, pros, cons\"}]"
+}
+Only return valid JSON.
+`;
+
+    try {
+      const response = await fetch(`${this.baseURL}/chat/completions`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: this.model,
+          messages: [{ role: "user", content: prompt }],
+          temperature: 0.5,
+          max_tokens: 500,
+        }),
+      });
+
+      if (!response.ok) {
+        return {
+          name: "General Decision Template",
+          prompt_template: "You need to make a decision about: {task_name}. What are the options, pros, and cons of each?",
+          option_template: '[{"option": "Description, pros, cons"}]',
+          provider: this.name
+        };
+      }
+
+      const data = await response.json();
+      const content = data.choices[0]?.message?.content || "{}";
+      const parsed = JSON.parse(content);
+      return { ...parsed, provider: this.name };
+    } catch {
+      return {
+        name: "General Decision Template",
+        prompt_template: "You need to make a decision about: {task_name}. What are the options, pros, and cons of each?",
+        option_template: '[{"option": "Description, pros, cons"}]',
+        provider: this.name
+      };
+    }
+  }
 }
 
 /**
@@ -1332,6 +1443,100 @@ Only return valid JSON.
       return JSON.parse(data.content[0]?.text ?? "[]");
     } catch {
       return [];
+    }
+  }
+
+  async generateProjectPlan(input: ProjectPlanInput): Promise<GeneratedProject> {
+    if (!process.env.ANTHROPIC_API_KEY) {
+      throw new Error("ANTHROPIC_API_KEY not configured");
+    }
+
+    const prompt = `
+Generate a detailed project plan:
+
+Project Name: ${input.projectName}
+Description: ${input.description || "No description"}
+Constraints: ${JSON.stringify(input.constraints || {})}
+
+Return JSON with phases and total_duration_days.
+`;
+
+    try {
+      const response = await fetch(`${this.baseURL}/v1/messages`, {
+        method: "POST",
+        headers: {
+          "x-api-key": process.env.ANTHROPIC_API_KEY!,
+          "Content-Type": "application/json",
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model: this.model,
+          max_tokens: 1000,
+          messages: [{ role: "user", content: prompt }],
+        }),
+      });
+
+      if (!response.ok) {
+        return new KeywordParser().generateProjectPlan(input);
+      }
+
+      const data = await response.json();
+      const content = data.content[0]?.text ?? "{}";
+      return JSON.parse(content);
+    } catch {
+      return new KeywordParser().generateProjectPlan(input);
+    }
+  }
+
+  async generateDecisionTemplate(context: DecisionContext): Promise<GeneratedDecisionTemplate> {
+    if (!process.env.ANTHROPIC_API_KEY) {
+      throw new Error("ANTHROPIC_API_KEY not configured");
+    }
+
+    const prompt = `
+Generate decision template for: ${context.decisionType || "general"}
+
+Task: ${context.task?.name}
+
+Return JSON with name, prompt_template, and option_template.
+`;
+
+    try {
+      const response = await fetch(`${this.baseURL}/v1/messages`, {
+        method: "POST",
+        headers: {
+          "x-api-key": process.env.ANTHROPIC_API_KEY!,
+          "Content-Type": "application/json",
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model: this.model,
+          max_tokens: 500,
+          messages: [{ role: "user", content: prompt }],
+        }),
+      });
+
+      if (!response.ok) {
+        const defaultTemplate = {
+          name: "General Decision Template",
+          prompt_template: "You need to decide on: {task_name}. What are the options?",
+          option_template: '[{"option": "description, pros, cons"}]',
+          provider: this.name
+        };
+        return defaultTemplate;
+      }
+
+      const data = await response.json();
+      const content = data.content[0]?.text ?? "{}";
+      const parsed = JSON.parse(content);
+      return { ...parsed, provider: this.name };
+    } catch {
+      return {
+        name: "General Decision Template",
+        prompt_template: "You need to decide on: {task_name}. What are the options?",
+        option_template: '[{"option": "description, pros, cons"}]',
+        provider: this.name
+      };
     }
   }
 }
