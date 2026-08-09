@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import type { Locale } from "./src/i18n/config";
 
 const locales = ["en", "es", "fr", "de"] as const;
-type Locale = typeof locales[number];
 const defaultLocale: Locale = "en";
 
 export function middleware(request: NextRequest) {
@@ -11,7 +11,8 @@ export function middleware(request: NextRequest) {
   const localePrefix = locales.find(locale => pathname.startsWith(`/${locale}`));
 
   // If no locale prefix, redirect to default locale
-  if (!localePrefix && !pathname.startsWith("/api") && !pathname.startsWith("/_next")) {
+  // But don't redirect API routes, static files, or root path for home page
+  if (!localePrefix && !pathname.startsWith("/api") && !pathname.startsWith("/_next") && !pathname.startsWith("/auth") && !pathname.startsWith("/login") && !pathname.startsWith("/register")) {
     const url = request.nextUrl.clone();
     url.pathname = `/${defaultLocale}${pathname}`;
     return NextResponse.redirect(url);
@@ -28,7 +29,8 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico, robots.txt (and other static files)
+     * - auth, login, register (authentication pages)
      */
-    "/((?!api|_next/static|_next/image|favicon.ico|robots.txt).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|robots.txt|auth|login|register).*)",
   ],
 };
