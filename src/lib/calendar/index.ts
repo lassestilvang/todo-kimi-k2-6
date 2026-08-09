@@ -53,8 +53,15 @@ import {
   deleteOutlookEvent as outlookDeleteEvent,
   getOutlookAuthUrl,
   exchangeOutlookCodeForTokens,
-  type OutlookSyncConfig,
+  type OutlookEvent,
 } from "./outlook";
+
+// Extend OutlookSyncConfig type
+export interface OutlookSyncConfig {
+  accessToken: string;
+  refreshToken?: string;
+  expiresAt?: string;
+}
 
 /**
  * Get calendar events for a date range
@@ -71,7 +78,7 @@ export async function getCalendarEvents(
     const events = await outlookGetEvents(config as OutlookSyncConfig, startDate, endDate);
     // Convert Outlook events to match CalendarEvent interface
     return events.map(e => ({
-      id: e.id,
+      id: e.id || '',
       summary: e.subject,
       description: e.body?.content,
       start: { dateTime: e.start.dateTime },
