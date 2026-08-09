@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/config";
 import {
   getWorkflows,
   getWorkflow,
@@ -10,164 +8,170 @@ import {
   toggleWorkflow,
   executeWorkflow,
   getWorkflowExecutions,
+  checkTriggers,
+  evaluateConditions,
 } from "@/lib/actions/workflows";
+import { applyMiddleware, jsonResponse, errorResponse } from "@/lib/api-middleware";
 
 export async function GET(request: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const middleware = await applyMiddleware(request, { requireAuth: true });
+  if (middleware.error) {
+    return middleware.error;
   }
 
-  const userId = Number((session.user as { id?: string }).id);
+  const userId = middleware.auth?.userId;
   if (!userId) {
-    return NextResponse.json({ error: "User ID missing from session" }, { status: 401 });
+    return errorResponse("Authentication required", 401);
   }
-  const searchParams = request.nextUrl.searchParams;
 
+  const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
-  const includeExecutions = searchParams.get("include_executions") === "true";
-  const executionLimit = searchParams.get("limit") ? Number(searchParams.get("limit")) : 10;
+  const type = searchParams.get("type");
+  const executions = searchParams.get("executions") === "true";
+  const status = searchParams.get("status");
 
-  if (id) {
+  try {
     // Get single workflow
-    const workflow = await getWorkflow(Number(id), userId);
-    if (!workflow) {
-      return NextResponse.json({ error: "Workflow not found" }, { status: 404 });
+    if (id) {
+      const workflowId = Number(id);
+      if (isNaN(workflowId)) {
+        return errorResponse("Invalid workflow ID", 400);
+      }
+
+      if (executions) {
+        const execs = await getWorkflowExecutions(workflowId, {
+          limit: 50,
+          status: status as any
+        });
+        return jsonResponse({ workflow_id: workflowId, executions: execs });
+      }
+
+      const workflow = await getWorkflow(workflowId, userId);
+      if (!workflow) {
+        return errorResponse("Workflow not found", 404);
+      }
+      return jsonResponse({ workflow });
     }
 
-    let executions = null;
-    if (includeExecutions) {
-      executions = await getWorkflowExecutions(Number(id), { limit: executionLimit });
+    // Get all workflows for user
+    const workflows = await getWorkflows(userId);
+
+    // Filter by type if specified
+    let filteredWorkflows = workflows;
+    if (type) {
+      filteredWorkflows = workflows.filter((w: any) => w.trigger_type === type);
     }
 
-    return NextResponse.json({ workflow, executions });
+    return jsonResponse({ workflows: filteredWorkflows });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to fetch workflows";
+    return errorResponse(message, 500);
   }
-
-  // Get all workflows
-  const workflows = await getWorkflows(userId);
-  return NextResponse.json({ workflows });
 }
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const middleware = await applyMiddleware(request, { requireAuth: true });
+  if (middleware.error) {
+    return middleware.error;
   }
 
-  const userId = Number((session.user as { id?: string }).id);
+  const userId = middleware.auth?.userId;
   if (!userId) {
-    return NextResponse.json({ error: "User ID missing from session" }, { status: 401 });
+    return errorResponse("Authentication required", 401);
   }
-  const body = await request.json();
 
-  // Check if this is an execution request
-  if (body.action === "execute") {
-    try {
-      const result = await executeWorkflow(
-        body.workflow_id,
-        body.input_data,
-        userId
-      );
-      return NextResponse.json({ success: true, result });
-    } catch (error) {
-      return NextResponse.json(
-        { error: error instanceof Error ? error.message : "Execution failed" },
-        { status: 500 }
-      );
+  try {
+    const body = await request.json();
+    const { action, ...data } = body;
+
+    switch (action) {
+      case "create":
+        const workflow = await createWorkflow(userId, data);
+        return jsonResponse({ success: true, workflow }, 201);
+
+      case "execute":
+        if (!data.workflowId) {
+          return errorResponse("Workflow ID required for execution", 400);
+        }
+        const result = await executeWorkflow(data.workflowId, data.input || {}, userId);
+        // Remove success key to avoid duplication
+        const { success: _success, ...rest } = result;
+        return jsonResponse({ success: true, ...rest });
+
+      case "toggle":
+        if (!data.workflowId) {
+          return errorResponse("Workflow ID required", 400);
+        }
+        const enabled = await toggleWorkflow(data.workflowId, userId);
+        return jsonResponse({ success: true, enabled });
+
+      default:
+        // If no action specified, create workflow
+        const newWorkflow = await createWorkflow(userId, data);
+        return jsonResponse({ success: true, workflow: newWorkflow }, 201);
     }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to process workflow request";
+    return errorResponse(message, 500);
   }
-
-  // Regular workflow creation
-  const workflow = await createWorkflow(userId, body);
-  return NextResponse.json(workflow, { status: 201 });
 }
 
 export async function PUT(request: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const middleware = await applyMiddleware(request, { requireAuth: true });
+  if (middleware.error) {
+    return middleware.error;
   }
 
-  const userId = Number((session.user as { id?: string }).id);
+  const userId = middleware.auth?.userId;
   if (!userId) {
-    return NextResponse.json({ error: "User ID missing from session" }, { status: 401 });
+    return errorResponse("Authentication required", 401);
   }
-  const searchParams = request.nextUrl.searchParams;
-  const id = searchParams.get("id");
-
-  if (!id) {
-    return NextResponse.json({ error: "Workflow ID required" }, { status: 400 });
-  }
-
-  const body = await request.json();
 
   try {
-    const workflow = await updateWorkflow(userId, Number(id), body);
-    return NextResponse.json(workflow);
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+
+    if (!id) {
+      return errorResponse("Workflow ID required", 400);
+    }
+
+    const body = await request.json();
+    const updated = await updateWorkflow(userId, Number(id), body);
+
+    return jsonResponse({ success: true, workflow: updated });
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Update failed" },
-      { status: 500 }
-    );
+    const message = error instanceof Error ? error.message : "Failed to update workflow";
+    return errorResponse(message, 500);
   }
 }
 
 export async function DELETE(request: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const middleware = await applyMiddleware(request, { requireAuth: true });
+  if (middleware.error) {
+    return middleware.error;
   }
 
-  const userId = Number((session.user as { id?: string }).id);
+  const userId = middleware.auth?.userId;
   if (!userId) {
-    return NextResponse.json({ error: "User ID missing from session" }, { status: 401 });
-  }
-  const searchParams = request.nextUrl.searchParams;
-  const id = searchParams.get("id");
-
-  if (!id) {
-    return NextResponse.json({ error: "Workflow ID required" }, { status: 400 });
+    return errorResponse("Authentication required", 401);
   }
 
   try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+
+    if (!id) {
+      return errorResponse("Workflow ID required", 400);
+    }
+
     const deleted = await deleteWorkflow(Number(id), userId);
     if (!deleted) {
-      return NextResponse.json({ error: "Workflow not found" }, { status: 404 });
+      return errorResponse("Workflow not found or not deleted", 404);
     }
-    return NextResponse.json({ success: true });
+
+    return jsonResponse({ success: true });
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Delete failed" },
-      { status: 500 }
-    );
-  }
-}
-
-// PATCH endpoint for toggle
-export async function PATCH(request: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const userId = Number((session.user as { id?: string }).id);
-  if (!userId) {
-    return NextResponse.json({ error: "User ID missing from session" }, { status: 401 });
-  }
-  const searchParams = request.nextUrl.searchParams;
-  const id = searchParams.get("id");
-
-  if (!id) {
-    return NextResponse.json({ error: "Workflow ID required" }, { status: 400 });
-  }
-
-  try {
-    const enabled = await toggleWorkflow(Number(id), userId);
-    return NextResponse.json({ success: true, enabled });
-  } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Toggle failed" },
-      { status: 500 }
-    );
+    const message = error instanceof Error ? error.message : "Failed to delete workflow";
+    return errorResponse(message, 500);
   }
 }
