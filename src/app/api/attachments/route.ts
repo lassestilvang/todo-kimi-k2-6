@@ -1,7 +1,7 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { addTaskAttachment, getTaskAttachments, deleteTaskAttachment } from "@/lib/actions";
 import { getDb } from "@/lib/db";
-import { writeFile, mkdir } from "fs/promises";
+import { writeFile, mkdir, readFile } from "fs/promises";
 import { join } from "path";
 import { v4 as uuidv4 } from "uuid";
 import { applyMiddleware, errorResponse, jsonResponse } from "@/lib/api-middleware";
@@ -62,34 +62,74 @@ function validateFile(file: File): { valid: boolean; error?: string } {
   return { valid: true };
 }
 
-// GET /api/attachments - Get attachments for a task
+// GET /api/attachments - Get attachments for a task or download an attachment
 export async function GET(request: NextRequest) {
   const middlewareResult = await applyMiddleware(request, { requireAuth: true });
   if (middlewareResult.error) {
     return middlewareResult.error;
   }
 
+  // Verify auth
+  if (!middlewareResult.auth?.isAuthenticated || !middlewareResult.auth.userId) {
+    return errorResponse("Authentication required", 401);
+  }
+
+  const userId = middlewareResult.auth.userId;
+
   try {
     const searchParams = request.nextUrl.searchParams;
     const taskId = searchParams.get("taskId");
+    const id = searchParams.get("id");
+    const download = searchParams.get("download");
+
+    // Download mode - get single attachment for download
+    if (id) {
+      const attachmentId = Number(id);
+      if (isNaN(attachmentId) || attachmentId <= 0) {
+        return errorResponse("Invalid attachment ID", 400);
+      }
+
+      const db = getDb();
+      const attachment = db
+        .prepare(
+          "SELECT ta.* FROM task_attachments ta JOIN tasks t ON ta.task_id = t.id WHERE ta.id = ? AND t.user_id = ?"
+        )
+        .get(attachmentId, userId) as { url: string; filename: string; mime_type: string } | undefined;
+
+      if (!attachment) {
+        return errorResponse("Attachment not found or access denied", 403);
+      }
+
+      const filepath = join(UPLOAD_DIR, attachment.url.replace("/uploads/", ""));
+      const fileBuffer = await readFile(filepath);
+
+      return new NextResponse(fileBuffer, {
+        headers: {
+          "Content-Type": attachment.mime_type || "application/octet-stream",
+          "Content-Disposition": download === "true"
+            ? `attachment; filename="${encodeURIComponent(attachment.filename)}"`
+            : `inline; filename="${encodeURIComponent(attachment.filename)}"`,
+          "Content-Length": fileBuffer.length.toString(),
+        },
+      });
+    }
+
+    // List mode - get attachments for a task
     if (!taskId) {
       return errorResponse("Task ID required", 400);
     }
 
-    // Validate task ID
     const taskIdNum = Number(taskId);
     if (isNaN(taskIdNum) || taskIdNum <= 0) {
       return errorResponse("Invalid task ID", 400);
     }
 
-    // Verify auth result has user
-    if (!middlewareResult.auth?.isAuthenticated || !middlewareResult.auth.userId) {
-      return errorResponse("Authentication required", 401);
-    }
-
-    const attachments = await getTaskAttachments(taskIdNum, middlewareResult.auth.userId);
+    const attachments = await getTaskAttachments(taskIdNum, userId);
     return jsonResponse({ attachments }, 200, middlewareResult.headers);
   } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return errorResponse("Attachment not found on disk", 404);
+    }
     const message = error instanceof Error ? error.message : "Failed to fetch attachments";
     return errorResponse(message, 500);
   }
