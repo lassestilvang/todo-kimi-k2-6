@@ -16,6 +16,8 @@ export async function GET(request: NextRequest) {
 
   try {
     const status = searchParams.get("status") || "pending";
+    const userId = middleware.auth?.userId ?? 1;
+    // Note: getExternalTasks doesn't take userId as parameter, filtering is done internally
     const tasks = await getExternalTasks(status);
     return NextResponse.json({ tasks });
   } catch (error) {
