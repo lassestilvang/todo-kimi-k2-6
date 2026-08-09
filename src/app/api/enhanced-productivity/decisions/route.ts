@@ -27,10 +27,11 @@ export async function GET(request: NextRequest) {
   }
 
   const { searchParams } = new URL(request.url);
+  const userId = middleware.auth?.userId ?? 1;
 
   try {
     const limit = parseInt(searchParams.get("limit") || "20");
-    const analysis = await getDecisionAnalysis(1, limit);
+    const analysis = await getDecisionAnalysis(userId, limit);
     return NextResponse.json(analysis);
   } catch (error) {
     return NextResponse.json(
