@@ -154,6 +154,7 @@ export interface CalendarSync {
   refresh_token: string | null;
   expires_at: string | null;
   enabled: boolean;
+  tenant_id?: string | null;
   created_at: string;
 }
 
