@@ -2,6 +2,7 @@
 
 import { getDb } from "@/lib/db";
 import type { Task } from "@/types";
+import { logActivity as logActivityDb } from "@/lib/actions/activity-logger";
 
 /**
  * Real-time task update server actions
@@ -48,10 +49,10 @@ export async function broadcastTaskUpdate(
     const channel = `task:${taskId}`;
 
     // Update presence/activity
-    await logActivity({
-      user_id: userId,
+    await logActivityDb({
+      task_id: taskId,
       action,
-      entity_type: 'task',
+      entity_type: "task",
       entity_id: taskId,
       details: JSON.stringify(data),
     });
@@ -95,6 +96,7 @@ export async function broadcastTaskUpdate(
 
 /**
  * Log activity for real-time updates
+ * Re-exported from activity-logger for backward compatibility
  */
 export async function logActivity(input: {
   user_id: number;
@@ -103,16 +105,14 @@ export async function logActivity(input: {
   entity_id: number;
   details?: string;
 }): Promise<void> {
-  const db = getDb();
-
-  try {
-    db.prepare(`
-      INSERT INTO activity_logs (user_id, action, entity_type, entity_id, details, created_at)
-      VALUES (?, ?, ?, ?, ?, datetime('now'))
-    `).run(input.user_id, input.action, input.entity_type, input.entity_id, input.details);
-  } catch (error) {
-    console.error('Failed to log activity:', error);
-  }
+  await logActivityDb({
+    task_id: input.entity_id || 0,
+    user_id: input.user_id,
+    action: input.action,
+    entity_type: input.entity_type as "task" | "list" | "label" | "template" | "user" | "notification" | "comment" | "share",
+    entity_id: input.entity_id || 0,
+    details: input.details,
+  });
 }
 
 /**
