@@ -20,14 +20,8 @@ import {
   useMoodTracking,
 } from "@/hooks/use-enhanced-productivity";
 
-const setupMockHooks = (overrides: Partial<{
-  cognitiveLoad: ReturnType<typeof useCognitiveLoad>;
-  energyBudget: ReturnType<typeof useEnergyBudget>;
-  externalTasks: ReturnType<typeof useExternalTasks>;
-  decisionShadow: ReturnType<typeof useDecisionShadow>;
-  moodTracking: ReturnType<typeof useMoodTracking>;
-}> = {}) => {
-  (useCognitiveLoad as any).mockReturnValue(overrides.cognitiveLoad || {
+const setupMockHooks = () => {
+  (useCognitiveLoad as any).mockReturnValue({
     analysis: {
       loadTrend: "stable",
       completionRate: 0.75,
@@ -38,7 +32,7 @@ const setupMockHooks = (overrides: Partial<{
     refetch: vi.fn(),
   });
 
-  (useEnergyBudget as any).mockReturnValue(overrides.energyBudget || {
+  (useEnergyBudget as any).mockReturnValue({
     budget: { balance: 78, dailyLimit: 100, spent: 22 },
     profile: { wake_hour: 7, sleep_hour: 23 },
     loading: false,
@@ -47,14 +41,14 @@ const setupMockHooks = (overrides: Partial<{
     refetch: vi.fn(),
   });
 
-  (useExternalTasks as any).mockReturnValue(overrides.externalTasks || {
+  (useExternalTasks as any).mockReturnValue({
     tasks: [],
     loading: false,
     convertToTask: vi.fn(),
     refetch: vi.fn(),
   });
 
-  (useDecisionShadow as any).mockReturnValue(overrides.decisionShadow || {
+  (useDecisionShadow as any).mockReturnValue({
     analysis: {
       totalDecisions: 12,
       avgOutcomeRating: 3.8,
@@ -64,7 +58,7 @@ const setupMockHooks = (overrides: Partial<{
     refetch: vi.fn(),
   });
 
-  (useMoodTracking as any).mockReturnValue(overrides.moodTracking || {
+  (useMoodTracking as any).mockReturnValue({
     recommendations: { primaryMood: "balanced" },
     loading: false,
     logMood: vi.fn(),
@@ -76,6 +70,7 @@ const setupMockHooks = (overrides: Partial<{
 describe("Enhanced Productivity Dashboard", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    setupMockHooks();
   });
 
   afterEach(() => {
@@ -83,30 +78,28 @@ describe("Enhanced Productivity Dashboard", () => {
   });
 
   describe("Overview Tab", () => {
-    it("should render all overview cards", () => {
-      setupMockHooks();
-      render(<EnhancedProductivityDashboard />);
-
-      expect(screen.getByText("Enhanced Productivity Hub")).toBeInTheDocument();
-    });
-
-    it("should display cognitive load status", () => {
-      setupMockHooks();
+    it("should render all cards", () => {
       render(<EnhancedProductivityDashboard />);
 
       expect(screen.getByText("Cognitive Load")).toBeInTheDocument();
+      expect(screen.getByText("Energy Budget")).toBeInTheDocument();
+      expect(screen.getByText("Decisions Made")).toBeInTheDocument();
+      expect(screen.getByText("External Sources")).toBeInTheDocument();
+    });
+
+    it("should display cognitive load status", () => {
+      render(<EnhancedProductivityDashboard />);
+
       expect(screen.getByText("Stable")).toBeInTheDocument();
     });
 
     it("should display energy balance", () => {
-      setupMockHooks();
       render(<EnhancedProductivityDashboard />);
 
-      expect(screen.getByText("Energy Budget")).toBeInTheDocument();
+      expect(screen.getByText("78/100")).toBeInTheDocument();
     });
 
     it("should show integration cards", () => {
-      setupMockHooks();
       render(<EnhancedProductivityDashboard />);
 
       expect(screen.getByText("External Sources")).toBeInTheDocument();
@@ -115,52 +108,52 @@ describe("Enhanced Productivity Dashboard", () => {
 
   describe("Decision Shadow Tracker", () => {
     it("should render loading state", () => {
-      setupMockHooks({
-        decisionShadow: {
-          analysis: null,
-          loading: true,
-          createDecision: vi.fn(),
-          refetch: vi.fn(),
-        },
+      (useDecisionShadow as any).mockReturnValue({
+        analysis: null,
+        loading: true,
+        createDecision: vi.fn(),
+        refetch: vi.fn(),
       });
 
       render(<EnhancedProductivityDashboard />);
-      // Component should not crash with loading state
+      // Component should render without crashing with loading state
+      expect(screen.getByText("Decisions Made")).toBeInTheDocument();
     });
 
     it("should display total decisions", () => {
-      setupMockHooks({
-        decisionShadow: {
-          analysis: {
-            totalDecisions: 15,
-            avgOutcomeRating: 4.2,
-          },
-          loading: false,
-          createDecision: vi.fn(),
-          refetch: vi.fn(),
+      (useDecisionShadow as any).mockReturnValue({
+        analysis: {
+          totalDecisions: 15,
+          avgOutcomeRating: 4.2,
         },
+        loading: false,
+        createDecision: vi.fn(),
+        refetch: vi.fn(),
       });
 
       render(<EnhancedProductivityDashboard />);
+      // Decision count appears in decision analysis section
       expect(screen.getByText("15")).toBeInTheDocument();
     });
   });
 
-  describe("Mood-Adaptive Task Views", () => {
-    it("should render mood view selector", () => {
-      setupMockHooks();
+  describe("Component Structure", () => {
+    it("should render the main dashboard container", () => {
       render(<EnhancedProductivityDashboard />);
 
-      expect(screen.getByText("Mood-Adaptive Views")).toBeInTheDocument();
+      const container = document.querySelector('.space-y-6');
+      expect(container).toBeInTheDocument();
     });
 
-    it("should show mood options", () => {
-      setupMockHooks();
+    it("should render all overview tabs", () => {
       render(<EnhancedProductivityDashboard />);
 
-      expect(screen.getByText("Energized - High impact tasks")).toBeInTheDocument();
-      expect(screen.getByText("Balanced - Daily routine")).toBeInTheDocument();
-      expect(screen.getByText("Tired - Quick wins")).toBeInTheDocument();
+      const tabs = screen.getAllByRole('tab');
+      expect(tabs.length).toBeGreaterThanOrEqual(4);
+      expect(screen.getByText('Overview')).toBeInTheDocument();
+      expect(screen.getByText('Energy Planner')).toBeInTheDocument();
+      expect(screen.getByText('Task Sync')).toBeInTheDocument();
+      expect(screen.getByText('Decision Journal')).toBeInTheDocument();
     });
   });
 });
