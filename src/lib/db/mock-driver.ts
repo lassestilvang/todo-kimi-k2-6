@@ -46,7 +46,8 @@ export function createMockDatabase(): MockDatabase {
       // Knowledge graph tables
       "task_connections", "decision_entries", "decision_options", "decision_templates",
       "task_insights", "user_skills", "habit_contexts", "knowledge_graph_activities",
-      "cognitive_load_logs", "goal_milestones", "task_mappings"
+      "cognitive_load_logs", "task_mappings", "smart_inbox_sources",
+      "workflows", "workflow_executions"
     ];
     schemaTables.forEach(name => tables.set(name, new Map()));
 
@@ -1049,9 +1050,17 @@ export function createMockDatabase(): MockDatabase {
               }
             });
 
-            if (record.id) {
-              table.set(record.id as number, record);
+            // Auto-generate ID if not provided
+            if (!record.id) {
+              let maxId = 0;
+              table.forEach((rec) => {
+                if (rec.id !== undefined && rec.id !== null) {
+                  maxId = Math.max(maxId, Number(rec.id));
+                }
+              });
+              record.id = maxId + 1;
             }
+            table.set(record.id as number, record);
           }
         }
       }
