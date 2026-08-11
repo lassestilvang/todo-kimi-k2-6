@@ -605,6 +605,41 @@ export async function createDecisionShadow(input: DecisionShadowInput): Promise<
   return { id: decisionShadowId };
 }
 
+export async function getDecisions(userId: number, limit: number = 50): Promise<Array<{
+  id: number;
+  decision_type: string;
+  question: string;
+  chosen_option_text: string;
+  rationale: string;
+  outcome?: string | null;
+  outcome_rating?: number | null;
+  created_at: string;
+  updated_at?: string | null;
+}>> {
+  const db = getDb();
+
+  return db
+    .prepare(`
+      SELECT id, decision_type, question, chosen_option_text, rationale,
+             outcome, outcome_rating, created_at, updated_at
+      FROM decision_shadows
+      WHERE user_id = ?
+      ORDER BY created_at DESC
+      LIMIT ?
+    `)
+    .all(userId, limit) as Array<{
+      id: number;
+      decision_type: string;
+      question: string;
+      chosen_option_text: string;
+      rationale: string;
+      outcome: string | null;
+      outcome_rating: number | null;
+      created_at: string;
+      updated_at: string | null;
+    }>;
+}
+
 export async function getDecisionAnalysis(userId: number, limit: number = 20): Promise<{
   totalDecisions: number;
   avgOutcomeRating: number;
