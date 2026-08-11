@@ -1,12 +1,13 @@
 -- Activity Logs Migration
 -- Tracks user actions and system events for audit trail and team activity feed
+-- Unified activity tracking system covering all entity types
 
 CREATE TABLE IF NOT EXISTS activity_logs (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   task_id INTEGER REFERENCES tasks(id) ON DELETE CASCADE,
   user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
   action TEXT NOT NULL,
-  entity_type TEXT NOT NULL CHECK(entity_type IN ('task', 'list', 'label', 'template', 'user', 'notification', 'comment', 'share')),
+  entity_type TEXT NOT NULL CHECK(entity_type IN ('task', 'list', 'label', 'template', 'user', 'notification', 'comment', 'share', 'habit', 'goal', 'decision', 'insight', 'skill', 'connection')),
   entity_id INTEGER,
   details TEXT,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP
