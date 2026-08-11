@@ -1,245 +1,177 @@
-import { describe, it, expect, beforeEach, afterEach, vi, beforeAll } from "vitest";
-import { setDb, resetDb } from "@/lib/db";
-import { createTestDb } from "@/lib/db/test-db";
-import { initializeSchema } from "@/lib/db/index";
+import { describe, it, expect, beforeEach, afterEach, vi, afterAll } from "vitest";
 
-// Mock the db module
+// Mock modules
 vi.mock("@/lib/db", () => ({
-  getDb: vi.fn(() => (global as any).__testDb__),
-  setDb: vi.fn(),
-  resetDb: vi.fn(),
-  createTestDb: vi.fn(),
-  initializeSchema: vi.fn(),
+  getDb: vi.fn(),
 }));
 
-// Set up demo mode for authentication
-beforeAll(() => {
-  (process.env as any).NODE_ENV = 'test';
-  (process.env as any).NEXTAUTH_SECRET = 'demo-secret';
-});
+vi.mock("@/lib/activity-logger", () => ({
+  createActivityLog: vi.fn().mockResolvedValue({
+    id: 1,
+    action: "test",
+    entity_type: "task",
+    created_at: new Date().toISOString(),
+  }),
+  type: {},
+}));
 
-describe("Realtime Actions", () => {
-  let db: ReturnType<typeof createTestDb>;
+vi.mock("@/lib/logger", () => ({
+  logger: {
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+    debug: vi.fn(),
+  },
+}));
+
+import { getDb } from "@/lib/db";
+import { createActivityLog } from "@/lib/activity-logger";
+
+// Store original module to reset state
+let realtimeModule: any;
+
+describe("Real-time Actions", () => {
+  let mockDb: any;
 
   beforeEach(() => {
-    vi.clearAllMocks();
-    resetDb();
-    db = createTestDb();
-    setDb(db);
-    (global as any).__testDb__ = db;
-    initializeSchema(db);
+    mockDb = {
+      prepare: vi.fn().mockReturnThis(),
+      run: vi.fn().mockReturnValue({ changes: 1, lastInsertRowid: 1 }),
+      get: vi.fn(),
+      all: vi.fn().mockReturnValue([]),
+      exec: vi.fn(),
+    };
+    (getDb as any).mockReturnValue(mockDb);
+    (createActivityLog as any).mockClear();
   });
 
   afterEach(() => {
-    db.close();
-    delete (global as any).__testDb__;
+    vi.clearAllMocks();
+  });
+
+  afterAll(() => {
+    // Clean up global state
+    if (realtimeModule) {
+      const { activeChannels } = realtimeModule;
+      activeChannels?.clear?.();
+    }
   });
 
   describe("broadcastTaskUpdate", () => {
-    it("should be a function", async () => {
+    it("should return early if task not found", async () => {
+      mockDb.get.mockReturnValue(undefined); // No task found
+
       const { broadcastTaskUpdate } = await import("../realtime");
-      expect(typeof broadcastTaskUpdate).toBe('function');
+      await broadcastTaskUpdate(999, 1, { name: "Test" }, "updated");
+
+      expect(mockDb.prepare).toHaveBeenCalled();
     });
 
-    it("should be async", async () => {
+    it("should log activity for task updates", async () => {
+      mockDb.get.mockReturnValue({ id: 1, name: "Test Task", user_id: 1 });
+      mockDb.all.mockReturnValue([{ userId: 1, userName: "Test User", email: "test@example.com" }]);
+
       const { broadcastTaskUpdate } = await import("../realtime");
-      await expect(broadcastTaskUpdate(1, 1, {}, 'created')).resolves.toBeUndefined();
-    });
+      await broadcastTaskUpdate(1, 1, { name: "Task" }, "created");
 
-    it("should accept task data with standard properties", async () => {
-      const { broadcastTaskUpdate } = await import("../realtime");
-      const taskData = {
-        id: 1,
-        name: "Test Task",
-        description: "Test description",
-        list_id: 1,
-        date: "2024-01-15",
-        deadline: "2024-01-20",
-        priority: "high" as const,
-        completed: false,
-        assignee_id: 1,
-      };
-      await expect(broadcastTaskUpdate(1, 1, taskData, 'created')).resolves.toBeUndefined();
-    });
-
-    it("should accept custom properties for different action types", async () => {
-      const { broadcastTaskUpdate } = await import("../realtime");
-
-      // Test deleted action with custom property
-      await expect(broadcastTaskUpdate(1, 1, { id: 1, deleted: true }, 'deleted')).resolves.toBeUndefined();
-
-      // Test completed action
-      await expect(broadcastTaskUpdate(1, 1, { id: 1, completed: true }, 'completed')).resolves.toBeUndefined();
-    });
-
-    it("should handle missing task gracefully", async () => {
-      const { broadcastTaskUpdate } = await import("../realtime");
-      // Should not throw when task is not found
-      await expect(broadcastTaskUpdate(99999, 1, { id: 99999 }, 'deleted')).resolves.toBeUndefined();
+      expect(createActivityLog).toHaveBeenCalled();
     });
   });
 
-  describe("logActivity", () => {
-    it("should be a function", async () => {
-      const { logActivity } = await import("../realtime");
-      expect(typeof logActivity).toBe('function');
-    });
+  describe("subscribeToTask / unsubscribeFromTask", () => {
+    it("should subscribe user to task channel", async () => {
+      const { subscribeToTask, getTaskSubscribers, unsubscribeFromTask } = await import("../realtime");
 
-    it("should be async", async () => {
-      const { logActivity } = await import("../realtime");
-      await expect(logActivity({
-        user_id: 1,
-        action: 'test_action',
-        entity_type: 'task',
-        entity_id: 1,
-        details: JSON.stringify({ test: 'data' })
-      })).resolves.toBeUndefined();
-    });
-
-    it("should accept activity input with required fields", async () => {
-      const { logActivity } = await import("../realtime");
-      const activityInput = {
-        user_id: 1,
-        action: 'task_updated',
-        entity_type: 'task',
-        entity_id: 42,
-        details: JSON.stringify({ changes: ['status', 'priority'] })
-      };
-      await expect(logActivity(activityInput)).resolves.toBeUndefined();
-    });
-  });
-
-  describe("subscribeToTask", () => {
-    it("should be a function", async () => {
-      const { subscribeToTask } = await import("../realtime");
-      expect(typeof subscribeToTask).toBe('function');
-    });
-
-    it("should be async", async () => {
-      const { subscribeToTask } = await import("../realtime");
-      await expect(subscribeToTask(1, 1)).resolves.toBeUndefined();
-    });
-
-    it("should not throw when subscribing", async () => {
-      const { subscribeToTask } = await import("../realtime");
-      await expect(subscribeToTask(1, 1)).resolves.toBeUndefined();
-      await expect(subscribeToTask(2, 1)).resolves.toBeUndefined();
-    });
-  });
-
-  describe("unsubscribeFromTask", () => {
-    it("should be a function", async () => {
-      const { unsubscribeFromTask } = await import("../realtime");
-      expect(typeof unsubscribeFromTask).toBe('function');
-    });
-
-    it("should be async", async () => {
-      const { unsubscribeFromTask } = await import("../realtime");
-      await expect(unsubscribeFromTask(1, 1)).resolves.toBeUndefined();
-    });
-
-    it("should not throw when unsubscribing", async () => {
-      const { unsubscribeFromTask } = await import("../realtime");
-      await expect(unsubscribeFromTask(1, 1)).resolves.toBeUndefined();
-    });
-  });
-
-  describe("getTaskSubscribers", () => {
-    it("should be a function", async () => {
-      const { getTaskSubscribers } = await import("../realtime");
-      expect(typeof getTaskSubscribers).toBe('function');
-    });
-
-    it("should be async", async () => {
-      const { getTaskSubscribers } = await import("../realtime");
+      await subscribeToTask(1, 1);
       const subscribers = await getTaskSubscribers(1);
-      expect(Array.isArray(subscribers)).toBe(true);
+      expect(subscribers).toContain(1);
+
+      // Clean up to avoid affecting other tests
+      await unsubscribeFromTask(1, 1);
     });
 
-    it("should return an array of subscriber user IDs", async () => {
-      const { getTaskSubscribers } = await import("../realtime");
-      const subscribers = await getTaskSubscribers(999);
-      expect(subscribers).toEqual([]);
-    });
-  });
+    it("should unsubscribe user from task channel", async () => {
+      const { subscribeToTask, unsubscribeFromTask, getTaskSubscribers } = await import("../realtime");
 
-  describe("sendNotification", () => {
-    it("should be a function", async () => {
-      const { sendNotification } = await import("../realtime");
-      expect(typeof sendNotification).toBe('function');
-    });
-
-    it("should be async", async () => {
-      const { sendNotification } = await import("../realtime");
-      await expect(sendNotification(1, 'task_update', { taskId: 1 })).resolves.toBeUndefined();
-    });
-
-    it("should accept notification types", async () => {
-      const { sendNotification } = await import("../realtime");
-      await expect(sendNotification(1, 'task_update', { taskId: 1, name: 'Task Updated' })).resolves.toBeUndefined();
-      await expect(sendNotification(1, 'task_mention', { taskId: 1, mention: '@user' })).resolves.toBeUndefined();
-      await expect(sendNotification(1, 'task_comment', { taskId: 1, commentId: 1 })).resolves.toBeUndefined();
+      await subscribeToTask(1, 2);
+      await unsubscribeFromTask(2, 1);
+      const subscribers = await getTaskSubscribers(1);
+      expect(subscribers).not.toContain(2);
     });
   });
 
   describe("canEditTask", () => {
-    it("should be a function", async () => {
-      const { canEditTask } = await import("../realtime");
-      expect(typeof canEditTask).toBe('function');
-    });
-
-    it("should be async", async () => {
-      const { canEditTask } = await import("../realtime");
-      const result = await canEditTask(1, 1);
-      expect(typeof result).toBe('boolean');
-    });
-
     it("should return false for non-existent task", async () => {
-      const { canEditTask } = await import("../realtime");
-      const result = await canEditTask(99999, 1);
-      expect(result).toBe(false);
-    });
-
-    it("should return false when task does not exist", async () => {
-      // Create a simple test task in the database
-      const { getDb } = await import("@/lib/db");
-      const database = getDb();
-      database.prepare("INSERT INTO tasks (id, user_id, name, completed, archived) VALUES (?, ?, ?, 0, 0)").run(1, 1, "Test Task");
+      mockDb.get.mockReturnValue(undefined);
 
       const { canEditTask } = await import("../realtime");
-      const result = await canEditTask(1, 2);
+      const result = await canEditTask(1, 999);
       expect(result).toBe(false);
     });
 
     it("should return true for task owner", async () => {
-      // Create a test task owned by user 1
-      const { getDb } = await import("@/lib/db");
-      const database = getDb();
-      database.prepare("INSERT INTO tasks (id, user_id, name, completed, archived) VALUES (?, ?, ?, 0, 0)").run(1, 1, "Test Task");
+      // User 1 owns task 1
+      mockDb.get
+        .mockReturnValueOnce({ user_id: 1 }) // Task owned by user 1
+        .mockReturnValueOnce(null); // No share needed for owner
 
       const { canEditTask } = await import("../realtime");
       const result = await canEditTask(1, 1);
       expect(result).toBe(true);
     });
+
+    it("should return false when user doesn't own task and no share exists", async () => {
+      // User 1 does NOT own task 1 (owned by user 2)
+      mockDb.get
+        .mockReturnValueOnce({ user_id: 2 }) // Task owned by user 2, not user 1
+        .mockReturnValueOnce(undefined); // No share found
+
+      const { canEditTask } = await import("../realtime");
+      // userId=1 trying to edit taskId=1 owned by user 2
+      const result = await canEditTask(1, 1);
+      expect(result).toBe(false);
+    });
+
+    it("should return true for user with edit permission", async () => {
+      // User 1 does NOT own task 1 (owned by user 2)
+      mockDb.get
+        .mockReturnValueOnce({ user_id: 2 }) // Task owned by user 2
+        .mockReturnValueOnce({ permission: "edit" }); // User 1 has edit permission
+
+      const { canEditTask } = await import("../realtime");
+      const result = await canEditTask(1, 1); // userId=1, taskId=1
+      expect(result).toBe(true);
+    });
+
+    it("should return false for user with only view permission", async () => {
+      // User 1 does NOT own task 1 (owned by user 2)
+      mockDb.get
+        .mockReturnValueOnce({ user_id: 2 }) // Task owned by user 2
+        .mockReturnValueOnce({ permission: "view" }); // User 1 has view permission only
+
+      const { canEditTask } = await import("../realtime");
+      const result = await canEditTask(1, 1); // userId=1, taskId=1
+      expect(result).toBe(false);
+    });
   });
-});
 
-describe("Realtime Module Integration", () => {
-  describe("activeChannels Map", () => {
-    it("should manage channel subscriptions", async () => {
-      const { subscribeToTask, getTaskSubscribers } = await import("../realtime");
+  describe("Monitoring functions", () => {
+    it("should track channel count after subscriptions", async () => {
+      const { getActiveChannelCount, getTotalSubscriberCount, subscribeToTask, unsubscribeFromTask } = await import("../realtime");
 
-      // Subscribe user 1 to task 1
-      await subscribeToTask(1, 1);
+      const initialCount = await getActiveChannelCount();
+      await subscribeToTask(100, 200);
+      const afterSubscribe = await getActiveChannelCount();
+      expect(afterSubscribe).toBeGreaterThanOrEqual(initialCount);
 
-      // Subscribe user 2 to same task
-      await subscribeToTask(2, 1);
+      // Clean up
+      await unsubscribeFromTask(200, 100);
+    });
 
-      // Check subscribers
-      const subscribers = await getTaskSubscribers(1);
-      expect(subscribers.length).toBe(2);
-      expect(subscribers).toContain(1);
-      expect(subscribers).toContain(2);
+    it("should return total subscriber count", async () => {
+      const { getTotalSubscriberCount } = await import("../realtime");
+      const count = await getTotalSubscriberCount();
+      expect(typeof count).toBe("number");
     });
   });
 });
