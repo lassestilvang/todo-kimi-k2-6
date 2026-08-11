@@ -2,7 +2,8 @@
 
 import { getDb } from "@/lib/db";
 import type { Task } from "@/types";
-import { logActivity as logActivityDb } from "@/lib/actions/activity-logger";
+import { createActivityLog, type ActivityLog, type CreateActivityInput } from "@/lib/activity-logger";
+import { logger } from "@/lib/logger";
 
 /**
  * Real-time task update server actions
@@ -43,14 +44,18 @@ export async function broadcastTaskUpdate(
       .prepare("SELECT * FROM tasks WHERE id = ?")
       .get(taskId) as Task | undefined;
 
-    if (!task) return;
+    if (!task) {
+      logger.warn(`Task ${taskId} not found for broadcast`);
+      return;
+    }
 
     // Broadcast to WebSocket clients
     const channel = `task:${taskId}`;
 
-    // Update presence/activity
-    await logActivityDb({
+    // Update presence/activity using unified logging
+    await createActivityLog({
       task_id: taskId,
+      user_id: userId,
       action,
       entity_type: "task",
       entity_id: taskId,
@@ -59,6 +64,9 @@ export async function broadcastTaskUpdate(
 
     // Subscribe users to activity channel so they receive updates
     for (const member of workspaceMembers as { userId: number; userName: string; email: string }[]) {
+      if (!activeChannels.has(channel)) {
+        activeChannels.set(channel, new Set());
+      }
       activeChannels.get(channel)?.add(member.userId);
     }
 
@@ -67,7 +75,7 @@ export async function broadcastTaskUpdate(
       // Dynamic import to avoid issues when WebSocket server isn't running
       const { wsHub } = await import("@/lib/ws-server");
       if (wsHub && typeof wsHub.broadcastToChannel === 'function') {
-        wsHub.broadcastToChannel(channel, {
+        await wsHub.broadcastToChannel(channel, {
           type: 'task_update',
           taskId,
           action,
@@ -75,44 +83,33 @@ export async function broadcastTaskUpdate(
           ...data,
         });
       }
-    } catch (wsError) {
+    } catch (error) {
       // WebSocket server not available in this environment
       // The update will still be logged in the database
+      logger.debug("WebSocket broadcast skipped - server not available", { error });
     }
 
     // Notify subscribers via activity channel
     activeChannels.forEach((users, ch) => {
       if (ch === channel || ch === 'global') {
-        for (const userId of users) {
-          activeChannels.get(`user:${userId}`)?.add(userId);
-        }
+        users.forEach(uid => {
+          activeChannels.get(`user:${uid}`)?.add(uid);
+        });
       }
     });
 
   } catch (error) {
-    console.error('Failed to broadcast task update:', error);
+    logger.error('Failed to broadcast task update:', { taskId, error });
+    throw error;
   }
 }
 
 /**
  * Log activity for real-time updates
- * Re-exported from activity-logger for backward compatibility
+ * Re-exported from centralized activity-logger for convenience
  */
-export async function logActivity(input: {
-  user_id: number;
-  action: string;
-  entity_type: string;
-  entity_id: number;
-  details?: string;
-}): Promise<void> {
-  await logActivityDb({
-    task_id: input.entity_id || 0,
-    user_id: input.user_id,
-    action: input.action,
-    entity_type: input.entity_type as "task" | "list" | "label" | "template" | "user" | "notification" | "comment" | "share",
-    entity_id: input.entity_id || 0,
-    details: input.details,
-  });
+export async function logActivity(input: CreateActivityInput): Promise<ActivityLog> {
+  return createActivityLog(input);
 }
 
 /**
@@ -139,6 +136,9 @@ export async function subscribeToTask(userId: number, taskId: number): Promise<v
 export async function unsubscribeFromTask(userId: number, taskId: number): Promise<void> {
   const channel = `task:${taskId}`;
   activeChannels.get(channel)?.delete(userId);
+  if (activeChannels.get(channel)?.size === 0) {
+    activeChannels.delete(channel);
+  }
 }
 
 /**
@@ -159,12 +159,10 @@ export async function sendNotification(
   data: Record<string, unknown>
 ): Promise<void> {
   // In a real implementation, this would send via WebSocket or push notification
-  // For now, we just log the notification
-  await logActivity({
+  await createActivityLog({
     user_id: userId,
     action: 'notification_sent',
     entity_type: 'notification',
-    entity_id: 0,
     details: JSON.stringify({ type, ...data }),
   });
 }
@@ -191,4 +189,22 @@ export async function canEditTask(userId: number, taskId: number): Promise<boole
     .get(taskId, userId) as { permission: string } | undefined;
 
   return share?.permission === 'edit';
+}
+
+/**
+ * Get active channel count (for monitoring)
+ */
+export async function getActiveChannelCount(): Promise<number> {
+  return activeChannels.size;
+}
+
+/**
+ * Get total subscriber count (for monitoring)
+ */
+export async function getTotalSubscriberCount(): Promise<number> {
+  let total = 0;
+  activeChannels.forEach(users => {
+    total += users.size;
+  });
+  return total;
 }
