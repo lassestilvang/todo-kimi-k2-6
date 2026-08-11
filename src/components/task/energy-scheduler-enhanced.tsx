@@ -1,276 +1,353 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
-  Calendar,
   Clock,
-  TrendingUp,
-  Award,
+  Zap,
   Brain,
+  Calendar,
+  BarChart3,
+  Check,
+  X,
+  List,
   AlertCircle,
-  CheckCircle2,
-  RefreshCw,
+  Flame,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import type { TaskWithRelations } from "@/types";
 
-interface EnergyPatterns {
-  avgEnergy: number;
-  peakTime: string;
-  lowEnergyTimes: string[];
+interface EnergyForecast {
+  hour: number;
+  energy: number;
 }
 
-interface EnergySchedulerProps {
-  tasks: TaskWithRelations[];
-  onSchedule: (taskId: number, date: string) => void;
+interface EnergyRecommendations {
+  energyBalance: number;
+  recommendations: string[];
+  optimalHours: number[];
+  avoidHours: number[];
+  energyForecast: EnergyForecast[];
 }
 
-const timePeriods = [
-  { id: "morning", label: "Morning (6am-12pm)", icon: "☀️" },
-  { id: "afternoon", label: "Afternoon (12pm-5pm)", icon: "🌤️" },
-  { id: "evening", label: "Evening (5pm-9pm)", icon: "🌆" },
-  { id: "night", label: "Night (9pm-6am)", icon: "🌙" },
-];
+interface ScheduledTask {
+  taskId: number;
+  suggestedDate: string;
+  suggestedStartTime: string;
+  suggestedEndTime: string;
+  confidence: number;
+  reason: string;
+  energyAllocation: number;
+}
 
-const taskDifficultyMap: Record<string, number> = {
-  critical: 3,
-  high: 2,
-  medium: 1,
-  low: 0.5,
-  none: 0.25,
-};
+interface Task {
+  id: number;
+  name: string;
+  priority: string;
+  completed: boolean;
+}
 
-export function EnergySchedulerEnhanced({ tasks, onSchedule }: EnergySchedulerProps) {
-  const [energyPatterns, setEnergyPatterns] = useState<EnergyPatterns | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [selectedTask, setSelectedTask] = useState<TaskWithRelations | null>(null);
-  const [suggestedDate, setSuggestedDate] = useState<string>("");
+interface EnergySchedulerEnhancedProps {
+  tasks: Task[];
+  className?: string;
+  onSchedule?: (taskId: number, date: string) => void;
+}
+
+export function EnergySchedulerEnhanced({ tasks, className, onSchedule }: EnergySchedulerEnhancedProps) {
+  const [recommendations, setRecommendations] = useState<EnergyRecommendations | null>(null);
+  const [scheduledTasks, setScheduledTasks] = useState<ScheduledTask[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
+  const [selectedListId, setSelectedListId] = useState<number | null>(null);
 
   useEffect(() => {
-    loadEnergyPatterns();
-  }, []);
+    loadRecommendations();
+  }, [selectedDate]);
 
-  const loadEnergyPatterns = async () => {
+  const loadRecommendations = async () => {
+    setLoading(true);
     try {
-      const response = await fetch("/api/energy-patterns?days=14");
-      if (response.ok) {
-        const data = await response.json();
-        const patterns: Record<string, { avg: number; count: number }> = data.timeOfDayStats || {};
-
-        let peakTime = "morning";
-        let peakEnergy = 0;
-
-        Object.entries(patterns).forEach(([time, stats]) => {
-          if ((stats as { avg: number; count: number }).avg > peakEnergy) {
-            peakEnergy = (stats as { avg: number; count: number }).avg;
-            peakTime = time;
-          }
-        });
-
-        setEnergyPatterns({
-          avgEnergy: peakEnergy,
-          peakTime,
-          lowEnergyTimes: ["evening", "night"],
-        });
-      }
+      const response = await fetch(`/api/enhanced-productivity/energy-scheduling?action=recommendations`);
+      const data = await response.json();
+      setRecommendations(data);
     } catch (error) {
-      console.error("Failed to load energy patterns:", error);
-      // Provide defaults
-      setEnergyPatterns({
-        avgEnergy: 5,
-        peakTime: "morning",
-        lowEnergyTimes: ["evening", "night"],
-      });
+      console.error("Failed to load recommendations:", error);
+      toast.error("Failed to load energy recommendations");
     } finally {
       setLoading(false);
     }
   };
 
-  const getTaskRecommendations = useMemo(() => {
-    if (!selectedTask || !energyPatterns) return null;
+  const scheduleTasks = async () => {
+    if (!tasks.length) return;
 
-    const { peakTime, lowEnergyTimes } = energyPatterns;
-    const difficulty = taskDifficultyMap[selectedTask.priority] || 1;
+    setLoading(true);
+    try {
+      const response = await fetch("/api/enhanced-productivity/energy-scheduling", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "schedule",
+          taskIds: tasks.filter(t => !t.completed).map(t => t.id),
+          date: selectedDate,
+        }),
+      });
+      const data = await response.json();
 
-    let recommendedDate: string;
-
-    // Simple recommendation logic
-    if (selectedTask.deadline) {
-      recommendedDate = selectedTask.deadline;
-    } else if (peakTime === "morning" && difficulty <= 1.5) {
-      const today = new Date();
-      today.setDate(today.getDate() + 1);
-      recommendedDate = today.toISOString().split("T")[0];
-    } else if (lowEnergyTimes.includes("evening") && difficulty > 1.5) {
-      const today = new Date();
-      today.setDate(today.getDate() + 2);
-      recommendedDate = today.toISOString().split("T")[0];
-    } else {
-      const today = new Date();
-      today.setDate(today.getDate() + 1);
-      recommendedDate = today.toISOString().split("T")[0];
+      if (data.totalEnergySpent !== undefined) {
+        setScheduledTasks(data.scheduledTasks);
+        toast.success(`Scheduled ${data.scheduledTasks.length} tasks energy-optimally`);
+      } else if (data.error) {
+        toast.error(data.error);
+      } else {
+        toast.success("Tasks scheduled");
+      }
+    } catch (error) {
+      console.error("Failed to schedule tasks:", error);
+      toast.error("Failed to schedule tasks");
+    } finally {
+      setLoading(false);
     }
+  };
 
-    return {
-      date: recommendedDate,
-      reason: selectedTask.deadline
-        ? "Based on your deadline"
-        : difficulty <= 1.5
-          ? "Schedule during peak morning energy"
-          : "Schedule mid-week to allow focus time",
-      confidence: Math.round((1 - Math.abs(difficulty - 1.5) * 0.3) * 100),
-    };
-  }, [selectedTask, energyPatterns]);
+  const getEnergyColor = (energy: number) => {
+    if (energy >= 7) return "text-emerald-500";
+    if (energy >= 5) return "text-amber-500";
+    if (energy >= 3) return "text-orange-500";
+    return "text-red-500";
+  };
 
-  if (loading) {
+  const getEnergyBg = (energy: number) => {
+    if (energy >= 7) return "bg-emerald-500";
+    if (energy >= 5) return "bg-amber-500";
+    if (energy >= 3) return "bg-orange-500";
+    return "bg-red-500";
+  };
+
+  const formatHour = (hour: number) => {
+    return `${hour.toString().padStart(2, "0")}:00`;
+  };
+
+  const incompleteTasks = tasks.filter(t => !t.completed);
+  const priorityCounts = {
+    critical: incompleteTasks.filter(t => t.priority === "critical").length,
+    high: incompleteTasks.filter(t => t.priority === "high").length,
+    medium: incompleteTasks.filter(t => t.priority === "medium").length,
+    low: incompleteTasks.filter(t => t.priority === "low").length,
+  };
+
+  if (loading && !recommendations) {
     return (
-      <div className="space-y-4">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-muted rounded" />
-          <div className="h-64 bg-muted rounded" />
+      <div className={cn("space-y-4", className)}>
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/3 mb-4" />
+          <div className="grid grid-cols-3 gap-4">
+            <div className="h-24 bg-gray-200 rounded" />
+            <div className="h-24 bg-gray-200 rounded" />
+            <div className="h-24 bg-gray-200 rounded" />
+          </div>
         </div>
       </div>
     );
   }
 
-  const pendingTasks = tasks.filter(t => !t.completed && !t.date);
-
   return (
-    <div className="space-y-6">
-      {/* Energy Profile */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Brain className="h-5 w-5" />
-            Energy Profile
-          </CardTitle>
-          <CardDescription>Your optimal work schedule based on past performance</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {energyPatterns ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="text-center p-4 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-lg">
-                <div className="text-2xl font-bold text-purple-600">{'⭐'.repeat(Math.round(energyPatterns.avgEnergy))} </div>
-                <p className="text-sm text-muted-foreground">Peak Energy Level</p>
-              </div>
+    <div className={cn("space-y-4", className)}>
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <Flame className="h-5 w-5 text-amber-500" />
+            Energy-Scheduled Tasks
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            Optimized based on your energy profile and task priorities
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="w-auto"
+          />
+          <Button onClick={scheduleTasks} disabled={loading || !incompleteTasks.length}>
+            {loading ? "Scheduling..." : "Analyze & Schedule"}
+          </Button>
+        </div>
+      </div>
 
-              <div className="text-center p-4">
-                <Badge variant="secondary">{energyPatterns.peakTime}</Badge>
-                <p className="text-sm text-muted-foreground mt-1">Peak Time</p>
-              </div>
-
-              <div className="text-center p-4">
-                <p className="text-sm text-muted-foreground">
-                  Your best energy matches: {energyPatterns.lowEnergyTimes.join(", ")}
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="text-center py-6 text-muted-foreground">
-              <RefreshCw className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p>No energy patterns recorded yet</p>
-              <p className="text-xs">Complete tasks to discover your energy rhythm</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Smart Scheduling */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Smart Scheduling Suggestions
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {pendingTasks.length === 0 ? (
-            <div className="text-center py-6 text-muted-foreground">
-              <CheckCircle2 className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p>All tasks are scheduled or completed!</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {pendingTasks.slice(0, 5).map(task => {
-                const difficulty = taskDifficultyMap[task.priority] || 1;
-                const isHighDifficulty = difficulty > 1.5;
-
-                return (
-                  <div key={task.id} className="p-4 border rounded-lg">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h4 className="font-medium">{task.name}</h4>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Badge>{task.priority}</Badge>
-                          <span className="text-xs text-muted-foreground">
-                            Difficulty: {difficulty.toFixed(1)}
-                          </span>
-                        </div>
-                      </div>
-
-                      <Select onValueChange={(date): void => {
-                        if (!date) return;
-                        onSchedule(task.id, String(date));
-                        toast.success(`Scheduled "${task.name}"`);
-                      }}>
-                        <SelectTrigger className="w-36">
-                          <SelectValue placeholder="Schedule..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {[1, 2, 3, 5, 7].map(days => {
-                            const date = new Date();
-                            date.setDate(date.getDate() + days);
-                            return (
-                              <SelectItem key={days} value={date.toISOString().split("T")[0]}>
-                                {date.toLocaleDateString()}
-                              </SelectItem>
-                            );
-                          })}
-                        </SelectContent>
-                      </Select>
-                    </div>
+      {/* Energy Forecast */}
+      {recommendations && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Today&apos;s Energy Forecast</CardTitle>
+            <CardDescription>
+              Peak hours: {recommendations.optimalHours.length} | Avoid: {recommendations.avoidHours.length}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {recommendations.energyForecast.map((forecast) => (
+                <div key={forecast.hour} className="flex items-center gap-3">
+                  <div className="w-12 text-sm font-mono">{formatHour(forecast.hour)}</div>
+                  <div className="flex-1 h-3 bg-gray-200 rounded overflow-hidden">
+                    <div
+                      className={cn("h-full rounded transition-all", getEnergyBg(forecast.energy))}
+                      style={{ width: `${forecast.energy * 10}%` }}
+                    />
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Energy Matching Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Award className="h-5 w-5" />
-            Task-Energy Matching
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-xs">
-            {timePeriods.map(period => {
-              const isPeak = period.id === energyPatterns?.peakTime;
-              const isLow = energyPatterns?.lowEnergyTimes.includes(period.id);
-              const taskCount = tasks.filter(t => !t.completed && t.priority === (isPeak ? "high" : "medium")).length;
-
-              return (
-                <div key={period.id} className={`p-3 rounded-lg border ${isPeak ? "border-purple-200 bg-purple-50/50" : isLow ? "border-gray-200 bg-gray-50/50" : "border-border"}`}>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-lg">{period.icon}</span>
-                    <span className="font-medium text-xs">{period.label.split(" ")[0]}</span>
+                  <div className={cn("w-8 text-sm font-medium", getEnergyColor(forecast.energy))}>
+                    {forecast.energy}
                   </div>
-                  {isPeak && <TrendingUp className="h-3 w-3 text-purple-500 mx-auto" />}
-                  <p className="text-muted-foreground mt-1">{taskCount} tasks</p>
+                  {recommendations.optimalHours.includes(forecast.hour) && (
+                    <Badge variant="secondary" className="text-xs">Peak</Badge>
+                  )}
                 </div>
-              );
-            })}
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Recommendations */}
+      {recommendations?.recommendations && recommendations.recommendations.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Brain className="h-4 w-4" />
+              AI Recommendations
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-2">
+              {recommendations.recommendations.map((rec, i) => (
+                <li key={i} className="flex items-start gap-2 text-sm">
+                  <AlertCircle className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                  {rec}
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Priority Distribution */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Priority Distribution
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-4">
+            {Object.entries(priorityCounts).map(([priority, count]) => (
+              count > 0 && (
+                <div key={priority} className="flex items-center gap-2">
+                  <Badge
+                    variant={priority === "critical" ? "destructive" :
+                              priority === "high" ? "default" :
+                              priority === "medium" ? "secondary" : "outline"}
+                  >
+                    {priority}: {count}
+                  </Badge>
+                </div>
+              )
+            ))}
           </div>
         </CardContent>
       </Card>
+
+      {/* Scheduled Tasks */}
+      {scheduledTasks.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              Scheduled for {selectedDate}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {scheduledTasks.map((task, i) => (
+                <motion.div
+                  key={task.taskId}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  className="p-3 rounded-lg border bg-muted/50"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-sm">Task #{task.taskId}</p>
+                      <p className="text-xs text-muted-foreground">{task.reason}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Clock className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-xs">{task.suggestedStartTime} - {task.suggestedEndTime}</span>
+                        <Zap className="h-3 w-3 text-amber-500" />
+                        <span className="text-xs">{task.energyAllocation} energy units</span>
+                      </div>
+                    </div>
+                    <Badge variant={task.confidence > 0.7 ? "default" : "secondary"}>
+                      {Math.round(task.confidence * 100)}% confidence
+                    </Badge>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Energy Balance */}
+      {recommendations && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Energy Budget</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div>
+                <div className="flex justify-between text-sm mb-2">
+                  <span>Remaining Energy</span>
+                  <span>{recommendations.energyBalance} / 100</span>
+                </div>
+                <div className="h-3 bg-gray-200 rounded overflow-hidden">
+                  <div
+                    className={cn(
+                      "h-full rounded transition-all",
+                      recommendations.energyBalance > 50 ? "bg-emerald-500" :
+                      recommendations.energyBalance > 20 ? "bg-amber-500" : "bg-red-500"
+                    )}
+                    style={{ width: `${Math.min(recommendations.energyBalance, 100)}%` }}
+                  />
+                </div>
+              </div>
+
+              {incompleteTasks.length > 0 && (
+                <div className="pt-2 border-t">
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Estimated energy needed: {incompleteTasks.length} tasks
+                  </p>
+                  <div className="flex gap-2 flex-wrap">
+                    <Button variant="outline" size="sm" onClick={() => setSelectedDate(new Date().toISOString().split("T")[0])}>
+                      Today
+                    </Button>
+                    <Button variant="outline" size="sm">
+                      This Week
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
