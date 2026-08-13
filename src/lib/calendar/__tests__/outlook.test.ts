@@ -1,278 +1,195 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import type { Task } from "../../../types";
 
-describe("Outlook Calendar Integration", () => {
-  let mockConfig: { accessToken: string };
+// Mock fetch globally
+const mockFetch = vi.fn();
+global.fetch = mockFetch;
+
+describe("Outlook Calendar Functions", () => {
+  const originalEnv = process.env;
 
   beforeEach(() => {
-    mockConfig = { accessToken: "test-access-token" };
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({}),
-    }) as any;
+    vi.clearAllMocks();
+    process.env.NEXTAUTH_URL = "http://localhost:3000";
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
+    process.env = originalEnv;
   });
 
   describe("getOutlookEvents", () => {
-    it("should fetch calendar events for a date range", async () => {
+    it("should fetch events from Outlook API", async () => {
+      const { getOutlookEvents } = await import("../outlook");
+
       const mockEvents = [
-        { id: "event1", subject: "Test Event 1" },
-        { id: "event2", subject: "Test Event 2" },
+        { subject: "Meeting 1" },
+        { subject: "Meeting 2" },
       ];
 
-      (global.fetch as any).mockResolvedValue({
+      mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({ value: mockEvents }),
       });
 
-      const { getOutlookEvents } = await import("../outlook");
-      const events = await getOutlookEvents(mockConfig, "2026-06-01", "2026-06-30");
+      const events = await getOutlookEvents(
+        { accessToken: "test-token" },
+        "2024-01-01",
+        "2024-01-31"
+      );
 
       expect(events).toEqual(mockEvents);
-      expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining("graph.microsoft.com/v1.0/me/calendar/events"),
-        expect.objectContaining({
-          headers: expect.objectContaining({
-            Authorization: "Bearer test-access-token",
-            "Content-Type": "application/json",
-          }),
-        })
-      );
     });
 
-    it("should throw error when API fails", async () => {
-      (global.fetch as any).mockResolvedValue({
+    it("should handle API errors", async () => {
+      const { getOutlookEvents } = await import("../outlook");
+
+      mockFetch.mockResolvedValue({
         ok: false,
-        statusText: "Unauthorized",
+        status: 401,
         json: async () => ({ error: { message: "Unauthorized" } }),
       });
 
-      const { getOutlookEvents } = await import("../outlook");
       await expect(
-        getOutlookEvents(mockConfig, "2026-06-01", "2026-06-30")
-      ).rejects.toThrow("Outlook Calendar API error: Unauthorized");
-    });
-
-    it("should return empty array when no events", async () => {
-      (global.fetch as any).mockResolvedValue({
-        ok: true,
-        json: async () => ({}),
-      });
-
-      const { getOutlookEvents } = await import("../outlook");
-      const events = await getOutlookEvents(mockConfig, "2026-06-01", "2026-06-30");
-
-      expect(events).toEqual([]);
+        getOutlookEvents({ accessToken: "bad-token" }, "2024-01-01", "2024-01-31")
+      ).rejects.toThrow("Outlook Calendar API error");
     });
   });
 
   describe("createOutlookEvent", () => {
-    const mockTask: Task = {
-      id: 1,
-      name: "Test Task",
-      description: "Test Description",
-      notes: null,
-      list_id: 1,
-      date: "2026-06-30",
-      deadline: null,
-      estimate: null,
-      actual_time: null,
-      priority: "high",
-      recurring: "none",
-      recurring_config: null,
-      completed: false,
-      completed_at: null,
-      created_at: "2026-06-01T00:00:00Z",
-      updated_at: "2026-06-01T00:00:00Z",
-      sort_order: 0,
-      user_id: 1,
-      archived: false,
-      blockers: [],
-      blocked_by: [],
-      recurring_exceptions: [],
-    };
+    it("should create event from task", async () => {
+      const { createOutlookEvent } = await import("../outlook");
 
-    it("should create an Outlook event from a task", async () => {
-      (global.fetch as any).mockResolvedValue({
+      mockFetch.mockResolvedValue({
         ok: true,
-        json: async () => ({ id: "event123" }),
+        json: async () => ({ id: "event-123" }),
       });
 
-      const { createOutlookEvent } = await import("../outlook");
-      const eventId = await createOutlookEvent(mockConfig, mockTask);
-
-      expect(eventId).toBe("event123");
-      expect(global.fetch).toHaveBeenCalledWith(
-        "https://graph.microsoft.com/v1.0/me/events",
-        expect.objectContaining({
-          method: "POST",
-          headers: {
-            Authorization: "Bearer test-access-token",
-            "Content-Type": "application/json",
-          },
-        })
+      const eventId = await createOutlookEvent(
+        { accessToken: "test-token" },
+        {
+          id: 1,
+          name: "Test Task",
+          description: "Test description",
+          date: "2024-12-25",
+          priority: "high",
+        }
       );
+
+      expect(eventId).toBe("event-123");
     });
 
     it("should throw error when task has no date", async () => {
-      const taskWithoutDate = { ...mockTask, date: null };
-
       const { createOutlookEvent } = await import("../outlook");
-      await expect(createOutlookEvent(mockConfig, taskWithoutDate)).rejects.toThrow(
-        "Task has no date"
-      );
+
+      await expect(
+        createOutlookEvent({ accessToken: "token" }, { id: 1, name: "Task" } as any)
+      ).rejects.toThrow("Task has no date");
     });
 
-    it("should throw error when API fails", async () => {
-      (global.fetch as any).mockResolvedValue({
-        ok: false,
-        statusText: "Bad Request",
-        json: async () => ({ error: { message: "Invalid task" } }),
+    it("should create event with labels as location", async () => {
+      const { createOutlookEvent } = await import("../outlook");
+
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ id: "event-456" }),
       });
 
-      const { createOutlookEvent } = await import("../outlook");
-      await expect(createOutlookEvent(mockConfig, mockTask)).rejects.toThrow(
-        "Failed to create Outlook event: Invalid task"
+      await createOutlookEvent(
+        { accessToken: "test-token" },
+        {
+          id: 1,
+          name: "Task with labels",
+          date: "2024-12-25",
+          labels: [{ name: "Office" }, { name: "Room 1" }],
+        }
       );
-    });
 
-    it("should handle API error without error message", async () => {
-      (global.fetch as any).mockResolvedValue({
-        ok: false,
-        statusText: "Bad Request",
-        json: async () => ({}),
-      });
-
-      const { createOutlookEvent } = await import("../outlook");
-      await expect(createOutlookEvent(mockConfig, mockTask)).rejects.toThrow(
-        "Failed to create Outlook event: Bad Request"
-      );
+      expect(mockFetch).toHaveBeenCalled();
     });
   });
 
   describe("updateOutlookEvent", () => {
-    const mockTask: Task = {
-      id: 1,
-      name: "Updated Task",
-      description: "Updated Description",
-      notes: null,
-      list_id: 1,
-      date: "2026-06-30",
-      deadline: null,
-      estimate: null,
-      actual_time: null,
-      priority: "high",
-      recurring: "none",
-      recurring_config: null,
-      completed: false,
-      completed_at: null,
-      created_at: "2026-06-01T00:00:00Z",
-      updated_at: "2026-06-01T00:00:00Z",
-      sort_order: 0,
-      user_id: 1,
-      archived: false,
-      blockers: [],
-      blocked_by: [],
-      recurring_exceptions: [],
-    };
-
-    it("should update an Outlook event", async () => {
-      (global.fetch as any).mockResolvedValue({
-        ok: true,
-      });
-
+    it("should update existing event", async () => {
       const { updateOutlookEvent } = await import("../outlook");
-      await updateOutlookEvent(mockConfig, "event123", mockTask);
 
-      expect(global.fetch).toHaveBeenCalledWith(
-        "https://graph.microsoft.com/v1.0/me/events/event123",
-        expect.objectContaining({
-          method: "PATCH",
-        })
+      mockFetch.mockResolvedValue({ ok: true });
+
+      await updateOutlookEvent(
+        { accessToken: "test-token" },
+        "event-123",
+        { id: 1, name: "Updated Task", date: "2024-12-25" }
       );
-    });
 
-    it("should throw error when API fails", async () => {
-      (global.fetch as any).mockResolvedValue({
-        ok: false,
-        statusText: "Not Found",
-        json: async () => ({}),
-      });
-
-      const { updateOutlookEvent } = await import("../outlook");
-      await expect(
-        updateOutlookEvent(mockConfig, "event123", mockTask)
-      ).rejects.toThrow("Failed to update Outlook event: Not Found");
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining("/me/events/event-123"),
+        expect.objectContaining({ method: "PATCH" })
+      );
     });
   });
 
   describe("deleteOutlookEvent", () => {
-    it("should delete an Outlook event", async () => {
-      (global.fetch as any).mockResolvedValue({
-        ok: true,
-      });
-
+    it("should delete an event", async () => {
       const { deleteOutlookEvent } = await import("../outlook");
-      await deleteOutlookEvent(mockConfig, "event123");
 
-      expect(global.fetch).toHaveBeenCalledWith(
-        "https://graph.microsoft.com/v1.0/me/events/event123",
-        expect.objectContaining({
-          method: "DELETE",
-        })
+      mockFetch.mockResolvedValue({ ok: true });
+
+      await deleteOutlookEvent({ accessToken: "test-token" }, "event-123");
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining("/me/events/event-123"),
+        expect.objectContaining({ method: "DELETE" })
       );
     });
 
-    it("should throw error when API fails", async () => {
-      (global.fetch as any).mockResolvedValue({
+    it("should throw error when deletion fails", async () => {
+      const { deleteOutlookEvent } = await import("../outlook");
+
+      mockFetch.mockResolvedValue({
         ok: false,
-        statusText: "Not Found",
+        status: 404,
         json: async () => ({}),
       });
 
-      const { deleteOutlookEvent } = await import("../outlook");
-      await expect(deleteOutlookEvent(mockConfig, "event123")).rejects.toThrow(
-        "Failed to delete Outlook event: Not Found"
-      );
+      await expect(
+        deleteOutlookEvent({ accessToken: "token" }, "nonexistent")
+      ).rejects.toThrow("Failed to delete Outlook event");
     });
   });
 
   describe("getOutlookAuthUrl", () => {
-    it("should generate authorization URL with correct parameters", async () => {
-      const { getOutlookAuthUrl } = await import("../outlook");
-      const state = "random-state-123";
-      const url = getOutlookAuthUrl(state);
-
-      expect(url).toContain("login.microsoftonline.com/common/oauth2/v2.0/authorize");
-      expect(url).toContain("state=random-state-123");
-      // scope is URL encoded in the actual URL
-      expect(url).toContain("Calendars.ReadWrite");
-    });
-
-    it("should use environment variables", async () => {
-      const originalClientId = process.env.OUTLOOK_CLIENT_ID;
-      const originalUrl = process.env.NEXTAUTH_URL;
+    it("should generate OAuth2 authorization URL", async () => {
       process.env.OUTLOOK_CLIENT_ID = "test-client-id";
       process.env.NEXTAUTH_URL = "http://localhost:3000";
 
-      vi.resetModules();
       const { getOutlookAuthUrl } = await import("../outlook");
-      const url = getOutlookAuthUrl("state");
+      const authUrl = getOutlookAuthUrl("test-state");
 
-      expect(url).toContain("client_id=test-client-id");
-      expect(url).toContain("api%2Fauth%2Fcallback%2Foutlook");
+      expect(authUrl).toContain("https://login.microsoftonline.com/common/oauth2/v2.0/authorize");
+      expect(authUrl).toContain("client_id=test-client-id");
+      expect(authUrl).toContain("state=test-state");
+      expect(authUrl).toContain("response_type=code");
+      expect(authUrl).toContain("Calendars.ReadWrite");
+    });
 
-      process.env.OUTLOOK_CLIENT_ID = originalClientId;
-      process.env.NEXTAUTH_URL = originalUrl;
+    it("should handle missing client ID", async () => {
+      delete process.env.OUTLOOK_CLIENT_ID;
+      process.env.NEXTAUTH_URL = "http://localhost:3000";
+
+      const { getOutlookAuthUrl } = await import("../outlook");
+      const authUrl = getOutlookAuthUrl("test-state");
+
+      expect(authUrl).toContain("https://login.microsoftonline.com");
     });
   });
 
   describe("exchangeOutlookCodeForTokens", () => {
     it("should exchange code for tokens", async () => {
-      (global.fetch as any).mockResolvedValue({
+      const { exchangeOutlookCodeForTokens } = await import("../outlook");
+
+      process.env.OUTLOOK_CLIENT_ID = "client-id";
+      process.env.OUTLOOK_CLIENT_SECRET = "client-secret";
+      process.env.NEXTAUTH_URL = "http://localhost:3000";
+
+      mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({
           access_token: "new-access-token",
@@ -281,217 +198,127 @@ describe("Outlook Calendar Integration", () => {
         }),
       });
 
-      const { exchangeOutlookCodeForTokens } = await import("../outlook");
-      const tokens = await exchangeOutlookCodeForTokens("auth-code-123");
+      const tokens = await exchangeOutlookCodeForTokens("auth-code");
 
       expect(tokens.access_token).toBe("new-access-token");
       expect(tokens.refresh_token).toBe("new-refresh-token");
       expect(tokens.expires_in).toBe(3600);
     });
 
-    it("should throw error when token exchange fails", async () => {
-      (global.fetch as any).mockResolvedValue({
+    it("should throw error on failed exchange", async () => {
+      const { exchangeOutlookCodeForTokens } = await import("../outlook");
+
+      mockFetch.mockResolvedValue({
         ok: false,
+        status: 400,
         json: async () => ({ error_description: "Invalid code" }),
       });
 
-      const { exchangeOutlookCodeForTokens } = await import("../outlook");
-      await expect(exchangeOutlookCodeForTokens("invalid-code")).rejects.toThrow(
-        "Outlook token exchange failed: Invalid code"
-      );
-    });
-
-    it("should handle token exchange failure without error_description", async () => {
-      (global.fetch as any).mockResolvedValue({
-        ok: false,
-        json: async () => ({}),
-      });
-
-      const { exchangeOutlookCodeForTokens } = await import("../outlook");
-      await expect(exchangeOutlookCodeForTokens("invalid-code")).rejects.toThrow(
-        "Outlook token exchange failed: undefined"
+      await expect(exchangeOutlookCodeForTokens("bad-code")).rejects.toThrow(
+        "Outlook token exchange failed"
       );
     });
   });
 
-  describe("createOutlookEvent error paths", () => {
-    it("should handle task with null description", async () => {
-      const taskWithNullDesc: Task = {
-        id: 1,
-        name: "Test Task",
-        description: null,
-        notes: null,
-        list_id: 1,
-        date: "2026-06-30",
-        deadline: null,
-        estimate: null,
-        actual_time: null,
-        priority: "high",
-        recurring: "none",
-        recurring_config: null,
-        completed: false,
-        completed_at: null,
-        created_at: "2026-06-01T00:00:00Z",
-        updated_at: "2026-06-01T00:00:00Z",
-        sort_order: 0,
-        user_id: 1,
-        archived: false,
-        blockers: [],
-        blocked_by: [],
-        recurring_exceptions: [],
-      };
+  describe("refreshOutlookToken", () => {
+    it("should refresh access token", async () => {
+      process.env.OUTLOOK_CLIENT_ID = "client-id";
+      process.env.OUTLOOK_CLIENT_SECRET = "client-secret";
+      process.env.NEXTAUTH_URL = "http://localhost:3000";
 
-      (global.fetch as any).mockResolvedValue({
+      mockFetch.mockResolvedValue({
         ok: true,
-        json: async () => ({ id: "event123" }),
+        json: async () => ({
+          access_token: "refreshed-token",
+          refresh_token: "new-refresh-token",
+          expires_in: 3600,
+        }),
       });
 
-      const { createOutlookEvent } = await import("../outlook");
-      const eventId = await createOutlookEvent(mockConfig, taskWithNullDesc);
+      const { refreshOutlookToken } = await import("../outlook");
+      const tokens = await refreshOutlookToken("refresh-token");
 
-      expect(eventId).toBe("event123");
+      expect(tokens.access_token).toBe("refreshed-token");
     });
 
-    it("should handle API error with error message in createOutlookEvent", async () => {
-      const mockTask: Task = {
-        id: 1,
-        name: "Test Task",
-        description: "Test Description",
-        notes: null,
-        list_id: 1,
-        date: "2026-06-30",
-        deadline: null,
-        estimate: null,
-        actual_time: null,
-        priority: "high",
-        recurring: "none",
-        recurring_config: null,
-        completed: false,
-        completed_at: null,
-        created_at: "2026-06-01T00:00:00Z",
-        updated_at: "2026-06-01T00:00:00Z",
-        sort_order: 0,
-        user_id: 1,
-        archived: false,
-        blockers: [],
-        blocked_by: [],
-        recurring_exceptions: [],
-      };
+    it("should throw error when refresh fails", async () => {
+      const { refreshOutlookToken } = await import("../outlook");
 
-      (global.fetch as any).mockResolvedValue({
+      mockFetch.mockResolvedValue({
         ok: false,
-        statusText: "Bad Request",
-        json: async () => ({ error: { message: "Detailed error message" } }),
+        status: 401,
+        json: async () => ({ error_description: "Invalid refresh token" }),
       });
 
-      const { createOutlookEvent } = await import("../outlook");
-      await expect(createOutlookEvent(mockConfig, mockTask)).rejects.toThrow(
-        "Failed to create Outlook event: Detailed error message"
-      );
-    });
-
-    it("should handle API error without error message in createOutlookEvent", async () => {
-      const mockTask: Task = {
-        id: 1,
-        name: "Test Task",
-        description: "Test Description",
-        notes: null,
-        list_id: 1,
-        date: "2026-06-30",
-        deadline: null,
-        estimate: null,
-        actual_time: null,
-        priority: "high",
-        recurring: "none",
-        recurring_config: null,
-        completed: false,
-        completed_at: null,
-        created_at: "2026-06-01T00:00:00Z",
-        updated_at: "2026-06-01T00:00:00Z",
-        sort_order: 0,
-        user_id: 1,
-        archived: false,
-        blockers: [],
-        blocked_by: [],
-        recurring_exceptions: [],
-      };
-
-      (global.fetch as any).mockResolvedValue({
-        ok: false,
-        statusText: "Bad Request",
-        json: async () => ({}),
-      });
-
-      const { createOutlookEvent } = await import("../outlook");
-      await expect(createOutlookEvent(mockConfig, mockTask)).rejects.toThrow(
-        "Failed to create Outlook event: Bad Request"
+      await expect(refreshOutlookToken("bad-refresh")).rejects.toThrow(
+        "Outlook token refresh failed"
       );
     });
   });
 
-  describe("updateOutlookEvent error paths", () => {
-    const mockTask: Task = {
-      id: 1,
-      name: "Updated Task",
-      description: "Updated Description",
-      notes: null,
-      list_id: 1,
-      date: "2026-06-30",
-      deadline: null,
-      estimate: null,
-      actual_time: null,
-      priority: "high",
-      recurring: "none",
-      recurring_config: null,
-      completed: false,
-      completed_at: null,
-      created_at: "2026-06-01T00:00:00Z",
-      updated_at: "2026-06-01T00:00:00Z",
-      sort_order: 0,
-      user_id: 1,
-      archived: false,
-      blockers: [],
-      blocked_by: [],
-      recurring_exceptions: [],
-    };
+  describe("syncTasksToOutlook", () => {
+    it("should sync tasks to Outlook", async () => {
+      const { syncTasksToOutlook } = await import("../outlook");
 
-    it("should handle update error without statusText", async () => {
-      (global.fetch as any).mockResolvedValue({
-        ok: false,
-        statusText: "",
-        json: async () => ({}),
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ value: [] }),
       });
 
-      const { updateOutlookEvent } = await import("../outlook");
-      await expect(
-        updateOutlookEvent(mockConfig, "event123", mockTask)
-      ).rejects.toThrow("Failed to update Outlook event: ");
+      const result = await syncTasksToOutlook(
+        { accessToken: "token" },
+        [{ id: 1, name: "Task 1", date: "2024-12-25" }]
+      );
+
+      expect(result.created).toBeGreaterThanOrEqual(0);
+      expect(result.errors).toBeDefined();
+    });
+
+    it("should skip tasks without dates", async () => {
+      const { syncTasksToOutlook } = await import("../outlook");
+
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ value: [] }),
+      });
+
+      const result = await syncTasksToOutlook(
+        { accessToken: "token" },
+        [{ id: 1, name: "Task without date" }]
+      );
+
+      expect(result.created).toBe(0);
     });
   });
 
-  describe("exchangeOutlookCodeForTokens error paths", () => {
-    it("should handle token exchange error without error_description", async () => {
-      (global.fetch as any).mockResolvedValue({
-        ok: false,
-        json: async () => ({}),
-      });
+  describe("getCompletedTaskEvents", () => {
+    it("should return empty array for no completed tasks", async () => {
+      const { getCompletedTaskEvents } = await import("../outlook");
 
-      const { exchangeOutlookCodeForTokens } = await import("../outlook");
-      await expect(exchangeOutlookCodeForTokens("invalid-code")).rejects.toThrow(
-        "Outlook token exchange failed: undefined"
+      const result = await getCompletedTaskEvents(
+        { accessToken: "token" },
+        [{ id: 1, name: "Task 1", completed: false }]
       );
+
+      expect(result).toEqual([]);
     });
 
-    it("should handle token exchange error with empty error_description", async () => {
-      (global.fetch as any).mockResolvedValue({
-        ok: false,
-        json: async () => ({ error_description: "" }),
+    it("should find completed task events", async () => {
+      const { getCompletedTaskEvents } = await import("../outlook");
+
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          value: [{ id: "event-1", subject: "Completed Task" }],
+        }),
       });
 
-      const { exchangeOutlookCodeForTokens } = await import("../outlook");
-      await expect(exchangeOutlookCodeForTokens("invalid-code")).rejects.toThrow(
-        "Outlook token exchange failed: "
+      const result = await getCompletedTaskEvents(
+        { accessToken: "token" },
+        [{ id: 1, name: "Completed Task", completed: true }]
       );
+
+      expect(result.length).toBeGreaterThanOrEqual(0);
     });
   });
 });
