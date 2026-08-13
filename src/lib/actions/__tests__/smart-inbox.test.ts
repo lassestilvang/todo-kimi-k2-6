@@ -10,7 +10,30 @@ import {
   syncAllSourcesToInbox,
   getInboxSummary,
   bulkConvertSourcesToTasks,
+  getInboxList,
 } from '../smart-inbox';
+
+// Mock the tasks module for convertSourceToTask
+vi.mock('../tasks', () => ({
+  createTask: vi.fn().mockImplementation(async (taskData: any) => ({
+    id: 1,
+    name: taskData?.name || 'Test Task',
+    description: taskData?.description || null,
+    list_id: 1,
+    date: null,
+    deadline: taskData?.deadline || null,
+    estimate: null,
+    actual_time: null,
+    priority: taskData?.priority || 'none',
+    recurring: 'none',
+    recurring_config: null,
+    completed: 0,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    sort_order: 0,
+    archived: 0,
+  })),
+}));
 
 // Mock the session module
 vi.mock('@/lib/session', () => ({
@@ -121,7 +144,6 @@ describe('Smart Inbox Actions', () => {
     });
 
     it('filters by status', async () => {
-      // Create sources using upsert
       await upsertInboxSource({
         user_id: 1,
         source_type: 'email',
@@ -130,16 +152,13 @@ describe('Smart Inbox Actions', () => {
         priority: 'high',
       });
 
-      // Test that status filter can be passed (the function accepts it)
       const result = await getSmartInbox({ status: 'pending' });
 
-      // Result should be an array with items
       expect(Array.isArray(result.items)).toBe(true);
       expect(result.total_count).toBeGreaterThanOrEqual(0);
     });
 
     it('filters by source type', async () => {
-      // Create source using upsert to ensure proper handling
       await upsertInboxSource({
         user_id: 1,
         source_type: 'email',
@@ -147,16 +166,13 @@ describe('Smart Inbox Actions', () => {
         title: 'Email filtered item',
       });
 
-      // Test that sourceType filter can be passed (the function accepts it)
       const result = await getSmartInbox({ sourceType: 'email' });
 
-      // Result should be an array with items
       expect(Array.isArray(result.items)).toBe(true);
       expect(result.total_count).toBeGreaterThanOrEqual(0);
     });
 
     it('returns empty when not authenticated', async () => {
-      // Mock getCurrentUser to return null
       (getCurrentUser as any).mockImplementation(async () => null);
 
       const result = await getSmartInbox();
@@ -185,7 +201,6 @@ describe('Smart Inbox Actions', () => {
     });
 
     it('updates existing source', async () => {
-      // Create initial source
       const created = await upsertInboxSource({
         user_id: 1,
         source_type: 'email',
@@ -194,7 +209,6 @@ describe('Smart Inbox Actions', () => {
         confidence: 50,
       });
 
-      // Update the source
       const updated = await upsertInboxSource({
         user_id: 1,
         source_type: 'email',
@@ -255,7 +269,6 @@ describe('Smart Inbox Actions', () => {
 
   describe('dismissSource', () => {
     it('attempts to dismiss source', async () => {
-      // Create a source first
       const created = await upsertInboxSource({
         user_id: 1,
         source_type: 'email',
@@ -263,7 +276,6 @@ describe('Smart Inbox Actions', () => {
         title: 'Test Email',
       });
 
-      // The dismissSource function exists and can be called
       await dismissSource(created.id);
     });
   });
@@ -274,11 +286,47 @@ describe('Smart Inbox Actions', () => {
 
       await expect(deleteInboxSource(1)).rejects.toThrow('User not authenticated');
     });
+
+    it('deletes source when authenticated', async () => {
+      const created = await upsertInboxSource({
+        user_id: 1,
+        source_type: 'email',
+        external_id: 'to-delete-unique',
+        title: 'To Delete',
+      });
+
+      await deleteInboxSource(created.id);
+
+      const result = await getSmartInbox();
+      expect(result.items).toHaveLength(0);
+    });
   });
 
   describe('convertSourceToTask', () => {
     it('throws error when source not found', async () => {
       await expect(convertSourceToTask(999)).rejects.toThrow('Source not found');
+    });
+
+    it('successfully converts source to task', async () => {
+      const created = await upsertInboxSource({
+        user_id: 1,
+        source_type: 'email',
+        external_id: 'convert-test-unique-123',
+        title: 'Convert Test Task',
+        priority: 'high',
+      });
+
+      const task = await convertSourceToTask(created.id);
+
+      expect(task).toBeDefined();
+      expect(task.name).toBe('Convert Test Task');
+      expect(task.priority).toBe('high');
+
+      // Verify source is marked as converted
+      const result = await getSmartInbox();
+      expect(result.items).toHaveLength(1);
+      expect(result.items[0].source.status).toBe('converted');
+      expect(result.converted_count).toBe(1);
     });
   });
 
@@ -298,6 +346,20 @@ describe('Smart Inbox Actions', () => {
       expect(result.total).toBe(0);
       expect(result.converted).toBe(0);
     });
+
+    it('converts sources to tasks', async () => {
+      await upsertInboxSource({
+        user_id: 1,
+        source_type: 'email',
+        external_id: 'sync-source-1',
+        title: 'Sync Source Task',
+        priority: 'high',
+      });
+
+      const result = await syncAllSourcesToInbox();
+      expect(result.total).toBeGreaterThanOrEqual(1);
+      expect(result.converted).toBeGreaterThanOrEqual(1);
+    });
   });
 
   describe('getInboxSummary', () => {
@@ -309,6 +371,30 @@ describe('Smart Inbox Actions', () => {
       expect(summary.total).toBe(0);
       expect(summary.pending).toBe(0);
       expect(summary.bySourceType).toEqual({});
+    });
+
+    it('returns summary with data when authenticated', async () => {
+      await upsertInboxSource({
+        user_id: 1,
+        source_type: 'email',
+        external_id: 'summary-test-unique',
+        title: 'Summary Test',
+        priority: 'high',
+      });
+
+      const summary = await getInboxSummary();
+
+      expect(summary.total).toBe(1);
+      expect(summary.pending).toBe(1);
+      expect(summary.bySourceType).toEqual({ email: 1 });
+      expect(summary.byPriority).toEqual({ high: 1 });
+    });
+  });
+
+  describe('getInboxList', () => {
+    it('returns existing inbox list id', async () => {
+      const listId = await getInboxList();
+      expect(listId).toBe(1);
     });
   });
 });
