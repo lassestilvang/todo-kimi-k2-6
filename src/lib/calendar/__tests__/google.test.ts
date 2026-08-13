@@ -147,6 +147,18 @@ describe("Google Calendar Integration", () => {
         "Failed to create event"
       );
     });
+
+    it("should throw error with statusText when error response has no message", async () => {
+      (global.fetch as any).mockResolvedValue({
+        ok: false,
+        statusText: "Internal Server Error",
+        json: async () => ({}),
+      });
+
+      await expect(createCalendarEvent(mockConfig, mockTask)).rejects.toThrow(
+        "Failed to create event: Internal Server Error"
+      );
+    });
   });
 
   describe("updateCalendarEvent", () => {
@@ -196,6 +208,23 @@ describe("Google Calendar Integration", () => {
       await expect(
         updateCalendarEvent(mockConfig, "event123", mockTask)
       ).rejects.toThrow("Failed to update event");
+    });
+
+    it("should handle task with undefined date", async () => {
+      const taskWithoutDate = { ...mockTask, date: undefined as any };
+
+      (global.fetch as any).mockResolvedValue({
+        ok: true,
+      });
+
+      await updateCalendarEvent(mockConfig, "event123", taskWithoutDate);
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        "https://www.googleapis.com/calendar/v3/calendars/primary/events/event123",
+        expect.objectContaining({
+          method: "PUT",
+        })
+      );
     });
   });
 
@@ -275,6 +304,37 @@ describe("Google Calendar Integration", () => {
       });
 
       await expect(exchangeCodeForTokens("invalid-code")).rejects.toThrow(
+        "Token exchange failed"
+      );
+    });
+
+    it("should handle missing GOOGLE_CLIENT_ID", async () => {
+      const originalClientId = process.env.GOOGLE_CLIENT_ID;
+      delete process.env.GOOGLE_CLIENT_ID;
+
+      (global.fetch as any).mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          access_token: "test-token",
+          refresh_token: "test-refresh",
+          expires_in: 3600,
+        }),
+      });
+
+      const tokens = await exchangeCodeForTokens("auth-code");
+      expect(tokens.access_token).toBe("test-token");
+
+      process.env.GOOGLE_CLIENT_ID = originalClientId;
+    });
+
+    it("should throw error when token exchange fails without error description", async () => {
+      (global.fetch as any).mockResolvedValue({
+        ok: false,
+        statusText: "Bad Request",
+        json: async () => ({}),
+      });
+
+      await expect(exchangeCodeForTokens("bad-code")).rejects.toThrow(
         "Token exchange failed"
       );
     });
