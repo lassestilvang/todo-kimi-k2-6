@@ -526,4 +526,114 @@ describe('Workflow Actions', () => {
       expect(result).toBe(false); // Empty labels array means label not found
     });
   });
+
+  describe('executeAction', () => {
+    it('throws error for unknown action type', async () => {
+      const { executeAction } = await import('../workflows');
+
+      await expect(
+        executeAction({ action_type: 'unknown_action', action_config: '{}' }, {})
+      ).rejects.toThrow('Unknown action type: unknown_action');
+    });
+
+    it('executes update_task action with completed field', async () => {
+      // First create a task to update
+      db.exec(`
+        INSERT INTO tasks (user_id, name, description, date, deadline, priority, completed, created_at, sort_order)
+        VALUES (1, 'Task to Update', 'Description', '2024-12-25', null, 'medium', 0, datetime('now'), 0)
+      `);
+
+      const row = db.prepare("SELECT id FROM tasks WHERE name = 'Task to Update'").get();
+      const taskId = row.id;
+
+      const { executeAction } = await import('../workflows');
+      const result = await executeAction(
+        { action_type: 'update_task', action_config: JSON.stringify({ task_id: taskId, completed: 1 }) },
+        {}
+      );
+
+      expect(Number(result.task_id)).toBe(Number(taskId));
+      expect(result.status).toBe('updated');
+    });
+
+    it('executes update_task action with name field', async () => {
+      db.exec(`
+        INSERT INTO tasks (user_id, name, description, date, deadline, priority, completed, created_at, sort_order)
+        VALUES (1, 'Original Name', 'Description', '2024-12-25', null, 'medium', 0, datetime('now'), 0)
+      `);
+
+      const row = db.prepare("SELECT id FROM tasks WHERE name = 'Original Name'").get();
+      const taskId = row.id;
+
+      const { executeAction } = await import('../workflows');
+      const result = await executeAction(
+        { action_type: 'update_task', action_config: JSON.stringify({ task_id: taskId, name: 'Updated Name' }) },
+        {}
+      );
+
+      expect(Number(result.task_id)).toBe(Number(taskId));
+    });
+
+    it('executes update_task action with priority field', async () => {
+      db.exec(`
+        INSERT INTO tasks (user_id, name, description, date, deadline, priority, completed, created_at, sort_order)
+        VALUES (1, 'Priority Task', 'Description', '2024-12-25', null, 'medium', 0, datetime('now'), 0)
+      `);
+
+      const row = db.prepare("SELECT id FROM tasks WHERE name = 'Priority Task'").get();
+      const taskId = row.id;
+
+      const { executeAction } = await import('../workflows');
+      const result = await executeAction(
+        { action_type: 'update_task', action_config: JSON.stringify({ task_id: taskId, priority: 'high' }) },
+        {}
+      );
+
+      expect(Number(result.task_id)).toBe(Number(taskId));
+    });
+
+    it('executes update_task action with due_date field', async () => {
+      db.exec(`
+        INSERT INTO tasks (user_id, name, description, date, deadline, priority, completed, created_at, sort_order)
+        VALUES (1, 'Due Date Task', 'Description', '2024-12-25', null, 'medium', 0, datetime('now'), 0)
+      `);
+
+      const row = db.prepare("SELECT id FROM tasks WHERE name = 'Due Date Task'").get();
+      const taskId = row.id;
+
+      const { executeAction } = await import('../workflows');
+      const result = await executeAction(
+        { action_type: 'update_task', action_config: JSON.stringify({ task_id: taskId, due_date: '2024-12-31' }) },
+        {}
+      );
+
+      expect(Number(result.task_id)).toBe(Number(taskId));
+    });
+
+    it('returns no_updates when no update fields provided', async () => {
+      // Insert a task with a known ID
+      db.exec(`
+        INSERT INTO tasks (id, user_id, name, description, date, deadline, priority, completed, created_at, sort_order)
+        VALUES (999, 1, 'No Update Task', 'Description', '2024-12-25', null, 'medium', 0, datetime('now'), 0)
+      `);
+
+      const taskId = 999;
+
+      const { executeAction } = await import('../workflows');
+      const result = await executeAction(
+        { action_type: 'update_task', action_config: JSON.stringify({ task_id: taskId }) },
+        {}
+      );
+
+      expect(result.status).toBe('no_updates');
+    });
+
+    it('throws error when task_id missing for update_task', async () => {
+      const { executeAction } = await import('../workflows');
+
+      await expect(
+        executeAction({ action_type: 'update_task', action_config: '{}' }, {})
+      ).rejects.toThrow('Task ID is required for update action');
+    });
+  });
 });
