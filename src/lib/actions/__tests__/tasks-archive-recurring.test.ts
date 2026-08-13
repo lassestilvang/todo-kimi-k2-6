@@ -344,6 +344,45 @@ describe('Task Actions - Archive/Recurring Functions', () => {
       const count = await generateRecurringTasks();
       expect(count).toBe(0);
     });
+
+    it('should handle custom recurring_config that returns non-object from JSON.parse', async () => {
+      // This tests line 1355-1356: config = {} when typeof config !== "object" || config === null
+      (getCurrentUser as any).mockReturnValue({ id: 1 });
+
+      // JSON.parse can return non-objects like numbers, strings, or null
+      db.prepare(
+        'INSERT INTO tasks (user_id, name, list_id, recurring, date, recurring_config, archived) VALUES (?, ?, ?, ?, ?, ?, 0)'
+      ).run(
+        1,
+        'Custom Number Config',
+        1,
+        'custom',
+        '2026-07-15',
+        '42'  // JSON.parse of '42' returns number, not object
+      );
+
+      const count = await generateRecurringTasks();
+      // Should fail gracefully since config doesn't have interval/unit
+      expect(count).toBe(0);
+    });
+
+    it('should handle null recurring_config value', async () => {
+      (getCurrentUser as any).mockReturnValue({ id: 1 });
+
+      db.prepare(
+        'INSERT INTO tasks (user_id, name, list_id, recurring, date, recurring_config, archived) VALUES (?, ?, ?, ?, ?, ?, 0)'
+      ).run(
+        1,
+        'Null Config Task',
+        1,
+        'custom',
+        '2026-07-15',
+        'null'  // JSON.parse of 'null' returns null
+      );
+
+      const count = await generateRecurringTasks();
+      expect(count).toBe(0);
+    });
   });
 
   describe('getTasksByIds', () => {
