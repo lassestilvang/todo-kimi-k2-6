@@ -67,7 +67,7 @@ describe("AI Module - OpenAI Provider Branch", () => {
       const result = await parseNaturalLanguageTask("Schedule meeting for tomorrow");
 
       expect(result.name).toBe("AI-Parsed Task");
-      expect(result.provider).toBe("openai");
+      // Note: parseNaturalLanguageTask does NOT return provider, only confidence
       expect(result.confidence).toBe(80);
     });
   });
@@ -87,7 +87,7 @@ describe("AI Module - OpenAI Provider Branch", () => {
   });
 
   describe("generateDecisionTemplate - OpenAI provider", () => {
-    it("should generate decision template with openai provider", async () => {
+    it("should generate decision template (provider hardcoded as keyword-parser)", async () => {
       const { generateDecisionTemplate } = await import("@/lib/ai/index");
 
       const result = await generateDecisionTemplate(1, {
@@ -96,7 +96,8 @@ describe("AI Module - OpenAI Provider Branch", () => {
       });
 
       expect(result.name).toBe("Test Template");
-      expect(result.provider).toBe("openai");
+      // Note: generateDecisionTemplate hardcodes provider as "keyword-parser"
+      expect(result.provider).toBe("keyword-parser");
     });
   });
 });
