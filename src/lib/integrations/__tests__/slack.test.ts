@@ -418,4 +418,59 @@ describe('SlackConnector', () => {
       expect(result).toBe(true);
     });
   });
+
+  describe('getUserInfo', () => {
+    it('should get user info', async () => {
+      (fetch as any).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          ok: true,
+          user: {
+            id: 'U01234567',
+            name: 'Test User',
+            profile: {
+              email: 'test@example.com',
+              real_name: 'Test User',
+              image_48: 'https://example.com/image.png',
+            },
+          },
+        }),
+      });
+
+      const userInfo = await connector.getUserInfo('U01234567');
+
+      expect(userInfo.id).toBe('U01234567');
+      expect(userInfo.name).toBe('Test User');
+      expect(userInfo.profile?.email).toBe('test@example.com');
+    });
+
+    it('should throw error when API fails', async () => {
+      (fetch as any).mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+      });
+
+      await expect(connector.getUserInfo('U01234567')).rejects.toThrow('Slack API error');
+    });
+  });
+
+  describe('getReactions', () => {
+    it('should return empty array when API fails', async () => {
+      (fetch as any).mockResolvedValueOnce({
+        ok: false,
+      });
+
+      const reactions = await connector.getReactions('C01234567', '1234567890.123456');
+
+      expect(reactions).toEqual([]);
+    });
+  });
+
+  describe('pushTask', () => {
+    it('should throw error when pushTask not implemented', async () => {
+      await expect(connector.pushTask({ title: 'Test Task' })).rejects.toThrow(
+        'pushTask not implemented for Slack connector'
+      );
+    });
+  });
 });
