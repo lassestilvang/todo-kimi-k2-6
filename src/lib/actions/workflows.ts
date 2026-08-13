@@ -231,7 +231,7 @@ export async function executeWorkflow(
 }
 
 // Execute an action based on type
-async function executeAction(workflow: any, inputData?: any) {
+export async function executeAction(workflow: any, inputData?: any) {
   const db = getDb();
   const actionType = workflow.action_type as ActionType;
   const actionConfig = JSON.parse(workflow.action_config || '{}');
