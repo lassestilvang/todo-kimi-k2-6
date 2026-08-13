@@ -24,6 +24,11 @@ vi.mock("@/lib/logger", () => ({
   },
 }));
 
+// Mock ws-server to simulate import error (tests line 89 - WebSocket broadcast skipped)
+vi.mock("@/lib/ws-server", () => {
+  throw new Error("WebSocket server not available");
+});
+
 import { getDb } from "@/lib/db";
 import { createActivityLog } from "@/lib/activity-logger";
 
@@ -75,6 +80,19 @@ describe("Real-time Actions", () => {
       await broadcastTaskUpdate(1, 1, { name: "Task" }, "created");
 
       expect(createActivityLog).toHaveBeenCalled();
+    });
+
+    it("should handle errors during broadcast (lines 101-104)", async () => {
+      // Mock db.get to throw an error to test error handling path
+      mockDb.get.mockImplementation(() => {
+        throw new Error("Database error");
+      });
+
+      const { broadcastTaskUpdate } = await import("../realtime");
+
+      await expect(
+        broadcastTaskUpdate(1, 1, { name: "Task" }, "updated")
+      ).rejects.toThrow("Database error");
     });
   });
 
@@ -172,6 +190,51 @@ describe("Real-time Actions", () => {
       const { getTotalSubscriberCount } = await import("../realtime");
       const count = await getTotalSubscriberCount();
       expect(typeof count).toBe("number");
+    });
+  });
+
+  describe("logActivity", () => {
+    it("should delegate to createActivityLog (line 112)", async () => {
+      const { logActivity } = await import("../realtime");
+      await logActivity({
+        action: "task_created",
+        entity_type: "task",
+        details: "Test activity",
+      });
+
+      expect(createActivityLog).toHaveBeenCalledWith({
+        action: "task_created",
+        entity_type: "task",
+        details: "Test activity",
+      });
+    });
+  });
+
+  describe("sendNotification", () => {
+    it("should create activity log for notification (line 162)", async () => {
+      const { sendNotification } = await import("../realtime");
+      await sendNotification(1, "task_update", { taskId: 123, name: "Test Task" });
+
+      expect(createActivityLog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          user_id: 1,
+          action: "notification_sent",
+          entity_type: "notification",
+          details: expect.stringContaining("task_update"),
+        })
+      );
+    });
+
+    it("should handle different notification types", async () => {
+      const { sendNotification } = await import("../realtime");
+
+      await sendNotification(1, "task_mention", { taskId: 1, mention: "Test mention" });
+      expect(createActivityLog).toHaveBeenCalled();
+
+      vi.clearAllMocks();
+
+      await sendNotification(1, "task_comment", { taskId: 1, comment: "Test comment" });
+      expect(createActivityLog).toHaveBeenCalled();
     });
   });
 });
