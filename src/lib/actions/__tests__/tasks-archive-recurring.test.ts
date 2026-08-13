@@ -587,6 +587,17 @@ describe('Task Actions - Archive/Recurring Functions', () => {
       expect(typeof count).toBe('number');
     });
 
+    it('should return 0 when not authenticated and NODE_ENV is not test', async () => {
+      const originalEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'production';
+      (getCurrentUser as any).mockReturnValue(null);
+
+      const count = await getOverdueCount();
+      expect(count).toBe(0);
+
+      process.env.NODE_ENV = originalEnv;
+    });
+
     it('should count overdue tasks correctly in test mode', async () => {
       (getCurrentUser as any).mockReturnValue({ id: 1 });
 
