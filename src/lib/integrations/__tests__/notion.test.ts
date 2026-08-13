@@ -262,6 +262,17 @@ describe('NotionConnector', () => {
         'Detailed description',
       );
     });
+
+    it('should throw error when API response fails', async () => {
+      (fetch as any).mockResolvedValueOnce({
+        ok: false,
+        statusText: 'Internal Server Error',
+      });
+
+      await expect(connector.pushTask({ title: 'Test Task' })).rejects.toThrow(
+        'Notion API error: Internal Server Error'
+      );
+    });
   });
 
   describe('extractTitle', () => {
@@ -389,6 +400,92 @@ describe('NotionConnector', () => {
       expect(result.labels).toEqual(['Label1']);
       expect(result.priority).toBe('high');
       expect(result.assignee).toBe('user@example.com');
+    });
+  });
+
+  describe('extractDescription', () => {
+    it('should extract description from rich_text property', () => {
+      const page = {
+        properties: {
+          description: {
+            rich_text: [
+              { plain_text: 'This is a ' },
+              { plain_text: 'description' },
+            ],
+          },
+        },
+      };
+
+      const result = (connector as any).extractDescription(page);
+      expect(result).toBe('This is a description');
+    });
+
+    it('should return undefined when no description property', () => {
+      const page = { properties: {} };
+      const result = (connector as any).extractDescription(page);
+      expect(result).toBeUndefined();
+    });
+
+    it('should return empty string for empty rich_text array', () => {
+      const page = {
+        properties: {
+          description: {
+            rich_text: [],
+          },
+        },
+      };
+      const result = (connector as any).extractDescription(page);
+      expect(result).toBe('');
+    });
+  });
+
+  describe('extractAssignee', () => {
+    it('should extract assignee email from people array', () => {
+      const page = {
+        properties: {
+          Assignee: {
+            people: [
+              { email: 'assignee@example.com', name: 'Assignee' },
+            ],
+          },
+        },
+      };
+
+      const result = (connector as any).extractAssignee(page);
+      expect(result).toBe('assignee@example.com');
+    });
+
+    it('should fall back to name when email is not available', () => {
+      const page = {
+        properties: {
+          Assignee: {
+            people: [
+              { name: 'Assignee Name' },
+            ],
+          },
+        },
+      };
+
+      const result = (connector as any).extractAssignee(page);
+      expect(result).toBe('Assignee Name');
+    });
+
+    it('should return undefined when no assignee property', () => {
+      const page = { properties: {} };
+      const result = (connector as any).extractAssignee(page);
+      expect(result).toBeUndefined();
+    });
+
+    it('should return undefined when people array is empty', () => {
+      const page = {
+        properties: {
+          Assignee: {
+            people: [],
+          },
+        },
+      };
+      const result = (connector as any).extractAssignee(page);
+      expect(result).toBeUndefined();
     });
   });
 });
