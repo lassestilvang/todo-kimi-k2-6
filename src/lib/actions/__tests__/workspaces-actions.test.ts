@@ -53,8 +53,53 @@ describe("Workspace Actions", () => {
 
   describe("updateWorkspace", () => {
     it("should throw error for non-existent workspace", async () => {
-      const { updateWorkspace } = await import("../workspaces");
+      const { updateWorkspace, getWorkspaceById } = await import("../workspaces");
+
+      // First verify the workspace doesn't exist
+      const existing = await getWorkspaceById(999);
+      expect(existing).toBeUndefined();
+
+      // Now test that update throws error
       await expect(updateWorkspace(999, { name: "Updated" })).rejects.toThrow(
+        "Workspace not found"
+      );
+    });
+
+    it("should update workspace name and description", async () => {
+      const { createWorkspace, updateWorkspace, getWorkspaceById } = await import("../workspaces");
+
+      // Create a workspace first
+      const workspace = await createWorkspace({
+        name: "Original Name",
+        description: "Original description",
+        user_id: 1,
+      });
+
+      // Update the workspace
+      const updated = await updateWorkspace(workspace.id, {
+        name: "Updated Name",
+        description: "Updated description",
+      });
+
+      expect(updated.id).toBe(workspace.id);
+      expect(updated.name).toBe("Updated Name");
+      expect(updated.description).toBe("Updated description");
+    });
+
+    it("should throw error when workspace is deleted before update", async () => {
+      const { createWorkspace, deleteWorkspace, updateWorkspace } = await import("../workspaces");
+
+      // Create a workspace first
+      const workspace = await createWorkspace({
+        name: "To Delete",
+        user_id: 1,
+      });
+
+      // Delete it
+      await deleteWorkspace(workspace.id);
+
+      // Now try to update the deleted workspace - should throw
+      await expect(updateWorkspace(workspace.id, { name: "Updated" })).rejects.toThrow(
         "Workspace not found"
       );
     });
@@ -257,6 +302,56 @@ describe("Workspace Actions", () => {
 
       const canAccess = await canUserAccessWorkspace(2, workspace.id);
       expect(canAccess).toBe(true);
+    });
+  });
+
+  describe("getUserWorkspaces", () => {
+    it("should return workspaces for a user", async () => {
+      const { createWorkspace, addWorkspaceMember, getUserWorkspaces } = await import("../workspaces");
+      const workspace = await createWorkspace({
+        name: "Team Project",
+        user_id: 1,
+      });
+
+      await addWorkspaceMember(workspace.id, 2, "member");
+
+      const workspaces = await getUserWorkspaces(2);
+      expect(Array.isArray(workspaces)).toBe(true);
+    });
+
+    it("should return empty array for user without workspaces", async () => {
+      const { getUserWorkspaces } = await import("../workspaces");
+      const workspaces = await getUserWorkspaces(999);
+      expect(workspaces).toEqual([]);
+    });
+  });
+
+  describe("transferWorkspaceOwnership", () => {
+    it("should transfer ownership successfully", async () => {
+      const { createWorkspace, addWorkspaceMember, transferWorkspaceOwnership } = await import("../workspaces");
+      const workspace = await createWorkspace({
+        name: "Team Project",
+        user_id: 1,
+      });
+
+      await addWorkspaceMember(workspace.id, 2, "member");
+
+      // Transfer ownership to user 2 - should not throw
+      await expect(transferWorkspaceOwnership(workspace.id, 2)).resolves.not.toThrow();
+    });
+
+    it("should overwrite existing membership when transferring ownership", async () => {
+      const { createWorkspace, addWorkspaceMember, transferWorkspaceOwnership } = await import("../workspaces");
+      const workspace = await createWorkspace({
+        name: "Team Project",
+        user_id: 1,
+      });
+
+      // User 2 already has a different role
+      await addWorkspaceMember(workspace.id, 2, "member");
+
+      // Transfer ownership to user 2 - should not throw
+      await expect(transferWorkspaceOwnership(workspace.id, 2)).resolves.not.toThrow();
     });
   });
 });
