@@ -310,6 +310,74 @@ export function createMockDatabase(): MockDatabase {
         const table = tableName && tables.get(tableName.toLowerCase());
 
         if (lowerSql.includes("count(*)")) {
+          // Handle different COUNT query patterns
+          const hasGroupByStatus = lowerSql.includes("group by status");
+          const hasGroupBySourcePriority = lowerSql.includes("group by source_type, priority") ||
+                                           (lowerSql.includes("group by source_type") && lowerSql.includes("priority"));
+
+          if (hasGroupBySourcePriority && table instanceof Map) {
+            // Handle getInboxSummary - GROUP BY source_type, priority with SUM(CASE...)
+            return {
+              run: () => ({ lastInsertRowid: 0, changes: 0 }),
+              get: () => ({ count: 0 }),
+              all: (...params: unknown[]) => {
+                let allRecords = Array.from(table.values()) as any[];
+
+                // Apply WHERE user_id = ? filter
+                if (params.length > 0) {
+                  const userId = params[0] as number;
+                  allRecords = allRecords.filter(r => r && r.user_id === userId);
+                }
+
+                // Group by source_type, priority with pending_count
+                const grouped: Record<string, { source_type: string; priority: string; count: number; pending_count: number }> = {};
+
+                allRecords.forEach((r: any) => {
+                  const sourceType = (r.source_type as string) || 'unknown';
+                  const priority = (r.priority as string) || 'medium';
+                  const status = (r.status as string) || 'pending';
+                  const key = `${sourceType}-${priority}`;
+
+                  if (!grouped[key]) {
+                    grouped[key] = { source_type: sourceType, priority, count: 0, pending_count: 0 };
+                  }
+                  grouped[key].count++;
+                  if (status === 'pending') {
+                    grouped[key].pending_count++;
+                  }
+                });
+
+                return Object.values(grouped) as any[];
+              },
+            };
+          }
+
+          if (hasGroupByStatus && table instanceof Map) {
+            // Handle getSmartInbox - GROUP BY status
+            return {
+              run: () => ({ lastInsertRowid: 0, changes: 0 }),
+              get: () => ({ count: 0 }),
+              all: (...params: unknown[]) => {
+                let allRecords = Array.from(table.values()) as any[];
+
+                // Apply WHERE user_id = ? filter
+                if (params.length > 0) {
+                  const userId = params[0] as number;
+                  allRecords = allRecords.filter(r => r && r.user_id === userId);
+                }
+
+                // Group by status
+                const statusCounts: Record<string, { status: string; count: number }> = {};
+                allRecords.forEach((r: any) => {
+                  const status = (r.status as string) || 'pending';
+                  statusCounts[status] = { status, count: (statusCounts[status]?.count || 0) + 1 };
+                });
+
+                return Object.values(statusCounts) as any[];
+              },
+            };
+          }
+
           const tableSize = table instanceof Map ? table.size : 0;
           return {
             run: () => ({ lastInsertRowid: 0, changes: 0 }),
@@ -884,6 +952,9 @@ export function createMockDatabase(): MockDatabase {
                   } else if (valExpr?.toUpperCase() === 'NULL') {
                     // NULL literal
                     setValues[col] = null;
+                  } else if (valExpr?.startsWith("'") && valExpr?.endsWith("'")) {
+                    // String literal (remove quotes)
+                    setValues[col] = valExpr.slice(1, -1);
                   }
                 }
               });
