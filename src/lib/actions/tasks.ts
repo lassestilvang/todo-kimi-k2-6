@@ -1057,7 +1057,7 @@ export async function performBatchOperation(operation: BatchOperation): Promise<
 
 // Helper functions for batch operations
 
-async function completeTasks(ids: number[], userId: number | null): Promise<number> {
+export async function completeTasks(ids: number[], userId: number | null): Promise<number> {
   const db = getDb();
   const placeholders = ids.map(() => "?").join(",");
   const now = new Date().toISOString();
@@ -1073,7 +1073,7 @@ async function completeTasks(ids: number[], userId: number | null): Promise<numb
   return db.prepare(`UPDATE tasks SET completed = 1, completed_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders})`).run(...ids, now).changes || 0;
 }
 
-async function uncompleteTasks(ids: number[], userId: number | null): Promise<number> {
+export async function uncompleteTasks(ids: number[], userId: number | null): Promise<number> {
   const db = getDb();
   const placeholders = ids.map(() => "?").join(",");
 
@@ -1083,7 +1083,7 @@ async function uncompleteTasks(ids: number[], userId: number | null): Promise<nu
   return db.prepare(`UPDATE tasks SET completed = 0, completed_at = NULL, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders})`).run(...ids).changes || 0;
 }
 
-async function deleteTasks(ids: number[], userId: number | null): Promise<number> {
+export async function deleteTasks(ids: number[], userId: number | null): Promise<number> {
   const db = getDb();
   const placeholders = ids.map(() => "?").join(",");
 
@@ -1093,7 +1093,7 @@ async function deleteTasks(ids: number[], userId: number | null): Promise<number
   return 0;
 }
 
-async function archiveTasks(ids: number[], userId: number | null): Promise<number> {
+export async function archiveTasks(ids: number[], userId: number | null): Promise<number> {
   const db = getDb();
   const placeholders = ids.map(() => "?").join(",");
 
@@ -1108,7 +1108,7 @@ async function archiveTasks(ids: number[], userId: number | null): Promise<numbe
   return 0;
 }
 
-async function unarchiveTasks(ids: number[], userId: number | null): Promise<number> {
+export async function unarchiveTasks(ids: number[], userId: number | null): Promise<number> {
   const db = getDb();
   const placeholders = ids.map(() => "?").join(",");
 
@@ -1118,7 +1118,7 @@ async function unarchiveTasks(ids: number[], userId: number | null): Promise<num
   return 0;
 }
 
-async function moveTasks(ids: number[], listId: number, userId: number | null): Promise<number> {
+export async function moveTasks(ids: number[], listId: number, userId: number | null): Promise<number> {
   const db = getDb();
   const placeholders = ids.map(() => "?").join(",");
 
@@ -1128,7 +1128,7 @@ async function moveTasks(ids: number[], listId: number, userId: number | null): 
   return db.prepare(`UPDATE tasks SET list_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders})`).run(listId, ...ids).changes || 0;
 }
 
-async function setTaskPriorities(ids: number[], priority: Priority, userId: number | null): Promise<number> {
+export async function setTaskPriorities(ids: number[], priority: Priority, userId: number | null): Promise<number> {
   const db = getDb();
   const placeholders = ids.map(() => "?").join(",");
 
@@ -1138,7 +1138,7 @@ async function setTaskPriorities(ids: number[], priority: Priority, userId: numb
   return db.prepare(`UPDATE tasks SET priority = ?, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders})`).run(priority, ...ids).changes || 0;
 }
 
-async function addLabelsToTasks(ids: number[], labelIds: number[], userId: number | null): Promise<number> {
+export async function addLabelsToTasks(ids: number[], labelIds: number[], userId: number | null): Promise<number> {
   const db = getDb();
   let count = 0;
 
@@ -1158,7 +1158,7 @@ async function addLabelsToTasks(ids: number[], labelIds: number[], userId: numbe
   return count;
 }
 
-async function removeLabelsFromTasks(ids: number[], labelIds: number[], userId: number | null): Promise<number> {
+export async function removeLabelsFromTasks(ids: number[], labelIds: number[], userId: number | null): Promise<number> {
   const db = getDb();
   let count = 0;
 
@@ -1178,7 +1178,7 @@ async function removeLabelsFromTasks(ids: number[], labelIds: number[], userId: 
   return count;
 }
 
-async function assignTasks(ids: number[], assigneeId: number, userId: number | null): Promise<number> {
+export async function assignTasks(ids: number[], assigneeId: number, userId: number | null): Promise<number> {
   const db = getDb();
   const placeholders = ids.map(() => "?").join(",");
 
@@ -1208,7 +1208,7 @@ async function addTaskDependencies(ids: number[], dependsOnIds: number[], userId
   return count;
 }
 
-async function setTaskDates(ids: number[], date: string, userId: number | null): Promise<number> {
+export async function setTaskDates(ids: number[], date: string, userId: number | null): Promise<number> {
   const db = getDb();
   const placeholders = ids.map(() => "?").join(",");
 
