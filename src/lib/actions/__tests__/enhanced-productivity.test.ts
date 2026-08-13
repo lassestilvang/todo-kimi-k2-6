@@ -272,6 +272,19 @@ describe("Enhanced Productivity Actions", () => {
       expect(result).toHaveProperty("id");
     });
 
+    it("should throw authentication error when user is not authenticated (line 754)", async () => {
+      // This tests line 754: throw new Error("Authentication required")
+      (getCurrentUser as any).mockReturnValue(null);
+
+      await expect(logMoodContext({
+        date: "2024-01-15",
+        mood: 4,
+        energy: 3,
+        stress: 2,
+        focus: 5,
+      })).rejects.toThrow("Authentication required");
+    });
+
     it("should get mood-based recommendations", async () => {
       const recommendations = await getMoodBasedTaskRecommendations(1, "2024-01-15");
 
@@ -321,6 +334,77 @@ describe("Enhanced Productivity Actions", () => {
       const recommendations = await getMoodBasedTaskRecommendations(1, "2024-01-15");
 
       expect(recommendations.reasoning).toContain("Lower energy");
+    });
+
+    it("should recommend medium priority tasks for medium mood and energy", async () => {
+      // This tests line 838-843: the else branch for medium energy/mood
+      db.exec(`
+        INSERT INTO mood_contexts (user_id, date, mood, energy, stress, focus)
+        VALUES (1, '2024-01-15', 3, 3, 2, 3)
+      `);
+
+      db.exec(`
+        INSERT INTO tasks (user_id, name, priority, date, deadline, completed, created_at, sort_order)
+        VALUES (1, 'Medium Task', 'medium', '2024-01-15', null, 0, datetime('now'), 0)
+      `);
+
+      const recommendations = await getMoodBasedTaskRecommendations(1, "2024-01-15");
+
+      expect(recommendations.reasoning).toContain("Moderate energy");
+      expect(recommendations.recommendedTaskIds.length).toBeGreaterThan(0);
+    });
+
+    it("should recommend medium priority tasks for low mood high energy (medium energy branch)", async () => {
+      // Tests the else branch: mood=2 (low) but energy=4 (high) => falls into elif or else
+      db.exec(`
+        INSERT INTO mood_contexts (user_id, date, mood, energy, stress, focus)
+        VALUES (1, '2024-01-15', 2, 4, 3, 3)
+      `);
+
+      db.exec(`
+        INSERT INTO tasks (user_id, name, priority, date, deadline, completed, created_at, sort_order)
+        VALUES (1, 'Medium Task', 'medium', '2024-01-15', null, 0, datetime('now'), 0)
+      `);
+
+      const recommendations = await getMoodBasedTaskRecommendations(1, "2024-01-15");
+
+      // mood=2 (low) triggers the elif branch for low energy
+      expect(recommendations.reasoning).toContain("Lower energy");
+    });
+
+    it("should detect high stress and append warning to reasoning (line 847)", async () => {
+      // This tests line 847: stress >= 4 triggers high stress warning
+      db.exec(`
+        INSERT INTO mood_contexts (user_id, date, mood, energy, stress, focus)
+        VALUES (1, '2024-01-15', 5, 5, 4, 5)
+      `);
+
+      db.exec(`
+        INSERT INTO tasks (user_id, name, priority, date, deadline, completed, created_at, sort_order)
+        VALUES (1, 'High Stress Task', 'high', '2024-01-15', null, 0, datetime('now'), 0)
+      `);
+
+      const recommendations = await getMoodBasedTaskRecommendations(1, "2024-01-15");
+
+      expect(recommendations.reasoning).toContain("High stress detected - consider taking a break before starting");
+    });
+
+    it("should append high stress warning for medium energy when stress >= 4", async () => {
+      // High stress with medium energy/mood
+      db.exec(`
+        INSERT INTO mood_contexts (user_id, date, mood, energy, stress, focus)
+        VALUES (1, '2024-01-15', 3, 3, 4, 3)
+      `);
+
+      db.exec(`
+        INSERT INTO tasks (user_id, name, priority, date, deadline, completed, created_at, sort_order)
+        VALUES (1, 'Medium Task', 'medium', '2024-01-15', null, 0, datetime('now'), 0)
+      `);
+
+      const recommendations = await getMoodBasedTaskRecommendations(1, "2024-01-15");
+
+      expect(recommendations.reasoning).toContain("Moderate energy");
+      expect(recommendations.reasoning).toContain("High stress detected");
     });
   });
 
