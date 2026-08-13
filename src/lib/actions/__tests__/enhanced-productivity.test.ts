@@ -278,5 +278,139 @@ describe("Enhanced Productivity Actions", () => {
       expect(recommendations).toHaveProperty("recommendedTaskIds");
       expect(recommendations).toHaveProperty("reasoning");
     });
+
+    it("should return no recommendations when user is not authenticated", async () => {
+      (getCurrentUser as any).mockImplementation(async () => null);
+      const recommendations = await getMoodBasedTaskRecommendations(999, "2024-01-15");
+
+      expect(recommendations.recommendedTaskIds).toEqual([]);
+      expect(recommendations.reasoning).toBe("No mood data available");
+      expect(recommendations.energyAdjustment).toBe(0);
+    });
+
+    it("should recommend tasks based on high mood and energy", async () => {
+      // Insert mood data for today
+      db.exec(`
+        INSERT INTO mood_contexts (user_id, date, mood, energy, stress, focus)
+        VALUES (1, '2024-01-15', 4, 4, 2, 3)
+      `);
+
+      // Insert task
+      db.exec(`
+        INSERT INTO tasks (user_id, name, priority, date, deadline, completed, created_at, sort_order)
+        VALUES (1, 'Critical Task', 'critical', '2024-01-15', null, 0, datetime('now'), 0)
+      `);
+
+      const recommendations = await getMoodBasedTaskRecommendations(1, "2024-01-15");
+
+      expect(recommendations.recommendedTaskIds.length).toBeGreaterThan(0);
+      expect(recommendations.reasoning).toContain("High energy");
+    });
+
+    it("should recommend easy tasks for low mood", async () => {
+      db.exec(`
+        INSERT INTO mood_contexts (user_id, date, mood, energy, stress, focus)
+        VALUES (1, '2024-01-15', 1, 2, 3, 2)
+      `);
+
+      db.exec(`
+        INSERT INTO tasks (user_id, name, priority, date, deadline, completed, created_at, sort_order)
+        VALUES (1, 'Easy Task', 'low', '2024-01-15', null, 0, datetime('now'), 0)
+      `);
+
+      const recommendations = await getMoodBasedTaskRecommendations(1, "2024-01-15");
+
+      expect(recommendations.reasoning).toContain("Lower energy");
+    });
+  });
+
+  describe("estimateEnergyCost", () => {
+    it("should calculate energy cost for critical priority task", async () => {
+      const { estimateEnergyCost } = await import("../enhanced-productivity");
+
+      const cost = await estimateEnergyCost({
+        id: 1,
+        user_id: 1,
+        name: "Critical Task",
+        priority: "critical",
+        completed: 0,
+      } as any);
+
+      expect(cost).toBe(15); // Base cost for critical
+    });
+
+    it("should add cost for task with estimate", async () => {
+      const { estimateEnergyCost } = await import("../enhanced-productivity");
+
+      const cost = await estimateEnergyCost({
+        id: 1,
+        user_id: 1,
+        name: "Task with estimate",
+        priority: "medium",
+        estimate: "2:30", // 2.5 hours
+        completed: 0,
+      } as any);
+
+      expect(cost).toBeGreaterThan(5); // base + estimate cost
+    });
+
+    it("should cap energy cost at 30", async () => {
+      const { estimateEnergyCost } = await import("../enhanced-productivity");
+
+      const cost = await estimateEnergyCost({
+        id: 1,
+        user_id: 1,
+        name: "Very long task",
+        priority: "critical",
+        estimate: "20:00", // 20 hours
+        completed: 0,
+      } as any);
+
+      expect(cost).toBeLessThanOrEqual(30);
+    });
+
+    it("should add cost for task with blockers", async () => {
+      const { estimateEnergyCost } = await import("../enhanced-productivity");
+
+      const cost = await estimateEnergyCost({
+        id: 1,
+        user_id: 1,
+        name: "Task with blockers",
+        priority: "high",
+        blockers: [{ depends_on_task_id: 1, task_id: 1 }],
+        completed: 0,
+      } as any);
+
+      expect(cost).toBeGreaterThan(10); // high=10 + 5 for blockers
+    });
+
+    it("should add cost for task with subtasks", async () => {
+      const { estimateEnergyCost } = await import("../enhanced-productivity");
+
+      const cost = await estimateEnergyCost({
+        id: 1,
+        user_id: 1,
+        name: "Task with subtasks",
+        priority: "medium",
+        subtasks: [{ id: 1 }, { id: 2 }, { id: 3 }],
+        completed: 0,
+      } as any);
+
+      expect(cost).toBeGreaterThanOrEqual(11); // medium=5 + 3*2=6
+    });
+
+    it("should handle task with no priority", async () => {
+      const { estimateEnergyCost } = await import("../enhanced-productivity");
+
+      const cost = await estimateEnergyCost({
+        id: 1,
+        user_id: 1,
+        name: "Task",
+        priority: "unknown" as any,
+        completed: 0,
+      } as any);
+
+      expect(cost).toBe(5); // default weight
+    });
   });
 });
