@@ -3,6 +3,7 @@
 ## Completed Features
 
 ### 1. Authentication & User System
+
 - **Fixed NextAuth.js configuration** (`src/app/api/auth/[...nextauth]/config.ts`)
   - Removed `@ts-nocheck`
   - Implemented proper user type handling
@@ -15,6 +16,7 @@
   - User creation endpoint
 
 ### 2. Task Assignment Feature
+
 - **Assignment API** (`src/app/api/task/[id]/assign/route.ts`)
   - POST to assign tasks to users
   - DELETE to unassign tasks
@@ -32,6 +34,7 @@
   - Integration with task creation/update
 
 ### 3. Real-time Collaboration
+
 - **WebSocket Utilities** (`src/lib/ws.ts`)
   - Connection management
   - Reconnection logic
@@ -39,12 +42,14 @@
   - Event types: task_updated, task_created, task_deleted, comment_added, user_joined, user_left
 
 ### 4. Email Notification System
+
 - **Notifications API** (`src/app/api/notifications/send/route.ts`)
   - POST endpoint for sending reminders
   - GET endpoint for batch processing due tasks
   - Integration with existing email functions
 
 ### 5. Calendar Sync (Google & Outlook)
+
 - **Outlook Integration** (`src/lib/calendar/outlook.ts`)
   - Microsoft Graph API integration
   - Event CRUD operations
@@ -57,6 +62,7 @@
   - Sync functions
 
 ### 6. Template Categories
+
 - **Database Schema** (`src/lib/db/index.ts`)
   - New `template_categories` table
   - Foreign key relationship to templates
@@ -74,6 +80,7 @@
   - Updated `createTemplate()` and `getTemplates()` to support categories
 
 ### 7. Custom Views
+
 - **Database Schema** (`src/lib/db/index.ts`)
   - New `custom_views` table
   - Stores filter/sort preferences
@@ -90,6 +97,7 @@
   - `deleteCustomView()`
 
 ### 8. Technical Debt Fixes
+
 - **Error Boundary Component** (`src/components/error-boundary.tsx`)
   - React error boundary for graceful failure handling
   - Reset functionality
@@ -99,6 +107,7 @@
   - Wrapped app with ErrorBoundary
 
 ## Files Created
+
 - `/src/lib/auth.ts` - Password utilities
 - `/src/lib/ws.ts` - WebSocket utilities
 - `/src/app/api/auth/register/route.ts` - Registration API
@@ -109,6 +118,7 @@
 - `/src/components/error-boundary.tsx` - Error boundary component
 
 ## Files Modified
+
 - `/src/app/api/auth/[...nextauth]/config.ts` - Fixed TypeScript errors
 - `/src/lib/actions/tasks.ts` - Added assignment, category, and custom view functions
 - `/src/lib/db/index.ts` - Added template_categories and custom_views tables
@@ -118,6 +128,7 @@
 - `/src/app/layout.tsx` - Added ErrorBoundary
 
 ## Remaining Work
+
 - Connect WebSocket to backend server
 - Implement user search in assignment UI
 - Add template category UI in modal
