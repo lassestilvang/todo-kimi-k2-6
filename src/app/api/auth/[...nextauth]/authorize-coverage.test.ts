@@ -65,14 +65,14 @@ describe("Authorize Function Coverage", () => {
     });
 
     it("should fail authorization when email is missing", () => {
-      const credentials = { password: "password123" };
+      const credentials: { email?: string; password: string } = { password: "password123" };
       const hasEmail = !!credentials.email;
 
       expect(hasEmail).toBe(false);
     });
 
     it("should fail authorization when password is missing", () => {
-      const credentials = { email: "test@example.com" };
+      const credentials: { email: string; password?: string } = { email: "test@example.com" };
       const hasPassword = !!credentials.password;
 
       expect(hasPassword).toBe(false);
