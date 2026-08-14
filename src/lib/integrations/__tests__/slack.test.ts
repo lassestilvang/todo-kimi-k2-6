@@ -194,6 +194,125 @@ describe('SlackConnector', () => {
 
       await expect(connector.fetchRecords()).rejects.toThrow('Slack API error');
     });
+
+    it('should extract priority from emoji reactions', async () => {
+      const mockMessage = {
+        ts: '1234567890.123456',
+        text: 'todo: Fix the critical bug',
+        user: 'U01234567',
+        reactions: [
+          { name: '🔥', count: 5 },
+          { name: '🚀', count: 3 },
+        ],
+      };
+
+      (fetch as any).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          ok: true,
+          messages: [mockMessage],
+        }),
+      });
+
+      const records = await connector.fetchRecords();
+
+      expect(records).toHaveLength(1);
+      expect(records[0].labels).toContain('urgent');
+    });
+
+    it('should throw error when data.ok is false', async () => {
+      (fetch as any).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          ok: false,
+          error: 'channel_not_found',
+        }),
+      });
+
+      await expect(connector.fetchRecords()).rejects.toThrow(
+        "Slack API error: channel_not_found",
+      );
+    });
+
+    it('should handle messages that fail to map', async () => {
+      const mockMessages = [
+        {
+          ts: '1234567890.123456',
+          text: 'Regular message without task marker',
+          user: 'U01234567',
+          reactions: [],
+        },
+        {
+          ts: '1234567890.789012',
+          text: 'todo: Valid task message',
+          user: 'U01234567',
+          reactions: [],
+        },
+      ];
+
+      (fetch as any).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          ok: true,
+          messages: mockMessages,
+        }),
+      });
+
+      const records = await connector.fetchRecords();
+
+      // Only the valid task message should be included
+      expect(records).toHaveLength(1);
+      expect(records[0].title).toBe('Valid task message');
+    });
+
+    it('should extract labels from channel name', async () => {
+      const mockMessage = {
+        ts: '1234567890.123456',
+        text: 'todo: Task in project channel',
+        user: 'U01234567',
+        channel: 'project-alpha',
+        reactions: [],
+      };
+
+      (fetch as any).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          ok: true,
+          messages: [mockMessage],
+        }),
+      });
+
+      const records = await connector.fetchRecords();
+
+      expect(records).toHaveLength(1);
+      expect(records[0].labels).toContain('project alpha');
+    });
+
+    it('should handle channel name fetch errors', async () => {
+      const mockMessage = {
+        ts: '1234567890.123456',
+        text: 'todo: Task in channel',
+        user: 'U01234567',
+        reactions: [],
+      };
+
+      // First call for messages, second call for channel name (will fail)
+      (fetch as any)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            ok: true,
+            messages: [mockMessage],
+          }),
+        })
+        .mockRejectedValue(new Error('Network error'));
+
+      // Should not throw - channel name errors are caught and channelId is used instead
+      const records = await connector.fetchRecords();
+
+      expect(records).toHaveLength(1);
+      expect(records[0].title).toBe('Task in channel');
+    });
   });
 
   describe('isTaskCandidate', () => {
@@ -463,6 +582,181 @@ describe('SlackConnector', () => {
       const reactions = await connector.getReactions('C01234567', '1234567890.123456');
 
       expect(reactions).toEqual([]);
+    });
+  });
+
+  describe('getMentions', () => {
+    it('should fetch mentions for user via subteam link', async () => {
+      const mockMessages = [
+        {
+          ts: '1234567890.123456',
+          text: '<!subteam^S12345678> todo: please review this documentation',
+          user: 'U01234567',
+          reactions: [],
+        },
+      ];
+
+      (fetch as any)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            ok: true,
+            messages: mockMessages,
+          }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            ok: true,
+            channel: { name: 'general' },
+          }),
+        });
+
+      const records = await connector.getMentions({ userId: 'U12345678', channelId: 'C01234567' });
+
+      expect(records).toHaveLength(1);
+      expect(records[0].title).toBe('please review this documentation');
+      expect(fetch).toHaveBeenCalledWith(
+        'https://slack.com/api/conversations.history?channel=C01234567&exclude_archived=true',
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            Authorization: 'Bearer test-token',
+          }),
+        }),
+      );
+    });
+
+    it('should throw error when no channel specified', async () => {
+      const noChannelConnector = new SlackConnector({
+        id: 'no-channel',
+        type: 'slack',
+        name: 'Slack',
+        enabled: true,
+        apiToken: 'token',
+        syncDirection: 'import',
+      });
+
+      await expect(noChannelConnector.getMentions({ userId: 'U12345678' })).rejects.toThrow(
+        'No channel specified for Slack mentions',
+      );
+    });
+
+    it('should return empty array when no mentions match', async () => {
+      const mockMessages = [
+        {
+          ts: '1234567890.123456',
+          text: 'Regular message without mentions',
+          user: 'U01234567',
+          reactions: [],
+        },
+      ];
+
+      (fetch as any).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          ok: true,
+          messages: mockMessages,
+        }),
+      });
+
+      const records = await connector.getMentions({ userId: 'U99988877', channelId: 'C01234567' });
+
+      expect(records).toHaveLength(0);
+    });
+
+    it('should throw error when API response is not ok', async () => {
+      (fetch as any).mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+      });
+
+      await expect(
+        connector.getMentions({ userId: 'U12345678', channelId: 'C01234567' }),
+      ).rejects.toThrow('Slack API error: 500');
+    });
+  });
+
+  describe('getChannelList pagination', () => {
+    it('should handle pagination with cursor', async () => {
+      const mockChannelsPage1 = [
+        { id: 'C01234567', name: 'general', is_private: false },
+      ];
+      const mockChannelsPage2 = [
+        { id: 'C02345678', name: 'random', is_private: false },
+      ];
+
+      (fetch as any)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            ok: true,
+            channels: mockChannelsPage1,
+            response_metadata: { next_cursor: 'cursor123' },
+          }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            ok: true,
+            channels: mockChannelsPage2,
+            response_metadata: {},
+          }),
+        });
+
+      const channels = await connector.getChannelList(['public_channel']);
+
+      expect(channels).toHaveLength(2);
+      expect(fetch).toHaveBeenCalledTimes(2);
+    });
+
+    it('should handle response without next_cursor', async () => {
+      (fetch as any).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          ok: true,
+          channels: [{ id: 'C01234567', name: 'general', is_private: false }],
+        }),
+      });
+
+      const channels = await connector.getChannelList();
+
+      expect(channels).toHaveLength(1);
+      expect(fetch).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('getChannelName error handling', () => {
+    it('should return channelId when API fails', async () => {
+      (fetch as any).mockRejectedValue(new Error('Network error'));
+
+      const channelName = await (connector as any).getChannelName('C01234567');
+
+      expect(channelName).toBe('C01234567');
+    });
+
+    it('should return channelId when API response is not ok', async () => {
+      (fetch as any).mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+      });
+
+      const channelName = await (connector as any).getChannelName('C01234567');
+
+      expect(channelName).toBe('C01234567');
+    });
+
+    it('should return channelId when data.ok is false', async () => {
+      (fetch as any).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          ok: false,
+          error: 'channel_not_found',
+        }),
+      });
+
+      const channelName = await (connector as any).getChannelName('C01234567');
+
+      expect(channelName).toBe('C01234567');
     });
   });
 
