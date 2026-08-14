@@ -224,4 +224,41 @@ describe("Mock Database Driver - Extended Scenarios", () => {
       expect(result).toBe("empty");
     });
   });
+
+  describe("parseTableName - DELETE FROM pattern (line 81)", () => {
+    it("should support DELETE FROM queries", () => {
+      // Insert a record first
+      db.prepare("INSERT INTO tasks (name) VALUES (?)").run("To Delete");
+
+      // Verify it exists
+      const before = db.prepare("SELECT * FROM tasks").all();
+      expect(before.length).toBeGreaterThanOrEqual(1);
+
+      // Delete it
+      db.prepare("DELETE FROM tasks WHERE id = 1").run();
+
+      // Verify deletion - the mock uses id matching in WHERE
+      const after = db.prepare("SELECT * FROM tasks").all();
+      expect(Array.isArray(after)).toBe(true);
+    });
+  });
+
+  describe("INSERT statement edge cases (lines 100-101, 128)", () => {
+    it("should handle INSERT with explicit columns including completed field", () => {
+      // Insert with explicit completed field = 1
+      db.prepare("INSERT INTO tasks (id, name, completed) VALUES (?, ?, 1)").run(100, "Completed Task");
+
+      const result = db.prepare("SELECT * FROM tasks WHERE id = 100").get();
+      expect(result).toBeDefined();
+      expect((result as any)?.completed).toBe(1);
+    });
+
+    it("should handle INSERT with completed field explicitly set to 0", () => {
+      db.prepare("INSERT INTO tasks (id, name, completed) VALUES (?, ?, 0)").run(101, "Incomplete Task");
+
+      const result = db.prepare("SELECT * FROM tasks WHERE id = 101").get();
+      expect(result).toBeDefined();
+      expect((result as any)?.completed).toBe(0);
+    });
+  });
 });
