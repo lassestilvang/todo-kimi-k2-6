@@ -311,6 +311,7 @@ describe("Outlook Connector", () => {
       const now = new Date().toISOString();
       const conn = new OutlookConnector({
         ...mockConfig,
+        apiToken: "test-token",
         lastSyncAt: now,
       });
 
@@ -324,6 +325,7 @@ describe("Outlook Connector", () => {
     it("should return epoch date when no last sync", async () => {
       const conn = new OutlookConnector({
         ...mockConfig,
+        apiToken: "test-token",
         lastSyncAt: undefined,
       });
 
