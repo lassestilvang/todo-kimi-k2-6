@@ -49,6 +49,24 @@ describe("Workflow Actions", () => {
         updated_at TEXT DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS tasks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        description TEXT,
+        list_id INTEGER,
+        date TEXT,
+        deadline TEXT,
+        priority TEXT DEFAULT 'medium',
+        completed INTEGER DEFAULT 0,
+        completed_at TEXT,
+        assignee_id INTEGER,
+        user_id INTEGER,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
   });
 
   afterEach(() => {
@@ -333,7 +351,7 @@ describe("Workflow Actions", () => {
       const result = await evaluateConditions({ task_label: "work" }, {
         task_labels: ["work", "important"],
       });
-      expect(result).toBetrue();
+      expect(result).toBe(true);
     });
 
     it("should return false when label not found", async () => {
@@ -361,6 +379,162 @@ describe("Workflow Actions", () => {
         due_date: "2024-12-31",
       });
       expect(result).toBe(false);
+    });
+
+    it("should return true when conditions is invalid JSON (catch block)", async () => {
+      const { evaluateConditions } = await import("../workflows");
+
+      // Invalid JSON string should trigger catch block and return true
+      const result = await evaluateConditions("not valid json {", {});
+      expect(result).toBe(true);
+    });
+  });
+
+  describe("checkTriggers default case", () => {
+    it("should return false for unknown trigger type", async () => {
+      const { checkTriggers } = await import("../workflows");
+
+      const result = await checkTriggers("unknown_trigger" as any, {}, 1);
+      expect(result).toBe(false);
+    });
+  });
+
+  describe("executeWorkflow", () => {
+    it("should execute workflow successfully", async () => {
+      const { createWorkflow, executeWorkflow } = await import("../workflows");
+
+      // Create a workflow first
+      const workflow = await createWorkflow(1, {
+        name: "Test Execute Workflow",
+        trigger_type: "manual",
+        action_type: "create_task",
+        action_config: { task_name: "Test Task from Workflow" },
+      });
+
+      const result = await executeWorkflow(workflow.id, { test: "data" }, 1);
+      expect(result.success).toBe(true);
+      expect(result.result).toBeDefined();
+      expect(result.executionId).toBeDefined();
+    });
+
+    it("should throw error when workflow is disabled", async () => {
+      const { createWorkflow, getWorkflow, executeWorkflow } = await import("../workflows");
+
+      // Create workflow
+      const workflow = await createWorkflow(1, {
+        name: "Disabled Workflow",
+        trigger_type: "manual",
+        action_type: "create_task",
+      });
+
+      // Manually update the enabled field to 0 (disabled) in the database
+      db.prepare("UPDATE workflows SET enabled = 0 WHERE id = ?").run(workflow.id);
+
+      // Verify it's disabled
+      const disabledWorkflow = await getWorkflow(workflow.id, 1);
+      expect(disabledWorkflow?.enabled).toBe(0);
+
+      await expect(executeWorkflow(workflow.id, {}, 1)).rejects.toThrow("Workflow not found or disabled");
+    });
+
+    it("should throw error when workflow not found", async () => {
+      const { executeWorkflow } = await import("../workflows");
+
+      await expect(executeWorkflow(99999, {}, 1)).rejects.toThrow("Workflow not found or disabled");
+    });
+
+    it("should record execution failure when action fails", async () => {
+      const { createWorkflow, executeWorkflow } = await import("../workflows");
+
+      const workflow = await createWorkflow(1, {
+        name: "Failed Workflow",
+        trigger_type: "manual",
+        action_type: "webhook",
+        action_config: {}, // Will fail because no URL provided
+      });
+
+      await expect(executeWorkflow(workflow.id, {}, 1)).rejects.toThrow("Webhook URL is required");
+    });
+  });
+
+  describe("executeAction", () => {
+    it("should handle create_task action", async () => {
+      const { executeAction } = await import("../workflows");
+
+      const workflow = {
+        action_type: "create_task",
+        action_config: JSON.stringify({ task_name: "Test Task" }),
+      };
+
+      const result = await executeAction(workflow);
+      expect(result.task_id).toBeDefined();
+      expect(result.status).toBe("created");
+    });
+
+    it("should handle update_task action with completion", async () => {
+      const { executeAction } = await import("../workflows");
+
+      // First create a task
+      db.prepare(`INSERT INTO tasks (name, priority) VALUES (?, ?)`).run("Test Task", "medium");
+
+      const workflow = {
+        action_type: "update_task",
+        action_config: JSON.stringify({ task_id: 1, completed: 1 }),
+      };
+
+      const result = await executeAction(workflow);
+      expect(result.task_id).toBe(1);
+      expect(result.status).toBe("updated");
+    });
+
+    it("should handle send_notification action", async () => {
+      const { executeAction } = await import("../workflows");
+
+      const workflow = {
+        action_type: "send_notification",
+        action_config: JSON.stringify({ message: "Test notification", type: "info" }),
+      };
+
+      const result = await executeAction(workflow);
+      expect(result.status).toBe("sent");
+      expect(result.type).toBe("info");
+    });
+
+    it("should handle log_message action", async () => {
+      const { executeAction } = await import("../workflows");
+
+      const workflow = {
+        action_type: "log_message",
+        action_config: JSON.stringify({ message: "Test log message", level: "info" }),
+      };
+
+      const result = await executeAction(workflow);
+      expect(result.status).toBe("logged");
+    });
+
+    it("should handle webhook action with URL", async () => {
+      const { executeAction } = await import("../workflows");
+
+      const workflow = {
+        action_type: "webhook",
+        action_config: JSON.stringify({ url: "https://example.com/webhook" }),
+      };
+
+      const result = await executeAction(workflow);
+      expect(result.status).toBe("called");
+      expect(result.response_code).toBe(200);
+    });
+
+    it("should handle update_task with no updates", async () => {
+      const { executeAction } = await import("../workflows");
+
+      const workflow = {
+        action_type: "update_task",
+        action_config: JSON.stringify({ task_id: 1 }), // No updates provided
+      };
+
+      const result = await executeAction(workflow);
+      expect(result.status).toBe("no_updates");
     });
   });
 });
