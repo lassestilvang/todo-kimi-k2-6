@@ -9,6 +9,7 @@ import type { Task } from "@/types";
 export interface GoogleCalendarSync {
   id: number;
   user_id: number;
+  provider?: string;
   access_token: string;
   refresh_token: string | null;
   expires_at: number | null;
