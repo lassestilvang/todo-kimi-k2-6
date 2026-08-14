@@ -218,6 +218,20 @@ describe("Time Actions", () => {
       });
       expect(updated.description).toBe("Valid update");
     });
+
+    it("should throw validation error for invalid duration_seconds (line 64)", async () => {
+      const entry = await addTimeEntry({
+        task_id: 1,
+        start_time: "2026-06-24T10:00:00Z",
+      });
+
+      // Invalid duration_seconds - pass a string instead of number
+      await expect(
+        updateTimeEntry(entry.id, {
+          duration_seconds: "not-a-number" as any,
+        } as any)
+      ).rejects.toThrow("expected number");
+    });
   });
 
   describe("deleteTimeEntry", () => {
