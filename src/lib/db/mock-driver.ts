@@ -47,7 +47,10 @@ export function createMockDatabase(): MockDatabase {
       "task_connections", "decision_entries", "decision_options", "decision_templates",
       "task_insights", "user_skills", "habit_contexts", "knowledge_graph_activities",
       "cognitive_load_logs", "task_mappings", "smart_inbox_sources",
-      "workflows", "workflow_executions"
+      "workflows", "workflow_executions",
+      // New feature tables
+      "energy_budget_logs", "user_energy_profiles", "mood_contexts",
+      "cross_app_sync_connections", "external_tasks", "decision_shadows", "socket_connections"
     ];
     schemaTables.forEach(name => tables.set(name, new Map()));
 
