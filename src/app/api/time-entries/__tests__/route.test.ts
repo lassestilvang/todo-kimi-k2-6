@@ -19,6 +19,17 @@ vi.mock("@/lib/actions/time", () => ({
   addTimeEntry: vi.fn().mockResolvedValue({ id: 1, task_id: 1, start_time: "2024-01-01", duration: 3600 }),
   updateTimeEntry: vi.fn().mockResolvedValue({ id: 1, task_id: 1, start_time: "2024-01-01", duration: 7200 }),
   deleteTimeEntry: vi.fn().mockResolvedValue(undefined),
+  createTimeEntry: vi.fn(),
+}));
+
+// Mock logger to avoid console output in tests
+vi.mock("@/lib/logger", () => ({
+  logger: {
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+    debug: vi.fn(),
+  },
 }));
 
 function createMockRequest(url: string, options: { method?: string; body?: unknown } = {}): any {
@@ -117,6 +128,46 @@ describe("Time Entries API", () => {
       const response = await route.DELETE(request);
 
       expect(response.status).toBe(200);
+    });
+  });
+
+  describe("Error handling - catch blocks coverage", () => {
+    it("should handle error in POST (line 60)", async () => {
+      const { addTimeEntry } = await import("@/lib/actions/time");
+      (addTimeEntry as any).mockRejectedValueOnce(new Error("Database error"));
+
+      const request = createMockRequest("http://localhost/api/time-entries", {
+        method: "POST",
+        body: { task_id: 1, start_time: "2024-01-01" },
+      });
+      const response = await route.POST(request);
+
+      expect(response.status).toBe(400);
+    });
+
+    it("should handle error in PUT (line 69)", async () => {
+      const { updateTimeEntry } = await import("@/lib/actions/time");
+      (updateTimeEntry as any).mockRejectedValueOnce(new Error("Update failed"));
+
+      const request = createMockRequest("http://localhost/api/time-entries", {
+        method: "PUT",
+        body: { id: 1, duration: 3600 },
+      });
+      const response = await route.PUT(request);
+
+      expect(response.status).toBe(400);
+    });
+
+    it("should handle error in DELETE (lines 81-82)", async () => {
+      const { deleteTimeEntry } = await import("@/lib/actions/time");
+      (deleteTimeEntry as any).mockRejectedValueOnce(new Error("Delete failed"));
+
+      const request = createMockRequest("http://localhost/api/time-entries?id=1", {
+        method: "DELETE",
+      });
+      const response = await route.DELETE(request);
+
+      expect(response.status).toBe(500);
     });
   });
 });
