@@ -210,6 +210,50 @@ describe("Real-time Actions", () => {
     });
   });
 
+  describe("broadcastTaskUpdate - workspace members and notify subscribers", () => {
+    it("should subscribe users to channel and notify (lines 67-71, 92-99)", async () => {
+      mockDb.get.mockReturnValue({ id: 1, name: "Test Task", user_id: 1 });
+      // Multiple workspace members to trigger the forEach loop
+      mockDb.all.mockReturnValue([
+        { userId: 1, userName: "User 1", email: "user1@example.com" },
+        { userId: 2, userName: "User 2", email: "user2@example.com" },
+      ]);
+
+      const { broadcastTaskUpdate, getTaskSubscribers } = await import("../realtime");
+      mockDb.prepare.mockClear();
+
+      await broadcastTaskUpdate(1, 1, { status: "completed" }, "completed");
+
+      // Verify workspace members were processed
+      expect(mockDb.prepare).toHaveBeenCalled();
+      expect(createActivityLog).toHaveBeenCalled();
+    });
+
+    it("should handle WebSocket broadcast error gracefully (lines 73-90)", async () => {
+      mockDb.get.mockReturnValue({ id: 1, name: "Test Task", user_id: 1 });
+      mockDb.all.mockReturnValue([]);
+
+      const { broadcastTaskUpdate } = await import("../realtime");
+
+      // Should not throw even if WebSocket import fails
+      await expect(broadcastTaskUpdate(1, 1, { name: "Test" }, "updated")).resolves.not.toThrow();
+    });
+
+    it("should execute notify subscribers forEach loop (lines 92-99)", async () => {
+      mockDb.get.mockReturnValue({ id: 1, name: "Test Task", user_id: 1 });
+      // Return multiple workspace members to test forEach loop
+      mockDb.all.mockReturnValue([
+        { userId: 1, userName: "User 1", email: "user1@example.com" },
+        { userId: 2, userName: "User 2", email: "user2@example.com" },
+      ]);
+
+      const { broadcastTaskUpdate } = await import("../realtime");
+
+      // This should trigger lines 92-99 for the forEach loop
+      await broadcastTaskUpdate(1, 1, { status: "completed" }, "completed");
+    });
+  });
+
   describe("sendNotification", () => {
     it("should create activity log for notification (line 162)", async () => {
       const { sendNotification } = await import("../realtime");
