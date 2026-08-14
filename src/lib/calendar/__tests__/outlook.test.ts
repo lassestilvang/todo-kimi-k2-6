@@ -71,7 +71,7 @@ describe("Outlook Calendar Functions", () => {
           description: "Test description",
           date: "2024-12-25",
           priority: "high",
-        }
+        } as any
       );
 
       expect(eventId).toBe("event-123");
@@ -99,8 +99,8 @@ describe("Outlook Calendar Functions", () => {
           id: 1,
           name: "Task with labels",
           date: "2024-12-25",
-          labels: [{ name: "Office" }, { name: "Room 1" }],
-        }
+          labels: [{ name: "Office" }, { name: "Room 1" }] as any,
+        } as any
       );
 
       expect(mockFetch).toHaveBeenCalled();
@@ -116,7 +116,7 @@ describe("Outlook Calendar Functions", () => {
       await updateOutlookEvent(
         { accessToken: "test-token" },
         "event-123",
-        { id: 1, name: "Updated Task", date: "2024-12-25" }
+        { id: 1, name: "Updated Task", date: "2024-12-25" } as any
       );
 
       expect(mockFetch).toHaveBeenCalledWith(
@@ -267,7 +267,7 @@ describe("Outlook Calendar Functions", () => {
 
       const result = await syncTasksToOutlook(
         { accessToken: "token" },
-        [{ id: 1, name: "Task 1", date: "2024-12-25" }]
+        [{ id: 1, name: "Task 1", date: "2024-12-25" }] as any
       );
 
       expect(result.created).toBeGreaterThanOrEqual(0);
@@ -284,7 +284,7 @@ describe("Outlook Calendar Functions", () => {
 
       const result = await syncTasksToOutlook(
         { accessToken: "token" },
-        [{ id: 1, name: "Task without date" }]
+        [{ id: 1, name: "Task without date" }] as any
       );
 
       expect(result.created).toBe(0);
@@ -297,7 +297,7 @@ describe("Outlook Calendar Functions", () => {
 
       const result = await getCompletedTaskEvents(
         { accessToken: "token" },
-        [{ id: 1, name: "Task 1", completed: false }]
+        [{ id: 1, name: "Task 1", completed: false }] as any
       );
 
       expect(result).toEqual([]);
@@ -315,7 +315,7 @@ describe("Outlook Calendar Functions", () => {
 
       const result = await getCompletedTaskEvents(
         { accessToken: "token" },
-        [{ id: 1, name: "Completed Task", completed: true }]
+        [{ id: 1, name: "Completed Task", completed: true }] as any
       );
 
       expect(result.length).toBeGreaterThanOrEqual(0);
