@@ -5,17 +5,20 @@ Thank you for your interest in contributing to TaskFlow! This document provides 
 ## Development Setup
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/your-org/taskflow.git
    cd taskflow
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Set up environment**
+
    ```bash
    cp .env.example .env.local
    # Edit .env.local with your configuration
@@ -28,18 +31,18 @@ Thank you for your interest in contributing to TaskFlow! This document provides 
 
 ## Available Scripts
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start development server |
-| `npm run build` | Build for production |
-| `npm run lint` | Run ESLint |
-| `npm run lint:fix` | Auto-fix ESLint issues |
-| `npm run format` | Format code with Prettier |
-| `npm run format:check` | Check code formatting |
-| `npm run test` | Run unit tests |
-| `npm run test:watch` | Run tests in watch mode |
-| `npm run test:coverage` | Run tests with coverage |
-| `npm run stryker` | Run mutation testing |
+| Command                 | Description               |
+| ----------------------- | ------------------------- |
+| `npm run dev`           | Start development server  |
+| `npm run build`         | Build for production      |
+| `npm run lint`          | Run ESLint                |
+| `npm run lint:fix`      | Auto-fix ESLint issues    |
+| `npm run format`        | Format code with Prettier |
+| `npm run format:check`  | Check code formatting     |
+| `npm run test`          | Run unit tests            |
+| `npm run test:watch`    | Run tests in watch mode   |
+| `npm run test:coverage` | Run tests with coverage   |
+| `npm run stryker`       | Run mutation testing      |
 
 ## Code Standards
 
@@ -88,6 +91,7 @@ Thank you for your interest in contributing to TaskFlow! This document provides 
 ## Pull Request Process
 
 1. **Create a feature branch**
+
    ```bash
    git checkout -b feature/your-feature-name
    ```
@@ -98,6 +102,7 @@ Thank you for your interest in contributing to TaskFlow! This document provides 
    - Update documentation
 
 3. **Run checks**
+
    ```bash
    npm run lint
    npm run test
