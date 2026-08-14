@@ -4,51 +4,51 @@
 version: 2
 updates:
   # npm dependencies
-  - package-ecosystem: "npm"
-    directory: "/"
+  - package-ecosystem: 'npm'
+    directory: '/'
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "06:00"
+      interval: 'weekly'
+      day: 'monday'
+      time: '06:00'
     open-pull-requests-limit: 10
     groups:
       # Group major version updates for testing
       production-dependencies:
         patterns:
-          - "*"
+          - '*'
         update-types:
-          - "minor"
-          - "patch"
+          - 'minor'
+          - 'patch'
       # Separate group for dev dependencies
       development-dependencies:
         patterns:
-          - "*"
+          - '*'
         update-types:
-          - "minor"
-          - "patch"
+          - 'minor'
+          - 'patch'
     reviewers:
-      - "lasse"
+      - 'lasse'
     labels:
-      - "dependencies"
-      - "automated-pr"
+      - 'dependencies'
+      - 'automated-pr'
 
   # GitHub Actions
-  - package-ecosystem: "github-actions"
-    directory: "/"
+  - package-ecosystem: 'github-actions'
+    directory: '/'
     schedule:
-      interval: "monthly"
+      interval: 'monthly'
     open-pull-requests-limit: 5
     labels:
-      - "github-actions"
-      - "dependencies"
-      - "automated-pr"
+      - 'github-actions'
+      - 'dependencies'
+      - 'automated-pr'
 
   # Docker (if used)
-  - package-ecosystem: "docker"
-    directory: "/"
+  - package-ecosystem: 'docker'
+    directory: '/'
     schedule:
-      interval: "monthly"
+      interval: 'monthly'
     labels:
-      - "docker"
-      - "dependencies"
-      - "automated-pr"
+      - 'docker'
+      - 'dependencies'
+      - 'automated-pr'
