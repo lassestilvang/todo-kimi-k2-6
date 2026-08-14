@@ -159,6 +159,21 @@ describe("Google Calendar Integration", () => {
         "Failed to create event: Internal Server Error"
       );
     });
+
+    it("should handle task with null description", async () => {
+      (global.fetch as any).mockResolvedValue({
+        ok: true,
+        json: async () => ({ id: "event123" }),
+      });
+
+      const taskWithNullDescription = { ...mockTask, description: null } as Task;
+      const eventId = await createCalendarEvent(mockConfig, taskWithNullDescription);
+
+      expect(eventId).toBe("event123");
+      const callArgs = (global.fetch as any).mock.calls[0][1];
+      const body = JSON.parse(callArgs.body);
+      expect(body.description).toBeUndefined();
+    });
   });
 
   describe("updateCalendarEvent", () => {
@@ -225,6 +240,20 @@ describe("Google Calendar Integration", () => {
           method: "PUT",
         })
       );
+    });
+
+    it("should handle task with null description", async () => {
+      const taskWithNullDescription = { ...mockTask, description: null } as Task;
+
+      (global.fetch as any).mockResolvedValue({
+        ok: true,
+      });
+
+      await updateCalendarEvent(mockConfig, "event123", taskWithNullDescription);
+
+      const callArgs = (global.fetch as any).mock.calls[0][1];
+      const body = JSON.parse(callArgs.body);
+      expect(body.description).toBeUndefined();
     });
   });
 
