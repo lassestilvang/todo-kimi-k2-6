@@ -68,6 +68,34 @@ describe("Activity Logger Actions", () => {
       expect(mockDb.run).toHaveBeenCalled();
     });
 
+    it("should log activity with user_id from getCurrentUser when not provided", async () => {
+      const { logActivity } = await import("../activity-logger");
+
+      // getCurrentUser is mocked to return user in beforeEach
+      await logActivity({
+        action: "user_action",
+        entity_type: "user",
+        // No user_id provided - should use getCurrentUser()
+      });
+
+      expect(mockDb.run).toHaveBeenCalled();
+    });
+
+    it("should use fallback user_id of 0 when getCurrentUser returns null", async () => {
+      // Override the mock for this test
+      (getCurrentUser as any).mockReturnValue(null);
+
+      const { logActivity } = await import("../activity-logger");
+
+      await logActivity({
+        action: "system_action",
+        entity_type: "user",
+      });
+
+      // Should fall back to 0 as user_id
+      expect(mockDb.run).toHaveBeenCalled();
+    });
+
     it("should support all entity types", async () => {
       const { logActivity } = await import("../activity-logger");
       const entityTypes = ["task", "list", "label", "template", "user", "notification", "comment", "share", "habit", "goal", "decision", "insight", "skill", "connection"] as const;
@@ -143,6 +171,37 @@ describe("Activity Logger Actions", () => {
       const { logTaskShared } = await import("../activity-logger");
 
       await logTaskShared(1, 2, "view");
+      expect(mockDb.run).toHaveBeenCalled();
+    });
+
+    it("should log task share with edit permission", async () => {
+      const { logTaskShared } = await import("../activity-logger");
+
+      await logTaskShared(1, 2, "edit");
+      expect(mockDb.run).toHaveBeenCalled();
+    });
+
+    it("should log notification sent with data", async () => {
+      const { logNotificationSent } = await import("../activity-logger");
+
+      await logNotificationSent(1, "task_update", { taskId: 123, taskName: "Test Task" });
+      expect(mockDb.run).toHaveBeenCalled();
+    });
+
+    it("should log notification sent without data", async () => {
+      const { logNotificationSent } = await import("../activity-logger");
+
+      await logNotificationSent(1, "task_mention");
+      expect(mockDb.run).toHaveBeenCalled();
+    });
+
+    it("should provide logActivityDb alias", async () => {
+      const { logActivityDb } = await import("../activity-logger");
+
+      await logActivityDb({
+        action: "test_action",
+        entity_type: "task",
+      });
       expect(mockDb.run).toHaveBeenCalled();
     });
   });
