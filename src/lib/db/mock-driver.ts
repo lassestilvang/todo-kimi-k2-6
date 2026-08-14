@@ -929,7 +929,21 @@ export function createMockDatabase(): MockDatabase {
             if (setMatch) {
               const setClause = setMatch[1];
               // Match patterns like "column = ?", "column = CURRENT_TIMESTAMP", or "column = 0"
-              const assignments = setClause.split(',').map(s => s.trim());
+              // Split by comma but respect parentheses to avoid splitting inside COALESCE()
+              const assignments: string[] = [];
+              let current = '';
+              let parenDepth = 0;
+              for (const char of setClause) {
+                if (char === '(') parenDepth++;
+                if (char === ')') parenDepth--;
+                if (char === ',' && parenDepth === 0) {
+                  assignments.push(current.trim());
+                  current = '';
+                } else {
+                  current += char;
+                }
+              }
+              if (current.trim()) assignments.push(current.trim());
               let setParamIdx = 0;
               assignments.forEach((assignment) => {
                 // Split on first '=' only - handle "column = value"
@@ -955,6 +969,27 @@ export function createMockDatabase(): MockDatabase {
                   } else if (valExpr?.startsWith("'") && valExpr?.endsWith("'")) {
                     // String literal (remove quotes)
                     setValues[col] = valExpr.slice(1, -1);
+                  } else if (valExpr?.toUpperCase().startsWith('COALESCE(')) {
+                    // COALESCE(param, defaultValue) - use param if not null, otherwise use defaultValue
+                    const coalesceMatch = valExpr.match(/COALESCE\(\s*\?\s*,\s*(.+?)\s*\)/i);
+                    if (coalesceMatch) {
+                      const defaultVal = coalesceMatch[1];
+                      const paramValue = setParams[setParamIdx++];
+                      // Extract the default value from the record (column name or literal)
+                      const defaultValUpper = defaultVal.trim().toUpperCase();
+                      if (defaultValUpper === 'NULL') {
+                        setValues[col] = paramValue !== undefined && paramValue !== null ? paramValue : null;
+                      } else if (defaultVal.trim().match(/^\d+$/)) {
+                        setValues[col] = paramValue !== undefined && paramValue !== null ? paramValue : Number(defaultVal.trim());
+                      } else if (defaultVal.trim().startsWith("'") && defaultVal.trim().endsWith("'")) {
+                        setValues[col] = paramValue !== undefined && paramValue !== null ? paramValue : defaultVal.trim().slice(1, -1);
+                      } else {
+                        // Column reference - look up in existing record
+                        const defaultCol = defaultVal.replace(/;/g, '').trim();
+                        const existing = table.get(Number(targetId));
+                        setValues[col] = paramValue !== undefined && paramValue !== null ? paramValue : (existing?.[defaultCol]);
+                      }
+                    }
                   }
                 }
               });
