@@ -403,11 +403,13 @@ export function createMockDatabase(): MockDatabase {
           };
         }
 
-        // Handle JOIN queries - join reminders/tasks or task_shares/users
+        // Handle JOIN queries - join reminders/tasks, templates/categories, task_shares/users
         if (lowerSql.includes("join")) {
           // Parse the JOIN types
           const hasRemindersJoin = lowerSql.includes("join tasks t on r.task_id = t.id");
           const hasTaskSharesJoin = lowerSql.includes("left join users u on");
+          // Check for template_categories join (for getTemplates with includeCategories)
+          const hasTemplatesJoin = lowerSql.includes("join template_categories tc");
           // Check for task_labels join (for getTaskRelations)
           const hasTaskLabelsJoin = lowerSql.includes("join task_labels tl on");
           const hasTaskDependenciesJoin = lowerSql.includes("join tasks t on");
@@ -436,6 +438,36 @@ export function createMockDatabase(): MockDatabase {
                     }));
                   })
                   .flat();
+              },
+            };
+          }
+
+          if (hasTemplatesJoin) {
+            // Handle templates join for getTemplates with includeCategories=true
+            // SELECT t.*, tc.name as category_name, tc.description as category_description
+            // FROM templates t LEFT JOIN template_categories tc ON t.category_id = tc.id
+            return {
+              run: () => ({ lastInsertRowid: 0, changes: 0 }),
+              get: () => undefined,
+              all: () => {
+                const templatesTable = tables.get("templates");
+                const categoriesTable = tables.get("template_categories");
+                const templates = templatesTable ? Array.from(templatesTable.values()) : [];
+                const categories = categoriesTable ? Array.from(categoriesTable.values()) : [];
+
+                return templates.map((t: Record<string, unknown>) => {
+                  // Find matching category by category_id
+                  const categoryId = t.category_id as number | undefined;
+                  const category = categoryId !== undefined && categoryId !== null
+                    ? categories.find((c: Record<string, unknown>) => c.id === categoryId)
+                    : undefined;
+
+                  return {
+                    ...t,
+                    category_name: category?.name ?? null,
+                    category_description: category?.description ?? null,
+                  };
+                });
               },
             };
           }
