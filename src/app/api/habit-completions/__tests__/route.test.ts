@@ -108,6 +108,19 @@ describe("Habit Completions API", () => {
       expect(response.status).toBe(200);
     });
 
+    it("should toggle off completion when one already exists", async () => {
+      // Create existing completion
+      testDb.prepare("INSERT INTO habit_completions (task_id, date) VALUES (?, ?)").run(1, "2024-01-15");
+
+      const request = createMockRequest("http://localhost/api/habit-completions", {
+        method: "POST",
+        body: { task_id: 1, date: "2024-01-15" },
+      });
+      const response = await route.POST(request);
+
+      expect(response.status).toBe(200);
+    });
+
     it("should handle errors gracefully", async () => {
       resetDb();
       setDb(createTestDb());
