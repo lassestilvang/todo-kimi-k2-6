@@ -58,12 +58,41 @@ describe("Templates Actions - Comprehensive Tests", () => {
       expect(result.length).toBeGreaterThanOrEqual(1);
     });
 
-    it("should return templates with categories when includeCategories is true", async () => {
-      db.prepare("INSERT INTO templates (id, name, category_id) VALUES (?, ?, ?)").run(2, "Template 2", 1);
-      db.prepare("INSERT INTO template_categories (id, name) VALUES (?, ?)").run(1, "Work");
+    it("should return templates with categories when includeCategories is true and map row to template (line 17)", async () => {
+      // Insert a category first
+      db.exec("INSERT INTO template_categories (id, name, description) VALUES (1, 'Category A', 'Test category')");
 
+      // Insert a template with a matching category_id
+      db.exec("INSERT INTO templates (id, name, category_id) VALUES (42, 'Mapped Template', 1)");
+
+      // Call getTemplates(true) which should hit line 17 with the map callback
       const result = await getTemplates(true);
-      expect(Array.isArray(result)).toBe(true);
+
+      // Find our template by id (there may be other templates from other tests)
+      const mappedTemplate = result.find((t: any) => t.id === 42);
+      expect(mappedTemplate).toBeDefined();
+      expect(mappedTemplate!.name).toBe("Mapped Template");
+
+      // Verify the category was properly mapped (tests line 17-34)
+      expect(mappedTemplate!.category).toBeDefined();
+      expect(mappedTemplate!.category!.name).toBe("Category A");
+      expect(mappedTemplate!.category!.id).toBe(1);
+    });
+
+    it("should return templates without category when category_id is null (LEFT JOIN with NULL)", async () => {
+      // Insert a template WITHOUT a category_id
+      db.exec("INSERT INTO templates (id, name, category_id) VALUES (99, 'Template Without Category', NULL)");
+
+      // Call getTemplates(true) which hits line 17
+      const result = await getTemplates(true);
+
+      // Find our template
+      const template = result.find((t: any) => t.id === 99);
+      expect(template).toBeDefined();
+      expect(template!.name).toBe("Template Without Category");
+
+      // Category should be undefined (not defined) because category_id was NULL
+      expect(template!.category).toBeUndefined();
     });
 
     it("should order templates by name ascending", async () => {
