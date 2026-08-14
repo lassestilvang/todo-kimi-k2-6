@@ -1,4 +1,4 @@
-import { vi } from "vitest";
+import { vi, describe, it, expect } from "vitest";
 import type { BatchOperation, BatchOperationResult } from "../tasks";
 
 // Mock the database and session
@@ -13,20 +13,29 @@ vi.mock("@/lib/session", () => ({
   getCurrentUser: vi.fn(() => Promise.resolve({ id: 1, email: "test@test.com" })),
 }));
 
-vi.mock("../tasks", () => ({
-  performBatchOperation: vi.fn(async (operation: BatchOperation) => {
-    // Simple mock implementation - handle reorder differently
-    if (operation.type === "reorder") {
-      const ids = operation.orders.map(o => o.id);
-      return { success: true, affectedCount: ids.length };
-    }
-    const ids = "ids" in operation ? operation.ids : [];
-    if (ids.length === 0) {
-      return { success: true, affectedCount: 0 };
-    }
-    return { success: true, affectedCount: ids.length };
-  }),
+vi.mock("../realtime", () => ({
+  broadcastTaskUpdate: vi.fn(),
+  logActivity: vi.fn(),
 }));
+
+vi.mock("../tasks", async (importOriginal) => {
+  const original = await importOriginal<typeof import("../tasks")>();
+  return {
+    ...original,
+    performBatchOperation: vi.fn(async (operation: BatchOperation) => {
+      // Simple mock implementation - handle reorder differently
+      if (operation.type === "reorder") {
+        const ids = operation.orders.map(o => o.id);
+        return { success: true, affectedCount: ids.length };
+      }
+      const ids = "ids" in operation ? operation.ids : [];
+      if (ids.length === 0) {
+        return { success: true, affectedCount: 0 };
+      }
+      return { success: true, affectedCount: ids.length };
+    }),
+  };
+});
 
 describe("Batch Operations", () => {
   describe("performBatchOperation", () => {
