@@ -13,6 +13,7 @@ TaskFlow Labs is an experimental playground for AI-powered productivity features
 **Purpose:** Create and manage AI-generated decision templates for structured decision-making.
 
 **Key Features:**
+
 - Save AI-generated templates for reuse
 - Search and organize by decision type
 - Apply templates to tasks with placeholder substitution
@@ -21,6 +22,7 @@ TaskFlow Labs is an experimental playground for AI-powered productivity features
 **API Endpoint:** `POST /api/decision-templates`
 
 **Decision Types:**
+
 - Priority Decision - For determining task priority
 - Approach Decision - For choosing implementation strategies
 - Tool Selection - For selecting tools for tasks
@@ -33,6 +35,7 @@ TaskFlow Labs is an experimental playground for AI-powered productivity features
 **Purpose:** Generate and manage project plans using AI.
 
 **Key Features:**
+
 - AI generates project phases from natural language
 - Gantt-style timeline visualization
 - Progress tracking per phase
@@ -45,6 +48,7 @@ TaskFlow Labs is an experimental playground for AI-powered productivity features
 **Purpose:** Automatically track skill development through completed tasks.
 
 **Key Features:**
+
 - Skill extraction from task keywords
 - Proficiency levels (1-5 scale)
 - Skill diversity metrics
@@ -55,6 +59,7 @@ TaskFlow Labs is an experimental playground for AI-powered productivity features
 **Purpose:** Compare AI model performance on task parsing.
 
 **Key Features:**
+
 - Side-by-side model comparison
 - Response time metrics
 - Success rate tracking
@@ -67,6 +72,7 @@ TaskFlow Labs is an experimental playground for AI-powered productivity features
 **Purpose:** Optimize task scheduling based on energy patterns.
 
 **Key Features:**
+
 - Energy level logging by time of day
 - Smart scheduling suggestions
 - Flow protection indicators
@@ -77,6 +83,7 @@ TaskFlow Labs is an experimental playground for AI-powered productivity features
 **Purpose:** Capture learnings from completed tasks.
 
 **Key Features:**
+
 - What went well reflection
 - Key insights capture
 - Improvement suggestions
@@ -85,14 +92,14 @@ TaskFlow Labs is an experimental playground for AI-powered productivity features
 
 ## Pages
 
-| Route | Component | Purpose |
-|-------|-----------|---------|
-| `/labs` | LabsPage | Main dashboard |
-| `/labs/ai-parsing` | TaskFlowLabs | AI comparison |
-| `/labs/project-planning` | ProjectPlanningDashboard | Project planning |
-| `/labs/skills` | SkillsGrowthTracker | Skill tracking |
-| `/labs/energy` | EnergyScheduler | Energy optimization |
-| `/labs/stories` | TaskSuccessStories | Learning journal |
+| Route                    | Component                | Purpose             |
+| ------------------------ | ------------------------ | ------------------- |
+| `/labs`                  | LabsPage                 | Main dashboard      |
+| `/labs/ai-parsing`       | TaskFlowLabs             | AI comparison       |
+| `/labs/project-planning` | ProjectPlanningDashboard | Project planning    |
+| `/labs/skills`           | SkillsGrowthTracker      | Skill tracking      |
+| `/labs/energy`           | EnergyScheduler          | Energy optimization |
+| `/labs/stories`          | TaskSuccessStories       | Learning journal    |
 
 ## Integration Patterns
 
@@ -108,6 +115,7 @@ All new components follow these patterns:
 ## Testing
 
 Components should be tested for:
+
 - Rendering without props
 - Interaction handling (buttons, forms)
 - API response handling
@@ -124,6 +132,7 @@ Components should be tested for:
 ## Accessibility
 
 All components should:
+
 - Use semantic HTML
 - Have proper ARIA labels
 - Support keyboard navigation
