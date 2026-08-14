@@ -119,7 +119,7 @@ describe('Cognitive Load API', () => {
       const applyMiddleware = (await import('@/lib/api-middleware')).applyMiddleware;
       vi.mocked(applyMiddleware).mockImplementationOnce(async () => ({
         error: new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 }),
-        headers: new Headers(),
+        headers: {},
       }));
 
       const request = createMockRequest('/api/enhanced-productivity/cognitive-load', 'GET');
@@ -170,7 +170,7 @@ describe('Cognitive Load API', () => {
       const applyMiddleware = (await import('@/lib/api-middleware')).applyMiddleware;
       vi.mocked(applyMiddleware).mockImplementationOnce(async () => ({
         error: new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403 }),
-        headers: new Headers(),
+        headers: {},
       }));
 
       const request = createMockRequest('/api/enhanced-productivity/cognitive-load', 'POST', {
