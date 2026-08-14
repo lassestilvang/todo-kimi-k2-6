@@ -7,26 +7,40 @@ test.describe('Task Management', () => {
 
   test('should create a task with all fields', async ({ page }) => {
     await page.click('button:has(Plus)');
-    await page.fill('input[placeholder="What needs to be done?"]', 'Complete Task');
-    await page.fill('textarea[placeholder="Add description..."]', 'This is a test description');
+    await page.fill(
+      'input[placeholder="What needs to be done?"]',
+      'Complete Task'
+    );
+    await page.fill(
+      'textarea[placeholder="Add description..."]',
+      'This is a test description'
+    );
     await page.click('button:text("Create Task")');
     await expect(page.getByText('Complete Task')).toBeVisible();
   });
 
   test('should mark task as complete', async ({ page }) => {
     await page.click('button:has(Plus)');
-    await page.fill('input[placeholder="What needs to be done?"]', 'Task to complete');
+    await page.fill(
+      'input[placeholder="What needs to be done?"]',
+      'Task to complete'
+    );
     await page.click('button:text("Create Task")');
 
     // Toggle completion
     const checkbox = page.locator('[data-state="unchecked"]').first();
     await checkbox.click();
-    await expect(page.getByText('Task to complete')).toHaveClass(/line-through/);
+    await expect(page.getByText('Task to complete')).toHaveClass(
+      /line-through/
+    );
   });
 
   test('should delete a task', async ({ page }) => {
     await page.click('button:has(Plus)');
-    await page.fill('input[placeholder="What needs to be done?"]', 'Task to delete');
+    await page.fill(
+      'input[placeholder="What needs to be done?"]',
+      'Task to delete'
+    );
     await page.click('button:text("Create Task")');
 
     await page.hover('text=Task to delete');
@@ -36,10 +50,16 @@ test.describe('Task Management', () => {
 
   test('should search tasks', async ({ page }) => {
     await page.click('button:has(Plus)');
-    await page.fill('input[placeholder="What needs to be done?"]', 'Unique Search Task');
+    await page.fill(
+      'input[placeholder="What needs to be done?"]',
+      'Unique Search Task'
+    );
     await page.click('button:text("Create Task")');
 
-    await page.fill('input[placeholder="Search tasks... (/)"]', 'Unique Search');
+    await page.fill(
+      'input[placeholder="Search tasks... (/)"]',
+      'Unique Search'
+    );
     await expect(page.getByText('Unique Search Task')).toBeVisible();
   });
 
@@ -75,7 +95,9 @@ test.describe('Navigation', () => {
 
   test('should navigate to all tasks view', async ({ page }) => {
     await page.click('button:has(LayoutGrid)');
-    await expect(page.getByRole('heading', { name: 'All Tasks' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'All Tasks' })
+    ).toBeVisible();
   });
 
   test('should navigate to upcoming view', async ({ page }) => {
