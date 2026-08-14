@@ -436,21 +436,18 @@ describe("Task Actions - Comprehensive Tests", () => {
 
         const subtaskId = createdTask.subtasks[0].id;
 
-        // Save original NODE_ENV
-        const originalEnv = process.env.NODE_ENV;
+        // Fix NODE_ENV read-only issue
+        Object.defineProperty(process.env, 'NODE_ENV', {
+          writable: true,
+          configurable: true,
+          enumerable: true,
+          value: "production",
+        });
 
-        try {
-          // Set to production to trigger the access check
-          process.env.NODE_ENV = "production";
-
-          // This should succeed because we're testing the function exists
-          // The actual access check would happen with real DB data
-          const result = await toggleSubtask(subtaskId);
-          expect(result).toBeDefined();
-        } finally {
-          // Restore NODE_ENV
-          process.env.NODE_ENV = originalEnv;
-        }
+        // This should succeed because we're testing the function exists
+        // The actual access check would happen with real DB data
+        const result = await toggleSubtask(subtaskId);
+        expect(result).toBeDefined();
       });
     });
 
