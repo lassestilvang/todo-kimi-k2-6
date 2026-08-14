@@ -5,7 +5,7 @@ on:
     branches: [main, develop]
   pull_request:
     branches: [main]
-  workflow_dispatch:  # Allow manual runs
+  workflow_dispatch: # Allow manual runs
 
 jobs:
   lint:
@@ -22,7 +22,7 @@ jobs:
       - name: Run ESLint
         run: npm run lint
       - name: Check formatting
-        run: npm run format:check || true  # Non-blocking
+        run: npm run format:check || true # Non-blocking
 
   test:
     needs: lint
