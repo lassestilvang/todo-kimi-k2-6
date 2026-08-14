@@ -134,7 +134,7 @@ describe('NextAuth Configuration', () => {
 
     it('handles missing access_token in account', () => {
       const token: any = {};
-      const account = null;
+      const account: { access_token?: string; refresh_token?: string; expires_at?: number; provider?: string } | null = null;
       const user = {
         id: 1,
         name: 'Test User',
@@ -142,7 +142,7 @@ describe('NextAuth Configuration', () => {
         image: 'https://example.com/avatar.png',
       };
 
-      if (account?.access_token && user?.id) {
+      if ((account as any)?.access_token && user?.id) {
         // This won't execute
       }
 
@@ -152,13 +152,13 @@ describe('NextAuth Configuration', () => {
 
     it('handles missing user id', () => {
       const token: any = {};
-      const account = {
+      const account: any = {
         access_token: 'test-access-token',
         refresh_token: 'test-refresh-token',
         expires_at: 1234567890,
         provider: 'google',
       };
-      const user = null;
+      const user: any = null;
 
       if (account?.access_token && user?.id) {
         // This won't execute due to user being null
@@ -218,7 +218,13 @@ describe('NextAuth Configuration', () => {
           image: '',
         },
       };
-      const token = {
+      const token: {
+        refreshToken?: string;
+        expiresAt?: number;
+        provider?: string;
+        accessToken?: string;
+        user?: { id?: string; name?: string; email?: string; image?: string };
+      } = {
         refreshToken: 'refresh-token',
         expiresAt: 1234567890,
         provider: 'google',
