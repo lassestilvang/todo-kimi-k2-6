@@ -42,26 +42,26 @@ e2e/                        # End-to-end tests (Playwright)
 
 ## Coverage Requirements
 
-| Metric | Threshold |
-|--------|-----------|
-| Statements | 80% |
-| Branches | 65% |
-| Functions | 78% |
-| Lines | 80% |
+| Metric     | Threshold |
+| ---------- | --------- |
+| Statements | 80%       |
+| Branches   | 65%       |
+| Functions  | 78%       |
+| Lines      | 80%       |
 
 ## Writing Tests
 
 ### Unit Test Template
 
 ```typescript
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach } from 'vitest';
 
-describe("Feature Under Test", () => {
-  it("should handle valid input", () => {
+describe('Feature Under Test', () => {
+  it('should handle valid input', () => {
     expect(result).toBeDefined();
   });
 
-  it("should reject invalid input", () => {
+  it('should reject invalid input', () => {
     expect(() => fn()).toThrow();
   });
 });
@@ -70,11 +70,11 @@ describe("Feature Under Test", () => {
 ### API Route Test Template
 
 ```typescript
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { createTestDb } from "@/lib/db/test-db";
-import { setDb, resetDb } from "@/lib/db";
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { createTestDb } from '@/lib/db/test-db';
+import { setDb, resetDb } from '@/lib/db';
 
-describe("API Route Tests", () => {
+describe('API Route Tests', () => {
   beforeEach(() => {
     resetDb();
     setDb(createTestDb());
@@ -91,6 +91,7 @@ describe("API Route Tests", () => {
 ## CI/CD Integration
 
 Tests run automatically on:
+
 - Every push to main branch
 - Every pull request
 - On merge to main
