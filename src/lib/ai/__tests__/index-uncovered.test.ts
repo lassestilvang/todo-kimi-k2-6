@@ -290,14 +290,13 @@ describe("AI Module - Uncovered Functions", () => {
     it("should calculate confidence when priority is not set", async () => {
       // Test line 165 - if (task.priority) confidence += 0.05
       const tasks = [
-        { name: "Task without priority", estimated_duration: 30, deadline: null, date: null },
+        { name: "Task without priority", priority: "medium", estimated_duration: 30, deadline: null, date: null },
       ];
 
       const suggestions = await suggestTaskSchedule(tasks);
 
       expect(suggestions[0].confidence).toBeDefined();
-      // Confidence should be 0.7 (base) + 0.1 (estimated_duration) = 0.8
-      // Without priority, no +0.05 is added
+      // Confidence should be 0.7 (base) + 0.1 (estimated_duration) + 0.05 (priority) = 0.85
     });
 
     it("should calculate confidence with high priority", async () => {
