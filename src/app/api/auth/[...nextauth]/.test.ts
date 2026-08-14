@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Set up test environment first
 (process.env as any).NODE_ENV = "test";
@@ -34,6 +34,10 @@ vi.mock("@/lib/config", () => ({
       secret: "test-secret-key-for-testing",
     },
   },
+}));
+
+vi.mock("@/lib/auth", () => ({
+  comparePassword: vi.fn().mockResolvedValue(true),
 }));
 
 // Import after mocks are set up
@@ -120,6 +124,110 @@ describe("NextAuth Configuration", () => {
       expect(authOptions.pages).toBeDefined();
       expect(authOptions.callbacks).toBeDefined();
       expect(authOptions.secret).toBeDefined();
+    });
+  });
+
+  describe("authorize function coverage (lines 17-38 of config.ts)", () => {
+    it("should return null when email is missing (line 21-23)", async () => {
+      const { authOptions } = await import("./config");
+      const provider = authOptions.providers[0];
+      const result = await (provider as any).authorize({ password: "test123" });
+      expect(result).toBeNull();
+    });
+
+    it("should return null when password is missing (line 21-23)", async () => {
+      const { authOptions } = await import("./config");
+      const provider = authOptions.providers[0];
+      const result = await (provider as any).authorize({ email: "test@example.com" });
+      expect(result).toBeNull();
+    });
+
+    it("should return null when both are missing (line 21-23)", async () => {
+      const { authOptions } = await import("./config");
+      const provider = authOptions.providers[0];
+      const result = await (provider as any).authorize({});
+      expect(result).toBeNull();
+    });
+
+    it("should return null when user not found in database (line 29-31)", async () => {
+      const getDb = (await import("@/lib/db")).getDb;
+      (getDb as any).mockReturnValue({
+        prepare: vi.fn().mockReturnValue({
+          get: vi.fn().mockReturnValue(null),
+        }),
+      });
+
+      const { authOptions } = await import("./config");
+      const provider = authOptions.providers[0];
+      const result = await (provider as any).authorize({ email: "test@example.com", password: "test123" });
+      expect(result).toBeNull();
+    });
+
+    it("should return null when password is invalid (line 33-36)", async () => {
+      const { authOptions } = await import("./config");
+      const provider = authOptions.providers[0];
+      // The comparePassword mock returns true, but we need to test the path where it returns false
+      const comparePassword = (await import("@/lib/auth")).comparePassword;
+      (comparePassword as any).mockResolvedValueOnce(false);
+
+      const getDb = (await import("@/lib/db")).getDb;
+      (getDb as any).mockReturnValue({
+        prepare: vi.fn().mockReturnValue({
+          get: vi.fn().mockReturnValue({
+            id: 1,
+            email: "test@example.com",
+            name: "Test User",
+            password_hash: "hashed",
+          }),
+        }),
+      });
+
+      const result = await (provider as any).authorize({ email: "test@example.com", password: "wrong" });
+      expect(result).toBeNull();
+    });
+
+    it("should return user object when valid (line 38-43)", async () => {
+      const { authOptions } = await import("./config");
+      const provider = authOptions.providers[0];
+
+      const getDb = (await import("@/lib/db")).getDb;
+      (getDb as any).mockReturnValue({
+        prepare: vi.fn().mockReturnValue({
+          get: vi.fn().mockReturnValue({
+            id: 1,
+            email: "test@example.com",
+            name: "Test User",
+            avatar_url: "https://example.com/avatar.png",
+            password_hash: "hashed",
+          }),
+        }),
+      });
+
+      const result = await (provider as any).authorize({ email: "test@example.com", password: "test123" });
+      expect(result).toBeDefined();
+      expect(result.id).toBe("1");
+      expect(result.email).toBe("test@example.com");
+      expect(result.name).toBe("Test User");
+      expect(result.image).toBe("https://example.com/avatar.png");
+    });
+
+    it("should return null when password_hash is missing (line 31-32)", async () => {
+      const { authOptions } = await import("./config");
+      const provider = authOptions.providers[0];
+
+      const getDb = (await import("@/lib/db")).getDb;
+      (getDb as any).mockReturnValue({
+        prepare: vi.fn().mockReturnValue({
+          get: vi.fn().mockReturnValue({
+            id: 1,
+            email: "test@example.com",
+            name: "Test User",
+          }),
+        }),
+      });
+
+      const result = await (provider as any).authorize({ email: "test@example.com", password: "test123" });
+      expect(result).toBeNull();
     });
   });
 });
