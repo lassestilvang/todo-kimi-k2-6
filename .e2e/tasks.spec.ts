@@ -20,7 +20,10 @@ test.describe('Task Management', () => {
   test('should toggle task completion', async ({ page }) => {
     // Create a task
     await page.click('button:has(Plus)');
-    await page.fill('input[placeholder="What needs to be done?"]', 'Toggle Task');
+    await page.fill(
+      'input[placeholder="What needs to be done?"]',
+      'Toggle Task'
+    );
     await page.click('button:text("Create Task")');
 
     // Complete the task
@@ -35,7 +38,10 @@ test.describe('Task Management', () => {
   test('should delete a task', async ({ page }) => {
     // Create a task
     await page.click('button:has(Plus)');
-    await page.fill('input[placeholder="What needs to be done?"]', 'Delete Task');
+    await page.fill(
+      'input[placeholder="What needs to be done?"]',
+      'Delete Task'
+    );
     await page.click('button:text("Create Task")');
     await expect(page.getByText('Delete Task')).toBeVisible();
 
@@ -48,7 +54,10 @@ test.describe('Task Management', () => {
   test('should search tasks', async ({ page }) => {
     // Create a task
     await page.click('button:has(Plus)');
-    await page.fill('input[placeholder="What needs to be done?"]', 'Searchable Task');
+    await page.fill(
+      'input[placeholder="What needs to be done?"]',
+      'Searchable Task'
+    );
     await page.click('button:text("Create Task")');
 
     // Search for the task
@@ -61,7 +70,9 @@ test.describe('Task Management', () => {
     await expect(page.getByRole('heading', { name: 'Calendar' })).toBeVisible();
 
     await page.click('button:has(LayoutGrid)');
-    await expect(page.getByRole('heading', { name: 'All Tasks' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'All Tasks' })
+    ).toBeVisible();
   });
 });
 
@@ -95,6 +106,8 @@ test.describe('Keyboard Shortcuts', () => {
   test('should focus search with slash', async ({ page }) => {
     await page.goto('/');
     await page.keyboard.press('/');
-    await expect(page.locator('input[placeholder="Search tasks..."]')).toBeFocused();
+    await expect(
+      page.locator('input[placeholder="Search tasks..."]')
+    ).toBeFocused();
   });
 });
