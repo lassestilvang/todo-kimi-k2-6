@@ -40,7 +40,10 @@ test.describe('Bulk Operations', () => {
   test('should show bulk actions when tasks selected', async ({ page }) => {
     // Create a task first
     await page.click('button:has(Plus)');
-    await page.fill('input[placeholder="What needs to be done?"]', 'Bulk Test Task');
+    await page.fill(
+      'input[placeholder="What needs to be done?"]',
+      'Bulk Test Task'
+    );
     await page.click('button:text("Create Task")');
 
     // Select the task
