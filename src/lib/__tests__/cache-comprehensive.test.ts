@@ -231,4 +231,149 @@ describe("Cache Module - Comprehensive Tests", () => {
       expect(stats.size).toBe(1);
     });
   });
+
+  describe("taskCache.user", () => {
+    it("should generate correct key for user", () => {
+      expect(cacheModule.taskCache.user.key(123)).toBe("user:123");
+      expect(cacheModule.taskCache.user.key(1)).toBe("user:1");
+    });
+
+    it("should set and get user cache", async () => {
+      const userData = { id: 1, name: "Test User", email: "test@example.com" };
+      await cacheModule.taskCache.user.set(1, userData);
+      expect(await cacheModule.taskCache.user.get(1)).toEqual(userData);
+    });
+
+    it("should return null for non-existent user cache", async () => {
+      expect(await cacheModule.taskCache.user.get(999)).toBeNull();
+    });
+
+    it("should invalidate user cache and related task caches", async () => {
+      await cacheModule.taskCache.user.set(1, { id: 1, name: "User" });
+      await cacheModule.taskCache.tasks.set("all", [{ id: 1 }]);
+
+      await cacheModule.taskCache.user.invalidate(1);
+
+      expect(await cacheModule.taskCache.user.get(1)).toBeNull();
+      // Tasks cache should also be invalidated
+      expect(await cacheModule.taskCache.tasks.get("all")).toBeNull();
+    });
+  });
+
+  describe("taskCache.workspace", () => {
+    it("should generate correct key for workspace", () => {
+      expect(cacheModule.taskCache.workspace.key(1)).toBe("workspace:1");
+      expect(cacheModule.taskCache.workspace.key(42)).toBe("workspace:42");
+    });
+
+    it("should have correct key generation method", () => {
+      const key = cacheModule.taskCache.workspace.key(123);
+      expect(key).toBe("workspace:123");
+    });
+
+    it("should set and get workspace cache", async () => {
+      const workspaceData = { id: 1, name: "Team Alpha", members: [1, 2, 3] };
+      await cacheModule.taskCache.workspace.set(1, workspaceData);
+      expect(await cacheModule.taskCache.workspace.get(1)).toEqual(workspaceData);
+    });
+
+    it("should return null for non-existent workspace cache", async () => {
+      expect(await cacheModule.taskCache.workspace.get(999)).toBeNull();
+    });
+
+    it("should invalidate workspace cache", async () => {
+      await cacheModule.taskCache.workspace.set(1, { id: 1, name: "Test" });
+      await cacheModule.taskCache.workspace.invalidate(1);
+      expect(await cacheModule.taskCache.workspace.get(1)).toBeNull();
+    });
+  });
+
+  describe("taskCache.aiResponses", () => {
+    it("should generate correct key for AI prompt", () => {
+      const key = cacheModule.taskCache.aiResponses.key("test prompt");
+      expect(key).toMatch(/^ai:/);
+    });
+
+    it("should set and get AI responses", async () => {
+      const response = { name: "Task from AI", priority: "high" };
+      await cacheModule.taskCache.aiResponses.set("Create a task called 'Test'", response);
+
+      const key = cacheModule.taskCache.aiResponses.key("Create a task called 'Test'");
+      expect(await cacheModule.taskCache.aiResponses.get("Create a task called 'Test'")).toEqual(response);
+    });
+
+    it("should return null for non-existent AI response", async () => {
+      expect(await cacheModule.taskCache.aiResponses.get("nonexistent prompt")).toBeNull();
+    });
+
+    it("should invalidate specific AI response", async () => {
+      const prompt = "test prompt";
+      await cacheModule.taskCache.aiResponses.set(prompt, { result: "data" });
+      await cacheModule.taskCache.aiResponses.invalidate(prompt);
+      expect(await cacheModule.taskCache.aiResponses.get(prompt)).toBeNull();
+    });
+  });
+
+  describe("taskCache.integrations", () => {
+    it("should generate correct key for user integrations", () => {
+      expect(cacheModule.taskCache.integrations.key(1)).toBe("integrations:1");
+    });
+
+    it("should set and get user integrations", async () => {
+      const integrations = [{ type: "google-calendar", enabled: true }];
+      await cacheModule.taskCache.integrations.set(1, integrations);
+      expect(await cacheModule.taskCache.integrations.get(1)).toEqual(integrations);
+    });
+
+    it("should return null for non-existent integrations", async () => {
+      expect(await cacheModule.taskCache.integrations.get(999)).toBeNull();
+    });
+
+    it("should invalidate integrations cache", async () => {
+      await cacheModule.taskCache.integrations.set(1, []);
+      await cacheModule.taskCache.integrations.invalidate(1);
+      expect(await cacheModule.taskCache.integrations.get(1)).toBeNull();
+    });
+  });
+
+  describe("taskCache.decisions", () => {
+    it("should generate correct key for user decisions", () => {
+      expect(cacheModule.taskCache.decisions.key(1)).toBe("decisions:1");
+    });
+
+    it("should set and get user decisions", async () => {
+      const decisions = [{ id: 1, question: "What to work on?" }];
+      await cacheModule.taskCache.decisions.set(1, decisions);
+      expect(await cacheModule.taskCache.decisions.get(1)).toEqual(decisions);
+    });
+
+    it("should return null for non-existent decisions", async () => {
+      expect(await cacheModule.taskCache.decisions.get(999)).toBeNull();
+    });
+
+    it("should invalidate decisions cache", async () => {
+      await cacheModule.taskCache.decisions.set(1, []);
+      await cacheModule.taskCache.decisions.invalidate(1);
+      expect(await cacheModule.taskCache.decisions.get(1)).toBeNull();
+    });
+  });
+
+  describe("aiCache", () => {
+    it("should get AI cache through taskCache.aiResponses", async () => {
+      const response = { name: "Parsed task" };
+      await cacheModule.aiCache.set("AI parsing request", response);
+
+      const result = await cacheModule.aiCache.get("AI parsing request");
+      expect(result).toEqual(response);
+    });
+
+    it("should clear AI cache", async () => {
+      await cacheModule.aiCache.set("prompt1", { data: 1 });
+      await cacheModule.aiCache.set("prompt2", { data: 2 });
+      await cacheModule.aiCache.clear();
+
+      // After clearing, individual prompts should not be cached
+      expect(await cacheModule.aiCache.get("prompt1")).toBeNull();
+    });
+  });
 });
