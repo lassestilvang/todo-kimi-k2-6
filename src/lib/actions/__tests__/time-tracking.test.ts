@@ -150,5 +150,61 @@ describe("Time Tracking Actions", () => {
 
       expect(summary.totalSeconds).toBe(3600);
     });
+
+    it("should display 'Unknown' for task without matching record (line 58)", async () => {
+      const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+
+      // Insert time entry for task_id 999 which doesn't exist in tasks table
+      db.prepare(`
+        INSERT INTO time_entries (task_id, duration_seconds, created_at)
+        VALUES (?, ?, ?)
+      `).run(999, 3600, weekAgo);
+
+      const summary = await getWeeklyTimeSummary();
+
+      // Should have topTasks with Unknown task name
+      expect(summary.topTasks).toBeDefined();
+      expect(summary.topTasks.length).toBeGreaterThan(0);
+      expect(summary.topTasks[0].taskName).toBe("Unknown");
+    });
+
+    it("should handle multiple entries for same task in reduce (line 85)", async () => {
+      const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+
+      // Insert multiple entries for same task
+      db.prepare(`
+        INSERT INTO time_entries (task_id, duration_seconds, created_at)
+        VALUES (?, ?, ?)
+      `).run(1, 1800, weekAgo);
+
+      db.prepare(`
+        INSERT INTO time_entries (task_id, duration_seconds, created_at)
+        VALUES (?, ?, ?)
+      `).run(1, 1800, weekAgo);
+
+      const summary = await getWeeklyTimeSummary();
+
+      expect(summary.totalSeconds).toBe(3600);
+    });
+
+    it("should populate byDay map (lines 80-81)", async () => {
+      const today = new Date().toISOString().split("T")[0];
+      const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+
+      db.prepare(`
+        INSERT INTO time_entries (task_id, duration_seconds, created_at)
+        VALUES (?, ?, ?)
+      `).run(1, 1800, today);
+
+      db.prepare(`
+        INSERT INTO time_entries (task_id, duration_seconds, created_at)
+        VALUES (?, ?, ?)
+      `).run(2, 1800, yesterday);
+
+      const summary = await getWeeklyTimeSummary();
+
+      // Should have byDay populated
+      expect(Object.keys(summary.byDay).length).toBeGreaterThan(0);
+    });
   });
 });
