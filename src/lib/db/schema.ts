@@ -464,6 +464,155 @@ export function setupSchema(db: Database): void {
     );
   `);
 
+  // Cognitive Load Logs table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS cognitive_load_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      date TEXT NOT NULL,
+      task_count INTEGER DEFAULT 0,
+      completed_count INTEGER DEFAULT 0,
+      avg_time_to_complete REAL,
+      energy_level INTEGER,
+      distraction_score REAL,
+      focus_blocks INTEGER DEFAULT 0,
+      interruption_count INTEGER DEFAULT 0,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(user_id, date)
+    );
+  `);
+
+  // Energy Budget Logs table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS energy_budget_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      date TEXT NOT NULL,
+      energy_spent INTEGER DEFAULT 0,
+      energy_recovered INTEGER DEFAULT 0,
+      current_balance INTEGER DEFAULT 100,
+      activities TEXT,
+      recovery_activities TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  // User Energy Profiles table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS user_energy_profiles (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      wake_hour INTEGER DEFAULT 7,
+      sleep_hour INTEGER DEFAULT 23,
+      work_start_hour INTEGER DEFAULT 9,
+      work_end_hour INTEGER DEFAULT 17,
+      peak_energy_times TEXT,
+      energy_levels TEXT,
+      fatigue_sensitivity INTEGER DEFAULT 5,
+      recovery_time_minutes INTEGER DEFAULT 15,
+      preferred_break_duration INTEGER DEFAULT 5,
+      energy_budget_daily INTEGER DEFAULT 100,
+      recovery_activities TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  // Cross-App Sync Connections table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS cross_app_sync_connections (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      app_type TEXT NOT NULL,
+      app_name TEXT NOT NULL,
+      sync_direction TEXT NOT NULL,
+      sync_frequency_minutes INTEGER DEFAULT 60,
+      field_mappings TEXT,
+      conflict_resolution_strategy TEXT DEFAULT 'prefer_latest',
+      enabled INTEGER DEFAULT 1,
+      run_count INTEGER DEFAULT 0,
+      last_run_at TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  // External Tasks table (for Smart Inbox sources)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS external_tasks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      external_id TEXT NOT NULL,
+      external_app_type TEXT NOT NULL,
+      title TEXT NOT NULL,
+      description TEXT,
+      due_date TEXT,
+      priority TEXT DEFAULT 'medium',
+      confidence INTEGER DEFAULT 50,
+      energy_cost_estimate INTEGER DEFAULT 5,
+      status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'processing', 'converted', 'dismissed')),
+      local_task_id INTEGER REFERENCES tasks(id) ON DELETE SET NULL,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  // Decision Shadows table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS decision_shadows (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      parent_task_id INTEGER REFERENCES tasks(id) ON DELETE SET NULL,
+      decision_type TEXT NOT NULL,
+      question TEXT NOT NULL,
+      chosen_option_id INTEGER,
+      chosen_option_text TEXT NOT NULL,
+      rationale TEXT,
+      opportunity_cost TEXT,
+      outcome TEXT,
+      outcome_notes TEXT,
+      outcome_rating INTEGER CHECK(outcome_rating BETWEEN -1 AND 1),
+      alternative_options TEXT,
+      time_spent_minutes INTEGER DEFAULT 0,
+      context_tags TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  // Mood Contexts table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS mood_contexts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      date TEXT NOT NULL,
+      mood INTEGER CHECK(mood BETWEEN 1 AND 5),
+      energy INTEGER CHECK(energy BETWEEN 1 AND 5),
+      stress INTEGER CHECK(stress BETWEEN 1 AND 5),
+      focus INTEGER CHECK(focus BETWEEN 1 AND 5),
+      notes TEXT,
+      tasks_filtered TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  // Socket Connections table (for WebSocket tracking)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS socket_connections (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      socket_id TEXT NOT NULL,
+      connected_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      last_activity_at TEXT,
+      user_agent TEXT,
+      INDEX idx_socket_user (user_id),
+      INDEX idx_socket_last_activity (last_activity_at)
+    );
+  `);
+
   // Workflow executions table for tracking runs
   db.exec(`
     CREATE TABLE IF NOT EXISTS workflow_executions (
