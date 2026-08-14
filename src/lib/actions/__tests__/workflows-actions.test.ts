@@ -108,7 +108,7 @@ describe("Workflow Actions", () => {
         trigger_type: "manual",
         action_type: "create_task",
         enabled: true,
-        action_config: JSON.stringify({ task_name: "Test" }),
+        action_config: { task_name: "Test" } as Record<string, unknown>,
       });
 
       expect(result.id).toBeDefined();
@@ -466,7 +466,7 @@ describe("Workflow Actions", () => {
         action_config: JSON.stringify({ task_name: "Test Task" }),
       };
 
-      const result = await executeAction(workflow);
+      const result = await executeAction(workflow) as { task_id: number; name: string; status: string };
       expect(result.task_id).toBeDefined();
       expect(result.status).toBe("created");
     });
@@ -482,7 +482,7 @@ describe("Workflow Actions", () => {
         action_config: JSON.stringify({ task_id: 1, completed: 1 }),
       };
 
-      const result = await executeAction(workflow);
+      const result = await executeAction(workflow) as { task_id: number; status: string };
       expect(result.task_id).toBe(1);
       expect(result.status).toBe("updated");
     });
@@ -495,7 +495,7 @@ describe("Workflow Actions", () => {
         action_config: JSON.stringify({ message: "Test notification", type: "info" }),
       };
 
-      const result = await executeAction(workflow);
+      const result = await executeAction(workflow) as { status: string; type: string };
       expect(result.status).toBe("sent");
       expect(result.type).toBe("info");
     });
@@ -508,7 +508,7 @@ describe("Workflow Actions", () => {
         action_config: JSON.stringify({ message: "Test log message", level: "info" }),
       };
 
-      const result = await executeAction(workflow);
+      const result = await executeAction(workflow) as { status: string; level: string };
       expect(result.status).toBe("logged");
     });
 
@@ -520,7 +520,7 @@ describe("Workflow Actions", () => {
         action_config: JSON.stringify({ url: "https://example.com/webhook" }),
       };
 
-      const result = await executeAction(workflow);
+      const result = await executeAction(workflow) as { status: string; response_code: number };
       expect(result.status).toBe("called");
       expect(result.response_code).toBe(200);
     });
@@ -533,7 +533,7 @@ describe("Workflow Actions", () => {
         action_config: JSON.stringify({ task_id: 1 }), // No updates provided
       };
 
-      const result = await executeAction(workflow);
+      const result = await executeAction(workflow) as { status: string };
       expect(result.status).toBe("no_updates");
     });
   });
