@@ -39,6 +39,7 @@ src/
 ## Key Features
 
 ### AI Assistant
+
 - Natural language task parsing
 - Priority detection
 - Due date extraction
@@ -47,6 +48,7 @@ src/
 - AI status indicator in UI
 
 ### Views
+
 - Today / Next 7 Days / Upcoming
 - Kanban Board
 - Gantt Chart
@@ -56,6 +58,7 @@ src/
 - AI Assistant
 
 ### Task Management
+
 - Recurring tasks with custom intervals
 - Time tracking with Pomodoro timer
 - Task dependencies (blockers)
@@ -65,12 +68,14 @@ src/
 - Task sharing with permissions
 
 ### Collaboration
+
 - Task sharing with view/edit permissions
 - Public share links
 - User comments on tasks
 - Activity timeline
 
 ### Analytics & Reporting
+
 - Completion rate tracking
 - Productivity dashboard
 - Time tracking reports
@@ -79,6 +84,7 @@ src/
 - Weekly goal tracking
 
 ### Focus & Productivity
+
 - Focus mode
 - Pomodoro timer
 - Keyboard shortcuts (cheat sheet)
@@ -101,15 +107,20 @@ npm run stryker      # Run mutation testing
 See `.env.example` for required environment variables.
 
 ### Authentication
+
 Set `NEXTAUTH_SECRET` for user authentication. Demo mode allows any email.
 
 ### AI Integration
+
 Set `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` for advanced AI features.
+
 - `OPENAI_MODEL` - Model to use (default: gpt-4o-mini)
 - `CLAUDE_MODEL` - Model to use (default: claude-3-5-sonnet-20241022)
 
 ### Calendar Sync
+
 Configure Google Calendar API credentials:
+
 1. Go to Google Cloud Console
 2. Create a new project or select existing
 3. Enable Calendar API
