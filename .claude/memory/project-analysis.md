@@ -12,6 +12,7 @@ metadata:
 TaskFlow is a comprehensive task management application built with Next.js 16, TypeScript, and Better-SQLite3. It includes:
 
 ### Core Features
+
 - Task CRUD operations with full relation support (labels, subtasks, reminders, comments)
 - List management with inbox support
 - Label system with color/emoji customization
@@ -22,6 +23,7 @@ TaskFlow is a comprehensive task management application built with Next.js 16, T
 - AI assistant for natural language task parsing
 
 ### Views
+
 - Today / Next 7 Days / Upcoming
 - Kanban Board
 - Gantt Chart
@@ -31,6 +33,7 @@ TaskFlow is a comprehensive task management application built with Next.js 16, T
 - Dependency Graph
 
 ### Technical Stack
+
 - SQLite with Better-SQLite3
 - Server Actions for mutations
 - React Hooks for state management
@@ -43,36 +46,42 @@ TaskFlow is a comprehensive task management application built with Next.js 16, T
 ## Areas for Improvement
 
 ### 1. Performance & Optimization
+
 - **Database queries**: Use connection pooling or prepared statement caching
 - **Batch operations**: Improve bulk update/delete with transactions
 - **Virtual scrolling**: Already using @tanstack/react-virtual - ensure it's applied consistently
 - **Image optimization**: Add next.config.js image config for attachment previews
 
 ### 2. User Experience
+
 - **Task preview**: Create a quick preview component for task details
 - **Keyboard navigation**: Enhance with vim-style navigation (already has some shortcuts)
 - **Focus mode**: Dedicated distraction-free view (partially implemented)
 - **Task quick edit**: Inline editing without opening modal
 
 ### 3. Collaboration Features
+
 - **Real-time updates**: Implement WebSocket or polling for multi-user scenarios
 - **Task assignments**: More robust assignee system with notifications
 - **Comments threading**: Nested replies to comments
 - **Activity timeline**: Consolidated view of all task changes
 
 ### 4. AI Enhancements
+
 - **Context awareness**: AI should consider all lists, not just default
 - **Batch task creation**: Parse multiple tasks from notes/bullet points
 - **Smart scheduling**: Consider user's work hours and preferences
 - **AI settings**: Let users configure which provider to use
 
 ### 5. Data Management
+
 - **Soft delete**: Add trash/archive instead of hard delete
 - **Audit log**: Comprehensive history of all changes
 - **Data validation**: Add more robust validation for dates, durations
 - **Export formats**: Add Markdown, iCalendar exports
 
 ### 6. Mobile Experience
+
 - **Touch gestures**: Swipe to complete, swipe to delete
 - **Offline first**: Full offline capability with sync when online
 - **Push notifications**: Native mobile notifications for reminders
@@ -80,6 +89,7 @@ TaskFlow is a comprehensive task management application built with Next.js 16, T
 ## New Feature Ideas
 
 ### High Priority
+
 1. **Task Reminders & Notifications**
    - Native browser notifications
    - Email reminders
@@ -95,6 +105,7 @@ TaskFlow is a comprehensive task management application built with Next.js 16, T
    - Task blocking visualization improvements
 
 ### Medium Priority
+
 4. **Time Tracking Enhancements**
    - Timer start/stop with activity detection
    - Time entry editing
@@ -111,6 +122,7 @@ TaskFlow is a comprehensive task management application built with Next.js 16, T
    - Progress charts
 
 ### Lower Priority
+
 7. **Theme Customization**
    - Multiple color schemes
    - Dark/light system preference
@@ -124,18 +136,21 @@ TaskFlow is a comprehensive task management application built with Next.js 16, T
 ## Technical Debt & Issues
 
 ### Code Quality
+
 - Add more comprehensive error handling
 - Improve TypeScript strictness
 - Add API response caching layer
 - Consider React Query or SWR for server state
 
 ### Testing
+
 - Increase test coverage for edge cases
 - Add integration tests for API routes
 - Add E2E tests for critical user flows
 - Mock AI providers in tests
 
 ### Documentation
+
 - Add JSDoc comments to exported functions
 - Create component storybook
 - Document API endpoints
