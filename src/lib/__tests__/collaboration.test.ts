@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   parseMentions,
   generateTaskShareLink,
@@ -10,6 +10,8 @@ import {
   generateSecureShareToken,
 } from "@/lib/collaboration";
 import type { TaskWithRelations, User } from "@/types";
+import { setDb, resetDb, getDb } from "@/lib/db";
+import { createTestDb } from "@/lib/db/test-db";
 
 function createMockTask(overrides: Partial<TaskWithRelations> = {}): TaskWithRelations {
   const now = new Date().toISOString();
@@ -196,6 +198,120 @@ describe("Collaboration utilities", () => {
       const otherUser: User = { id: 2, email: "other@example.com", name: "Other User", avatar_url: null, created_at: new Date().toISOString() };
       const result = canPerformAction(otherUser, mockTask);
       expect(result).toBe(true);
+    });
+  });
+
+  describe("canPerformAction with database permissions", () => {
+    let db: ReturnType<typeof createTestDb>;
+    const testTask: TaskWithRelations = createMockTask({ id: 1, created_by: 1 });
+
+    beforeEach(() => {
+      resetDb();
+      db = createTestDb();
+      setDb(db);
+
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS task_shares (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          task_id INTEGER,
+          user_id INTEGER,
+          permission TEXT,
+          shared_by INTEGER,
+          shared_at TEXT
+        )
+      `);
+
+      db.exec(`
+        INSERT INTO tasks (id, name, created_by) VALUES (1, 'Test Task', 1)
+      `);
+
+      db.exec(`
+        INSERT INTO users (id, email, name, created_at) VALUES (1, 'owner@example.com', 'Owner', '2024-01-01')
+      `);
+
+      db.exec(`
+        INSERT INTO users (id, email, name, created_at) VALUES (2, 'shared@example.com', 'Shared User', '2024-01-01')
+      `);
+    });
+
+    afterEach(() => {
+      resetDb();
+    });
+
+    it("should return true for edit permission (lines 148-152)", () => {
+      // Create a task share with edit permission
+      db.exec(`
+        INSERT INTO task_shares (task_id, user_id, permission, shared_by)
+        VALUES (1, 2, 'edit', 1)
+      `);
+
+      const sharedUser: User = { id: 2, email: "shared@example.com", name: "Shared User", avatar_url: null, created_at: new Date().toISOString() };
+      const result = canPerformAction(sharedUser, testTask, "edit");
+      expect(result).toBe(true);
+    });
+
+    it("should return false for edit permission with view only (lines 148-152)", () => {
+      // Create a task share with view permission only
+      db.exec(`
+        INSERT INTO task_shares (task_id, user_id, permission, shared_by)
+        VALUES (1, 2, 'view', 1)
+      `);
+
+      const sharedUser: User = { id: 2, email: "shared@example.com", name: "Shared User", avatar_url: null, created_at: new Date().toISOString() };
+      const result = canPerformAction(sharedUser, testTask, "edit");
+      expect(result).toBe(false);
+    });
+
+    it("should return false for delete permission with edit only (lines 154-156)", () => {
+      db.exec(`
+        INSERT INTO task_shares (task_id, user_id, permission, shared_by)
+        VALUES (1, 2, 'edit', 1)
+      `);
+
+      const sharedUser: User = { id: 2, email: "shared@example.com", name: "Shared User", avatar_url: null, created_at: new Date().toISOString() };
+      const result = canPerformAction(sharedUser, testTask, "delete");
+      expect(result).toBe(false);
+    });
+
+    it("should return true for delete permission with admin (lines 154-156)", () => {
+      // Create a task share with admin permission
+      db.exec(`
+        INSERT INTO task_shares (task_id, user_id, permission, shared_by)
+        VALUES (1, 2, 'admin', 1)
+      `);
+
+      const sharedUser: User = { id: 2, email: "shared@example.com", name: "Shared User", avatar_url: null, created_at: new Date().toISOString() };
+      const result = canPerformAction(sharedUser, testTask, "delete");
+      expect(result).toBe(true);
+    });
+
+    it("should return true for view with admin permission (lines 148-150)", () => {
+      db.exec(`
+        INSERT INTO task_shares (task_id, user_id, permission, shared_by)
+        VALUES (1, 2, 'admin', 1)
+      `);
+
+      const sharedUser: User = { id: 2, email: "shared@example.com", name: "Shared User", avatar_url: null, created_at: new Date().toISOString() };
+      const result = canPerformAction(sharedUser, testTask, "view");
+      expect(result).toBe(true);
+    });
+
+    it("should return true for edit with admin permission (lines 148-152)", () => {
+      db.exec(`
+        INSERT INTO task_shares (task_id, user_id, permission, shared_by)
+        VALUES (1, 2, 'admin', 1)
+      `);
+
+      const sharedUser: User = { id: 2, email: "shared@example.com", name: "Shared User", avatar_url: null, created_at: new Date().toISOString() };
+      const result = canPerformAction(sharedUser, testTask, "edit");
+      expect(result).toBe(true);
+    });
+
+    it("should return false when no permission found (line 168)", () => {
+      const otherUser: User = { id: 99, email: "other@example.com", name: "Other", avatar_url: null, created_at: new Date().toISOString() };
+      // User 99 is not the owner and has no explicit share permission
+      const result = canPerformAction(otherUser, testTask, "delete");
+      expect(result).toBe(false);
     });
   });
 
