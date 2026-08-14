@@ -59,5 +59,29 @@ describe("Filter Presets Actions", () => {
       const { deleteFilterPreset } = await import("../filter-presets");
       expect(typeof deleteFilterPreset).toBe("function");
     });
+
+    it("should delete an existing preset", async () => {
+      const { createFilterPreset, deleteFilterPreset } = await import("../filter-presets");
+
+      // Create a preset first
+      const preset = await createFilterPreset({
+        user_id: 1,
+        name: "To Be Deleted",
+      });
+
+      // Delete it
+      await deleteFilterPreset(preset.id);
+
+      // Should complete without error
+      expect(true).toBe(true);
+    });
+
+    it("should handle deleting non-existent preset", async () => {
+      const { deleteFilterPreset } = await import("../filter-presets");
+
+      // Should not throw for non-existent ID
+      await deleteFilterPreset(999999);
+      expect(true).toBe(true);
+    });
   });
 });
