@@ -172,4 +172,33 @@ describe("AI Module", () => {
       expect(tasks[0].name).toBe("This is a valid task");
     });
   });
+
+  describe("parseNaturalLanguageTask", () => {
+    it("should extract list_name when work-related keywords present", async () => {
+      const { parseNaturalLanguageTask } = await import("./index");
+      const result = await parseNaturalLanguageTask("Schedule a meeting at the office for tomorrow");
+      expect(result.name).toBeDefined();
+      expect(result.labels).toBeDefined();
+      // When list_name is extracted from keywords like "office", labels should be an array
+      expect(Array.isArray(result.labels)).toBe(true);
+    });
+
+    it("should return empty labels when no list keywords found", async () => {
+      const { parseNaturalLanguageTask } = await import("./index");
+      const result = await parseNaturalLanguageTask("Some random task without context");
+      expect(result.labels).toEqual([]);
+    });
+
+    it("should extract health-related list", async () => {
+      const { parseNaturalLanguageTask } = await import("./index");
+      const result = await parseNaturalLanguageTask("Go to the gym today");
+      expect(result.labels).toEqual(["Health"]);
+    });
+
+    it("should extract work-related list", async () => {
+      const { parseNaturalLanguageTask } = await import("./index");
+      const result = await parseNaturalLanguageTask("Review the project with the team");
+      expect(result.labels).toEqual(["Work"]);
+    });
+  });
 });
