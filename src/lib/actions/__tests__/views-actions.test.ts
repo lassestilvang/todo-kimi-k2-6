@@ -15,6 +15,69 @@ describe("Views Actions", () => {
       const views = await getCustomViews(1);
       expect(views).toEqual([]);
     });
+
+    it("should return views with parsed label_ids", async () => {
+      const { createCustomView, getCustomViews } = await import("../views");
+      await createCustomView(1, {
+        name: "View A",
+        label_ids: [1, 2],
+      });
+      await createCustomView(1, {
+        name: "View B",
+        label_ids: [3, 4, 5],
+      });
+
+      const views = await getCustomViews(1);
+      expect(views).toHaveLength(2);
+      expect(views[0].label_ids).toEqual([1, 2]);
+      expect(views[1].label_ids).toEqual([3, 4, 5]);
+    });
+
+    it("should handle view without label_ids", async () => {
+      const { createCustomView, getCustomViews } = await import("../views");
+      await createCustomView(1, { name: "Simple View" });
+
+      const views = await getCustomViews(1);
+      expect(views).toHaveLength(1);
+      expect(views[0].label_ids).toEqual([]);
+    });
+  });
+
+  describe("getCustomViewById", () => {
+    it("should return undefined for non-existent view", async () => {
+      const { getCustomViewById } = await import("../views");
+      const view = await getCustomViewById(999, 1);
+      expect(view).toBeUndefined();
+    });
+
+    it("should return view with parsed label_ids", async () => {
+      const { createCustomView, getCustomViewById } = await import("../views");
+      const created = await createCustomView(1, {
+        name: "Test View",
+        label_ids: [1, 2, 3],
+      });
+
+      const view = await getCustomViewById(created.id, 1);
+      expect(view).toBeDefined();
+      expect(view?.name).toBe("Test View");
+      expect(view?.label_ids).toEqual([1, 2, 3]);
+    });
+
+    it("should return empty label_ids when not set", async () => {
+      const { createCustomView, getCustomViewById } = await import("../views");
+      const created = await createCustomView(1, { name: "Simple View" });
+
+      const view = await getCustomViewById(created.id, 1);
+      expect(view?.label_ids).toEqual([]);
+    });
+
+    it("should return undefined for different user", async () => {
+      const { createCustomView, getCustomViewById } = await import("../views");
+      const created = await createCustomView(1, { name: "Test View" });
+
+      const view = await getCustomViewById(created.id, 999);
+      expect(view).toBeUndefined();
+    });
   });
 
   describe("createCustomView", () => {
@@ -103,6 +166,36 @@ describe("Views Actions", () => {
       expect(updated.sort_field).toBe("priority");
       expect(updated.sort_direction).toBe("desc");
       expect(updated.view_type).toBe("gantt");
+    });
+
+    it("should update filter_preset (line 79)", async () => {
+      const { createCustomView, updateCustomView } = await import("../views");
+      const view = await createCustomView(1, { name: "Test" });
+      const updated = await updateCustomView(view.id, 1, {
+        filter_preset: "needs_attention",
+      });
+
+      expect(updated.filter_preset).toBe("needs_attention");
+    });
+
+    it("should update list_id (lines 82-83)", async () => {
+      const { createCustomView, updateCustomView } = await import("../views");
+      const view = await createCustomView(1, { name: "Test" });
+      const updated = await updateCustomView(view.id, 1, {
+        list_id: 5,
+      });
+
+      expect(updated.list_id).toBe(5);
+    });
+
+    it("should update label_ids (lines 86-87)", async () => {
+      const { createCustomView, updateCustomView } = await import("../views");
+      const view = await createCustomView(1, { name: "Test" });
+      const updated = await updateCustomView(view.id, 1, {
+        label_ids: [10, 20, 30],
+      });
+
+      expect(updated.label_ids).toEqual([10, 20, 30]);
     });
   });
 
