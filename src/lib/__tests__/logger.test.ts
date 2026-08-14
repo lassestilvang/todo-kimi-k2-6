@@ -1,7 +1,14 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi, beforeAll } from "vitest";
 
-// Set NODE_ENV to development for debug tests
-const originalEnv = process.env.NODE_ENV;
+// Set up NODE_ENV before any tests run
+beforeAll(() => {
+  Object.defineProperty(process.env, 'NODE_ENV', {
+    writable: true,
+    configurable: true,
+    enumerable: true,
+    value: 'test',
+  });
+});
 
 describe("Logger", () => {
   let consoleErrorSpy: any;
@@ -20,14 +27,8 @@ describe("Logger", () => {
     consoleInfoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
     consoleDebugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
 
-    // Reset module cache and reimport for development mode tests
+    // Reset modules to allow re-importing with different NODE_ENV
     vi.resetModules();
-
-    // Fix NODE_ENV read-only issue by redefining the property
-    Object.defineProperty(process.env, 'NODE_ENV', {
-      writable: true,
-      configurable: true,
-    });
   });
 
   afterEach(() => {
@@ -35,8 +36,6 @@ describe("Logger", () => {
     consoleWarnSpy.mockRestore();
     consoleInfoSpy.mockRestore();
     consoleDebugSpy.mockRestore();
-    process.env.NODE_ENV = originalEnv;
-    vi.resetModules();
   });
 
   describe("error method", () => {
@@ -97,14 +96,24 @@ describe("Logger", () => {
 
   describe("debug method", () => {
     it("should log debug messages in development mode", async () => {
-      process.env.NODE_ENV = "development";
+      Object.defineProperty(process.env, 'NODE_ENV', {
+        writable: true,
+        configurable: true,
+        enumerable: true,
+        value: "development",
+      });
       const { logger: l } = await import("@/lib/logger");
       l.debug("Test debug message");
       expect(consoleDebugSpy).toHaveBeenCalled();
     });
 
     it("should format debug message with context", async () => {
-      process.env.NODE_ENV = "development";
+      Object.defineProperty(process.env, 'NODE_ENV', {
+        writable: true,
+        configurable: true,
+        enumerable: true,
+        value: "development",
+      });
       const { logger: l } = await import("@/lib/logger");
       l.debug("Debug with context", { debug: true });
       expect(consoleDebugSpy).toHaveBeenCalled();
@@ -170,7 +179,12 @@ describe("Logger", () => {
 
   describe("logDebug convenience function", () => {
     it("should call logger.debug in development", async () => {
-      process.env.NODE_ENV = "development";
+      Object.defineProperty(process.env, 'NODE_ENV', {
+        writable: true,
+        configurable: true,
+        enumerable: true,
+        value: "development",
+      });
       const { logDebug: ld } = await import("@/lib/logger");
       ld("Test debug");
       expect(consoleDebugSpy).toHaveBeenCalled();
