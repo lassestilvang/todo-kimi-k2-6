@@ -9,6 +9,7 @@
 ## Environment Setup
 
 1. Copy `.env.example` to `.env.local`:
+
 ```bash
 cp .env.example .env.local
 ```
@@ -16,10 +17,12 @@ cp .env.example .env.local
 2. Configure the following environment variables:
 
 ### Required
+
 - `NEXTAUTH_SECRET` - Secret for NextAuth.js (generate with `openssl rand -base64 32`)
 - `NEXTAUTH_URL` - Your application URL (e.g., `https://your-domain.com`)
 
 ### Optional but Recommended
+
 - `AUTH_DEMO_MODE=false` - Disable demo mode in production
 - `OPENAI_API_KEY` - For AI features
 - `ANTHROPIC_API_KEY` - For AI features
@@ -30,17 +33,20 @@ cp .env.example .env.local
 ## Database Setup
 
 The database is automatically initialized on first run. The database file is stored at:
+
 ```
 data/planner.db
 ```
 
 For production, consider:
+
 1. Backing up the database regularly
 2. Using a more robust database like PostgreSQL
 
 ## Running the Application
 
 ### Development
+
 ```bash
 npm run dev
 # or
@@ -48,6 +54,7 @@ bun dev
 ```
 
 ### Production Build
+
 ```bash
 npm run build
 npm run start
@@ -58,11 +65,13 @@ npm run start
 For real-time collaboration features:
 
 1. Install dependencies:
+
 ```bash
 npm install ws @types/ws --save-dev
 ```
 
 2. Start the WebSocket server:
+
 ```bash
 npx ts-node src/server/ws-server.ts
 # or
@@ -123,6 +132,7 @@ Set up a cron job to run reminder notifications:
 ## OAuth Setup
 
 ### Google Calendar
+
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
 2. Create a new project or select existing
 3. Enable Calendar API
@@ -130,6 +140,7 @@ Set up a cron job to run reminder notifications:
 5. Add redirect URI: `https://your-domain.com/api/auth/callback/google`
 
 ### Microsoft Outlook
+
 1. Go to [Microsoft Azure Portal](https://portal.azure.com/)
 2. Register a new application
 3. Add API permission: `Calendars.ReadWrite`
@@ -145,6 +156,7 @@ Set up a cron job to run reminder notifications:
 ## Deployment to Other Platforms
 
 ### Docker
+
 ```dockerfile
 FROM node:18-alpine
 
@@ -160,6 +172,7 @@ CMD ["npm", "start"]
 ```
 
 ### systemd Service (Linux)
+
 ```ini
 [Unit]
 Description=TaskFlow Application
@@ -180,11 +193,13 @@ WantedBy=multi-user.target
 ## Backup Strategy
 
 1. Database backup:
+
 ```bash
 cp data/planner.db backups/planner-$(date +%Y%m%d).db
 ```
 
 2. Export data via API:
+
 ```bash
 curl https://your-domain.com/api/export/json > backup.json
 ```
@@ -192,6 +207,7 @@ curl https://your-domain.com/api/export/json > backup.json
 ## Monitoring
 
 Consider adding:
+
 - Error tracking (Sentry, LogRocket)
 - Performance monitoring (Vercel Analytics, New Relic)
 - Uptime monitoring (UptimeRobot, Pingdom)
