@@ -10,8 +10,14 @@ test.describe('Task Workflow E2E Tests', () => {
       await page.click('button:has(Plus)');
 
       // Fill in task details
-      await page.fill('input[placeholder="What needs to be done?"]', 'Complete project documentation');
-      await page.fill('textarea[placeholder="Add description..."]', 'Write comprehensive documentation for the API');
+      await page.fill(
+        'input[placeholder="What needs to be done?"]',
+        'Complete project documentation'
+      );
+      await page.fill(
+        'textarea[placeholder="Add description..."]',
+        'Write comprehensive documentation for the API'
+      );
 
       // Set priority
       await page.click('button:text("Priority")');
@@ -20,12 +26,17 @@ test.describe('Task Workflow E2E Tests', () => {
       // Create task
       await page.click('button:text("Create Task")');
 
-      await expect(page.getByText('Complete project documentation')).toBeVisible();
+      await expect(
+        page.getByText('Complete project documentation')
+      ).toBeVisible();
     });
 
     test('should create a task with subtasks', async ({ page }) => {
       await page.click('button:has(Plus)');
-      await page.fill('input[placeholder="What needs to be done?"]', 'Multi-step task');
+      await page.fill(
+        'input[placeholder="What needs to be done?"]',
+        'Multi-step task'
+      );
 
       // Add subtasks
       await page.click('button:has(Plus)'); // Add subtask button
@@ -42,7 +53,10 @@ test.describe('Task Workflow E2E Tests', () => {
 
     test('should create tasks with due dates', async ({ page }) => {
       await page.click('button:has(Plus)');
-      await page.fill('input[placeholder="What needs to be done?"]', 'Deadline task');
+      await page.fill(
+        'input[placeholder="What needs to be done?"]',
+        'Deadline task'
+      );
 
       // Set due date
       await page.click('button:text("Add date")');
@@ -58,7 +72,10 @@ test.describe('Task Workflow E2E Tests', () => {
     test('should edit task name', async ({ page }) => {
       // Create a task first
       await page.click('button:has(Plus)');
-      await page.fill('input[placeholder="What needs to be done?"]', 'Task to edit');
+      await page.fill(
+        'input[placeholder="What needs to be done?"]',
+        'Task to edit'
+      );
       await page.click('button:text("Create Task")');
 
       // Edit the task
@@ -71,17 +88,25 @@ test.describe('Task Workflow E2E Tests', () => {
 
     test('should mark task as complete', async ({ page }) => {
       await page.click('button:has(Plus)');
-      await page.fill('input[placeholder="What needs to be done?"]', 'Task to complete');
+      await page.fill(
+        'input[placeholder="What needs to be done?"]',
+        'Task to complete'
+      );
       await page.click('button:text("Create Task")');
 
       // Complete the task
       await page.check('[data-state="unchecked"]');
-      await expect(page.getByText('Task to complete')).toHaveClass(/line-through/);
+      await expect(page.getByText('Task to complete')).toHaveClass(
+        /line-through/
+      );
     });
 
     test('should add labels to task', async ({ page }) => {
       await page.click('button:has(Plus)');
-      await page.fill('input[placeholder="What needs to be done?"]', 'Labeled task');
+      await page.fill(
+        'input[placeholder="What needs to be done?"]',
+        'Labeled task'
+      );
       await page.click('button:text("Create Task")');
 
       // Add label
@@ -91,14 +116,19 @@ test.describe('Task Workflow E2E Tests', () => {
       await page.fill('input[placeholder="Label name"]', 'Important');
       await page.keyboard.press('Enter');
 
-      await expect(page.getByRole('button', { name: 'Important' })).toBeVisible();
+      await expect(
+        page.getByRole('button', { name: 'Important' })
+      ).toBeVisible();
     });
   });
 
   test.describe('Task Deletion Workflows', () => {
     test('should delete a task with confirmation', async ({ page }) => {
       await page.click('button:has(Plus)');
-      await page.fill('input[placeholder="What needs to be done?"]', 'Task to delete');
+      await page.fill(
+        'input[placeholder="What needs to be done?"]',
+        'Task to delete'
+      );
       await page.click('button:text("Create Task")');
 
       // Delete the task
@@ -115,12 +145,18 @@ test.describe('Task Workflow E2E Tests', () => {
   test.describe('Search and Filter Workflows', () => {
     test('should search tasks with keyboard shortcut', async ({ page }) => {
       await page.click('button:has(Plus)');
-      await page.fill('input[placeholder="What needs to be done?"]', 'Unique search task');
+      await page.fill(
+        'input[placeholder="What needs to be done?"]',
+        'Unique search task'
+      );
       await page.click('button:text("Create Task")');
 
       // Focus search with slash
       await page.keyboard.press('/');
-      await page.fill('input[placeholder="Search tasks... (/)"]', 'Unique search');
+      await page.fill(
+        'input[placeholder="Search tasks... (/)"]',
+        'Unique search'
+      );
 
       await expect(page.getByText('Unique search task')).toBeVisible();
     });
@@ -128,7 +164,10 @@ test.describe('Task Workflow E2E Tests', () => {
     test('should filter by priority', async ({ page }) => {
       // Create tasks with different priorities
       await page.click('button:has(Plus)');
-      await page.fill('input[placeholder="What needs to be done?"]', 'Critical task');
+      await page.fill(
+        'input[placeholder="What needs to be done?"]',
+        'Critical task'
+      );
       await page.click('button:text("Priority")');
       await page.click('button:text("Critical")');
       await page.click('button:text("Create Task")');
@@ -143,7 +182,10 @@ test.describe('Task Workflow E2E Tests', () => {
     test('should filter by list', async ({ page }) => {
       // Create a list
       await page.click('button:has(Plus)');
-      await page.fill('input[placeholder="What needs to be done?"]', 'Work task');
+      await page.fill(
+        'input[placeholder="What needs to be done?"]',
+        'Work task'
+      );
       await page.click('button:text("Create Task")');
 
       // Filter by list
@@ -158,22 +200,31 @@ test.describe('Task Workflow E2E Tests', () => {
     test('should switch to different views', async ({ page }) => {
       // Today view (default)
       await page.click('button:has(Calendar)');
-      await expect(page.getByRole('heading', { name: 'Calendar' })).toBeVisible();
+      await expect(
+        page.getByRole('heading', { name: 'Calendar' })
+      ).toBeVisible();
 
       // All tasks view
       await page.click('button:has(LayoutGrid)');
-      await expect(page.getByRole('heading', { name: 'All Tasks' })).toBeVisible();
+      await expect(
+        page.getByRole('heading', { name: 'All Tasks' })
+      ).toBeVisible();
 
       // Backlog view
       await page.click('button:text("Backlog")');
-      await expect(page.getByRole('heading', { name: 'Backlog' })).toBeVisible();
+      await expect(
+        page.getByRole('heading', { name: 'Backlog' })
+      ).toBeVisible();
     });
   });
 
   test.describe('Subtask Management', () => {
     test('should toggle subtask completion', async ({ page }) => {
       await page.click('button:has(Plus)');
-      await page.fill('input[placeholder="What needs to be done?"]', 'Task with subtasks');
+      await page.fill(
+        'input[placeholder="What needs to be done?"]',
+        'Task with subtasks'
+      );
       await page.keyboard.press('Meta+Shift+s'); // Add subtask shortcut
       await page.fill('input[placeholder="Add subtask..."]', 'Subtask 1');
       await page.keyboard.press('Enter');
