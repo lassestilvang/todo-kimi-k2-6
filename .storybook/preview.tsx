@@ -1,17 +1,17 @@
-import type { Preview } from "@storybook/react-vite";
+import type { Preview } from '@storybook/react-vite';
 
 const preview: Preview = {
   parameters: {
-    actions: { argTypesRegex: "^on[A-Z].*" },
+    actions: { argTypesRegex: '^on[A-Z].*' },
     controls: {
       expanded: true,
     },
     docs: {
-      theme: "light",
+      theme: 'light',
     },
   },
   decorators: [
-    (Story) => {
+    Story => {
       return (
         <div className="font-sans">
           <Story />
