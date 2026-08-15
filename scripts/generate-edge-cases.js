@@ -20,19 +20,20 @@ async function generateInvalidInputsWithAI() {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json'
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: [
           {
             role: 'system',
-            content: 'Generate invalid test inputs for a task management system. Return JSON with arrays: invalidDates, invalidNumbers, maliciousStrings, edgeCaseObjects.'
-          }
+            content:
+              'Generate invalid test inputs for a task management system. Return JSON with arrays: invalidDates, invalidNumbers, maliciousStrings, edgeCaseObjects.',
+          },
         ],
-        temperature: 0.7
-      })
+        temperature: 0.7,
+      }),
     });
 
     const data = await response.json();
@@ -40,38 +41,26 @@ async function generateInvalidInputsWithAI() {
 
     return JSON.parse(content);
   } catch (error) {
-    console.error('AI generation failed, falling back to mock data:', error.message);
+    console.error(
+      'AI generation failed, falling back to mock data:',
+      error.message
+    );
     return generateMockInvalidInputs();
   }
 }
 
 function generateMockInvalidInputs() {
   return {
-    invalidDates: [
-      '2026-02-30',
-      '2023-13-01',
-      '2025-00-00',
-      'not-a-date',
-      ''
-    ],
-    invalidNumbers: [
-      '-Infinity',
-      'NaN',
-      '9999999999999999999999',
-      '0xFF'
-    ],
+    invalidDates: ['2026-02-30', '2023-13-01', '2025-00-00', 'not-a-date', ''],
+    invalidNumbers: ['-Infinity', 'NaN', '9999999999999999999999', '0xFF'],
     maliciousStrings: [
       '',
       '     ',
       'null',
       '<script>alert("xss")</script>',
-      '${process.exit()}'
+      '${process.exit()}',
     ],
-    edgeCaseObjects: [
-      {},
-      { 'key': 'value' },
-      { 'invalid-key$': 'value' }
-    ]
+    edgeCaseObjects: [{}, { key: 'value' }, { 'invalid-key$': 'value' }],
   };
 }
 
