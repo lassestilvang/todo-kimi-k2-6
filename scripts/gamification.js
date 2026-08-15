@@ -8,10 +8,10 @@ const fs = require('fs');
 const path = require('path');
 
 const POINTS = {
-  COVERAGE: 10,        // Points per 1% coverage above 80%
-  MUTATION_KILL: 20,   // Points per 1% mutation kill rate
-  NO_VIOLATIONS: 50,   // Bonus for zero compliance violations
-  EDGE_CASES: 5        // Points per edge case covered
+  COVERAGE: 10, // Points per 1% coverage above 80%
+  MUTATION_KILL: 20, // Points per 1% mutation kill rate
+  NO_VIOLATIONS: 50, // Bonus for zero compliance violations
+  EDGE_CASES: 5, // Points per edge case covered
 };
 
 function calculateGamificationScore(metrics) {
@@ -20,14 +20,18 @@ function calculateGamificationScore(metrics) {
 
   // Coverage points
   if (metrics.coverage && metrics.coverage.branch >= 80) {
-    const coverageBonus = Math.round((metrics.coverage.branch - 80) * POINTS.COVERAGE);
+    const coverageBonus = Math.round(
+      (metrics.coverage.branch - 80) * POINTS.COVERAGE
+    );
     breakdown.coverage = coverageBonus;
     totalPoints += coverageBonus;
   }
 
   // Mutation kill rate points
   if (metrics.mutationKillRate) {
-    const mutationPoints = Math.round(metrics.mutationKillRate * POINTS.MUTATION_KILL);
+    const mutationPoints = Math.round(
+      metrics.mutationKillRate * POINTS.MUTATION_KILL
+    );
     breakdown.mutation = mutationPoints;
     totalPoints += mutationPoints;
   }
@@ -48,7 +52,7 @@ function calculateGamificationScore(metrics) {
   return {
     totalPoints,
     breakdown,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   };
 }
 
@@ -62,7 +66,7 @@ function updateLeaderboard(scoreData, contributor = 'unknown') {
 
   leaderboard.push({
     ...scoreData,
-    contributor
+    contributor,
   });
 
   leaderboard.sort((a, b) => b.totalPoints - a.totalPoints);
@@ -80,13 +84,16 @@ const sampleMetrics = {
   coverage: { branch: 89 },
   mutationKillRate: 97,
   violations: 0,
-  edgeCases: 50
+  edgeCases: 50,
 };
 
 const score = calculateGamificationScore(sampleMetrics);
 const leaderboard = updateLeaderboard(score, 'dev-team');
 
 console.log('🏆 Gamification Score:', score.totalPoints);
-console.log('📊 Leaderboard:', leaderboard.map(l => `${l.contributor}: ${l.totalPoints} pts`));
+console.log(
+  '📊 Leaderboard:',
+  leaderboard.map(l => `${l.contributor}: ${l.totalPoints} pts`)
+);
 
 module.exports = { calculateGamificationScore, updateLeaderboard };
