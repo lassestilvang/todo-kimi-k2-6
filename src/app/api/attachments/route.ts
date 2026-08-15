@@ -1,12 +1,20 @@
-import { NextRequest, NextResponse } from "next/server";
-import { addTaskAttachment, getTaskAttachments, deleteTaskAttachment } from "@/lib/actions";
-import { getDb } from "@/lib/db";
-import { writeFile, mkdir, readFile } from "fs/promises";
-import { join } from "path";
-import { v4 as uuidv4 } from "uuid";
-import { applyMiddleware, errorResponse, jsonResponse } from "@/lib/api-middleware";
+import { NextRequest, NextResponse } from 'next/server';
+import {
+  addTaskAttachment,
+  getTaskAttachments,
+  deleteTaskAttachment,
+} from '@/lib/actions';
+import { getDb } from '@/lib/db';
+import { writeFile, mkdir, readFile } from 'fs/promises';
+import { join } from 'path';
+import { v4 as uuidv4 } from 'uuid';
+import {
+  applyMiddleware,
+  errorResponse,
+  jsonResponse,
+} from '@/lib/api-middleware';
 
-const UPLOAD_DIR = join(process.cwd(), "uploads");
+const UPLOAD_DIR = join(process.cwd(), 'uploads');
 
 // Maximum file size: 10MB
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -14,29 +22,42 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024;
 // Allowed MIME types for security (whitelist)
 const ALLOWED_MIME_TYPES = [
   // Images
-  "image/jpeg",
-  "image/png",
-  "image/gif",
-  "image/webp",
-  "image/svg+xml",
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'image/svg+xml',
   // Documents
-  "application/pdf",
-  "application/msword",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "application/vnd.ms-excel",
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  "text/plain",
-  "text/csv",
-  "application/json",
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'text/plain',
+  'text/csv',
+  'application/json',
   // Archives (use with caution)
-  "application/zip",
+  'application/zip',
   // Other safe types
-  "application/octet-stream",
+  'application/octet-stream',
 ];
 
 // Dangerous file extensions that should never be allowed
 const DANGEROUS_EXTENSIONS = [
-  ".exe", ".bat", ".cmd", ".sh", ".ps1", ".vbs", ".js", ".jar", ".php", ".asp", ".aspx", ".jsp", ".py", ".rb",
+  '.exe',
+  '.bat',
+  '.cmd',
+  '.sh',
+  '.ps1',
+  '.vbs',
+  '.js',
+  '.jar',
+  '.php',
+  '.asp',
+  '.aspx',
+  '.jsp',
+  '.py',
+  '.rb',
 ];
 
 /**
@@ -45,18 +66,24 @@ const DANGEROUS_EXTENSIONS = [
 function validateFile(file: File): { valid: boolean; error?: string } {
   // Check file size
   if (file.size > MAX_FILE_SIZE) {
-    return { valid: false, error: `File size exceeds ${MAX_FILE_SIZE / 1024 / 1024}MB limit` };
+    return {
+      valid: false,
+      error: `File size exceeds ${MAX_FILE_SIZE / 1024 / 1024}MB limit`,
+    };
   }
 
   // Check MIME type
-  if (!ALLOWED_MIME_TYPES.includes(file.type) && file.type !== "") {
+  if (!ALLOWED_MIME_TYPES.includes(file.type) && file.type !== '') {
     return { valid: false, error: `File type "${file.type}" is not allowed` };
   }
 
   // Check filename for dangerous extensions
   const filename = file.name.toLowerCase();
   if (DANGEROUS_EXTENSIONS.some(ext => filename.endsWith(ext))) {
-    return { valid: false, error: "File type not allowed for security reasons" };
+    return {
+      valid: false,
+      error: 'File type not allowed for security reasons',
+    };
   }
 
   return { valid: true };
@@ -64,130 +91,148 @@ function validateFile(file: File): { valid: boolean; error?: string } {
 
 // GET /api/attachments - Get attachments for a task or download an attachment
 export async function GET(request: NextRequest) {
-  const middlewareResult = await applyMiddleware(request, { requireAuth: true });
+  const middlewareResult = await applyMiddleware(request, {
+    requireAuth: true,
+  });
   if (middlewareResult.error) {
     return middlewareResult.error;
   }
 
   // Verify auth
-  if (!middlewareResult.auth?.isAuthenticated || !middlewareResult.auth.userId) {
-    return errorResponse("Authentication required", 401);
+  if (
+    !middlewareResult.auth?.isAuthenticated ||
+    !middlewareResult.auth.userId
+  ) {
+    return errorResponse('Authentication required', 401);
   }
 
   const userId = middlewareResult.auth.userId;
 
   try {
     const searchParams = request.nextUrl.searchParams;
-    const taskId = searchParams.get("taskId");
-    const id = searchParams.get("id");
-    const download = searchParams.get("download");
+    const taskId = searchParams.get('taskId');
+    const id = searchParams.get('id');
+    const download = searchParams.get('download');
 
     // Download mode - get single attachment for download
     if (id) {
       const attachmentId = Number(id);
       if (isNaN(attachmentId) || attachmentId <= 0) {
-        return errorResponse("Invalid attachment ID", 400);
+        return errorResponse('Invalid attachment ID', 400);
       }
 
       const db = getDb();
       const attachment = db
         .prepare(
-          "SELECT ta.* FROM task_attachments ta JOIN tasks t ON ta.task_id = t.id WHERE ta.id = ? AND t.user_id = ?"
+          'SELECT ta.* FROM task_attachments ta JOIN tasks t ON ta.task_id = t.id WHERE ta.id = ? AND t.user_id = ?'
         )
-        .get(attachmentId, userId) as { url: string; filename: string; mime_type: string } | undefined;
+        .get(attachmentId, userId) as
+        { url: string; filename: string; mime_type: string } | undefined;
 
       if (!attachment) {
-        return errorResponse("Attachment not found or access denied", 403);
+        return errorResponse('Attachment not found or access denied', 403);
       }
 
-      const filepath = join(UPLOAD_DIR, attachment.url.replace("/uploads/", ""));
+      const filepath = join(
+        UPLOAD_DIR,
+        attachment.url.replace('/uploads/', '')
+      );
       const fileBuffer = await readFile(filepath);
 
       return new NextResponse(fileBuffer, {
         headers: {
-          "Content-Type": attachment.mime_type || "application/octet-stream",
-          "Content-Disposition": download === "true"
-            ? `attachment; filename="${encodeURIComponent(attachment.filename)}"`
-            : `inline; filename="${encodeURIComponent(attachment.filename)}"`,
-          "Content-Length": fileBuffer.length.toString(),
+          'Content-Type': attachment.mime_type || 'application/octet-stream',
+          'Content-Disposition':
+            download === 'true'
+              ? `attachment; filename="${encodeURIComponent(attachment.filename)}"`
+              : `inline; filename="${encodeURIComponent(attachment.filename)}"`,
+          'Content-Length': fileBuffer.length.toString(),
         },
       });
     }
 
     // List mode - get attachments for a task
     if (!taskId) {
-      return errorResponse("Task ID required", 400);
+      return errorResponse('Task ID required', 400);
     }
 
     const taskIdNum = Number(taskId);
     if (isNaN(taskIdNum) || taskIdNum <= 0) {
-      return errorResponse("Invalid task ID", 400);
+      return errorResponse('Invalid task ID', 400);
     }
 
     const attachments = await getTaskAttachments(taskIdNum, userId);
     return jsonResponse({ attachments }, 200, middlewareResult.headers);
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return errorResponse("Attachment not found on disk", 404);
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return errorResponse('Attachment not found on disk', 404);
     }
-    const message = error instanceof Error ? error.message : "Failed to fetch attachments";
+    const message =
+      error instanceof Error ? error.message : 'Failed to fetch attachments';
     return errorResponse(message, 500);
   }
 }
 
 // POST /api/attachments - Upload a new attachment
 export async function POST(request: NextRequest) {
-  const middlewareResult = await applyMiddleware(request, { requireAuth: true });
+  const middlewareResult = await applyMiddleware(request, {
+    requireAuth: true,
+  });
   if (middlewareResult.error) {
     return middlewareResult.error;
   }
 
   // Verify auth
-  if (!middlewareResult.auth?.isAuthenticated || !middlewareResult.auth.userId) {
-    return errorResponse("Authentication required", 401);
+  if (
+    !middlewareResult.auth?.isAuthenticated ||
+    !middlewareResult.auth.userId
+  ) {
+    return errorResponse('Authentication required', 401);
   }
 
   const userId = middlewareResult.auth.userId;
 
   try {
     // Check content length before processing
-    const contentLength = request.headers.get("content-length");
+    const contentLength = request.headers.get('content-length');
     if (contentLength && parseInt(contentLength) > MAX_FILE_SIZE) {
-      return errorResponse("Request body too large", 413);
+      return errorResponse('Request body too large', 413);
     }
 
     const formData = await request.formData();
-    const file = formData.get("file") as File | null;
-    const taskId = formData.get("taskId") as string;
+    const file = formData.get('file') as File | null;
+    const taskId = formData.get('taskId') as string;
 
     if (!file || !taskId) {
-      return errorResponse("File and task ID required", 400);
+      return errorResponse('File and task ID required', 400);
     }
 
     // Validate file for security
     const validation = validateFile(file);
     if (!validation.valid) {
-      return errorResponse(validation.error || "Invalid file", 400);
+      return errorResponse(validation.error || 'Invalid file', 400);
     }
 
     // Validate task ID and verify ownership
     const taskIdNum = Number(taskId);
     if (isNaN(taskIdNum) || taskIdNum <= 0) {
-      return errorResponse("Invalid task ID", 400);
+      return errorResponse('Invalid task ID', 400);
     }
 
     // Verify task ownership before allowing attachment
     const db = getDb();
-    const task = db.prepare("SELECT id FROM tasks WHERE id = ? AND user_id = ?").get(taskIdNum, userId);
+    const task = db
+      .prepare('SELECT id FROM tasks WHERE id = ? AND user_id = ?')
+      .get(taskIdNum, userId);
     if (!task) {
-      return errorResponse("Task not found or access denied", 403);
+      return errorResponse('Task not found or access denied', 403);
     }
 
     // Ensure upload directory exists
     await mkdir(UPLOAD_DIR, { recursive: true });
 
     // Generate unique filename (sanitize to prevent path traversal)
-    const safeOriginalName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const safeOriginalName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
     const filename = `${uuidv4()}-${safeOriginalName}`;
     const filepath = join(UPLOAD_DIR, filename);
 
@@ -207,53 +252,59 @@ export async function POST(request: NextRequest) {
 
     return jsonResponse({ attachment }, 201, middlewareResult.headers);
   } catch (error) {
-    console.error("Error uploading attachment:", error);
-    return errorResponse("Failed to upload attachment", 500);
+    console.error('Error uploading attachment:', error);
+    return errorResponse('Failed to upload attachment', 500);
   }
 }
 
 // DELETE /api/attachments - Delete an attachment
 export async function DELETE(request: NextRequest) {
-  const middlewareResult = await applyMiddleware(request, { requireAuth: true });
+  const middlewareResult = await applyMiddleware(request, {
+    requireAuth: true,
+  });
   if (middlewareResult.error) {
     return middlewareResult.error;
   }
 
   // Verify auth
-  if (!middlewareResult.auth?.isAuthenticated || !middlewareResult.auth.userId) {
-    return errorResponse("Authentication required", 401);
+  if (
+    !middlewareResult.auth?.isAuthenticated ||
+    !middlewareResult.auth.userId
+  ) {
+    return errorResponse('Authentication required', 401);
   }
 
   const userId = middlewareResult.auth.userId;
 
   try {
     const searchParams = request.nextUrl.searchParams;
-    const id = searchParams.get("id");
+    const id = searchParams.get('id');
     if (!id) {
-      return errorResponse("Attachment ID required", 400);
+      return errorResponse('Attachment ID required', 400);
     }
 
     // Validate ID
     const attachmentId = Number(id);
     if (isNaN(attachmentId) || attachmentId <= 0) {
-      return errorResponse("Invalid attachment ID", 400);
+      return errorResponse('Invalid attachment ID', 400);
     }
 
     // Verify attachment ownership via task
     const db = getDb();
     const attachment = db
       .prepare(
-        "SELECT ta.* FROM task_attachments ta JOIN tasks t ON ta.task_id = t.id WHERE ta.id = ? AND t.user_id = ?"
+        'SELECT ta.* FROM task_attachments ta JOIN tasks t ON ta.task_id = t.id WHERE ta.id = ? AND t.user_id = ?'
       )
       .get(attachmentId, userId);
     if (!attachment) {
-      return errorResponse("Attachment not found or access denied", 403);
+      return errorResponse('Attachment not found or access denied', 403);
     }
 
     await deleteTaskAttachment(attachmentId);
     return jsonResponse({ success: true }, 200, middlewareResult.headers);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to delete attachment";
+    const message =
+      error instanceof Error ? error.message : 'Failed to delete attachment';
     return errorResponse(message, 500);
   }
 }
