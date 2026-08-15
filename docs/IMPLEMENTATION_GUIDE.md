@@ -37,11 +37,12 @@ const connection = await createTaskConnection({
   target_task_id: 2,
   connection_type: 'related',
   strength: 0.8,
-  notes: 'These tasks share similar design requirements'
+  notes: 'These tasks share similar design requirements',
 });
 ```
 
 **Connection Types:**
+
 - `prerequisite` - Task must be completed first
 - `inspiration` - Task inspired this one
 - `similar` - Similar tasks with shared patterns
@@ -60,6 +61,7 @@ await updateSkillProficiency(userId, task);
 ```
 
 **Skill Categories:**
+
 - Design work (UI/UX, wireframing)
 - Development (coding, implementation)
 - Research (analysis, investigation)
@@ -95,11 +97,12 @@ const energyProfile = await analyzeUserEnergyPatterns(userId, tasks);
 ```
 
 Returns:
+
 ```json
 {
   "peak_hours": [
-    {"hour": 9, "productivity_score": 95},
-    {"hour": 14, "productivity_score": 85}
+    { "hour": 9, "productivity_score": 95 },
+    { "hour": 14, "productivity_score": 85 }
   ],
   "energy_cycles": {
     "morning_boost": true,
@@ -128,11 +131,13 @@ const schedule = await generateTimeBlockedSchedule(tasks, constraints);
 ### Knowledge Graph Endpoints
 
 #### Create Task Connection
+
 ```
 POST /api/knowledge-graph/connections
 ```
 
 **Body:**
+
 ```json
 {
   "source_task_id": 1,
@@ -144,6 +149,7 @@ POST /api/knowledge-graph/connections
 ```
 
 **Response:**
+
 ```json
 {
   "id": 1,
@@ -159,11 +165,13 @@ POST /api/knowledge-graph/connections
 ### Scheduling Endpoints
 
 #### Generate Schedule
+
 ```
 POST /api/scheduling/generate
 ```
 
 **Body:**
+
 ```json
 {
   "tasks": [...],
@@ -250,27 +258,32 @@ src/
 ## Getting Started
 
 1. **Install Dependencies:**
+
 ```bash
 npm install
 ```
 
 2. **Set Up Environment:**
+
 ```bash
 cp .env.example .env.local
 # Edit .env.local with your configuration
 ```
 
 3. **Run Development Server:**
+
 ```bash
 npm run dev
 ```
 
 4. **Run Tests:**
+
 ```bash
 npm run test
 ```
 
 5. **Build for Production:**
+
 ```bash
 npm run build
 ```
@@ -280,6 +293,7 @@ npm run build
 ## Support
 
 For questions or issues, please refer to:
+
 - GitHub Issues: https://github.com/lasse/todo-kimi-k2-6/issues
 - Documentation: https://docs.taskflow.com
 - Community: https://community.taskflow.com
