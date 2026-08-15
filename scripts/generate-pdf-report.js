@@ -15,7 +15,7 @@ async function generatePDF() {
 
     const browser = await puppeteer.launch({
       headless: 'new',
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
 
     const page = await browser.newPage();
@@ -28,7 +28,7 @@ async function generatePDF() {
     await page.pdf({
       path: pdfPath,
       format: 'A4',
-      margin: { top: '20mm', right: '20mm', bottom: '20mm', left: '20mm' }
+      margin: { top: '20mm', right: '20mm', bottom: '20mm', left: '20mm' },
     });
 
     await browser.close();
