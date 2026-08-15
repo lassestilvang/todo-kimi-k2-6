@@ -1,22 +1,37 @@
-import { NextRequest } from "next/server";
-import { getDb } from "@/lib/db";
-import { applyMiddleware, jsonResponse, errorResponse } from "@/lib/api-middleware";
-import type { DecisionEntry } from "@/types";
-import { z } from "zod";
+import { NextRequest } from 'next/server';
+import { getDb } from '@/lib/db';
+import {
+  applyMiddleware,
+  jsonResponse,
+  errorResponse,
+} from '@/lib/api-middleware';
+import type { DecisionEntry } from '@/types';
+import { z } from 'zod';
 
 const CreateDecisionInputSchema = z.object({
   task_id: z.number().optional(),
   user_id: z.number(),
-  decision_type: z.enum(["priority", "approach", "tool", "timeline", "allocation", "cancellation"]),
+  decision_type: z.enum([
+    'priority',
+    'approach',
+    'tool',
+    'timeline',
+    'allocation',
+    'cancellation',
+  ]),
   question: z.string().min(1).max(5000),
   rationale: z.string().optional(),
-  options: z.array(z.object({
-    option_text: z.string().min(1).max(1000),
-    pros: z.array(z.string()).optional(),
-    cons: z.array(z.string()).optional(),
-    estimated_impact: z.string().optional(),
-    estimated_effort: z.string().optional(),
-  })).optional(),
+  options: z
+    .array(
+      z.object({
+        option_text: z.string().min(1).max(1000),
+        pros: z.array(z.string()).optional(),
+        cons: z.array(z.string()).optional(),
+        estimated_impact: z.string().optional(),
+        estimated_effort: z.string().optional(),
+      })
+    )
+    .optional(),
   outcome: z.string().optional(),
   outcome_notes: z.string().optional(),
   outcome_rating: z.number().min(-1).max(1).optional(),
@@ -29,23 +44,23 @@ export async function GET(request: NextRequest) {
 
   const userId = middleware.auth?.userId;
   if (!userId) {
-    return errorResponse("User not authenticated", 401);
+    return errorResponse('User not authenticated', 401);
   }
 
   const searchParams = request.nextUrl.searchParams;
-  const taskId = searchParams.get("task_id");
+  const taskId = searchParams.get('task_id');
 
   const db = getDb();
 
-  let query = "SELECT * FROM decisions WHERE user_id = ?";
+  let query = 'SELECT * FROM decisions WHERE user_id = ?';
   const params: (number | string)[] = [userId];
 
   if (taskId) {
-    query += " AND task_id = ?";
+    query += ' AND task_id = ?';
     params.push(parseInt(taskId, 10));
   }
 
-  query += " ORDER BY created_at DESC";
+  query += ' ORDER BY created_at DESC';
 
   const decisions = db.prepare(query).all(...params) as DecisionEntry[];
 
@@ -59,7 +74,7 @@ export async function POST(request: NextRequest) {
 
   const userId = middleware.auth?.userId;
   if (!userId) {
-    return errorResponse("User not authenticated", 401);
+    return errorResponse('User not authenticated', 401);
   }
 
   try {
@@ -67,7 +82,10 @@ export async function POST(request: NextRequest) {
     const parsed = CreateDecisionInputSchema.safeParse(body);
 
     if (!parsed.success) {
-      return errorResponse("Invalid input: " + parsed.error.issues[0].message, 400);
+      return errorResponse(
+        'Invalid input: ' + parsed.error.issues[0].message,
+        400
+      );
     }
 
     const db = getDb();
@@ -107,11 +125,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Get options for the decision
-    const options = db.prepare(`
+    const options = db
+      .prepare(
+        `
       SELECT id, decision_entry_id, option_text, pros, cons, estimated_impact, estimated_effort
       FROM decision_options
       WHERE decision_entry_id = ?
-    `).all(decisionId) as Array<{
+    `
+      )
+      .all(decisionId) as Array<{
       id: number;
       decision_entry_id: number;
       option_text: string;
@@ -145,8 +167,11 @@ export async function POST(request: NextRequest) {
 
     return jsonResponse(decision, 201);
   } catch (error: unknown) {
-    console.error("Failed to create decision:", error);
-    return errorResponse(`Failed to create decision: ${error instanceof Error ? error.message : "Unknown error"}`, 500);
+    console.error('Failed to create decision:', error);
+    return errorResponse(
+      `Failed to create decision: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      500
+    );
   }
 }
 
@@ -157,14 +182,14 @@ export async function PUT(request: NextRequest) {
 
   const userId = middleware.auth?.userId;
   if (!userId) {
-    return errorResponse("User not authenticated", 401);
+    return errorResponse('User not authenticated', 401);
   }
 
   const searchParams = request.nextUrl.searchParams;
-  const decisionId = parseInt(searchParams.get("id") || "0", 10);
+  const decisionId = parseInt(searchParams.get('id') || '0', 10);
 
   if (!decisionId) {
-    return errorResponse("Decision ID required", 400);
+    return errorResponse('Decision ID required', 400);
   }
 
   try {
@@ -177,61 +202,73 @@ export async function PUT(request: NextRequest) {
 
     const parsed = outcomeSchema.safeParse(body);
     if (!parsed.success) {
-      return errorResponse("Invalid input: " + parsed.error.issues[0].message, 400);
+      return errorResponse(
+        'Invalid input: ' + parsed.error.issues[0].message,
+        400
+      );
     }
 
     const db = getDb();
 
     // Check if decision belongs to user
-    const existing = db.prepare(`
+    const existing = db
+      .prepare(
+        `
       SELECT user_id FROM decisions WHERE id = ?
-    `).get(decisionId) as { user_id: number } | undefined;
+    `
+      )
+      .get(decisionId) as { user_id: number } | undefined;
 
     if (!existing || existing.user_id !== userId) {
-      return errorResponse("Decision not found or access denied", 404);
+      return errorResponse('Decision not found or access denied', 404);
     }
 
     const updates: string[] = [];
     const values: unknown[] = [];
 
     if (parsed.data.outcome !== undefined) {
-      updates.push("outcome = ?");
+      updates.push('outcome = ?');
       values.push(parsed.data.outcome);
     }
     if (parsed.data.outcome_notes !== undefined) {
-      updates.push("outcome_notes = ?");
+      updates.push('outcome_notes = ?');
       values.push(parsed.data.outcome_notes);
     }
     if (parsed.data.outcome_rating !== undefined) {
-      updates.push("outcome_rating = ?");
+      updates.push('outcome_rating = ?');
       values.push(parsed.data.outcome_rating);
     }
 
     if (updates.length === 0) {
-      return errorResponse("No updates provided", 400);
+      return errorResponse('No updates provided', 400);
     }
 
     updates.push("updated_at = datetime('now')");
     values.push(decisionId);
 
-    db.prepare(`
+    db.prepare(
+      `
       UPDATE decisions
-      SET ${updates.join(", ")}
+      SET ${updates.join(', ')}
       WHERE id = ?
-    `).run(...values);
+    `
+    ).run(...values);
 
     const updatedDecision = db
-      .prepare("SELECT * FROM decisions WHERE id = ?")
+      .prepare('SELECT * FROM decisions WHERE id = ?')
       .get(decisionId) as DecisionEntry | undefined;
 
     if (!updatedDecision) {
-      return errorResponse("Decision not found", 404);
+      return errorResponse('Decision not found', 404);
     }
 
     return jsonResponse(updatedDecision);
   } catch (error: unknown) {
-    console.error("Failed to update decision:", error);
-    return errorResponse(`Failed to update decision: ${error instanceof Error ? error.message : "Unknown error"}`, 500);
+    console.error('Failed to update decision:', error);
+    return errorResponse(
+      `Failed to update decision: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      500
+    );
   }
 }
 
@@ -242,14 +279,14 @@ export async function DELETE(request: NextRequest) {
 
   const userId = middleware.auth?.userId;
   if (!userId) {
-    return errorResponse("User not authenticated", 401);
+    return errorResponse('User not authenticated', 401);
   }
 
   const searchParams = request.nextUrl.searchParams;
-  const decisionId = parseInt(searchParams.get("id") || "0", 10);
+  const decisionId = parseInt(searchParams.get('id') || '0', 10);
 
   if (!decisionId) {
-    return errorResponse("Decision ID required", 400);
+    return errorResponse('Decision ID required', 400);
   }
 
   try {
@@ -257,18 +294,21 @@ export async function DELETE(request: NextRequest) {
 
     // Check if decision belongs to user
     const existing = db
-      .prepare("SELECT id FROM decisions WHERE id = ? AND user_id = ?")
+      .prepare('SELECT id FROM decisions WHERE id = ? AND user_id = ?')
       .get(decisionId, userId);
 
     if (!existing) {
-      return errorResponse("Decision not found or access denied", 404);
+      return errorResponse('Decision not found or access denied', 404);
     }
 
-    db.prepare("DELETE FROM decisions WHERE id = ?").run(decisionId);
+    db.prepare('DELETE FROM decisions WHERE id = ?').run(decisionId);
 
     return jsonResponse({ success: true });
   } catch (error: unknown) {
-    console.error("Failed to delete decision:", error);
-    return errorResponse(`Failed to delete decision: ${error instanceof Error ? error.message : "Unknown error"}`, 500);
+    console.error('Failed to delete decision:', error);
+    return errorResponse(
+      `Failed to delete decision: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      500
+    );
   }
 }
