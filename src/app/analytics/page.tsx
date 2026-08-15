@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { ProductivityDashboard } from "@/components/task/productivity-dashboard";
-import { useTasks } from "@/hooks/use-tasks";
+import { ProductivityDashboard } from '@/components/task/productivity-dashboard';
+import { useTasks } from '@/hooks/use-tasks';
 
 export default function AnalyticsPage() {
   const { tasks } = useTasks({
