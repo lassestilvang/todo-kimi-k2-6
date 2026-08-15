@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import { GET, POST } from "../cognitive-load/route";
-import { NextRequest } from "next/server";
-import { setDb, resetDb, getDb } from "@/lib/db";
-import { createTestDb } from "@/lib/db/test-db";
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { GET, POST } from '../cognitive-load/route';
+import { NextRequest } from 'next/server';
+import { setDb, resetDb, getDb } from '@/lib/db';
+import { createTestDb } from '@/lib/db/test-db';
 
 // Mock logger
 vi.mock('@/lib/logger', () => ({
@@ -21,7 +21,9 @@ vi.mock('@/lib/api-middleware', () => ({
     return response;
   }),
   errorResponse: vi.fn((message, status) => {
-    const response = new Response(JSON.stringify({ error: message }), { status });
+    const response = new Response(JSON.stringify({ error: message }), {
+      status,
+    });
     return response;
   }),
 }));
@@ -34,8 +36,12 @@ vi.mock('@/lib/db', async () => {
   return {
     ...actual,
     getDb: () => mockDb,
-    setDb: (db: any) => { mockDb = db; },
-    resetDb: () => { mockDb = null; },
+    setDb: (db: any) => {
+      mockDb = db;
+    },
+    resetDb: () => {
+      mockDb = null;
+    },
   };
 });
 
@@ -93,7 +99,10 @@ describe('Cognitive Load API', () => {
         VALUES (1, '2024-01-15', 5, 3, 7, 2, 1)
       `);
 
-      const request = createMockRequest('/api/enhanced-productivity/cognitive-load', 'GET');
+      const request = createMockRequest(
+        '/api/enhanced-productivity/cognitive-load',
+        'GET'
+      );
       const response = await GET(request);
 
       expect(response).toBeDefined();
@@ -109,20 +118,29 @@ describe('Cognitive Load API', () => {
         `);
       }
 
-      const request = createMockRequest('/api/enhanced-productivity/cognitive-load?days=7', 'GET');
+      const request = createMockRequest(
+        '/api/enhanced-productivity/cognitive-load?days=7',
+        'GET'
+      );
       const response = await GET(request);
 
       expect(response).toBeDefined();
     });
 
     it('should handle middleware error (line 8)', async () => {
-      const applyMiddleware = (await import('@/lib/api-middleware')).applyMiddleware;
+      const applyMiddleware = (await import('@/lib/api-middleware'))
+        .applyMiddleware;
       vi.mocked(applyMiddleware).mockImplementationOnce(async () => ({
-        error: new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 }),
+        error: new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401,
+        }),
         headers: {},
       }));
 
-      const request = createMockRequest('/api/enhanced-productivity/cognitive-load', 'GET');
+      const request = createMockRequest(
+        '/api/enhanced-productivity/cognitive-load',
+        'GET'
+      );
       const response = await GET(request);
 
       expect(response).toBeDefined();
@@ -131,14 +149,18 @@ describe('Cognitive Load API', () => {
 
   describe('POST', () => {
     it('creates a cognitive load log', async () => {
-      const request = createMockRequest('/api/enhanced-productivity/cognitive-load', 'POST', {
-        date: '2024-01-15',
-        taskCount: 5,
-        completedCount: 3,
-        energy_level: 7,
-        focus_blocks: 2,
-        interruption_count: 1,
-      });
+      const request = createMockRequest(
+        '/api/enhanced-productivity/cognitive-load',
+        'POST',
+        {
+          date: '2024-01-15',
+          taskCount: 5,
+          completedCount: 3,
+          energy_level: 7,
+          focus_blocks: 2,
+          interruption_count: 1,
+        }
+      );
 
       const response = await POST(request);
 
@@ -152,14 +174,18 @@ describe('Cognitive Load API', () => {
         VALUES (1, '2024-01-15', 3, 2, 5, 1, 0)
       `);
 
-      const request = createMockRequest('/api/enhanced-productivity/cognitive-load', 'POST', {
-        date: '2024-01-15',
-        taskCount: 5,
-        completedCount: 3,
-        energy_level: 7,
-        focus_blocks: 2,
-        interruption_count: 1,
-      });
+      const request = createMockRequest(
+        '/api/enhanced-productivity/cognitive-load',
+        'POST',
+        {
+          date: '2024-01-15',
+          taskCount: 5,
+          completedCount: 3,
+          energy_level: 7,
+          focus_blocks: 2,
+          interruption_count: 1,
+        }
+      );
 
       const response = await POST(request);
 
@@ -167,20 +193,27 @@ describe('Cognitive Load API', () => {
     });
 
     it('should handle middleware error (line 14)', async () => {
-      const applyMiddleware = (await import('@/lib/api-middleware')).applyMiddleware;
+      const applyMiddleware = (await import('@/lib/api-middleware'))
+        .applyMiddleware;
       vi.mocked(applyMiddleware).mockImplementationOnce(async () => ({
-        error: new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403 }),
+        error: new Response(JSON.stringify({ error: 'Forbidden' }), {
+          status: 403,
+        }),
         headers: {},
       }));
 
-      const request = createMockRequest('/api/enhanced-productivity/cognitive-load', 'POST', {
-        date: '2024-01-15',
-        taskCount: 5,
-        completedCount: 3,
-        energy_level: 7,
-        focus_blocks: 2,
-        interruption_count: 1,
-      });
+      const request = createMockRequest(
+        '/api/enhanced-productivity/cognitive-load',
+        'POST',
+        {
+          date: '2024-01-15',
+          taskCount: 5,
+          completedCount: 3,
+          energy_level: 7,
+          focus_blocks: 2,
+          interruption_count: 1,
+        }
+      );
 
       const response = await POST(request);
 
