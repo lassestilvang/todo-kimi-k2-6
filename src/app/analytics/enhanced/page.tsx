@@ -1,31 +1,37 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 import {
   Brain,
   Battery,
   Lightbulb,
   CheckCircle,
   Users,
-  ArrowLeft
-} from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import Link from "next/link";
+  ArrowLeft,
+} from 'lucide-react';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import Link from 'next/link';
 import {
   CognitiveLoadIndicator,
   EnergyBudgetWidget,
   CrossAppSyncHub,
   DecisionShadowTracker,
-  MoodAdaptiveTaskViews
-} from "@/components/task/enhanced-productivity-dashboard";
-import { ProductivityDashboard } from "@/components/task/productivity-dashboard";
-import { useTasks } from "@/hooks/use-tasks";
+  MoodAdaptiveTaskViews,
+} from '@/components/task/enhanced-productivity-dashboard';
+import { ProductivityDashboard } from '@/components/task/productivity-dashboard';
+import { useTasks } from '@/hooks/use-tasks';
 
 export default function EnhancedAnalyticsPage() {
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState('overview');
   const { tasks } = useTasks({
     initialTasks: [],
     initialLists: [],
@@ -62,7 +68,11 @@ export default function EnhancedAnalyticsPage() {
       </div>
 
       {/* Main Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="space-y-4"
+      >
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="energy">Energy Planner</TabsTrigger>
@@ -112,9 +122,7 @@ function CognitiveLoadCard() {
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold">Stable</div>
-        <p className="text-xs text-muted-foreground">
-          75% completion rate
-        </p>
+        <p className="text-xs text-muted-foreground">75% completion rate</p>
       </CardContent>
     </Card>
   );
@@ -148,9 +156,7 @@ function DecisionsCard() {
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold">12</div>
-        <p className="text-xs text-muted-foreground">
-          Avg rating: 3.8/5
-        </p>
+        <p className="text-xs text-muted-foreground">Avg rating: 3.8/5</p>
       </CardContent>
     </Card>
   );
@@ -165,9 +171,7 @@ function SyncCard() {
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold">5</div>
-        <p className="text-xs text-muted-foreground">
-          Pending conversion
-        </p>
+        <p className="text-xs text-muted-foreground">Pending conversion</p>
       </CardContent>
     </Card>
   );
@@ -185,11 +189,14 @@ function RecommendationsCard() {
       <CardContent>
         <div className="space-y-4">
           {[
-            "Focus on completing high-priority tasks during your peak energy hours (2-4 PM)",
-            "Consider batching similar tasks to reduce cognitive switching costs",
-            "Your completion rate is 15% higher on Tuesdays and Thursdays"
+            'Focus on completing high-priority tasks during your peak energy hours (2-4 PM)',
+            'Consider batching similar tasks to reduce cognitive switching costs',
+            'Your completion rate is 15% higher on Tuesdays and Thursdays',
           ].map((rec, idx) => (
-            <div key={idx} className="flex items-start space-x-3 p-3 bg-muted rounded-lg">
+            <div
+              key={idx}
+              className="flex items-start space-x-3 p-3 bg-muted rounded-lg"
+            >
               <CheckCircle className="h-5 w-5 text-green-500 mt-0.5" />
               <p className="text-sm">{rec}</p>
             </div>
