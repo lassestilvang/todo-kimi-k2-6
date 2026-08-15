@@ -1,6 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
-import { logCognitiveLoad, getCognitiveLoadAnalysis } from "@/lib/actions/enhanced-productivity";
-import { applyMiddleware } from "@/lib/api-middleware";
+import { NextRequest, NextResponse } from 'next/server';
+import {
+  logCognitiveLoad,
+  getCognitiveLoadAnalysis,
+} from '@/lib/actions/enhanced-productivity';
+import { applyMiddleware } from '@/lib/api-middleware';
 
 export async function POST(request: NextRequest) {
   const middleware = await applyMiddleware(request);
@@ -14,7 +17,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, id: log.id });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to log cognitive load" },
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Failed to log cognitive load',
+      },
       { status: 400 }
     );
   }
@@ -27,7 +35,7 @@ export async function GET(request: NextRequest) {
   }
 
   const { searchParams } = new URL(request.url);
-  const days = parseInt(searchParams.get("days") || "7");
+  const days = parseInt(searchParams.get('days') || '7');
 
   try {
     const userId = middleware.auth?.userId ?? 1;
@@ -36,11 +44,16 @@ export async function GET(request: NextRequest) {
       ...analysis,
       userId,
       period: `${days} days`,
-      dataPoints: true
+      dataPoints: true,
     });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to get cognitive load analysis" },
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Failed to get cognitive load analysis',
+      },
       { status: 400 }
     );
   }
