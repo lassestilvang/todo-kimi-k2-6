@@ -1,12 +1,16 @@
-import { NextRequest } from "next/server";
-import { applyMiddleware, jsonResponse, errorResponse } from "@/lib/api-middleware";
-import { getDb } from "@/lib/db";
-import { z } from "zod";
+import { NextRequest } from 'next/server';
+import {
+  applyMiddleware,
+  jsonResponse,
+  errorResponse,
+} from '@/lib/api-middleware';
+import { getDb } from '@/lib/db';
+import { z } from 'zod';
 
 const EnergyPatternSchema = z.object({
   user_id: z.number(),
   date: z.string().optional(),
-  time_of_day: z.enum(["morning", "afternoon", "evening", "night"]),
+  time_of_day: z.enum(['morning', 'afternoon', 'evening', 'night']),
   energy_level: z.number().min(1).max(10),
   task_id: z.number().optional(),
   notes: z.string().optional(),
@@ -19,13 +23,13 @@ export async function GET(request: NextRequest) {
 
   const userId = middleware.auth?.userId;
   if (!userId) {
-    return errorResponse("User not authenticated", 401);
+    return errorResponse('User not authenticated', 401);
   }
 
   try {
     const searchParams = request.nextUrl.searchParams;
-    const days = parseInt(searchParams.get("days") || "7");
-    const date = searchParams.get("date");
+    const days = parseInt(searchParams.get('days') || '7');
+    const date = searchParams.get('date');
 
     const db = getDb();
     let query = `
@@ -35,13 +39,13 @@ export async function GET(request: NextRequest) {
     const params: (number | string)[] = [userId];
 
     if (date) {
-      query += " AND date = ?";
+      query += ' AND date = ?';
       params.push(date);
     } else {
       query += ` AND date >= date('now', '-${days} days')`;
     }
 
-    query += " ORDER BY date DESC, context_value ASC";
+    query += ' ORDER BY date DESC, context_value ASC';
 
     const patterns = db.prepare(query).all(...params);
 
@@ -50,11 +54,13 @@ export async function GET(request: NextRequest) {
     const timeValues: Record<string, number[]> = {};
 
     for (const pattern of patterns) {
-      const timeOfDay = (pattern.context_value as string).toLowerCase().split("_")[0];
+      const timeOfDay = (pattern.context_value as string)
+        .toLowerCase()
+        .split('_')[0];
       if (!timeValues[timeOfDay]) {
         timeValues[timeOfDay] = [];
       }
-      timeValues[timeOfDay].push(pattern.success_rate as number || 5);
+      timeValues[timeOfDay].push((pattern.success_rate as number) || 5);
     }
 
     for (const [time, values] of Object.entries(timeValues)) {
@@ -64,8 +70,8 @@ export async function GET(request: NextRequest) {
 
     return jsonResponse({ patterns, timeOfDayStats }, 200);
   } catch (error) {
-    console.error("Failed to get energy patterns:", error);
-    return errorResponse("Failed to get energy patterns", 500);
+    console.error('Failed to get energy patterns:', error);
+    return errorResponse('Failed to get energy patterns', 500);
   }
 }
 
@@ -76,7 +82,7 @@ export async function POST(request: NextRequest) {
 
   const userId = middleware.auth?.userId;
   if (!userId) {
-    return errorResponse("User not authenticated", 401);
+    return errorResponse('User not authenticated', 401);
   }
 
   try {
@@ -84,35 +90,48 @@ export async function POST(request: NextRequest) {
     const parsed = EnergyPatternSchema.safeParse(body);
 
     if (!parsed.success) {
-      return errorResponse("Invalid input: " + parsed.error.issues[0].message, 400);
+      return errorResponse(
+        'Invalid input: ' + parsed.error.issues[0].message,
+        400
+      );
     }
 
     const db = getDb();
-    const today = parsed.data.date || new Date().toISOString().split("T")[0];
+    const today = parsed.data.date || new Date().toISOString().split('T')[0];
 
     // Check if pattern exists for today
-    const existing = db.prepare(`
+    const existing = db
+      .prepare(
+        `
       SELECT id FROM habit_contexts
       WHERE user_id = ? AND context_type = 'energy_level' AND context_value = ?
-    `).get(userId, `${today}_${parsed.data.time_of_day}`);
+    `
+      )
+      .get(userId, `${today}_${parsed.data.time_of_day}`);
 
     if (existing) {
-      db.prepare(`
+      db.prepare(
+        `
         UPDATE habit_contexts
         SET context_type = 'energy_level', context_value = ?, success_rate = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ? AND user_id = ?
-      `).run(
+      `
+      ).run(
         `${today}_${parsed.data.time_of_day}`,
         parsed.data.energy_level,
-        existing.success_rate ? (existing.success_rate + parsed.data.energy_level) / 2 : parsed.data.energy_level,
+        existing.success_rate
+          ? (existing.success_rate + parsed.data.energy_level) / 2
+          : parsed.data.energy_level,
         existing.id,
         userId
       );
     } else {
-      db.prepare(`
+      db.prepare(
+        `
         INSERT INTO habit_contexts (user_id, context_type, context_value, frequency, success_rate, created_at)
         VALUES (?, 'energy_level', ?, 1, ?, datetime('now'))
-      `).run(
+      `
+      ).run(
         userId,
         `${today}_${parsed.data.time_of_day}`,
         parsed.data.energy_level,
@@ -122,8 +141,8 @@ export async function POST(request: NextRequest) {
 
     return jsonResponse({ success: true }, 201);
   } catch (error) {
-    console.error("Failed to create energy pattern:", error);
-    return errorResponse("Failed to create energy pattern", 500);
+    console.error('Failed to create energy pattern:', error);
+    return errorResponse('Failed to create energy pattern', 500);
   }
 }
 
@@ -134,31 +153,33 @@ export async function GET_ENERGY_SUGGESTIONS(request: NextRequest) {
 
   const userId = middleware.auth?.userId;
   if (!userId) {
-    return errorResponse("User not authenticated", 401);
+    return errorResponse('User not authenticated', 401);
   }
 
   try {
     // Generate suggestions based on energy patterns knowledge
     const suggestions = [
       {
-        type: "schedule_urgent",
-        message: "High priority tasks should be scheduled during your peak energy hours",
+        type: 'schedule_urgent',
+        message:
+          'High priority tasks should be scheduled during your peak energy hours',
         confidence: 0.85,
       },
       {
-        type: "batch_similar",
-        message: "Group similar tasks together to minimize context switching",
+        type: 'batch_similar',
+        message: 'Group similar tasks together to minimize context switching',
         confidence: 0.75,
       },
       {
-        type: "energy_match",
-        message: "Match task difficulty with energy levels: easy tasks in high-energy periods",
+        type: 'energy_match',
+        message:
+          'Match task difficulty with energy levels: easy tasks in high-energy periods',
         confidence: 0.8,
       },
     ];
 
     return jsonResponse({ suggestions }, 200);
   } catch {
-    return errorResponse("Failed to get suggestions", 500);
+    return errorResponse('Failed to get suggestions', 500);
   }
 }
