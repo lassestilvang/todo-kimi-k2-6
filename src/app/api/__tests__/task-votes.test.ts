@@ -20,7 +20,9 @@ vi.mock('@/lib/api-middleware', () => ({
     return response;
   }),
   errorResponse: vi.fn((message, status) => {
-    const response = new Response(JSON.stringify({ error: message }), { status });
+    const response = new Response(JSON.stringify({ error: message }), {
+      status,
+    });
     return response;
   }),
 }));
@@ -33,8 +35,12 @@ vi.mock('@/lib/db', async () => {
   return {
     ...actual,
     getDb: () => mockDb,
-    setDb: (db: any) => { mockDb = db; },
-    resetDb: () => { mockDb = null; },
+    setDb: (db: any) => {
+      mockDb = db;
+    },
+    resetDb: () => {
+      mockDb = null;
+    },
   };
 });
 
@@ -115,7 +121,10 @@ describe('Task Votes API', () => {
         INSERT INTO task_votes (task_id, user_id, value, created_at) VALUES (2, 1, 1, '2024-01-01T00:00:00.000Z')
       `);
 
-      const request = createMockRequest('/api/task-votes?task_id=2&user_id=1', 'GET');
+      const request = createMockRequest(
+        '/api/task-votes?task_id=2&user_id=1',
+        'GET'
+      );
       const response = await GET(request);
 
       expect(response).toBeDefined();
@@ -206,7 +215,10 @@ describe('Task Votes API', () => {
     });
 
     it('handles deleting non-existent vote', async () => {
-      const request = createMockRequest('/api/task-votes?task_id=9999', 'DELETE');
+      const request = createMockRequest(
+        '/api/task-votes?task_id=9999',
+        'DELETE'
+      );
       const response = await DELETE(request);
 
       expect(response).toBeDefined();
