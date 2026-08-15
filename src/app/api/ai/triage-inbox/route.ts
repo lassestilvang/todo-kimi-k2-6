@@ -1,20 +1,24 @@
-import { NextRequest } from "next/server";
-import { parseNaturalLanguageTask } from "@/lib/ai";
-import { applyMiddleware, errorResponse, jsonResponse } from "@/lib/api-middleware";
-import { getDb } from "@/lib/db";
+import { NextRequest } from 'next/server';
+import { parseNaturalLanguageTask } from '@/lib/ai';
+import {
+  applyMiddleware,
+  errorResponse,
+  jsonResponse,
+} from '@/lib/api-middleware';
+import { getDb } from '@/lib/db';
 
 interface InboxSource {
   id: number;
   title: string;
   description?: string;
-  priority: "critical" | "high" | "medium" | "low" | "none";
+  priority: 'critical' | 'high' | 'medium' | 'low' | 'none';
   due_date?: string;
   confidence?: number;
 }
 
 interface TriageUpdate {
   id: number;
-  predicted_priority: "critical" | "high" | "medium" | "low" | "none";
+  predicted_priority: 'critical' | 'high' | 'medium' | 'low' | 'none';
   predicted_due_date?: string;
   suggested_labels?: string[];
   suggested_list?: string;
@@ -35,7 +39,9 @@ function calculatePriorityScore(priority: string, dueDate?: string): number {
   if (dueDate) {
     const due = new Date(dueDate);
     const now = new Date();
-    const diffDays = Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    const diffDays = Math.ceil(
+      (due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+    );
 
     if (diffDays <= 0) score += 30;
     else if (diffDays <= 1) score += 20;
@@ -52,12 +58,12 @@ export async function POST(req: NextRequest) {
   }
 
   if (!middlewareResult.auth?.isAuthenticated) {
-    return errorResponse("Unauthorized", 401);
+    return errorResponse('Unauthorized', 401);
   }
 
   const userId = middlewareResult.auth.userId;
   if (!userId) {
-    return errorResponse("User not found", 404);
+    return errorResponse('User not found', 404);
   }
 
   try {
@@ -65,7 +71,7 @@ export async function POST(req: NextRequest) {
     const { itemIds } = body;
 
     if (!itemIds || !Array.isArray(itemIds) || itemIds.length === 0) {
-      return errorResponse("Invalid itemIds", 400);
+      return errorResponse('Invalid itemIds', 400);
     }
 
     const dbInstance = getDb();
@@ -74,7 +80,7 @@ export async function POST(req: NextRequest) {
     const items = dbInstance
       .prepare(
         `SELECT * FROM smart_inbox_sources
-         WHERE id IN (${itemIds.map(() => "?").join(",")})
+         WHERE id IN (${itemIds.map(() => '?').join(',')})
          AND user_id = ?
          AND status = 'pending'`
       )
@@ -88,20 +94,22 @@ export async function POST(req: NextRequest) {
 
     // Process each item with AI
     for (const item of items) {
-      const text = item.title + (item.description ? ` ${item.description}` : "");
+      const text =
+        item.title + (item.description ? ` ${item.description}` : '');
 
       let aiResult;
       try {
         aiResult = await parseNaturalLanguageTask(text);
       } catch (error) {
-        console.error("AI parsing failed, using fallback:", error);
+        console.error('AI parsing failed, using fallback:', error);
         aiResult = {
           name: item.title,
-          priority: item.priority as "critical" | "high" | "medium" | "low" | "none",
+          priority: item.priority as
+            'critical' | 'high' | 'medium' | 'low' | 'none',
           due_date: item.due_date,
           confidence: item.confidence || 50,
           labels: [],
-          matches: []
+          matches: [],
         };
       }
 
@@ -112,26 +120,33 @@ export async function POST(req: NextRequest) {
         predicted_priority: aiResult.priority || item.priority,
         predicted_due_date: aiResult.due_date || item.due_date,
         suggested_labels: aiResult.labels || [],
-        ai_reasoning: `AI analysis detected: ${aiResult.priority || "normal priority"} task with ${aiResult.due_date ? `due ${aiResult.due_date}` : "no immediate deadline"}`,
+        ai_reasoning: `AI analysis detected: ${aiResult.priority || 'normal priority'} task with ${aiResult.due_date ? `due ${aiResult.due_date}` : 'no immediate deadline'}`,
       };
 
       updates.push(update);
 
       // Update the item with AI insights
-      dbInstance.prepare(`
+      dbInstance
+        .prepare(
+          `
         UPDATE smart_inbox_sources
         SET priority_score = ?, due_date = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
-      `).run(
-        calculatePriorityScore(update.predicted_priority, update.predicted_due_date),
-        update.predicted_due_date,
-        item.id
-      );
+      `
+        )
+        .run(
+          calculatePriorityScore(
+            update.predicted_priority,
+            update.predicted_due_date
+          ),
+          update.predicted_due_date,
+          item.id
+        );
     }
 
     return jsonResponse({ updates }, 200, middlewareResult.headers);
   } catch (error) {
-    console.error("Triage error:", error);
-    return errorResponse("Internal server error", 500);
+    console.error('Triage error:', error);
+    return errorResponse('Internal server error', 500);
   }
 }
