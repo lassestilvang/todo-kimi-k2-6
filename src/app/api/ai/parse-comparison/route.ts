@@ -1,6 +1,10 @@
-import { NextRequest } from "next/server";
-import { getAIManager } from "@/lib/ai/providers";
-import { applyMiddleware, errorResponse, jsonResponse } from "@/lib/api-middleware";
+import { NextRequest } from 'next/server';
+import { getAIManager } from '@/lib/ai/providers';
+import {
+  applyMiddleware,
+  errorResponse,
+  jsonResponse,
+} from '@/lib/api-middleware';
 
 interface ParseComparisonRequest {
   input: {
@@ -28,10 +32,25 @@ interface ProviderResult {
 export async function GET() {
   return jsonResponse({
     models: [
-      { id: "keyword-parser", name: "Keyword Parser", provider: "Built-in", available: true },
-      { id: "openai-gpt4", name: "GPT-4o", provider: "OpenAI", available: !!process.env.OPENAI_API_KEY },
-      { id: "claude-sonnet", name: "Claude 3.5 Sonnet", provider: "Anthropic", available: !!process.env.ANTHROPIC_API_KEY },
-    ]
+      {
+        id: 'keyword-parser',
+        name: 'Keyword Parser',
+        provider: 'Built-in',
+        available: true,
+      },
+      {
+        id: 'openai-gpt4',
+        name: 'GPT-4o',
+        provider: 'OpenAI',
+        available: !!process.env.OPENAI_API_KEY,
+      },
+      {
+        id: 'claude-sonnet',
+        name: 'Claude 3.5 Sonnet',
+        provider: 'Anthropic',
+        available: !!process.env.ANTHROPIC_API_KEY,
+      },
+    ],
   });
 }
 
@@ -41,11 +60,11 @@ export async function POST(request: NextRequest) {
   if (middleware.error) return middleware.error;
 
   try {
-    const body = await request.json() as ParseComparisonRequest;
+    const body = (await request.json()) as ParseComparisonRequest;
     const { text } = body.input;
 
     if (!text?.trim()) {
-      return errorResponse("Input text is required", 400);
+      return errorResponse('Input text is required', 400);
     }
 
     const ai = getAIManager();
@@ -54,9 +73,13 @@ export async function POST(request: NextRequest) {
 
     // Get all providers including keyword parser
     const providers = [
-      { name: "keyword-parser", label: "Keyword Parser (Built-in)" },
-      ...(process.env.OPENAI_API_KEY ? [{ name: "openai-gpt4", label: "GPT-4o (OpenAI)" }] : []),
-      ...(process.env.ANTHROPIC_API_KEY ? [{ name: "claude-sonnet", label: "Claude 3.5 Sonnet (Anthropic)" }] : []),
+      { name: 'keyword-parser', label: 'Keyword Parser (Built-in)' },
+      ...(process.env.OPENAI_API_KEY
+        ? [{ name: 'openai-gpt4', label: 'GPT-4o (OpenAI)' }]
+        : []),
+      ...(process.env.ANTHROPIC_API_KEY
+        ? [{ name: 'claude-sonnet', label: 'Claude 3.5 Sonnet (Anthropic)' }]
+        : []),
     ];
 
     // Test each provider
@@ -75,7 +98,10 @@ export async function POST(request: NextRequest) {
           name: result.name ?? null,
           description: result.description ?? null,
           priority: result.priority ?? null,
-          estimated_duration: result.estimated_duration != null ? String(result.estimated_duration) : null,
+          estimated_duration:
+            result.estimated_duration != null
+              ? String(result.estimated_duration)
+              : null,
           suggested_date: result.suggested_date ?? null,
           recurring: result.recurring ?? null,
           timeout: false,
@@ -84,22 +110,24 @@ export async function POST(request: NextRequest) {
         });
       } catch (error: unknown) {
         const duration = Date.now() - attemptStart;
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        const isTimeout = errorMessage.includes("timed out") || duration > 10000;
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        const isTimeout =
+          errorMessage.includes('timed out') || duration > 10000;
 
         results.push({
           provider: provider.name,
           label: provider.label,
           name: null,
           description: null,
-          priority: "none",
+          priority: 'none',
           estimated_duration: null,
           suggested_date: null,
-          recurring: "none",
+          recurring: 'none',
           timeout: isTimeout,
           duration_ms: duration,
           confidence_score: 0,
-          error: errorMessage || "Unknown error",
+          error: errorMessage || 'Unknown error',
         });
       }
     }
@@ -112,12 +140,13 @@ export async function POST(request: NextRequest) {
         totalDurationMs: totalDuration,
         successful: results.filter(r => !r.timeout).length,
         failed: results.filter(r => r.timeout).length,
-        fastest: results.reduce((min, r) => r.duration_ms < min.duration_ms ? r : min),
+        fastest: results.reduce((min, r) =>
+          r.duration_ms < min.duration_ms ? r : min
+        ),
       },
     });
-
   } catch (error) {
-    console.error("AI comparison error:", error);
-    return errorResponse("Failed to compare AI models", 500);
+    console.error('AI comparison error:', error);
+    return errorResponse('Failed to compare AI models', 500);
   }
 }
