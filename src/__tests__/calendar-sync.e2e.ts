@@ -7,8 +7,13 @@ const handlers = [
   http.get('/api/calendar/sync', () => {
     return HttpResponse.json({
       events: [
-        { id: '1', title: 'Sync Test', description: 'Calendar Sync Test', date: '2023-10-05T10:00:00Z' }
-      ]
+        {
+          id: '1',
+          title: 'Sync Test',
+          description: 'Calendar Sync Test',
+          date: '2023-10-05T10:00:00Z',
+        },
+      ],
     });
   }),
   http.post('/api/calendar/event', () => {
