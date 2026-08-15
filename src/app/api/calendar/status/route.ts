@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getCalendarSync } from "@/lib/actions/calendar";
+import { NextRequest, NextResponse } from 'next/server';
+import { getCalendarSync } from '@/lib/actions/calendar';
 
 /**
  * GET /api/calendar/status
@@ -28,12 +28,12 @@ export async function GET(_request: NextRequest) {
       expiresAt: calendarConfig.expires_at,
     });
   } catch (error) {
-    console.error("Error fetching calendar status:", error);
+    console.error('Error fetching calendar status:', error);
     return NextResponse.json({
       connected: false,
       provider: null,
       lastSync: null,
-      error: "Failed to fetch calendar status",
+      error: 'Failed to fetch calendar status',
     });
   }
 }
