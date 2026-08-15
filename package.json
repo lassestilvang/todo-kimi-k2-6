@@ -17,7 +17,7 @@
     "test:component": "vitest run",
     "test:component:watch": "vitest",
     "test:all": "npm run test && npm run test:component",
-    "test:coverage:report": "vitest run --coverage --coverage-reporter=text --coverage-reporter=html",
+    "test:coverage:report": "vitest run --coverage",
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",
     "stryker": "stryker run",
