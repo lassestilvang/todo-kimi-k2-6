@@ -1,11 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { NextRequest, NextResponse } from 'next/server';
 import {
-  getOutlookCalendarSync,
   enableOutlookCalendarSync,
   getOutlookUserProfile,
-} from "@/lib/integrations/outlook-calendar";
-import { getCurrentUser, requireUserId } from "@/lib/session";
+} from '@/lib/integrations/outlook-calendar';
+import { getCurrentUser } from '@/lib/session';
 
 /**
  * Outlook OAuth2 callback handler
@@ -13,21 +11,26 @@ import { getCurrentUser, requireUserId } from "@/lib/session";
  */
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
-  const code = searchParams.get("code");
-  const state = searchParams.get("state");
-  const error = searchParams.get("error");
+  const code = searchParams.get('code');
+  const error = searchParams.get('error');
 
   // Handle OAuth error
   if (error) {
     return NextResponse.redirect(
-      new URL(`/settings/integrations?error=oauth_error&provider=outlook`, request.url)
+      new URL(
+        `/settings/integrations?error=oauth_error&provider=outlook`,
+        request.url
+      )
     );
   }
 
   // Validate code
   if (!code) {
     return NextResponse.redirect(
-      new URL(`/settings/integrations?error=no_code&provider=outlook`, request.url)
+      new URL(
+        `/settings/integrations?error=no_code&provider=outlook`,
+        request.url
+      )
     );
   }
 
@@ -35,7 +38,10 @@ export async function GET(request: NextRequest) {
   const user = await getCurrentUser();
   if (!user?.email) {
     return NextResponse.redirect(
-      new URL(`/settings/integrations?error=auth_required&provider=outlook`, request.url)
+      new URL(
+        `/settings/integrations?error=auth_required&provider=outlook`,
+        request.url
+      )
     );
   }
 
@@ -43,14 +49,17 @@ export async function GET(request: NextRequest) {
     // Exchange code for tokens
     const tokens = await exchangeCodeForTokens(code);
 
-    // Get user profile
-    const profile = await getOutlookUserProfile(tokens.access_token);
+    // Get user profile (for logging/auditing purposes)
+    await getOutlookUserProfile(tokens.access_token);
 
     // Store tokens in database
     const userId = user.id;
     if (!userId) {
       return NextResponse.redirect(
-        new URL(`/settings/integrations?error=user_not_found&provider=outlook`, request.url)
+        new URL(
+          `/settings/integrations?error=user_not_found&provider=outlook`,
+          request.url
+        )
       );
     }
 
@@ -64,12 +73,18 @@ export async function GET(request: NextRequest) {
 
     // Redirect to integrations page with success
     return NextResponse.redirect(
-      new URL(`/settings/integrations?success=outlook_connected&provider=outlook`, request.url)
+      new URL(
+        `/settings/integrations?success=outlook_connected&provider=outlook`,
+        request.url
+      )
     );
   } catch (err) {
-    console.error("Outlook OAuth callback error:", err);
+    console.error('Outlook OAuth callback error:', err);
     return NextResponse.redirect(
-      new URL(`/settings/integrations?error=token_exchange_failed&provider=outlook`, request.url)
+      new URL(
+        `/settings/integrations?error=token_exchange_failed&provider=outlook`,
+        request.url
+      )
     );
   }
 }
@@ -82,35 +97,29 @@ async function exchangeCodeForTokens(code: string): Promise<{
   refresh_token: string;
   expires_in: number;
 }> {
-  const response = await fetch("https://login.microsoftonline.com/common/oauth2/v2.0/token", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: new URLSearchParams({
-      client_id: process.env.OUTLOOK_CLIENT_ID || "",
-      client_secret: process.env.OUTLOOK_CLIENT_SECRET || "",
-      redirect_uri: `${process.env.NEXTAUTH_URL}/api/auth/callback/outlook`,
-      grant_type: "authorization_code",
-      code,
-    }).toString(),
-  });
+  const response = await fetch(
+    'https://login.microsoftonline.com/common/oauth2/v2.0/token',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        client_id: process.env.OUTLOOK_CLIENT_ID || '',
+        client_secret: process.env.OUTLOOK_CLIENT_SECRET || '',
+        redirect_uri: `${process.env.NEXTAUTH_URL}/api/auth/callback/outlook`,
+        grant_type: 'authorization_code',
+        code,
+      }).toString(),
+    }
+  );
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw new Error(`Token exchange failed: ${error.error_description || response.statusText}`);
+    throw new Error(
+      `Token exchange failed: ${error.error_description || response.statusText}`
+    );
   }
 
   return response.json();
-}
-
-/**
- * Get user ID by email
- */
-async function getUserIdByEmail(email: string): Promise<number | null> {
-  const db = getDb();
-  const result = db
-    .prepare("SELECT id FROM users WHERE email = ?")
-    .get(email) as { id: number } | undefined;
-  return result?.id ?? null;
 }
