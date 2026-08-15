@@ -1,16 +1,22 @@
-import { NextRequest } from "next/server";
-import { getDb } from "@/lib/db";
-import { applyMiddleware, errorResponse, jsonResponse } from "@/lib/api-middleware";
+import { NextRequest } from 'next/server';
+import { getDb } from '@/lib/db';
+import {
+  applyMiddleware,
+  errorResponse,
+  jsonResponse,
+} from '@/lib/api-middleware';
 
 // GET /api/activity - Get recent activity logs
 export async function GET(request: NextRequest) {
-  const middlewareResult = await applyMiddleware(request, { requireAuth: true });
+  const middlewareResult = await applyMiddleware(request, {
+    requireAuth: true,
+  });
   if (middlewareResult.error) {
     return middlewareResult.error;
   }
 
   const searchParams = new URL(request.url).searchParams;
-  const workspaceId = searchParams.get("workspace_id");
+  const workspaceId = searchParams.get('workspace_id');
 
   try {
     const db = getDb();
@@ -47,7 +53,7 @@ export async function GET(request: NextRequest) {
 
     return jsonResponse(activities, 200, middlewareResult.headers);
   } catch (error) {
-    console.error("Error fetching activities:", error);
-    return errorResponse("Internal server error", 500);
+    console.error('Error fetching activities:', error);
+    return errorResponse('Internal server error', 500);
   }
 }
