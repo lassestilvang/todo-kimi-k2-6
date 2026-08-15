@@ -28,7 +28,10 @@ async function postLeaderboard() {
 *${winner.contributor}* takes the crown with *${winner.totalPoints} points*!
 
 Top Contributors:
-${leaderboard.slice(0, 5).map((e, i) => `${i + 1}. ${e.contributor} (${e.totalPoints} pts)`).join('\n')}
+${leaderboard
+  .slice(0, 5)
+  .map((e, i) => `${i + 1}. ${e.contributor} (${e.totalPoints} pts)`)
+  .join('\n')}
 
 Keep up the great work, team! 🚀
   `;
@@ -37,7 +40,7 @@ Keep up the great work, team! 🚀
     await slack.chat.postMessage({
       channel: CHANNEL_ID,
       text: message,
-      mrkdwn: true
+      mrkdwn: true,
     });
     console.log('✅ Slack leaderboard posted');
   } catch (error) {
