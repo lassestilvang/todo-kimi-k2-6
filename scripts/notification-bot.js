@@ -45,10 +45,10 @@ async function postComment(prNumber, comment) {
     {
       method: 'POST',
       headers: {
-        'Authorization': `token ${GITHUB_TOKEN}`,
-        'Accept': 'application/vnd.github.v3+json'
+        Authorization: `token ${GITHUB_TOKEN}`,
+        Accept: 'application/vnd.github.v3+json',
       },
-      body: JSON.stringify({ body: comment })
+      body: JSON.stringify({ body: comment }),
     }
   );
 
@@ -70,7 +70,7 @@ app.post('/webhook', async (req, res) => {
 
   const metrics = {
     coverage: { branch: 89, functions: 92 },
-    mutationKillRate: 97
+    mutationKillRate: 97,
   };
 
   const comment = formatLeaderboardComment(leaderboard, metrics);
