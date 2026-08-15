@@ -1,33 +1,33 @@
 // Service Worker for TaskFlow PWA
 // Enables offline access and background sync
 
-const CACHE_NAME = "taskflow-v1";
+const CACHE_NAME = 'taskflow-v1';
 const urlsToCache = [
-  "/",
-  "/offline.html",
-  "/manifest.json",
-  "/favicon.ico",
-  "/icons/icon-16x16.png",
-  "/icons/icon-32x32.png",
-  "/icons/icon-192x192.png",
-  "/icons/icon-512x512.png",
+  '/',
+  '/offline.html',
+  '/manifest.json',
+  '/favicon.ico',
+  '/icons/icon-16x16.png',
+  '/icons/icon-32x32.png',
+  '/icons/icon-192x192.png',
+  '/icons/icon-512x512.png',
 ];
 
 // Install event - cache core assets
-self.addEventListener("install", (event) => {
+self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
+    caches.open(CACHE_NAME).then(cache => {
       return cache.addAll(urlsToCache);
     })
   );
 });
 
 // Activate event - clean up old caches
-self.addEventListener("activate", (event) => {
+self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
+    caches.keys().then(cacheNames => {
       return Promise.all(
-        cacheNames.map((cacheName) => {
+        cacheNames.map(cacheName => {
           if (cacheName !== CACHE_NAME) {
             return caches.delete(cacheName);
           }
@@ -38,15 +38,15 @@ self.addEventListener("activate", (event) => {
 });
 
 // Fetch event - serve from cache, fallback to network
-self.addEventListener("fetch", (event) => {
+self.addEventListener('fetch', event => {
   // API requests - network first, fallback to cache
-  if (event.request.url.includes("/api/")) {
+  if (event.request.url.includes('/api/')) {
     event.respondWith(
       fetch(event.request)
-        .then((response) => {
+        .then(response => {
           // Cache successful API responses
           const responseToCache = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
+          caches.open(CACHE_NAME).then(cache => {
             cache.put(event.request, responseToCache);
           });
           return response;
@@ -61,21 +61,24 @@ self.addEventListener("fetch", (event) => {
 
   // Static assets - cache first, fallback to network
   event.respondWith(
-    caches.match(event.request).then((response) => {
-      // Return cached response or fetch from network
-      return response || fetch(event.request);
-    }).catch(() => {
-      // If both cache and network fail, return a fallback
-      if (event.request.mode === "navigate") {
-        return caches.match("/");
-      }
-    })
+    caches
+      .match(event.request)
+      .then(response => {
+        // Return cached response or fetch from network
+        return response || fetch(event.request);
+      })
+      .catch(() => {
+        // If both cache and network fail, return a fallback
+        if (event.request.mode === 'navigate') {
+          return caches.match('/');
+        }
+      })
   );
 });
 
 // Background sync for pending writes
-self.addEventListener("sync", (event) => {
-  if (event.tag === "sync-tasks") {
+self.addEventListener('sync', event => {
+  if (event.tag === 'sync-tasks') {
     event.waitUntil(syncTasks());
   }
 });
@@ -83,67 +86,67 @@ self.addEventListener("sync", (event) => {
 async function syncTasks() {
   // Get pending changes from IndexedDB
   const db = await openDB();
-  const pendingChanges = await db.getAll("pending_changes");
+  const pendingChanges = await db.getAll('pending_changes');
 
   for (const change of pendingChanges) {
     try {
-      await fetch("/api/tasks", {
+      await fetch('/api/tasks', {
         method: change.method,
-        headers: { "Content-Type": "application/json" },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(change.data),
       });
 
       // Remove synced change
-      await db.delete("pending_changes", change.id);
+      await db.delete('pending_changes', change.id);
     } catch (error) {
-      console.error("Sync failed:", error);
+      console.error('Sync failed:', error);
     }
   }
 }
 
 function openDB() {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open("TaskFlowSync", 1);
+    const request = indexedDB.open('TaskFlowSync', 1);
     request.onerror = () => reject(request.error);
     request.onsuccess = () => resolve(request.result);
-    request.onupgradeneeded = (event) => {
+    request.onupgradeneeded = event => {
       const db = event.target.result;
-      if (!db.objectStoreNames.contains("pending_changes")) {
-        db.createObjectStore("pending_changes", { keyPath: "id" });
+      if (!db.objectStoreNames.contains('pending_changes')) {
+        db.createObjectStore('pending_changes', { keyPath: 'id' });
       }
     };
   });
 }
 
 // Push notification handler
-self.addEventListener("push", (event) => {
+self.addEventListener('push', event => {
   const data = event.data?.json();
 
-  self.registration.showNotification(data?.title || "TaskFlow", {
-    body: data?.body || "You have a new notification",
-    icon: "/icons/icon-192x192.png",
-    badge: "/icons/icon-192x192.png",
+  self.registration.showNotification(data?.title || 'TaskFlow', {
+    body: data?.body || 'You have a new notification',
+    icon: '/icons/icon-192x192.png',
+    badge: '/icons/icon-192x192.png',
     data: {
-      url: data?.url || "/",
+      url: data?.url || '/',
     },
   });
 });
 
 // Notification click handler
-self.addEventListener("notificationclick", (event) => {
+self.addEventListener('notificationclick', event => {
   event.notification.close();
 
   event.waitUntil(
-    clients.matchAll({ type: "window" }).then((clientList) => {
-      const url = event.notification.data?.url || "/";
+    clients.matchAll({ type: 'window' }).then(clientList => {
+      const url = event.notification.data?.url || '/';
 
-      return clientList.forEach((client) => {
+      return clientList.forEach(client => {
         if (client.url === url && client.focus()) {
           return client.focus();
         }
       });
 
-      if (clients.matchAll({ type: "window" })) {
+      if (clients.matchAll({ type: 'window' })) {
         return clients.openWindow(url);
       }
     })
