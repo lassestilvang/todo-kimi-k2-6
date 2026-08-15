@@ -1,11 +1,11 @@
-import NextAuth from "next-auth";
-import CredentialsProvider from "next-auth/providers/credentials";
-import { getDb } from "@/lib/db";
-import { comparePassword } from "@/lib/auth";
-import { config } from "@/lib/config";
-import type { User as AppUser } from "@/types";
-import type { Session } from "next-auth";
-import type { AuthOptions } from "next-auth";
+import NextAuth from 'next-auth';
+import CredentialsProvider from 'next-auth/providers/credentials';
+import { getDb } from '@/lib/db';
+import { comparePassword } from '@/lib/auth';
+import { config } from '@/lib/config';
+import type { User as AppUser } from '@/types';
+import type { Session } from 'next-auth';
+import type { AuthOptions } from 'next-auth';
 
 interface Credentials {
   email?: string;
@@ -23,7 +23,7 @@ async function authorize(credentials: Credentials | undefined) {
   }
 
   const user = db
-    .prepare("SELECT * FROM users WHERE email = ?")
+    .prepare('SELECT * FROM users WHERE email = ?')
     .get(email) as AppUser & { password_hash: string };
 
   if (!user || !user.password_hash) {
@@ -46,10 +46,10 @@ async function authorize(credentials: Credentials | undefined) {
 export const authOptions = {
   providers: [
     CredentialsProvider({
-      name: "Email",
+      name: 'Email',
       credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" },
+        email: { label: 'Email', type: 'email' },
+        password: { label: 'Password', type: 'password' },
       },
       authorize: async (credentials: Credentials | undefined) => {
         return authorize(credentials);
@@ -57,9 +57,9 @@ export const authOptions = {
     }),
   ],
   pages: {
-    signIn: "/login",
-    signOut: "/auth/signout",
-    error: "/auth/error",
+    signIn: '/login',
+    signOut: '/auth/signout',
+    error: '/auth/error',
   },
   callbacks: {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -78,7 +78,7 @@ export const authOptions = {
     },
   },
   secret: config.auth.secret,
-  debug: process.env.NODE_ENV === "development",
+  debug: process.env.NODE_ENV === 'development',
 } satisfies AuthOptions;
 
 export default NextAuth(authOptions);
