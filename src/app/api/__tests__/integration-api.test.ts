@@ -1,11 +1,11 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { createTestDb } from "@/lib/db/test-db";
-import { setDb, resetDb } from "@/lib/db";
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { createTestDb } from '@/lib/db/test-db';
+import { setDb, resetDb } from '@/lib/db';
 
 // Integration tests for API routes that need full server context
 // These tests verify the API layer works correctly with the full middleware stack
 
-describe("API Integration Tests", () => {
+describe('API Integration Tests', () => {
   let db: ReturnType<typeof createTestDb>;
   const originalNodeEnv = process.env.NODE_ENV;
 
@@ -14,8 +14,8 @@ describe("API Integration Tests", () => {
     db = createTestDb();
     setDb(db);
 
-    (process.env as any).NODE_ENV = "test";
-    (process.env as any).NEXTAUTH_SECRET = "demo-secret";
+    (process.env as any).NODE_ENV = 'test';
+    (process.env as any).NEXTAUTH_SECRET = 'demo-secret';
 
     // Initialize schema
     db.exec(`
@@ -83,8 +83,15 @@ describe("API Integration Tests", () => {
     `);
 
     // Insert test data
-    db.prepare("INSERT INTO tasks (name, priority) VALUES (?, ?)").run("Test Task", "high");
-    db.prepare("INSERT INTO users (id, name, email) VALUES (?, ?, ?)").run(1, "Test User", "test@example.com");
+    db.prepare('INSERT INTO tasks (name, priority) VALUES (?, ?)').run(
+      'Test Task',
+      'high'
+    );
+    db.prepare('INSERT INTO users (id, name, email) VALUES (?, ?, ?)').run(
+      1,
+      'Test User',
+      'test@example.com'
+    );
   });
 
   afterEach(() => {
@@ -93,17 +100,22 @@ describe("API Integration Tests", () => {
     (process.env as any).NODE_ENV = originalNodeEnv;
   });
 
-  describe("Task Votes API Integration", () => {
-    it("should calculate vote score correctly", async () => {
+  describe('Task Votes API Integration', () => {
+    it('should calculate vote score correctly', async () => {
       // Insert test votes
-      db.prepare("INSERT INTO task_votes (task_id, user_id, value, created_at) VALUES (?, ?, ?, ?)")
-        .run(1, 1, 1, "2024-01-01");
-      db.prepare("INSERT INTO task_votes (task_id, user_id, value, created_at) VALUES (?, ?, ?, ?)")
-        .run(1, 2, 1, "2024-01-02");
-      db.prepare("INSERT INTO task_votes (task_id, user_id, value, created_at) VALUES (?, ?, ?, ?)")
-        .run(1, 3, -1, "2024-01-03");
+      db.prepare(
+        'INSERT INTO task_votes (task_id, user_id, value, created_at) VALUES (?, ?, ?, ?)'
+      ).run(1, 1, 1, '2024-01-01');
+      db.prepare(
+        'INSERT INTO task_votes (task_id, user_id, value, created_at) VALUES (?, ?, ?, ?)'
+      ).run(1, 2, 1, '2024-01-02');
+      db.prepare(
+        'INSERT INTO task_votes (task_id, user_id, value, created_at) VALUES (?, ?, ?, ?)'
+      ).run(1, 3, -1, '2024-01-03');
 
-      const votes = db.prepare("SELECT * FROM task_votes WHERE task_id = ?").all(1);
+      const votes = db
+        .prepare('SELECT * FROM task_votes WHERE task_id = ?')
+        .all(1);
       const total = votes.reduce((sum, v) => sum + v.value, 0);
       const count = votes.length;
       const score = count > 0 ? total / count : 0;
@@ -113,82 +125,106 @@ describe("API Integration Tests", () => {
       expect(count).toBe(3);
     });
 
-    it("should handle vote upsert", async () => {
+    it('should handle vote upsert', async () => {
       // Insert initial vote
-      db.prepare("INSERT INTO task_votes (task_id, user_id, value, created_at) VALUES (?, ?, ?, ?)")
-        .run(1, 1, 1, "2024-01-01");
+      db.prepare(
+        'INSERT INTO task_votes (task_id, user_id, value, created_at) VALUES (?, ?, ?, ?)'
+      ).run(1, 1, 1, '2024-01-01');
 
       // Check it exists
-      const existing = db.prepare("SELECT * FROM task_votes WHERE task_id = ? AND user_id = ?").get(1, 1);
+      const existing = db
+        .prepare('SELECT * FROM task_votes WHERE task_id = ? AND user_id = ?')
+        .get(1, 1);
       expect(existing).toBeDefined();
       expect((existing as any).value).toBe(1);
     });
   });
 
-  describe("Time Entries API Integration", () => {
-    it("should create and retrieve time entries", async () => {
-      const startTime = "2024-06-01T09:00:00";
-      const endTime = "2024-06-01T10:00:00";
+  describe('Time Entries API Integration', () => {
+    it('should create and retrieve time entries', async () => {
+      const startTime = '2024-06-01T09:00:00';
+      const endTime = '2024-06-01T10:00:00';
 
-      db.prepare("INSERT INTO time_entries (task_id, start_time, end_time, duration_seconds, description) VALUES (?, ?, ?, ?, ?)")
-        .run(1, startTime, endTime, 3600, "Work session");
+      db.prepare(
+        'INSERT INTO time_entries (task_id, start_time, end_time, duration_seconds, description) VALUES (?, ?, ?, ?, ?)'
+      ).run(1, startTime, endTime, 3600, 'Work session');
 
-      const entry = db.prepare("SELECT * FROM time_entries WHERE task_id = ?").get(1);
+      const entry = db
+        .prepare('SELECT * FROM time_entries WHERE task_id = ?')
+        .get(1);
       expect(entry).toBeDefined();
       expect((entry as any).duration_seconds).toBe(3600);
     });
 
-    it("should calculate total time for task", async () => {
-      db.prepare("INSERT INTO time_entries (task_id, start_time, end_time, duration_seconds) VALUES (?, ?, ?, ?)")
-        .run(1, "2024-06-01T09:00:00", "2024-06-01T10:00:00", 3600);
+    it('should calculate total time for task', async () => {
+      db.prepare(
+        'INSERT INTO time_entries (task_id, start_time, end_time, duration_seconds) VALUES (?, ?, ?, ?)'
+      ).run(1, '2024-06-01T09:00:00', '2024-06-01T10:00:00', 3600);
 
-      db.prepare("INSERT INTO time_entries (task_id, start_time, end_time, duration_seconds) VALUES (?, ?, ?, ?)")
-        .run(1, "2024-06-01T10:00:00", "2024-06-01T11:00:00", 3600);
+      db.prepare(
+        'INSERT INTO time_entries (task_id, start_time, end_time, duration_seconds) VALUES (?, ?, ?, ?)'
+      ).run(1, '2024-06-01T10:00:00', '2024-06-01T11:00:00', 3600);
 
       // Just verify the SQL executes correctly
       expect(true).toBe(true);
     });
   });
 
-  describe("Habit Completions API Integration", () => {
-    it("should record habit completion", async () => {
-      const today = new Date().toISOString().split("T")[0];
+  describe('Habit Completions API Integration', () => {
+    it('should record habit completion', async () => {
+      const today = new Date().toISOString().split('T')[0];
 
-      db.prepare("INSERT INTO habit_completions (task_id, date, completed_at) VALUES (?, ?, ?)")
-        .run(1, today, new Date().toISOString());
+      db.prepare(
+        'INSERT INTO habit_completions (task_id, date, completed_at) VALUES (?, ?, ?)'
+      ).run(1, today, new Date().toISOString());
 
       // Just verify the SQL executes
       expect(true).toBe(true);
     });
 
-    it("should count streak", async () => {
-      const today = new Date().toISOString().split("T")[0];
-      const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
-      const beforeYesterday = new Date(Date.now() - 172800000).toISOString().split("T")[0];
+    it('should count streak', async () => {
+      const today = new Date().toISOString().split('T')[0];
+      const yesterday = new Date(Date.now() - 86400000)
+        .toISOString()
+        .split('T')[0];
+      const beforeYesterday = new Date(Date.now() - 172800000)
+        .toISOString()
+        .split('T')[0];
 
-      db.prepare("INSERT INTO habit_completions (task_id, date) VALUES (?, ?)").run(1, beforeYesterday);
-      db.prepare("INSERT INTO habit_completions (task_id, date) VALUES (?, ?)").run(1, yesterday);
-      db.prepare("INSERT INTO habit_completions (task_id, date) VALUES (?, ?)").run(1, today);
+      db.prepare(
+        'INSERT INTO habit_completions (task_id, date) VALUES (?, ?)'
+      ).run(1, beforeYesterday);
+      db.prepare(
+        'INSERT INTO habit_completions (task_id, date) VALUES (?, ?)'
+      ).run(1, yesterday);
+      db.prepare(
+        'INSERT INTO habit_completions (task_id, date) VALUES (?, ?)'
+      ).run(1, today);
 
       // Just verify inserts work
       expect(true).toBe(true);
     });
   });
 
-  describe("Shares API Integration", () => {
-    it("should create share token", async () => {
+  describe('Shares API Integration', () => {
+    it('should create share token', async () => {
       const token = `share_${Date.now()}`;
 
-      db.prepare("INSERT INTO shares (task_id, token, permission, expires_at) VALUES (?, ?, ?, ?)")
-        .run(1, token, "view", "2025-12-31");
+      db.prepare(
+        'INSERT INTO shares (task_id, token, permission, expires_at) VALUES (?, ?, ?, ?)'
+      ).run(1, token, 'view', '2025-12-31');
 
       // Mock may not return the row, but the SQL should execute
       expect(true).toBe(true);
     });
 
-    it("should validate share token structure", async () => {
+    it('should validate share token structure', async () => {
       // Test that the shares table exists and has the right columns
-      const result = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='shares'").get();
+      const result = db
+        .prepare(
+          "SELECT sql FROM sqlite_master WHERE type='table' AND name='shares'"
+        )
+        .get();
       expect(result).toBeDefined();
     });
   });
