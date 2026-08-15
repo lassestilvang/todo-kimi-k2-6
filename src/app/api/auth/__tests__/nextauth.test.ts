@@ -41,7 +41,9 @@ describe('NextAuth Configuration', () => {
       expect(scopes).toContain('openid');
       expect(scopes).toContain('email');
       expect(scopes).toContain('profile');
-      expect(scopes).toContain('https://www.googleapis.com/auth/calendar.events');
+      expect(scopes).toContain(
+        'https://www.googleapis.com/auth/calendar.events'
+      );
     });
   });
 
@@ -67,7 +69,8 @@ describe('NextAuth Configuration', () => {
     it('uses NEXTAUTH_SECRET environment variable', () => {
       (process.env as any).NEXTAUTH_SECRET = 'my-secret';
 
-      const secret = process.env.NEXTAUTH_SECRET || 'fallback-secret-for-development';
+      const secret =
+        process.env.NEXTAUTH_SECRET || 'fallback-secret-for-development';
 
       expect(secret).toBe('my-secret');
     });
@@ -75,7 +78,8 @@ describe('NextAuth Configuration', () => {
     it('falls back to development secret', () => {
       delete process.env.NEXTAUTH_SECRET;
 
-      const secret = process.env.NEXTAUTH_SECRET || 'fallback-secret-for-development';
+      const secret =
+        process.env.NEXTAUTH_SECRET || 'fallback-secret-for-development';
 
       expect(secret).toBe('fallback-secret-for-development');
     });
@@ -134,7 +138,12 @@ describe('NextAuth Configuration', () => {
 
     it('handles missing access_token in account', () => {
       const token: any = {};
-      const account: { access_token?: string; refresh_token?: string; expires_at?: number; provider?: string } | null = null;
+      const account: {
+        access_token?: string;
+        refresh_token?: string;
+        expires_at?: number;
+        provider?: string;
+      } | null = null;
       const user = {
         id: 1,
         name: 'Test User',
@@ -257,7 +266,8 @@ describe('NextAuth Configuration', () => {
     });
 
     it('includes calendar events scope', () => {
-      const scopes = 'openid email profile https://www.googleapis.com/auth/calendar.events';
+      const scopes =
+        'openid email profile https://www.googleapis.com/auth/calendar.events';
 
       expect(scopes).toContain('calendar.events');
     });
