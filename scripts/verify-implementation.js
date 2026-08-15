@@ -22,58 +22,58 @@ function runVerification() {
     {
       name: 'GitHub Actions Workflow - test.yaml',
       file: '.github/workflows/test.yaml',
-      content: 'name: Test & Coverage'
+      content: 'name: Test & Coverage',
     },
     {
       name: 'GitHub Actions Workflow - compliance.yaml',
       file: '.github/workflows/compliance.yaml',
-      name: 'Compliance Monitoring'
+      name: 'Compliance Monitoring',
     },
     {
       name: 'Mutation Risk Analysis Script',
       file: 'scripts/analyze-mutation-risks.js',
-      content: 'analyzeMutationResults'
+      content: 'analyzeMutationResults',
     },
     {
       name: 'AI Refactoring Suggestions Script',
       file: 'scripts/ai-refactor-suggestions.js',
-      content: 'getSuggestions'
+      content: 'getSuggestions',
     },
     {
       name: 'Gamification Script',
       file: 'scripts/gamification.js',
-      content: 'calculateGamificationScore'
+      content: 'calculateGamificationScore',
     },
     {
       name: 'Edge Case Generator Script',
       file: 'scripts/generate-edge-cases.js',
-      content: 'generateInvalidInputsWithAI'
+      content: 'generateInvalidInputsWithAI',
     },
     {
       name: 'PDF Report Generator Script',
       file: 'scripts/generate-pdf-report.js',
-      content: 'generatePDF'
+      content: 'generatePDF',
     },
     {
       name: 'Slack Notifier Script',
       file: 'scripts/slack-notifier.js',
-      content: 'postLeaderboard'
+      content: 'postLeaderboard',
     },
     {
       name: 'Notification Bot Script',
       file: 'scripts/notification-bot.js',
-      content: 'app.post'
+      content: 'app.post',
     },
     {
       name: 'Grafana Dashboard Config',
       file: 'grafana-dashboard.yml',
-      content: 'Mutation Risk Dashboard'
+      content: 'Mutation Risk Dashboard',
     },
     {
       name: 'Implementation Summary',
       file: 'reports/IMPLEMENTATION_SUMMARY.md',
-      content: '# ✅ Implementation Summary'
-    }
+      content: '# ✅ Implementation Summary',
+    },
   ];
 
   console.log('🔍 Running final verification of all components...\n');
@@ -83,9 +83,10 @@ function runVerification() {
 
   checks.forEach(check => {
     const exists = checkFileExists(check.file);
-    const contentMatch = exists && check.content
-      ? checkFileContent(check.file, check.content)
-      : true; // If no content check specified, just check existence
+    const contentMatch =
+      exists && check.content
+        ? checkFileContent(check.file, check.content)
+        : true; // If no content check specified, just check existence
 
     if (exists && contentMatch) {
       console.log(`✅ ${check.name}`);
@@ -104,7 +105,9 @@ function runVerification() {
     console.log('\n🎉 ALL COMPONENTS IMPLEMENTED SUCCESSFULLY!');
     console.log('🚀 System is now bulletproof with next-level features.');
   } else {
-    console.log('\n⚠️  Some components need attention. Please review failed checks above.');
+    console.log(
+      '\n⚠️  Some components need attention. Please review failed checks above.'
+    );
   }
 
   return allPassed;
