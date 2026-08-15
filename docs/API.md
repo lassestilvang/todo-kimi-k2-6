@@ -17,22 +17,26 @@ Most endpoints require authentication via NextAuth.js session cookies. Include c
 ### Tasks
 
 #### `GET /api/tasks`
+
 Retrieve all tasks with optional filtering.
 
 **Query Parameters:**
-| Param | Type | Description |
-|-------|------|-------------|
-| `list_id` | number | Filter by list ID |
-| `completed` | boolean | Filter by completion status |
-| `include_completed` | boolean | Include completed tasks |
-| `search` | string | Search term |
+
+| Param               | Type    | Description                 |
+| ------------------- | ------- | --------------------------- |
+| `list_id`           | number  | Filter by list ID           |
+| `completed`         | boolean | Filter by completion status |
+| `include_completed` | boolean | Include completed tasks     |
+| `search`            | string  | Search term                 |
 
 **Response:** `TaskWithRelations[]`
 
 #### `POST /api/tasks`
+
 Create a new task.
 
 **Body:** `CreateTaskRequest`
+
 ```typescript
 {
   name: string;
@@ -48,26 +52,31 @@ Create a new task.
 ```
 
 #### `GET /api/tasks/[id]`
+
 Retrieve a single task with all relations.
 
 **Response:** `TaskWithRelations`
 
 #### `PUT /api/tasks/[id]`
+
 Update a task.
 
 **Body:** `UpdateTaskRequest`
 
 #### `DELETE /api/tasks/[id]`
+
 Delete a task.
 
 ### Lists
 
 #### `GET /api/lists`
+
 Retrieve all lists.
 
 **Response:** `List[]`
 
 #### `POST /api/lists`
+
 Create a new list.
 
 **Body:** `{ name: string; emoji?: string; color?: string }`
@@ -75,11 +84,13 @@ Create a new list.
 ### Labels
 
 #### `GET /api/labels`
+
 Retrieve all labels.
 
 **Response:** `Label[]`
 
 #### `POST /api/labels`
+
 Create a new label.
 
 **Body:** `{ name: string; icon?: string; color?: string }`
@@ -87,11 +98,13 @@ Create a new label.
 ### AI Assistant
 
 #### `POST /api/ai`
+
 Parse natural language text into task data.
 
 **Body:** `{ text: string }`
 
 **Response:**
+
 ```typescript
 {
   name: string;
@@ -105,19 +118,23 @@ Parse natural language text into task data.
 ### Time Tracking
 
 #### `GET /api/time-entries`
+
 Retrieve time entries.
 
 **Query Parameters:**
-| Param | Type | Description |
-|-------|------|-------------|
+
+| Param     | Type   | Description       |
+| --------- | ------ | ----------------- |
 | `task_id` | number | Filter by task ID |
 
 #### `POST /api/time-entries`
+
 Start a new time entry.
 
 **Body:** `{ task_id: number; description?: string }`
 
 #### `PUT /api/time-entries/[id]`
+
 End a time entry.
 
 **Body:** `{ end_time: string }`
@@ -125,6 +142,7 @@ End a time entry.
 ### Reminders
 
 #### `POST /api/reminders`
+
 Create a reminder for a task.
 
 **Body:** `{ task_id: number; remind_at: string }`
@@ -132,12 +150,15 @@ Create a reminder for a task.
 ### Auth
 
 #### `POST /api/auth/[...nextauth]/signin`
+
 Sign in with credentials.
 
 #### `POST /api/auth/[...nextauth]/signup`
+
 Sign up a new user.
 
 #### `POST /api/auth/[...nextauth]/logout`
+
 Sign out the current user.
 
 ## Error Responses
@@ -154,11 +175,13 @@ All endpoints return errors in this format:
 ## Rate Limiting
 
 API endpoints are rate-limited:
+
 - **API routes**: 100 requests per minute
 - **Auth routes**: 10 requests per 15 minutes
 - **AI routes**: 20 requests per minute
 
 Rate-limited responses return HTTP 429 with:
+
 ```json
 {
   "error": "Too many requests",
@@ -170,6 +193,7 @@ Rate-limited responses return HTTP 429 with:
 ## Data Types
 
 ### Task Priority
+
 - `critical` - Red, highest priority
 - `high` - Orange, high priority
 - `medium` - Yellow, medium priority
@@ -177,6 +201,7 @@ Rate-limited responses return HTTP 429 with:
 - `none` - Gray, no priority
 
 ### Recurring Types
+
 - `none` - No recurrence
 - `daily` - Every day
 - `weekly` - Every week
@@ -190,6 +215,7 @@ Rate-limited responses return HTTP 429 with:
 TaskFlow supports webhooks for external integrations. Configure them in the integrations settings.
 
 ### Incoming Webhooks
+
 - **URL**: `/api/webhooks/[token]`
 - **Method**: POST
 - **Body**: Task creation payload
