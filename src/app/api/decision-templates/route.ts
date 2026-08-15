@@ -1,7 +1,11 @@
-import { NextRequest } from "next/server";
-import { applyMiddleware, errorResponse, jsonResponse } from "@/lib/api-middleware";
-import { getDb } from "@/lib/db";
-import { z } from "zod";
+import { NextRequest } from 'next/server';
+import {
+  applyMiddleware,
+  errorResponse,
+  jsonResponse,
+} from '@/lib/api-middleware';
+import { getDb } from '@/lib/db';
+import { z } from 'zod';
 
 export const DecisionTemplateValidationSchema = z.object({
   id: z.number().optional(),
@@ -9,14 +13,16 @@ export const DecisionTemplateValidationSchema = z.object({
   name: z.string().min(1).max(200),
   prompt_template: z.string().min(1).max(5000),
   option_template: z.string().optional(),
-  decision_type: z.enum([
-    "priority",
-    "approach",
-    "tool",
-    "timeline",
-    "allocation",
-    "cancellation"
-  ]).optional(),
+  decision_type: z
+    .enum([
+      'priority',
+      'approach',
+      'tool',
+      'timeline',
+      'allocation',
+      'cancellation',
+    ])
+    .optional(),
   created_at: z.string().optional(),
 });
 
@@ -24,14 +30,16 @@ const CreateTemplateValidationSchema = z.object({
   name: z.string().min(1).max(200),
   prompt_template: z.string().min(1).max(5000),
   option_template: z.string().optional(),
-  decision_type: z.enum([
-    "priority",
-    "approach",
-    "tool",
-    "timeline",
-    "allocation",
-    "cancellation"
-  ]).optional(),
+  decision_type: z
+    .enum([
+      'priority',
+      'approach',
+      'tool',
+      'timeline',
+      'allocation',
+      'cancellation',
+    ])
+    .optional(),
 });
 
 const GenerateTemplateValidationSchema = z.object({
@@ -58,11 +66,11 @@ export async function GET(request: NextRequest) {
 
   const userId = middleware.auth?.userId;
   if (!userId) {
-    return errorResponse("User not authenticated", 401);
+    return errorResponse('User not authenticated', 401);
   }
 
   const searchParams = request.nextUrl.searchParams;
-  const type = searchParams.get("type");
+  const type = searchParams.get('type');
 
   try {
     const db = getDb();
@@ -94,8 +102,8 @@ export async function GET(request: NextRequest) {
 
     return jsonResponse({ templates });
   } catch (error: unknown) {
-    console.error("Failed to fetch templates:", error);
-    return errorResponse("Failed to fetch templates", 500);
+    console.error('Failed to fetch templates:', error);
+    return errorResponse('Failed to fetch templates', 500);
   }
 }
 
@@ -106,7 +114,7 @@ export async function POST(request: NextRequest) {
 
   const userId = middleware.auth?.userId;
   if (!userId) {
-    return errorResponse("User not authenticated", 401);
+    return errorResponse('User not authenticated', 401);
   }
 
   try {
@@ -114,26 +122,37 @@ export async function POST(request: NextRequest) {
     const parsed = CreateTemplateValidationSchema.safeParse(body);
 
     if (!parsed.success) {
-      return errorResponse("Invalid input: " + parsed.error.issues[0].message, 400);
+      return errorResponse(
+        'Invalid input: ' + parsed.error.issues[0].message,
+        400
+      );
     }
 
     const db = getDb();
-    const result = db.prepare(`
+    const result = db
+      .prepare(
+        `
       INSERT INTO decision_templates (user_id, name, prompt_template, option_template, decision_type, created_at)
       VALUES (?, ?, ?, ?, ?, datetime('now'))
-    `).run(
-      userId,
-      parsed.data.name,
-      parsed.data.prompt_template,
-      parsed.data.option_template || null,
-      parsed.data.decision_type || "approach"
-    );
+    `
+      )
+      .run(
+        userId,
+        parsed.data.name,
+        parsed.data.prompt_template,
+        parsed.data.option_template || null,
+        parsed.data.decision_type || 'approach'
+      );
 
-    const row = db.prepare(`
+    const row = db
+      .prepare(
+        `
       SELECT id, user_id, name, prompt_template, option_template, decision_type, created_at
       FROM decision_templates
       WHERE id = ?
-    `).get(result.lastInsertRowid as number) as TemplateRow;
+    `
+      )
+      .get(result.lastInsertRowid as number) as TemplateRow;
 
     const template = {
       id: row.id,
@@ -147,8 +166,9 @@ export async function POST(request: NextRequest) {
 
     return jsonResponse({ template }, 201);
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    console.error("Failed to create template:", error);
+    const errorMessage =
+      error instanceof Error ? error.message : 'Unknown error';
+    console.error('Failed to create template:', error);
     return errorResponse(`Failed to create template: ${errorMessage}`, 500);
   }
 }
@@ -160,14 +180,14 @@ export async function PUT(request: NextRequest) {
 
   const userId = middleware.auth?.userId;
   if (!userId) {
-    return errorResponse("User not authenticated", 401);
+    return errorResponse('User not authenticated', 401);
   }
 
   const searchParams = request.nextUrl.searchParams;
-  const id = parseInt(searchParams.get("id") || "0", 10);
+  const id = parseInt(searchParams.get('id') || '0', 10);
 
   if (!id) {
-    return errorResponse("Template ID required", 400);
+    return errorResponse('Template ID required', 400);
   }
 
   try {
@@ -176,60 +196,73 @@ export async function PUT(request: NextRequest) {
     const parsed = partialSchema.safeParse(body);
 
     if (!parsed.success) {
-      return errorResponse("Invalid input: " + parsed.error.issues[0].message, 400);
+      return errorResponse(
+        'Invalid input: ' + parsed.error.issues[0].message,
+        400
+      );
     }
 
     const db = getDb();
 
     // Check if template exists and belongs to user
-    const existing = db.prepare(`
+    const existing = db
+      .prepare(
+        `
       SELECT user_id FROM decision_templates WHERE id = ?
-    `).get(id) as { user_id: number } | undefined;
+    `
+      )
+      .get(id) as { user_id: number } | undefined;
 
     if (!existing || existing.user_id !== userId) {
-      return errorResponse("Template not found or access denied", 404);
+      return errorResponse('Template not found or access denied', 404);
     }
 
     const updates: string[] = [];
     const values: unknown[] = [];
 
     if (parsed.data.name !== undefined) {
-      updates.push("name = ?");
+      updates.push('name = ?');
       values.push(parsed.data.name);
     }
     if (parsed.data.prompt_template !== undefined) {
-      updates.push("prompt_template = ?");
+      updates.push('prompt_template = ?');
       values.push(parsed.data.prompt_template);
     }
     if (parsed.data.option_template !== undefined) {
-      updates.push("option_template = ?");
+      updates.push('option_template = ?');
       values.push(parsed.data.option_template || null);
     }
     if (parsed.data.decision_type !== undefined) {
-      updates.push("decision_type = ?");
+      updates.push('decision_type = ?');
       values.push(parsed.data.decision_type);
     }
 
     if (updates.length === 0) {
-      return errorResponse("No updates provided", 400);
+      return errorResponse('No updates provided', 400);
     }
 
     values.push(id, userId);
 
-    db.prepare(`
+    db.prepare(
+      `
       UPDATE decision_templates
-      SET ${updates.join(", ")}
+      SET ${updates.join(', ')}
       WHERE id = ? AND user_id = ?
-    `).run(...values);
+    `
+    ).run(...values);
 
-    const row = db.prepare(`
+    const row = db
+      .prepare(
+        `
       SELECT id, user_id, name, prompt_template, option_template, decision_type, created_at
       FROM decision_templates
       WHERE id = ? AND user_id = ?
-    `).get(id, userId) as TemplateRow | undefined;
+    `
+      )
+      .get(id, userId) as TemplateRow | undefined;
 
     if (!row) {
-      return errorResponse("Template not found or access denied", 404);
+      return errorResponse('Template not found or access denied', 404);
     }
 
     const template = {
@@ -244,8 +277,9 @@ export async function PUT(request: NextRequest) {
 
     return jsonResponse({ template });
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    console.error("Failed to update template:", error);
+    const errorMessage =
+      error instanceof Error ? error.message : 'Unknown error';
+    console.error('Failed to update template:', error);
     return errorResponse(`Failed to update template: ${errorMessage}`, 500);
   }
 }
@@ -257,34 +291,39 @@ export async function DELETE(request: NextRequest) {
 
   const userId = middleware.auth?.userId;
   if (!userId) {
-    return errorResponse("User not authenticated", 401);
+    return errorResponse('User not authenticated', 401);
   }
 
   const searchParams = request.nextUrl.searchParams;
-  const id = parseInt(searchParams.get("id") || "0", 10);
+  const id = parseInt(searchParams.get('id') || '0', 10);
 
   if (!id) {
-    return errorResponse("Template ID required", 400);
+    return errorResponse('Template ID required', 400);
   }
 
   try {
     const db = getDb();
 
     // Check if template exists and belongs to user
-    const existing = db.prepare(`
+    const existing = db
+      .prepare(
+        `
       SELECT user_id FROM decision_templates WHERE id = ?
-    `).get(id) as { user_id: number } | undefined;
+    `
+      )
+      .get(id) as { user_id: number } | undefined;
 
     if (!existing || existing.user_id !== userId) {
-      return errorResponse("Template not found or access denied", 404);
+      return errorResponse('Template not found or access denied', 404);
     }
 
-    db.prepare("DELETE FROM decision_templates WHERE id = ?").run(id);
+    db.prepare('DELETE FROM decision_templates WHERE id = ?').run(id);
 
     return jsonResponse({ success: true });
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    console.error("Failed to delete template:", error);
+    const errorMessage =
+      error instanceof Error ? error.message : 'Unknown error';
+    console.error('Failed to delete template:', error);
     return errorResponse(`Failed to delete template: ${errorMessage}`, 500);
   }
 }
@@ -296,7 +335,7 @@ export async function PATCH(request: NextRequest) {
 
   const userId = middleware.auth?.userId;
   if (!userId) {
-    return errorResponse("User not authenticated", 401);
+    return errorResponse('User not authenticated', 401);
   }
 
   try {
@@ -304,35 +343,48 @@ export async function PATCH(request: NextRequest) {
     const parsed = GenerateTemplateValidationSchema.safeParse(body);
 
     if (!parsed.success) {
-      return errorResponse("Invalid input: " + parsed.error.issues[0].message, 400);
+      return errorResponse(
+        'Invalid input: ' + parsed.error.issues[0].message,
+        400
+      );
     }
 
     // Import the AI manager dynamically to avoid circular dependencies
-    const { getAIManager } = await import("@/lib/ai/providers");
+    const { getAIManager } = await import('@/lib/ai/providers');
     const ai = getAIManager();
 
     const template = await ai.generateDecisionTemplate({
-      decisionType: parsed.data.context.decisionType || "approach",
-      task: parsed.data.context.taskName ? { name: parsed.data.context.taskName } : undefined,
+      decisionType: parsed.data.context.decisionType || 'approach',
+      task: parsed.data.context.taskName
+        ? { name: parsed.data.context.taskName }
+        : undefined,
     });
 
     const db = getDb();
-    const result = db.prepare(`
+    const result = db
+      .prepare(
+        `
       INSERT INTO decision_templates (user_id, name, prompt_template, option_template, decision_type, created_at)
       VALUES (?, ?, ?, ?, ?, datetime('now'))
-    `).run(
-      userId,
-      template.name,
-      template.prompt_template,
-      template.option_template || null,
-      parsed.data.context.decisionType || "approach"
-    );
+    `
+      )
+      .run(
+        userId,
+        template.name,
+        template.prompt_template,
+        template.option_template || null,
+        parsed.data.context.decisionType || 'approach'
+      );
 
-    const row = db.prepare(`
+    const row = db
+      .prepare(
+        `
       SELECT id, user_id, name, prompt_template, option_template, decision_type, created_at
       FROM decision_templates
       WHERE id = ?
-    `).get(result.lastInsertRowid as number) as TemplateRow;
+    `
+      )
+      .get(result.lastInsertRowid as number) as TemplateRow;
 
     const savedTemplate = {
       id: row.id,
@@ -346,10 +398,15 @@ export async function PATCH(request: NextRequest) {
 
     return jsonResponse({ template: savedTemplate });
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    console.error("Failed to generate template:", error);
+    const errorMessage =
+      error instanceof Error ? error.message : 'Unknown error';
+    console.error('Failed to generate template:', error);
     return errorResponse(`Failed to generate template: ${errorMessage}`, 500);
   }
 }
 
-export type { CreateTemplateValidationSchema, GenerateTemplateValidationSchema, TemplateRow };
+export type {
+  CreateTemplateValidationSchema,
+  GenerateTemplateValidationSchema,
+  TemplateRow,
+};
