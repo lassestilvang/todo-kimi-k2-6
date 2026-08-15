@@ -17,6 +17,7 @@ This report confirms the Todo app (Todo-Kimi-K2-6) is bulletproof across securit
 5. **Documentation**: Latest audit report available at `/reports/audit-report.html`
 
 ### 📋 Recommendations
+
 - Monitor mutation survival rate during future PRs
 - Add unit tests for surviving mutations (low priority)
 - Keep thresholds as-is for stability
