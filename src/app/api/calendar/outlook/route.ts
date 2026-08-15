@@ -1,21 +1,21 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { NextRequest } from 'next/server';
+import { getDb } from '@/lib/db';
 import {
   syncTaskToCalendar,
-  removeFromCalendar,
   getOutlookAuthUrl,
-  exchangeOutlookCodeForTokens,
-  getOutlookUserProfile,
-  type OutlookCalendarSync,
-} from "@/lib/integrations/outlook-calendar";
+} from '@/lib/integrations/outlook-calendar';
 import {
   enableCalendarSync,
   getCalendarSyncByProvider,
   deleteCalendarSyncByProvider,
-} from "@/lib/actions/calendar";
-import { getTasks } from "@/lib/actions/tasks";
-import { applyMiddleware, errorResponse, jsonResponse } from "@/lib/api-middleware";
-import type { Task } from "@/types";
+} from '@/lib/actions/calendar';
+import {
+  applyMiddleware,
+  errorResponse,
+  jsonResponse,
+} from '@/lib/api-middleware';
+import type { Task } from '@/types';
+import type { OutlookCalendarSync } from '@/lib/integrations/outlook-calendar';
 
 /**
  * Outlook Calendar API routes
@@ -31,22 +31,24 @@ export async function GET(request: NextRequest) {
 
   const userId = middleware.auth?.userId;
   if (!userId) {
-    return errorResponse("Authentication required", 401);
+    return errorResponse('Authentication required', 401);
   }
 
   const searchParams = request.nextUrl.searchParams;
-  const action = searchParams.get("action");
+  const action = searchParams.get('action');
 
-  if (action === "auth_url") {
+  if (action === 'auth_url') {
     const state = generateState();
     const authUrl = getOutlookAuthUrl(state);
     return Response.json({ authUrl, state });
   }
 
   // Get sync status
-  const sync = await getCalendarSyncByProvider(userId, "outlook");
+  const sync = await getCalendarSyncByProvider(userId, 'outlook');
   const enabled = !!sync?.enabled;
-  const expiresAt = sync?.expires_at ? new Date(sync.expires_at).toISOString() : null;
+  const expiresAt = sync?.expires_at
+    ? new Date(sync.expires_at).toISOString()
+    : null;
 
   return jsonResponse({ enabled, expiresAt });
 }
@@ -60,7 +62,7 @@ export async function POST(request: NextRequest) {
 
   const userId = middleware.auth?.userId;
   if (!userId) {
-    return errorResponse("Authentication required", 401);
+    return errorResponse('Authentication required', 401);
   }
 
   try {
@@ -68,25 +70,28 @@ export async function POST(request: NextRequest) {
     const { action, ...data } = body;
 
     switch (action) {
-      case "sync": {
-        const sync = await getCalendarSyncByProvider(userId, "outlook");
+      case 'sync': {
+        const sync = await getCalendarSyncByProvider(userId, 'outlook');
         if (!sync?.enabled) {
-          return errorResponse("Outlook Calendar is not connected", 400);
+          return errorResponse('Outlook Calendar is not connected', 400);
         }
 
         const result = await syncTasksToOutlook(userId, sync);
         return jsonResponse({ success: true, ...result });
       }
 
-      case "enable": {
+      case 'enable': {
         const { accessToken, refreshToken, expiresIn, tenantId } = data;
         if (!accessToken || !refreshToken) {
-          return errorResponse("access_token and refresh_token are required", 400);
+          return errorResponse(
+            'access_token and refresh_token are required',
+            400
+          );
         }
 
         await enableCalendarSync(
           userId,
-          "outlook",
+          'outlook',
           accessToken,
           refreshToken,
           expiresIn * 1000,
@@ -96,17 +101,20 @@ export async function POST(request: NextRequest) {
         return jsonResponse({ success: true, enabled: true });
       }
 
-      case "disable": {
-        await deleteCalendarSyncByProvider(userId, "outlook");
+      case 'disable': {
+        await deleteCalendarSyncByProvider(userId, 'outlook');
         return jsonResponse({ success: true, enabled: false });
       }
 
       default:
-        return errorResponse("Invalid action", 400);
+        return errorResponse('Invalid action', 400);
     }
   } catch (error) {
-    console.error("Outlook calendar POST error:", error);
-    return errorResponse(error instanceof Error ? error.message : "Failed to process request", 500);
+    console.error('Outlook calendar POST error:', error);
+    return errorResponse(
+      error instanceof Error ? error.message : 'Failed to process request',
+      500
+    );
   }
 }
 
@@ -114,7 +122,7 @@ export async function POST(request: NextRequest) {
  * Generate a random state string for OAuth
  */
 function generateState(): string {
-  return Buffer.from(Math.random().toString(36).substring(2)).toString("hex");
+  return Buffer.from(Math.random().toString(36).substring(2)).toString('hex');
 }
 
 /**
@@ -136,7 +144,8 @@ async function syncTasksToOutlook(
   // Get all incomplete tasks with due dates
   const db = getDb();
   const tasks = db
-    .prepare(`
+    .prepare(
+      `
       SELECT t.*, COALESCE(l.name, 'Tasks') as list_name
       FROM tasks t
       LEFT JOIN lists l ON t.list_id = l.id
@@ -144,25 +153,28 @@ async function syncTasksToOutlook(
       AND t.completed = 0
       AND t.deadline IS NOT NULL
       ORDER BY t.deadline ASC
-    `)
+    `
+    )
     .all(userId);
 
-  for (const task of tasks as any[]) {
+  for (const task of tasks as Record<string, unknown>[]) {
     try {
       await syncTaskToCalendar(
         {
-          id: task.id,
-          name: task.name,
-          description: task.description,
-          deadline: task.deadline,
-          priority: task.priority,
-          labels: task.labels ? JSON.parse(task.labels) : [],
+          id: task.id as number,
+          name: task.name as string,
+          description: task.description as string | null,
+          deadline: task.deadline as string | null,
+          priority: task.priority as string,
+          labels: task.labels ? JSON.parse(task.labels as string) : [],
         } as Task,
         outlookSync
       );
       result.created++;
     } catch (error) {
-      result.errors.push(`Failed to sync task ${task.id}: ${(error as Error).message}`);
+      result.errors.push(
+        `Failed to sync task ${task.id}: ${(error as Error).message}`
+      );
     }
   }
 
