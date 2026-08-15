@@ -1,6 +1,10 @@
-import { NextRequest } from "next/server";
-import { getDb } from "@/lib/db";
-import { applyMiddleware, errorResponse, jsonResponse } from "@/lib/api-middleware";
+import { NextRequest } from 'next/server';
+import { getDb } from '@/lib/db';
+import {
+  applyMiddleware,
+  errorResponse,
+  jsonResponse,
+} from '@/lib/api-middleware';
 
 // Helper to convert TEXT time strings to Date objects (SQLite stores them as TEXT)
 function parseIsoDate(isoString: string): Date {
@@ -8,7 +12,9 @@ function parseIsoDate(isoString: string): Date {
 }
 
 export async function GET(request: NextRequest) {
-  const middlewareResult = await applyMiddleware(request, { requireAuth: true });
+  const middlewareResult = await applyMiddleware(request, {
+    requireAuth: true,
+  });
   if (middlewareResult.error) {
     return middlewareResult.error;
   }
@@ -17,7 +23,7 @@ export async function GET(request: NextRequest) {
     const db = getDb();
     // Get all tasks with status and timing info
     // all() returns an array directly for SQLite
-    const tasks = db.prepare("SELECT * FROM tasks").all() as Array<{
+    const tasks = db.prepare('SELECT * FROM tasks').all() as Array<{
       id: number;
       completed: number | boolean;
       deadline: string | null;
@@ -27,8 +33,11 @@ export async function GET(request: NextRequest) {
 
     // Calculate completion rate
     const totalTasks = tasks.length;
-    const completedTasks = tasks.filter(t => t.completed === 1 || t.completed === true);
-    const completionRate = totalTasks > 0 ? completedTasks.length / totalTasks : 0;
+    const completedTasks = tasks.filter(
+      t => t.completed === 1 || t.completed === true
+    );
+    const completionRate =
+      totalTasks > 0 ? completedTasks.length / totalTasks : 0;
 
     // Calculate overdue tasks (assuming deadline is stored in ISO format)
     const now = new Date();
@@ -40,7 +49,7 @@ export async function GET(request: NextRequest) {
 
     // Calculate tasks by priority
     const priorityCounts: Record<string, number> = {};
-    tasks.forEach((t) => {
+    tasks.forEach(t => {
       if (t.priority) {
         priorityCounts[t.priority] = (priorityCounts[t.priority] || 0) + 1;
       }
@@ -50,7 +59,10 @@ export async function GET(request: NextRequest) {
     const durations = tasks
       .filter(t => t.estimated_duration)
       .map(t => t.estimated_duration);
-    const avgDuration = durations.length > 0 ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length) : 0;
+    const avgDuration =
+      durations.length > 0
+        ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length)
+        : 0;
 
     // Build response
     const analytics = {
@@ -68,7 +80,7 @@ export async function GET(request: NextRequest) {
 
     return jsonResponse(analytics, 200, middlewareResult.headers);
   } catch (error) {
-    console.error("Analytics error:", error);
-    return errorResponse("Internal Server Error", 500);
+    console.error('Analytics error:', error);
+    return errorResponse('Internal Server Error', 500);
   }
 }
