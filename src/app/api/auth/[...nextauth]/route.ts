@@ -1,25 +1,26 @@
-import NextAuth from "next-auth";
-import GoogleProvider from "next-auth/providers/google";
+import NextAuth from 'next-auth';
+import GoogleProvider from 'next-auth/providers/google';
 
 const handler = NextAuth({
   providers: [
     GoogleProvider({
-      clientId: process.env["GOOGLE_CLIENT_ID"] || "",
-      clientSecret: process.env["GOOGLE_CLIENT_SECRET"] || "",
+      clientId: process.env['GOOGLE_CLIENT_ID'] || '',
+      clientSecret: process.env['GOOGLE_CLIENT_SECRET'] || '',
       authorization: {
         params: {
-          prompt: "consent",
-          access_type: "offline",
-          scope: "openid email profile https://www.googleapis.com/auth/calendar.events",
+          prompt: 'consent',
+          access_type: 'offline',
+          scope:
+            'openid email profile https://www.googleapis.com/auth/calendar.events',
         },
       },
     }),
   ],
   session: {
-    strategy: "jwt",
+    strategy: 'jwt',
     maxAge: 30 * 24 * 60 * 60,
   },
-  secret: process.env["NEXTAUTH_SECRET"] || "fallback-secret-for-development",
+  secret: process.env['NEXTAUTH_SECRET'] || 'fallback-secret-for-development',
   callbacks: {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     async jwt({ token, account, user }: any) {
