@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
-import { generateDailySummary } from "@/lib/email/summaries";
+import { NextRequest, NextResponse } from 'next/server';
+import { getDb } from '@/lib/db';
+import { generateDailySummary } from '@/lib/email/summaries';
 
 /**
  * Daily Summary Cron Job
@@ -11,10 +11,10 @@ import { generateDailySummary } from "@/lib/email/summaries";
 export async function GET(request: NextRequest) {
   try {
     // Verify cron secret
-    const authHeader = request.headers.get("authorization");
+    const authHeader = request.headers.get('authorization');
     const cronSecret = process.env['CRON_SECRET'];
     if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const db = getDb();
@@ -28,12 +28,12 @@ export async function GET(request: NextRequest) {
          WHERE ns.enabled = 1 AND ns.daily_summary = 1`
       )
       .all() as Array<{
-        id: number;
-        email: string;
-        name: string | null;
-        enabled: number;
-        daily_summary: number;
-      }>;
+      id: number;
+      email: string;
+      name: string | null;
+      enabled: number;
+      daily_summary: number;
+    }>;
 
     let sent = 0;
     for (const user of users) {
@@ -50,15 +50,15 @@ export async function GET(request: NextRequest) {
            WHERE t.assignee_id = ? OR t.created_by = ?`
         )
         .all(user.id, user.id) as Array<{
-          id: number;
-          name: string;
-          priority: string;
-          dueDate: string | null;
-          completed: number;
-          daysUntilDue: number;
-        }>;
+        id: number;
+        name: string;
+        priority: string;
+        dueDate: string | null;
+        completed: number;
+        daysUntilDue: number;
+      }>;
 
-      const taskSummaries = tasks.map((t) => ({
+      const taskSummaries = tasks.map(t => ({
         ...t,
         completed: t.completed === 1,
       }));
@@ -73,7 +73,10 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, sent });
   } catch (error) {
-    console.error("Error sending daily summaries:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    console.error('Error sending daily summaries:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
