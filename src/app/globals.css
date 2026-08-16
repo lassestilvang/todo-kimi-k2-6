@@ -1,6 +1,6 @@
-@import "tailwindcss";
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -132,7 +132,10 @@
 /* Mobile touch improvements */
 @media (max-width: 768px) {
   /* Ensure minimum touch targets */
-  button, input, select, textarea {
+  button,
+  input,
+  select,
+  textarea {
     @apply min-h-10;
   }
 
@@ -143,7 +146,9 @@
   }
 
   /* Prevent zoom on input focus */
-  input, textarea, select {
+  input,
+  textarea,
+  select {
     font-size: 16px;
   }
 
@@ -172,7 +177,9 @@
 
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
