@@ -2,15 +2,15 @@ import { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { getReminders, deleteRemindersForTask } from '@/lib/actions/reminders';
 
-export async function GET(_: NextRequest, { params }: { params: Promise<{ taskId: string }> }) {
+export async function GET(
+  _: NextRequest,
+  { params }: { params: Promise<{ taskId: string }> }
+) {
   const { taskId } = await params;
   try {
     const id = parseInt(taskId);
     if (isNaN(id)) {
-      return NextResponse.json(
-        { error: 'Invalid task ID' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid task ID' }, { status: 400 });
     }
 
     const reminders = await getReminders(id);
@@ -24,15 +24,15 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ taskId
   }
 }
 
-export async function DELETE(_: NextRequest, { params }: { params: Promise<{ taskId: string }> }) {
+export async function DELETE(
+  _: NextRequest,
+  { params }: { params: Promise<{ taskId: string }> }
+) {
   const { taskId } = await params;
   try {
     const id = parseInt(taskId);
     if (isNaN(id)) {
-      return NextResponse.json(
-        { error: 'Invalid task ID' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid task ID' }, { status: 400 });
     }
 
     await deleteRemindersForTask(id);
