@@ -1,26 +1,27 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import "./globals.css";
-import { ThemeProvider } from "@/components/theme-provider";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { NotificationProvider } from "@/components/task/notification-provider";
-import { ErrorBoundary } from "@/components/error-boundary";
-import { KeyboardShortcutsHandler } from "@/components/task/keyboard-shortcuts-handler";
-import { QueryProvider } from "@/components/query-provider";
-import { SessionProvider } from "@/components/session-provider";
-import { WebVitalsTracker } from "@/components/web-vitals";
-import { initSentry } from "@/lib/sentry";
-import { I18nProvider } from "@/i18n/provider";
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import './globals.css';
+import { ThemeProvider } from '@/components/theme-provider';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { NotificationProvider } from '@/components/task/notification-provider';
+import { ErrorBoundary } from '@/components/error-boundary';
+import { KeyboardShortcutsHandler } from '@/components/task/keyboard-shortcuts-handler';
+import { QueryProvider } from '@/components/query-provider';
+import { SessionProvider } from '@/components/session-provider';
+import { WebVitalsTracker } from '@/components/web-vitals';
+import { initSentry } from '@/lib/sentry';
+import { I18nProvider } from '@/i18n/provider';
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: "TaskFlow - Daily Planner",
-  description: "A modern daily task planner with drag-and-drop, dependencies, and templates",
+  title: 'TaskFlow - Daily Planner',
+  description:
+    'A modern daily task planner with drag-and-drop, dependencies, and templates',
 };
 
 // Initialize Sentry in production
-if (process.env.NODE_ENV === "production") {
+if (process.env.NODE_ENV === 'production') {
   initSentry();
 }
 
@@ -34,7 +35,10 @@ export default function RootLayout({
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#6366f1" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, viewport-fit=cover"
+        />
         <link rel="apple-touch-icon" href="/icon-192.png" />
       </head>
       <body className={inter.className}>
@@ -44,9 +48,7 @@ export default function RootLayout({
               <QueryProvider>
                 <NotificationProvider>
                   <TooltipProvider delay={0}>
-                    <I18nProvider>
-                      {children}
-                    </I18nProvider>
+                    <I18nProvider>{children}</I18nProvider>
                   </TooltipProvider>
                 </NotificationProvider>
               </QueryProvider>
