@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Calendar,
   CalendarDays,
@@ -27,35 +27,35 @@ import {
   Lightbulb,
   Plug2,
   Brain,
-  type LucideIcon
-} from "lucide-react";
-import { useTheme } from "next-themes";
-import { useRouter } from "next/navigation";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+  type LucideIcon,
+} from 'lucide-react';
+import { useTheme } from 'next-themes';
+import { useRouter } from 'next/navigation';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import type { List, Label as LabelType, Workspace } from "@/types";
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import type { List, Label as LabelType, Workspace } from '@/types';
 import {
   createList,
   deleteList,
   createLabel,
   deleteLabel,
   generateRecurringTasks,
-} from "@/lib/actions";
-import { toast } from "sonner";
-import { WorkspaceSelector } from "@/components/workspace/workspace-selector";
-import { useUndo } from "@/hooks/use-undo";
+} from '@/lib/actions';
+import { toast } from 'sonner';
+import { WorkspaceSelector } from '@/components/workspace/workspace-selector';
+import { useUndo } from '@/hooks/use-undo';
 
 interface ViewItem {
   id?: string;
@@ -80,31 +80,31 @@ interface AppSidebarProps {
 }
 
 const views: ViewItem[] = [
-  { id: "today", name: "Today", icon: Calendar },
-  { id: "next7", name: "Next 7 Days", icon: CalendarDays },
-  { id: "upcoming", name: "Upcoming", icon: CalendarRange },
-  { id: "timeline", name: "Timeline", icon: Clock },
-  { id: "kanban", name: "Kanban", icon: LayoutGrid },
-  { id: "all", name: "All Tasks", icon: LayoutGrid },
-  { id: "focus", name: "Focus Mode", icon: Focus },
-  { id: "graph", name: "Dependencies", icon: LayoutGrid },
-  { id: "matrix", name: "Priority Matrix", icon: LayoutGrid },
-  { id: "gantt", name: "Gantt Chart", icon: BarChart3 },
-  { id: "ai", name: "AI Assistant", icon: Bot },
-  { id: "calendar", name: "Calendar", icon: Calendar },
-  { id: "analytics", name: "Analytics", icon: BarChart3 },
-  { id: "analytics_enhanced", name: "Enhanced Analytics", icon: Brain },
-  { id: "investment", name: "Technology Portfolio", icon: TrendingUp },
-  { separator: true, label: "Labs" },
-  { id: "energy", name: "Energy Scheduler", icon: Zap },
-  { id: "knowledge", name: "Knowledge Vault", icon: Brain },
-  { id: "integrations", name: "Integrations", icon: Plug2 },
-  { id: "labs", name: "AI Playground", icon: TestTube },
-  { id: "project-planning", name: "Project Planner", icon: GraduationCap },
-  { id: "skills", name: "Skills Tracker", icon: Calculator },
-  { id: "stories", name: "Success Stories", icon: Smile },
-  { id: "decision-journal", name: "Decision Journal", icon: Lightbulb },
-  { id: "career-compass", name: "Career Compass", icon: GraduationCap },
+  { id: 'today', name: 'Today', icon: Calendar },
+  { id: 'next7', name: 'Next 7 Days', icon: CalendarDays },
+  { id: 'upcoming', name: 'Upcoming', icon: CalendarRange },
+  { id: 'timeline', name: 'Timeline', icon: Clock },
+  { id: 'kanban', name: 'Kanban', icon: LayoutGrid },
+  { id: 'all', name: 'All Tasks', icon: LayoutGrid },
+  { id: 'focus', name: 'Focus Mode', icon: Focus },
+  { id: 'graph', name: 'Dependencies', icon: LayoutGrid },
+  { id: 'matrix', name: 'Priority Matrix', icon: LayoutGrid },
+  { id: 'gantt', name: 'Gantt Chart', icon: BarChart3 },
+  { id: 'ai', name: 'AI Assistant', icon: Bot },
+  { id: 'calendar', name: 'Calendar', icon: Calendar },
+  { id: 'analytics', name: 'Analytics', icon: BarChart3 },
+  { id: 'analytics_enhanced', name: 'Enhanced Analytics', icon: Brain },
+  { id: 'investment', name: 'Technology Portfolio', icon: TrendingUp },
+  { separator: true, label: 'Labs' },
+  { id: 'energy', name: 'Energy Scheduler', icon: Zap },
+  { id: 'knowledge', name: 'Knowledge Vault', icon: Brain },
+  { id: 'integrations', name: 'Integrations', icon: Plug2 },
+  { id: 'labs', name: 'AI Playground', icon: TestTube },
+  { id: 'project-planning', name: 'Project Planner', icon: GraduationCap },
+  { id: 'skills', name: 'Skills Tracker', icon: Calculator },
+  { id: 'stories', name: 'Success Stories', icon: Smile },
+  { id: 'decision-journal', name: 'Decision Journal', icon: Lightbulb },
+  { id: 'career-compass', name: 'Career Compass', icon: GraduationCap },
 ];
 
 export function AppSidebar({
@@ -125,12 +125,12 @@ export function AppSidebar({
   const [searchOpen, setSearchOpen] = useState(false);
   const [newListOpen, setNewListOpen] = useState(false);
   const [newLabelOpen, setNewLabelOpen] = useState(false);
-  const [listName, setListName] = useState("");
-  const [listEmoji, setListEmoji] = useState("📋");
-  const [listColor, setListColor] = useState("#6366f1");
-  const [labelName, setLabelName] = useState("");
-  const [labelIcon, setLabelIcon] = useState("🏷️");
-  const [labelColor, setLabelColor] = useState("#8b5cf6");
+  const [listName, setListName] = useState('');
+  const [listEmoji, setListEmoji] = useState('📋');
+  const [listColor, setListColor] = useState('#6366f1');
+  const [labelName, setLabelName] = useState('');
+  const [labelIcon, setLabelIcon] = useState('🏷️');
+  const [labelColor, setLabelColor] = useState('#8b5cf6');
   const [hoveredList, setHoveredList] = useState<number | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -145,83 +145,95 @@ export function AppSidebar({
         setMobileOpen(false);
       }
     };
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const handleCreateList = async () => {
     if (!listName.trim()) return;
     try {
       await createList({ name: listName, emoji: listEmoji, color: listColor });
-      setListName("");
+      setListName('');
       setNewListOpen(false);
       onRefresh();
-      toast.success("List created");
+      toast.success('List created');
     } catch {
-      toast.error("Failed to create list");
+      toast.error('Failed to create list');
     }
   };
 
   const handleCreateLabel = async () => {
     if (!labelName.trim()) return;
     try {
-      await createLabel({ name: labelName, icon: labelIcon, color: labelColor });
-      setLabelName("");
+      await createLabel({
+        name: labelName,
+        icon: labelIcon,
+        color: labelColor,
+      });
+      setLabelName('');
       setNewLabelOpen(false);
       onRefresh();
-      toast.success("Label created");
+      toast.success('Label created');
     } catch {
-      toast.error("Failed to create label");
+      toast.error('Failed to create label');
     }
   };
 
-  const handleDeleteList = async (e: React.MouseEvent, id: number, listName: string) => {
+  const handleDeleteList = async (
+    e: React.MouseEvent,
+    id: number,
+    listName: string
+  ) => {
     e.stopPropagation();
     try {
       await deleteList(id);
       onRefresh();
       toast.success(`${listName} deleted`, {
         action: {
-          label: "Undo",
+          label: 'Undo',
           onClick: () => {
             // Note: Full undo would require backend restore support
             // For now, we can just show a message that undo was requested
-            toast.info("Undo not yet available - item permanently deleted");
+            toast.info('Undo not yet available - item permanently deleted');
           },
         },
       });
     } catch {
-      toast.error("Failed to delete list");
+      toast.error('Failed to delete list');
     }
   };
 
-  const handleDeleteLabel = async (e: React.MouseEvent, id: number, labelName: string) => {
+  const handleDeleteLabel = async (
+    e: React.MouseEvent,
+    id: number,
+    labelName: string
+  ) => {
     e.stopPropagation();
     try {
       await deleteLabel(id);
       onRefresh();
       toast.success(`${labelName} deleted`, {
         action: {
-          label: "Undo",
+          label: 'Undo',
           onClick: () => {
-            toast.info("Undo not yet available - item permanently deleted");
+            toast.info('Undo not yet available - item permanently deleted');
           },
         },
       });
     } catch {
-      toast.error("Failed to delete label");
+      toast.error('Failed to delete label');
     }
   };
 
   const colors = [
-    "#6366f1",
-    "#ec4899",
-    "#f59e0b",
-    "#10b981",
-    "#3b82f6",
-    "#8b5cf6",
-    "#ef4444",
-    "#14b8a6",
+    '#6366f1',
+    '#ec4899',
+    '#f59e0b',
+    '#10b981',
+    '#3b82f6',
+    '#8b5cf6',
+    '#ef4444',
+    '#14b8a6',
   ];
 
   return (
@@ -281,7 +293,7 @@ export function AppSidebar({
               variant="ghost"
               size="icon"
               className="h-8 w-8"
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
             >
               <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
               <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
@@ -293,7 +305,7 @@ export function AppSidebar({
               variant="ghost"
               size="sm"
               className="w-full justify-start gap-2 text-sm"
-              onClick={() => router.push("/settings")}
+              onClick={() => router.push('/settings')}
             >
               <Settings className="h-4 w-4" />
               Settings
@@ -314,7 +326,7 @@ export function AppSidebar({
                     autoFocus
                     placeholder="Search tasks..."
                     className="pl-9 h-9"
-                    onChange={(e) => onSearch(e.target.value)}
+                    onChange={e => onSearch(e.target.value)}
                     onBlur={() => {
                       if (!onSearch.length) setSearchOpen(false);
                     }}
@@ -345,7 +357,7 @@ export function AppSidebar({
                     <div key={`separator-${index}`}>
                       <Separator className="my-1" />
                       <p className="px-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                        {view.label || "Labs"}
+                        {view.label || 'Labs'}
                       </p>
                     </div>
                   );
@@ -360,15 +372,15 @@ export function AppSidebar({
                     key={viewId}
                     onClick={() => onViewChange(viewId)}
                     className={cn(
-                      "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
+                      'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors',
                       isActive
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                        : "text-sidebar-foreground hover:bg-sidebar-accent/50"
+                        ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
+                        : 'text-sidebar-foreground hover:bg-sidebar-accent/50'
                     )}
                   >
                     <Icon className="h-4 w-4" />
                     <span className="flex-1 text-left">{view.name}</span>
-                    {view.id === "today" && overdueCount > 0 && (
+                    {view.id === 'today' && overdueCount > 0 && (
                       <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-medium text-white">
                         {overdueCount}
                       </span>
@@ -418,7 +430,7 @@ export function AppSidebar({
                         <Label>Name</Label>
                         <Input
                           value={listName}
-                          onChange={(e) => setListName(e.target.value)}
+                          onChange={e => setListName(e.target.value)}
                           placeholder="List name"
                         />
                       </div>
@@ -426,7 +438,7 @@ export function AppSidebar({
                         <Label>Emoji</Label>
                         <Input
                           value={listEmoji}
-                          onChange={(e) => setListEmoji(e.target.value)}
+                          onChange={e => setListEmoji(e.target.value)}
                           placeholder="📋"
                           maxLength={2}
                         />
@@ -434,15 +446,15 @@ export function AppSidebar({
                       <div className="space-y-2">
                         <Label>Color</Label>
                         <div className="flex flex-wrap gap-2">
-                          {colors.map((c) => (
+                          {colors.map(c => (
                             <button
                               key={c}
                               onClick={() => setListColor(c)}
                               className={cn(
-                                "h-8 w-8 rounded-full border-2 transition-all",
+                                'h-8 w-8 rounded-full border-2 transition-all',
                                 listColor === c
-                                  ? "border-white shadow-md scale-110"
-                                  : "border-transparent hover:scale-105"
+                                  ? 'border-white shadow-md scale-110'
+                                  : 'border-transparent hover:scale-105'
                               )}
                               style={{ backgroundColor: c }}
                             />
@@ -456,23 +468,26 @@ export function AppSidebar({
                   </DialogContent>
                 </Dialog>
               </div>
-              {lists.map((list) => {
-                const isActive = currentView === "list" && currentListId === list.id;
+              {lists.map(list => {
+                const isActive =
+                  currentView === 'list' && currentListId === list.id;
                 return (
                   <button
                     key={list.id}
-                    onClick={() => onViewChange("list", list.id)}
+                    onClick={() => onViewChange('list', list.id)}
                     onMouseEnter={() => setHoveredList(list.id)}
                     onMouseLeave={() => setHoveredList(null)}
                     className={cn(
-                      "group flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
+                      'group flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors',
                       isActive
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                        : "text-sidebar-foreground hover:bg-sidebar-accent/50"
+                        ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
+                        : 'text-sidebar-foreground hover:bg-sidebar-accent/50'
                     )}
                   >
                     <span className="text-base leading-none">{list.emoji}</span>
-                    <span className="flex-1 text-left truncate">{list.name}</span>
+                    <span className="flex-1 text-left truncate">
+                      {list.name}
+                    </span>
                     <AnimatePresence>
                       {hoveredList === list.id && !list.is_inbox && (
                         <motion.div
@@ -484,7 +499,9 @@ export function AppSidebar({
                             variant="ghost"
                             size="icon"
                             className="h-5 w-5 opacity-60 hover:opacity-100"
-                            onClick={(e) => handleDeleteList(e, list.id, list.name)}
+                            onClick={e =>
+                              handleDeleteList(e, list.id, list.name)
+                            }
                           >
                             <Trash2 className="h-3 w-3 text-red-500" />
                           </Button>
@@ -518,7 +535,7 @@ export function AppSidebar({
                         <Label>Name</Label>
                         <Input
                           value={labelName}
-                          onChange={(e) => setLabelName(e.target.value)}
+                          onChange={e => setLabelName(e.target.value)}
                           placeholder="Label name"
                         />
                       </div>
@@ -526,7 +543,7 @@ export function AppSidebar({
                         <Label>Icon</Label>
                         <Input
                           value={labelIcon}
-                          onChange={(e) => setLabelIcon(e.target.value)}
+                          onChange={e => setLabelIcon(e.target.value)}
                           placeholder="🏷️"
                           maxLength={2}
                         />
@@ -534,15 +551,15 @@ export function AppSidebar({
                       <div className="space-y-2">
                         <Label>Color</Label>
                         <div className="flex flex-wrap gap-2">
-                          {colors.map((c) => (
+                          {colors.map(c => (
                             <button
                               key={c}
                               onClick={() => setLabelColor(c)}
                               className={cn(
-                                "h-8 w-8 rounded-full border-2 transition-all",
+                                'h-8 w-8 rounded-full border-2 transition-all',
                                 labelColor === c
-                                  ? "border-white shadow-md scale-110"
-                                  : "border-transparent hover:scale-105"
+                                  ? 'border-white shadow-md scale-110'
+                                  : 'border-transparent hover:scale-105'
                               )}
                               style={{ backgroundColor: c }}
                             />
@@ -556,7 +573,7 @@ export function AppSidebar({
                   </DialogContent>
                 </Dialog>
               </div>
-              {labels.map((label) => (
+              {labels.map(label => (
                 <div
                   key={label.id}
                   className="group flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors"
@@ -564,7 +581,7 @@ export function AppSidebar({
                   <span className="text-base leading-none">{label.icon}</span>
                   <span className="flex-1 truncate">{label.name}</span>
                   <button
-                    onClick={(e) => handleDeleteLabel(e, label.id, label.name)}
+                    onClick={e => handleDeleteLabel(e, label.id, label.name)}
                     className="opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <Trash2 className="h-3 w-3 text-red-500" />
