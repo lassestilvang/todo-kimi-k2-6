@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { type ReactNode } from "react";
-import { Button } from "@/components/ui/button";
-import { Plus, Search, Calendar, CheckCircle2, Inbox } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { type ReactNode } from 'react';
+import { Button } from '@/components/ui/button';
+import { Plus, Search, Calendar, CheckCircle2, Inbox } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface EmptyStateProps {
   /** The title to display */
@@ -13,17 +13,21 @@ interface EmptyStateProps {
   /** Optional icon to display */
   icon?: ReactNode | undefined;
   /** Optional action button */
-  action?: {
-    label: string;
-    onClick: () => void;
-  } | undefined;
+  action?:
+    | {
+        label: string;
+        onClick: () => void;
+      }
+    | undefined;
   /** Optional secondary action */
-  secondaryAction?: {
-    label: string;
-    onClick: () => void;
-  } | undefined;
+  secondaryAction?:
+    | {
+        label: string;
+        onClick: () => void;
+      }
+    | undefined;
   /** Variant affects styling */
-  variant?: "default" | "compact" | undefined;
+  variant?: 'default' | 'compact' | undefined;
 }
 
 const icons = {
@@ -40,19 +44,21 @@ export function EmptyState({
   icon,
   action,
   secondaryAction,
-  variant = "default",
+  variant = 'default',
 }: EmptyStateProps) {
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center text-center",
-        variant === "compact" ? "py-8" : "min-h-[400px] py-16"
+        'flex flex-col items-center justify-center text-center',
+        variant === 'compact' ? 'py-8' : 'min-h-[400px] py-16'
       )}
     >
       <div className="mb-4">{icon || icons.default}</div>
       <h3 className="text-lg font-semibold mb-2">{title}</h3>
       {description && (
-        <p className="text-sm text-muted-foreground max-w-md mb-4">{description}</p>
+        <p className="text-sm text-muted-foreground max-w-md mb-4">
+          {description}
+        </p>
       )}
       <div className="flex gap-2 mt-2">
         {action && (
@@ -77,7 +83,7 @@ export function EmptyTasksState({ onAddTask }: { onAddTask?: () => void }) {
     <EmptyState
       title="No tasks yet"
       description="Get started by creating your first task. Use the + button above to add one."
-      action={onAddTask ? { label: "Add Task", onClick: onAddTask } : undefined}
+      action={onAddTask ? { label: 'Add Task', onClick: onAddTask } : undefined}
     />
   );
 }
@@ -110,7 +116,7 @@ export function EmptyUpcomingState({ onAddTask }: { onAddTask?: () => void }) {
       icon={icons.calendar}
       title="No upcoming tasks"
       description="Your schedule is clear for the next week. Time to plan ahead!"
-      action={onAddTask ? { label: "Add Task", onClick: onAddTask } : undefined}
+      action={onAddTask ? { label: 'Add Task', onClick: onAddTask } : undefined}
     />
   );
 }
