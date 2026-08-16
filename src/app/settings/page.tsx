@@ -1,38 +1,39 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Plus, Trash2, FolderTree, ListTree, Bell } from "lucide-react";
-import { toast } from "sonner";
-import { NotificationSettings } from "@/components/task/notification-settings";
-import type { TemplateCategory, CustomView, NotificationPrefs } from "@/types";
+import { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Plus, Trash2, FolderTree, ListTree, Bell } from 'lucide-react';
+import { toast } from 'sonner';
+import { NotificationSettings } from '@/components/task/notification-settings';
+import type { TemplateCategory, CustomView, NotificationPrefs } from '@/types';
 
 export default function SettingsPage() {
   const [categories, setCategories] = useState<TemplateCategory[]>([]);
   const [customViews, setCustomViews] = useState<CustomView[]>([]);
-  const [newCategoryName, setNewCategoryName] = useState("");
-  const [newCategoryDesc, setNewCategoryDesc] = useState("");
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryDesc, setNewCategoryDesc] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [notificationSettings, setNotificationSettings] = useState<NotificationPrefs | null>(null);
+  const [notificationSettings, setNotificationSettings] =
+    useState<NotificationPrefs | null>(null);
 
   const loadData = async () => {
     setIsLoading(true);
     try {
       const [catsRes, viewsRes, settingsRes] = await Promise.all([
-        fetch("/api/template-categories"),
-        fetch("/api/custom-views?userId=1"), // Would use actual user ID
-        fetch("/api/user-settings"),
+        fetch('/api/template-categories'),
+        fetch('/api/custom-views?userId=1'), // Would use actual user ID
+        fetch('/api/user-settings'),
       ]);
       setCategories(await catsRes.json());
       setCustomViews(await viewsRes.json());
       const settingsData = await settingsRes.json();
       setNotificationSettings(settingsData.settings || settingsData);
     } catch (error) {
-      console.error("Failed to load data:", error);
+      console.error('Failed to load data:', error);
     } finally {
       setIsLoading(false);
     }
@@ -46,45 +47,52 @@ export default function SettingsPage() {
     if (!newCategoryName.trim()) return;
 
     try {
-      const res = await fetch("/api/template-categories", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: newCategoryName, description: newCategoryDesc }),
+      const res = await fetch('/api/template-categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newCategoryName,
+          description: newCategoryDesc,
+        }),
       });
 
       if (res.ok) {
         const category = await res.json();
         setCategories([...categories, category]);
-        setNewCategoryName("");
-        setNewCategoryDesc("");
-        toast.success("Category created");
+        setNewCategoryName('');
+        setNewCategoryDesc('');
+        toast.success('Category created');
       }
     } catch {
-      toast.error("Failed to create category");
+      toast.error('Failed to create category');
     }
   };
 
   const handleDeleteCategory = async (id: number) => {
     try {
-      const res = await fetch(`/api/template-categories?id=${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/template-categories?id=${id}`, {
+        method: 'DELETE',
+      });
       if (res.ok) {
-        setCategories(categories.filter((c) => c.id !== id));
-        toast.success("Category deleted");
+        setCategories(categories.filter(c => c.id !== id));
+        toast.success('Category deleted');
       }
     } catch {
-      toast.error("Failed to delete category");
+      toast.error('Failed to delete category');
     }
   };
 
   const handleDeleteCustomView = async (id: number) => {
     try {
-      const res = await fetch(`/api/custom-views?id=${id}&userId=1`, { method: "DELETE" });
+      const res = await fetch(`/api/custom-views?id=${id}&userId=1`, {
+        method: 'DELETE',
+      });
       if (res.ok) {
-        setCustomViews(customViews.filter((v) => v.id !== id));
-        toast.success("View deleted");
+        setCustomViews(customViews.filter(v => v.id !== id));
+        toast.success('View deleted');
       }
     } catch {
-      toast.error("Failed to delete view");
+      toast.error('Failed to delete view');
     }
   };
 
@@ -116,7 +124,7 @@ export default function SettingsPage() {
                 <Input
                   placeholder="Category name"
                   value={newCategoryName}
-                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  onChange={e => setNewCategoryName(e.target.value)}
                 />
                 <Button onClick={handleCreateCategory}>
                   <Plus className="h-4 w-4" />
@@ -125,7 +133,7 @@ export default function SettingsPage() {
               <Textarea
                 placeholder="Description (optional)"
                 value={newCategoryDesc}
-                onChange={(e) => setNewCategoryDesc(e.target.value)}
+                onChange={e => setNewCategoryDesc(e.target.value)}
               />
             </div>
 
@@ -133,9 +141,11 @@ export default function SettingsPage() {
               <Label>Existing Categories</Label>
               <div className="space-y-2 max-h-60 overflow-y-auto">
                 {categories.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No categories yet</p>
+                  <p className="text-sm text-muted-foreground">
+                    No categories yet
+                  </p>
                 ) : (
-                  categories.map((cat) => (
+                  categories.map(cat => (
                     <div
                       key={cat.id}
                       className="flex items-center justify-between p-3 border rounded"
@@ -143,7 +153,9 @@ export default function SettingsPage() {
                       <div>
                         <p className="font-medium">{cat.name}</p>
                         {cat.description && (
-                          <p className="text-sm text-muted-foreground">{cat.description}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {cat.description}
+                          </p>
                         )}
                       </div>
                       <Button
@@ -172,9 +184,11 @@ export default function SettingsPage() {
           <CardContent>
             <div className="space-y-2 max-h-60 overflow-y-auto">
               {customViews.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No custom views yet. Create one from the task list.</p>
+                <p className="text-sm text-muted-foreground">
+                  No custom views yet. Create one from the task list.
+                </p>
               ) : (
-                customViews.map((view) => (
+                customViews.map(view => (
                   <div
                     key={view.id}
                     className="flex items-center justify-between p-3 border rounded"
@@ -182,7 +196,8 @@ export default function SettingsPage() {
                     <div>
                       <p className="font-medium">{view.name}</p>
                       <p className="text-sm text-muted-foreground">
-                        {view.view_type} view • {view.sort_field} ({view.sort_direction})
+                        {view.view_type} view • {view.sort_field} (
+                        {view.sort_direction})
                       </p>
                     </div>
                     <Button
@@ -210,7 +225,7 @@ export default function SettingsPage() {
           <CardContent>
             <NotificationSettings
               settings={notificationSettings || undefined}
-              onSave={(settings) => setNotificationSettings(settings)}
+              onSave={settings => setNotificationSettings(settings)}
             />
           </CardContent>
         </Card>
