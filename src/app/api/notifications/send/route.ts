@@ -1,8 +1,12 @@
-import { getDb } from "@/lib/db";
-import { sendTaskReminderEmail, sendDueSoonEmail, EmailTask } from "@/lib/email";
-import { logError } from "@/lib/logger";
-import { applyMiddleware, jsonResponse } from "@/lib/api-middleware";
-import { NextRequest } from "next/server";
+import { getDb } from '@/lib/db';
+import {
+  sendTaskReminderEmail,
+  sendDueSoonEmail,
+  EmailTask,
+} from '@/lib/email';
+import { logError } from '@/lib/logger';
+import { applyMiddleware, jsonResponse } from '@/lib/api-middleware';
+import { NextRequest } from 'next/server';
 
 interface DbTaskRow {
   id?: number;
@@ -30,7 +34,11 @@ export async function POST(request: NextRequest) {
   // Apply middleware - require authentication (skip in demo mode)
   const middleware = await applyMiddleware(request, { requireAuth: true });
   // Allow demo mode (userId = 1) for testing
-  const auth = middleware.auth || { userId: 1, email: "demo@taskflow.app", isAuthenticated: true };
+  const auth = middleware.auth || {
+    userId: 1,
+    email: 'demo@taskflow.app',
+    isAuthenticated: true,
+  };
 
   try {
     const body = await request.json();
@@ -41,45 +49,45 @@ export async function POST(request: NextRequest) {
     // Use provided userId or authenticated user's ID
     const effectiveUserId = userId || auth.userId || 1;
 
-    if (type === "test") {
+    if (type === 'test') {
       // Test notification - just return success
-      console.log("Test notification sent for user:", effectiveUserId);
-      return jsonResponse({ success: true, message: "Test notification sent" });
+      console.log('Test notification sent for user:', effectiveUserId);
+      return jsonResponse({ success: true, message: 'Test notification sent' });
     }
 
-    if (type === "reminder") {
+    if (type === 'reminder') {
       const task = db
-        .prepare("SELECT * FROM tasks WHERE id = ? AND user_id = ?")
+        .prepare('SELECT * FROM tasks WHERE id = ? AND user_id = ?')
         .get(taskId, effectiveUserId) as Partial<DbTaskRow> | null;
       if (task) {
         const taskData: EmailTask = {
           id: task.id ?? 0,
-          name: task.name ?? "Unnamed Task",
+          name: task.name ?? 'Unnamed Task',
           description: task.description ?? null,
           deadline: task.deadline ?? null,
         };
-        await sendTaskReminderEmail("demo@taskflow.app", taskData);
+        await sendTaskReminderEmail('demo@taskflow.app', taskData);
       }
     }
 
-    if (type === "due_soon") {
+    if (type === 'due_soon') {
       const task = db
-        .prepare("SELECT * FROM tasks WHERE id = ? AND user_id = ?")
+        .prepare('SELECT * FROM tasks WHERE id = ? AND user_id = ?')
         .get(taskId, effectiveUserId) as Partial<DbTaskRow> | null;
       if (task) {
         const taskData: EmailTask = {
           id: task.id ?? 0,
-          name: task.name ?? "Unnamed Task",
+          name: task.name ?? 'Unnamed Task',
           description: task.description ?? null,
           deadline: task.deadline ?? null,
         };
-        await sendDueSoonEmail("demo@taskflow.app", taskData);
+        await sendDueSoonEmail('demo@taskflow.app', taskData);
       }
     }
 
-    if (type === "daily_summary") {
+    if (type === 'daily_summary') {
       const tasks = db
-        .prepare("SELECT * FROM tasks WHERE user_id = ? AND completed = 0")
+        .prepare('SELECT * FROM tasks WHERE user_id = ? AND completed = 0')
         .all(effectiveUserId) as DbTaskRow[];
       console.log(`Daily summary for ${tasks.length} tasks`);
     }
@@ -87,11 +95,14 @@ export async function POST(request: NextRequest) {
     return jsonResponse({ success: true });
   } catch (error) {
     logError(
-      "Notification error",
+      'Notification error',
       undefined,
       error instanceof Error ? error : new Error(String(error))
     );
-    return Response.json({ error: "Failed to send notification" }, { status: 500 });
+    return Response.json(
+      { error: 'Failed to send notification' },
+      { status: 500 }
+    );
   }
 }
 
@@ -103,7 +114,7 @@ export async function GET() {
   try {
     const db = getDb();
     const now = new Date();
-    const today = now.toISOString().split("T")[0];
+    const today = now.toISOString().split('T')[0];
 
     // Find tasks due today or overdue
     const tasks = db
@@ -133,9 +144,9 @@ export async function GET() {
 
     return Response.json({ sent: sentCount });
   } catch (error) {
-    console.error("Notification processing error:", error);
+    console.error('Notification processing error:', error);
     return Response.json(
-      { error: "Failed to process notifications" },
+      { error: 'Failed to process notifications' },
       { status: 500 }
     );
   }
