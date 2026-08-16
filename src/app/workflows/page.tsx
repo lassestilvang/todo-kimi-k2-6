@@ -1,8 +1,8 @@
-import { WorkflowBuilder } from "@/components/task/workflow-builder";
+import { WorkflowBuilder } from '@/components/task/workflow-builder';
 
 export const metadata = {
-  title: "Workflows - TaskFlow",
-  description: "Build no-code automations for task management",
+  title: 'Workflows - TaskFlow',
+  description: 'Build no-code automations for task management',
 };
 
 export default function WorkflowsPage() {
