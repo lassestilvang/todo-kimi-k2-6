@@ -1,8 +1,12 @@
-import { NextRequest } from "next/server";
-import { applyMiddleware, errorResponse, jsonResponse } from "@/lib/api-middleware";
+import { NextRequest } from 'next/server';
+import {
+  applyMiddleware,
+  errorResponse,
+  jsonResponse,
+} from '@/lib/api-middleware';
 
 interface TeamVelocityParams {
-  timeframe?: "week" | "month" | "quarter" | "year";
+  timeframe?: 'week' | 'month' | 'quarter' | 'year';
   workspaceId?: number;
 }
 
@@ -33,46 +37,57 @@ interface BurndownPoint {
 
 // Get team velocity metrics
 export async function GET(request: NextRequest) {
-  const middlewareResult = await applyMiddleware(request, { requireAuth: true });
+  const middlewareResult = await applyMiddleware(request, {
+    requireAuth: true,
+  });
   if (middlewareResult.error) {
     return middlewareResult.error;
   }
 
   const url = new URL(request.url);
-  const timeframeParam = url.searchParams.get("timeframe");
-  const validTimeframes = ["week", "month", "quarter", "year"] as const;
-  const isValidTimeframe = (value: string | null): value is "week" | "month" | "quarter" | "year" =>
-    value !== null && validTimeframes.includes(value as "week" | "month" | "quarter" | "year");
-  let timeframe: "week" | "month" | "quarter" | "year" = "month";
+  const timeframeParam = url.searchParams.get('timeframe');
+  const validTimeframes = ['week', 'month', 'quarter', 'year'] as const;
+  const isValidTimeframe = (
+    value: string | null
+  ): value is 'week' | 'month' | 'quarter' | 'year' =>
+    value !== null &&
+    validTimeframes.includes(value as 'week' | 'month' | 'quarter' | 'year');
+  let timeframe: 'week' | 'month' | 'quarter' | 'year' = 'month';
   if (timeframeParam && isValidTimeframe(timeframeParam)) {
     timeframe = timeframeParam;
   }
-  const workspaceIdParam = url.searchParams.get("workspaceId");
+  const workspaceIdParam = url.searchParams.get('workspaceId');
   const params: TeamVelocityParams = {
     timeframe,
     workspaceId: workspaceIdParam ? parseInt(workspaceIdParam) : undefined,
   };
 
   try {
-    const report = await getTeamVelocityReport(
-      timeframe,
-      params.workspaceId
-    );
+    const report = await getTeamVelocityReport(timeframe, params.workspaceId);
     return jsonResponse({ report }, 200, middlewareResult.headers);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to fetch team velocity";
+    const message =
+      error instanceof Error ? error.message : 'Failed to fetch team velocity';
     return errorResponse(message, 500);
   }
 }
 
-async function getTeamVelocityReport(timeframe: string, workspaceId?: number): Promise<VelocityReport> {
-  const db = (await import("@/lib/db")).getDb();
+async function getTeamVelocityReport(
+  timeframe: string,
+  workspaceId?: number
+): Promise<VelocityReport> {
+  const db = (await import('@/lib/db')).getDb();
 
   // Calculate date range based on timeframe
   const dateRange = getDateRange(timeframe);
 
   // Get sprint/team period data
-  const sprints = await getSprints(db, dateRange.start, dateRange.end, workspaceId);
+  const sprints = await getSprints(
+    db,
+    dateRange.start,
+    dateRange.end,
+    workspaceId
+  );
 
   // Calculate overall velocity and predictions
   const velocity = calculateVelocity(sprints);
@@ -82,7 +97,12 @@ async function getTeamVelocityReport(timeframe: string, workspaceId?: number): P
   const capacity = await getTeamCapacity(db, workspaceId);
 
   // Generate burndown data
-  const burndown = await generateBurndownData(db, dateRange.start, dateRange.end, workspaceId);
+  const burndown = await generateBurndownData(
+    db,
+    dateRange.start,
+    dateRange.end,
+    workspaceId
+  );
 
   return {
     sprints,
@@ -102,46 +122,51 @@ function getDateRange(timeframe: string): DateRange {
   const now = new Date();
 
   switch (timeframe) {
-    case "week": {
+    case 'week': {
       const start = new Date(now);
-      start.setDate(now.getDate() - (now.getDay() + 6) % 7);
+      start.setDate(now.getDate() - ((now.getDay() + 6) % 7));
       const end = new Date(start);
       end.setDate(start.getDate() + 6);
       return {
-        start: start.toISOString().split("T")[0],
-        end: end.toISOString().split("T")[0],
+        start: start.toISOString().split('T')[0],
+        end: end.toISOString().split('T')[0],
       };
     }
-    case "month": {
+    case 'month': {
       const start = new Date(now.getFullYear(), now.getMonth(), 1);
       const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
       return {
-        start: start.toISOString().split("T")[0],
-        end: end.toISOString().split("T")[0],
+        start: start.toISOString().split('T')[0],
+        end: end.toISOString().split('T')[0],
       };
     }
-    case "quarter": {
+    case 'quarter': {
       const quarter = Math.floor(now.getMonth() / 3);
       const start = new Date(now.getFullYear(), quarter * 3, 1);
       const end = new Date(now.getFullYear(), quarter * 3 + 3, 0);
       return {
-        start: start.toISOString().split("T")[0],
-        end: end.toISOString().split("T")[0],
+        start: start.toISOString().split('T')[0],
+        end: end.toISOString().split('T')[0],
       };
     }
-    case "year":
+    case 'year':
     default: {
       const start = new Date(now.getFullYear(), 0, 1);
       const end = new Date(now.getFullYear(), 11, 31);
       return {
-        start: start.toISOString().split("T")[0],
-        end: end.toISOString().split("T")[0],
+        start: start.toISOString().split('T')[0],
+        end: end.toISOString().split('T')[0],
       };
     }
   }
 }
 
-async function getSprints(db: ReturnType<typeof import("@/lib/db").getDb>, start: string, end: string, workspaceId?: number): Promise<SprintData[]> {
+async function getSprints(
+  db: ReturnType<typeof import('@/lib/db').getDb>,
+  start: string,
+  end: string,
+  workspaceId?: number
+): Promise<SprintData[]> {
   // Try to get actual sprints from tasks assigned within the period
   const whereClause = workspaceId
     ? `WHERE (t.workspace_id = ? OR t.user_id IN (SELECT user_id FROM workspace_users WHERE workspace_id = ?)) AND t.created_at BETWEEN ? AND ?`
@@ -152,7 +177,9 @@ async function getSprints(db: ReturnType<typeof import("@/lib/db").getDb>, start
     : [start, end];
 
   // Group tasks by week to simulate sprints
-  const weeklyTasks = await db.prepare(`
+  const weeklyTasks = (await db
+    .prepare(
+      `
     SELECT
       strftime('%Y-%W', t.created_at) as week_id,
       date(t.created_at, 'start of week') as week_start,
@@ -165,7 +192,9 @@ async function getSprints(db: ReturnType<typeof import("@/lib/db").getDb>, start
     GROUP BY strftime('%Y-%W', t.created_at)
     ORDER BY week_start
     LIMIT 12
-  `).all(...params) as {
+  `
+    )
+    .all(...params)) as {
     week_id: string;
     week_start: string;
     week_end: string;
@@ -177,7 +206,8 @@ async function getSprints(db: ReturnType<typeof import("@/lib/db").getDb>, start
   return weeklyTasks.map((row, index: number) => {
     const planned = row.planned || 0;
     const completed = row.completed || 0;
-    const completionRate = planned > 0 ? Math.round((completed / planned) * 100) : 0;
+    const completionRate =
+      planned > 0 ? Math.round((completed / planned) * 100) : 0;
 
     // Simple burn rate: how quickly tasks are moving to completion
     const burnRate = completionRate > 0 ? completionRate / 2 : 0; // Simplified
@@ -200,7 +230,10 @@ function calculateVelocity(sprints: SprintData[]): number {
 
   // Average of last 6 sprints' completed points
   const recentSprints = sprints.slice(-6);
-  const totalCompleted = recentSprints.reduce((sum, s) => sum + s.completed_points, 0);
+  const totalCompleted = recentSprints.reduce(
+    (sum, s) => sum + s.completed_points,
+    0
+  );
 
   return Math.round(totalCompleted / Math.max(1, recentSprints.length));
 }
@@ -227,18 +260,25 @@ function calculatePredictedVelocity(sprints: SprintData[]): number {
   return Math.round(secondAvg + trend * 0.5);
 }
 
-async function getTeamCapacity(db: ReturnType<typeof import("@/lib/db").getDb>, workspaceId?: number): Promise<number> {
+async function getTeamCapacity(
+  db: ReturnType<typeof import('@/lib/db').getDb>,
+  workspaceId?: number
+): Promise<number> {
   // Get user count for capacity calculation
   let userCount = 1;
 
   if (workspaceId) {
-    const workspaceMembers = await db.prepare(
-      "SELECT COUNT(*) as count FROM workspace_users WHERE workspace_id = ?"
-    ).get(workspaceId) as { count: number };
+    const workspaceMembers = (await db
+      .prepare(
+        'SELECT COUNT(*) as count FROM workspace_users WHERE workspace_id = ?'
+      )
+      .get(workspaceId)) as { count: number };
     userCount = Math.max(1, workspaceMembers.count);
   } else {
     // Try to get all users without workspace
-    const users = await db.prepare("SELECT COUNT(*) as count FROM users").get() as { count: number };
+    const users = (await db
+      .prepare('SELECT COUNT(*) as count FROM users')
+      .get()) as { count: number };
     userCount = users.count || 1;
   }
 
@@ -250,7 +290,12 @@ async function getTeamCapacity(db: ReturnType<typeof import("@/lib/db").getDb>, 
   return capacityHours;
 }
 
-async function generateBurndownData(db: ReturnType<typeof import("@/lib/db").getDb>, start: string, end: string, workspaceId?: number): Promise<BurndownPoint[]> {
+async function generateBurndownData(
+  db: ReturnType<typeof import('@/lib/db').getDb>,
+  start: string,
+  end: string,
+  workspaceId?: number
+): Promise<BurndownPoint[]> {
   const whereClause = workspaceId
     ? `WHERE (t.workspace_id = ? OR t.user_id IN (SELECT user_id FROM workspace_users WHERE workspace_id = ?)) AND t.created_at BETWEEN ? AND ?`
     : `WHERE t.created_at BETWEEN ? AND ?`;
@@ -266,7 +311,9 @@ async function generateBurndownData(db: ReturnType<typeof import("@/lib/db").get
     completed_at: string | null;
     created_at: string;
   }
-  const tasks = await db.prepare(`
+  const tasks = (await db
+    .prepare(
+      `
     SELECT
       t.id,
       t.completed,
@@ -274,7 +321,9 @@ async function generateBurndownData(db: ReturnType<typeof import("@/lib/db").get
       t.created_at
     FROM tasks t
     ${whereClause}
-  `).all(...params) as TaskRow[];
+  `
+    )
+    .all(...params)) as TaskRow[];
 
   // Calculate daily burndown
   const dailyStats = new Map<string, { remaining: number; created: number }>();
@@ -283,14 +332,17 @@ async function generateBurndownData(db: ReturnType<typeof import("@/lib/db").get
   const startDate = new Date(start);
   const endDate = new Date(end);
   for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-    const dayStr = d.toISOString().split("T")[0];
+    const dayStr = d.toISOString().split('T')[0];
     dailyStats.set(dayStr, { remaining: tasks.length, created: 0 });
   }
 
   // Update based on completion
-  tasks.forEach((task) => {
-    const createdAt = task.created_at.split("T")[0];
-    const completedAt = task.completed && task.completed_at ? task.completed_at.split("T")[0] : null;
+  tasks.forEach(task => {
+    const createdAt = task.created_at.split('T')[0];
+    const completedAt =
+      task.completed && task.completed_at
+        ? task.completed_at.split('T')[0]
+        : null;
 
     const stats = dailyStats.get(createdAt);
     if (stats) {
@@ -300,7 +352,8 @@ async function generateBurndownData(db: ReturnType<typeof import("@/lib/db").get
     if (completedAt) {
       const completedStats = dailyStats.get(completedAt);
       if (completedStats) {
-        completedStats.remaining = (completedStats.remaining || tasks.length) - 1;
+        completedStats.remaining =
+          (completedStats.remaining || tasks.length) - 1;
       }
     }
   });
@@ -312,7 +365,7 @@ async function generateBurndownData(db: ReturnType<typeof import("@/lib/db").get
   Array.from(dailyStats.entries()).forEach(([day, stats]) => {
     const idealRate = totalTasks > 0 ? totalTasks / (dailyStats.size || 1) : 0;
     const dayIndex = Array.from(dailyStats.keys()).indexOf(day);
-    const ideal = totalTasks - (idealRate * (dayIndex + 1));
+    const ideal = totalTasks - idealRate * (dayIndex + 1);
 
     burndown.push({
       day,
@@ -326,7 +379,9 @@ async function generateBurndownData(db: ReturnType<typeof import("@/lib/db").get
 
 // POST: Update team velocity settings
 export async function POST(request: NextRequest) {
-  const middlewareResult = await applyMiddleware(request, { requireAuth: true });
+  const middlewareResult = await applyMiddleware(request, {
+    requireAuth: true,
+  });
   if (middlewareResult.error) {
     return middlewareResult.error;
   }
@@ -336,16 +391,25 @@ export async function POST(request: NextRequest) {
     const { setting, value } = body;
 
     // Validate setting
-    const validSettings = ["velocity_target", "capacity_adjustment", "tracking_enabled"];
+    const validSettings = [
+      'velocity_target',
+      'capacity_adjustment',
+      'tracking_enabled',
+    ];
     if (!validSettings.includes(setting)) {
-      return errorResponse("Invalid setting", 400);
+      return errorResponse('Invalid setting', 400);
     }
 
     // In a real implementation, this would save to user_settings or a team_settings table
     // For now, just acknowledge the update
-    return jsonResponse({ success: true, setting, value }, 200, middlewareResult.headers);
+    return jsonResponse(
+      { success: true, setting, value },
+      200,
+      middlewareResult.headers
+    );
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to update settings";
+    const message =
+      error instanceof Error ? error.message : 'Failed to update settings';
     return errorResponse(message, 400);
   }
 }
