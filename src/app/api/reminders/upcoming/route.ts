@@ -1,6 +1,10 @@
 import { NextRequest } from 'next/server';
 import { getDb } from '@/lib/db';
-import { applyMiddleware, errorResponse, jsonResponse } from '@/lib/api-middleware';
+import {
+  applyMiddleware,
+  errorResponse,
+  jsonResponse,
+} from '@/lib/api-middleware';
 
 export async function GET(request: NextRequest) {
   const middlewareResult = await applyMiddleware(request);
@@ -28,13 +32,13 @@ export async function GET(request: NextRequest) {
          LIMIT ?`
       )
       .all(cutoff, limit) as Array<{
-        id: number;
-        task_id: number;
-        remind_at: string;
-        created_at: string;
-        task_name: string;
-        task_completed: number;
-      }>;
+      id: number;
+      task_id: number;
+      remind_at: string;
+      created_at: string;
+      task_name: string;
+      task_completed: number;
+    }>;
 
     return jsonResponse(reminders, 200, middlewareResult.headers);
   } catch (error) {
