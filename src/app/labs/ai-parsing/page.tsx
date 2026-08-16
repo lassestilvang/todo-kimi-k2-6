@@ -1,10 +1,15 @@
-"use client";
+'use client';
 
-import { TaskFlowLabs } from "@/components/task/taskflow-labs";
-import { Brain, RefreshCw } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import Link from "next/link";
+import { TaskFlowLabs } from '@/components/task/taskflow-labs';
+import { Brain, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
+import Link from 'next/link';
 
 export default function AIParsingPage() {
   return (
@@ -25,7 +30,8 @@ export default function AIParsingPage() {
             AI Task Parsing Playground
           </CardTitle>
           <CardDescription>
-            Compare how different AI models parse natural language task descriptions
+            Compare how different AI models parse natural language task
+            descriptions
           </CardDescription>
         </CardHeader>
       </Card>
