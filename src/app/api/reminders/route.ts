@@ -4,11 +4,17 @@ import {
   createReminder,
   getUpcomingReminders,
 } from '@/lib/actions/reminders';
-import { applyMiddleware, errorResponse, jsonResponse } from '@/lib/api-middleware';
+import {
+  applyMiddleware,
+  errorResponse,
+  jsonResponse,
+} from '@/lib/api-middleware';
 
 // GET /api/reminders - Get reminders for a task or upcoming reminders
 export async function GET(request: NextRequest) {
-  const middlewareResult = await applyMiddleware(request, { requireAuth: true });
+  const middlewareResult = await applyMiddleware(request, {
+    requireAuth: true,
+  });
   if (middlewareResult.error) {
     return middlewareResult.error;
   }
@@ -38,7 +44,9 @@ export async function GET(request: NextRequest) {
 
 // POST /api/reminders - Create a reminder
 export async function POST(request: NextRequest) {
-  const middlewareResult = await applyMiddleware(request, { requireAuth: true });
+  const middlewareResult = await applyMiddleware(request, {
+    requireAuth: true,
+  });
   if (middlewareResult.error) {
     return middlewareResult.error;
   }
@@ -49,6 +57,9 @@ export async function POST(request: NextRequest) {
     return jsonResponse(reminder, 201, middlewareResult.headers);
   } catch (error) {
     console.error('Error creating reminder:', error);
-    return errorResponse(error instanceof Error ? error.message : 'Failed to create reminder', 400);
+    return errorResponse(
+      error instanceof Error ? error.message : 'Failed to create reminder',
+      400
+    );
   }
 }
