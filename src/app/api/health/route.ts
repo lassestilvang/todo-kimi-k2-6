@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { NextResponse } from 'next/server';
+import { getDb } from '@/lib/db';
 
 /**
  * Health check API endpoint.
@@ -20,29 +20,31 @@ import { getDb } from "@/lib/db";
 export async function GET() {
   const timestamp = new Date().toISOString();
   const checks: {
-    database: "ok" | "error";
-    ai_providers?: "ok" | "degraded" | "error";
+    database: 'ok' | 'error';
+    ai_providers?: 'ok' | 'degraded' | 'error';
   } = {
-    database: "ok",
+    database: 'ok',
   };
 
-  let status: "healthy" | "unhealthy" = "healthy";
+  let status: 'healthy' | 'unhealthy' = 'healthy';
 
   // Check database connectivity
   try {
     const db = getDb();
-    db.prepare("SELECT 1").get();
+    db.prepare('SELECT 1').get();
   } catch {
-    checks.database = "error";
-    status = "unhealthy";
+    checks.database = 'error';
+    status = 'unhealthy';
   }
 
   // Check AI providers (optional)
   try {
-    const hasAiConfig = !!(process.env['OPENAI_API_KEY'] || process.env['ANTHROPIC_API_KEY']);
-    checks.ai_providers = hasAiConfig ? "ok" : "degraded";
+    const hasAiConfig = !!(
+      process.env['OPENAI_API_KEY'] || process.env['ANTHROPIC_API_KEY']
+    );
+    checks.ai_providers = hasAiConfig ? 'ok' : 'degraded';
   } catch {
-    checks.ai_providers = "error";
+    checks.ai_providers = 'error';
   }
 
   return NextResponse.json(
@@ -51,6 +53,6 @@ export async function GET() {
       timestamp,
       checks,
     },
-    { status: status === "healthy" ? 200 : 503 }
+    { status: status === 'healthy' ? 200 : 503 }
   );
 }
