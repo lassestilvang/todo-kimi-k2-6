@@ -1,84 +1,102 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useMemo } from "react";
-import { Plus, BarChart3, WifiOff, Brain, Battery, Lightbulb, Users } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useSession } from "next-auth/react";
-import { useTranslations } from "next-intl";
-import { Button } from "@/components/ui/button";
-import { AppSidebar } from "@/components/sidebar/app-sidebar";
-import { TaskList } from "@/components/task/task-list";
-import { TaskModal } from "@/components/task/task-modal";
-import { TaskStats } from "@/components/task/task-stats";
-import { TaskCalendar } from "@/components/task/task-calendar";
-import { TaskDependencyGraph } from "@/components/task/task-dependency-graph";
-import { GanttChart } from "@/components/task/gantt-chart";
-import { EisenhowerMatrix } from "@/components/task/eisenhower-matrix";
-import { TimelineView } from "@/components/task/timeline-view";
-import { KanbanBoard } from "@/components/task/kanban-board";
-import { FocusMode } from "@/components/task/focus-mode";
-import { ImportExport } from "@/components/task/import-export";
-import { CalendarSyncSettings } from "@/components/task/calendar-sync-settings";
-import { PwaInstallPrompt } from "@/components/task/pwa-install-prompt";
-import { KeyboardShortcuts } from "@/components/task/keyboard-shortcuts";
-import { TaskAnalytics } from "@/components/task/task-analytics";
-import { TaskInvestmentPortfolio } from "@/components/task/task-investment-portfolio";
-import { MobileSidebar } from "@/components/task/mobile-sidebar";
-import { GoalsDashboard } from "@/components/task/goals-dashboard";
-import { AIAssistant } from "@/components/task/ai-assistant";
-import { KnowledgeGraph } from "@/components/task/knowledge-graph";
-import { IntegrationMarketplace } from "@/components/task/integration-marketplace";
-import { useTasks } from "@/hooks/use-tasks";
-import type { TaskWithRelations, FilterPreset, Template, Goal, Workspace } from "@/types";
-import { toast } from "sonner";
+import { useState, useEffect, useMemo } from 'react';
+import {
+  Plus,
+  BarChart3,
+  WifiOff,
+  Brain,
+  Battery,
+  Lightbulb,
+  Users,
+} from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useSession } from 'next-auth/react';
+import { useTranslations } from 'next-intl';
+import { Button } from '@/components/ui/button';
+import { AppSidebar } from '@/components/sidebar/app-sidebar';
+import { TaskList } from '@/components/task/task-list';
+import { TaskModal } from '@/components/task/task-modal';
+import { TaskStats } from '@/components/task/task-stats';
+import { TaskCalendar } from '@/components/task/task-calendar';
+import { TaskDependencyGraph } from '@/components/task/task-dependency-graph';
+import { GanttChart } from '@/components/task/gantt-chart';
+import { EisenhowerMatrix } from '@/components/task/eisenhower-matrix';
+import { TimelineView } from '@/components/task/timeline-view';
+import { KanbanBoard } from '@/components/task/kanban-board';
+import { FocusMode } from '@/components/task/focus-mode';
+import { ImportExport } from '@/components/task/import-export';
+import { CalendarSyncSettings } from '@/components/task/calendar-sync-settings';
+import { PwaInstallPrompt } from '@/components/task/pwa-install-prompt';
+import { KeyboardShortcuts } from '@/components/task/keyboard-shortcuts';
+import { TaskAnalytics } from '@/components/task/task-analytics';
+import { TaskInvestmentPortfolio } from '@/components/task/task-investment-portfolio';
+import { MobileSidebar } from '@/components/task/mobile-sidebar';
+import { GoalsDashboard } from '@/components/task/goals-dashboard';
+import { AIAssistant } from '@/components/task/ai-assistant';
+import { KnowledgeGraph } from '@/components/task/knowledge-graph';
+import { IntegrationMarketplace } from '@/components/task/integration-marketplace';
+import { useTasks } from '@/hooks/use-tasks';
+import type {
+  TaskWithRelations,
+  FilterPreset,
+  Template,
+  Goal,
+  Workspace,
+} from '@/types';
+import { toast } from 'sonner';
 import {
   CognitiveLoadIndicator,
   EnergyBudgetWidget,
   CrossAppSyncHub,
   DecisionShadowTracker,
-  MoodAdaptiveTaskViews
-} from "@/components/task/enhanced-productivity-dashboard";
+  MoodAdaptiveTaskViews,
+} from '@/components/task/enhanced-productivity-dashboard';
 
 export default function Home() {
   const { status } = useSession();
-  const tNav = useTranslations("navigation");
-  const tPresets = useTranslations("filterPresets");
-  const tTasks = useTranslations("tasks");
+  const tNav = useTranslations('navigation');
+  const tPresets = useTranslations('filterPresets');
+  const tTasks = useTranslations('tasks');
 
   const viewTitles: Record<string, string> = {
-    today: tNav("today"),
-    next7: tNav("next7Days"),
-    upcoming: tNav("upcoming"),
-    all: "All Tasks",
-    blocked: tNav("blocked"),
-    calendar_sync: tNav("calendarSync"),
-    calendar: tNav("calendar"),
-    graph: tNav("graph"),
-    matrix: tNav("matrix"),
-    kanban: tNav("kanban"),
-    gantt: tNav("gantt"),
-    timeline: "Timeline",
-    ai: tNav("ai"),
-    analytics: tNav("analytics"),
-    analytics_enhanced: "Enhanced Analytics",
-    goals: tNav("goals"),
-    investment: "Task Investment Portfolio",
-    energy: "Energy Scheduler",
-    decision_journal: "Decision Journal",
-    career_compass: "Career Compass",
-    knowledge: "Knowledge Vault",
-    integrations: "Integration Marketplace",
+    today: tNav('today'),
+    next7: tNav('next7Days'),
+    upcoming: tNav('upcoming'),
+    all: 'All Tasks',
+    blocked: tNav('blocked'),
+    calendar_sync: tNav('calendarSync'),
+    calendar: tNav('calendar'),
+    graph: tNav('graph'),
+    matrix: tNav('matrix'),
+    kanban: tNav('kanban'),
+    gantt: tNav('gantt'),
+    timeline: 'Timeline',
+    ai: tNav('ai'),
+    analytics: tNav('analytics'),
+    analytics_enhanced: 'Enhanced Analytics',
+    goals: tNav('goals'),
+    investment: 'Task Investment Portfolio',
+    energy: 'Energy Scheduler',
+    decision_journal: 'Decision Journal',
+    career_compass: 'Career Compass',
+    knowledge: 'Knowledge Vault',
+    integrations: 'Integration Marketplace',
   };
   const [templates, setTemplates] = useState<Template[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingTask, setEditingTask] = useState<TaskWithRelations | undefined>();
+  const [editingTask, setEditingTask] = useState<
+    TaskWithRelations | undefined
+  >();
   const [isLoading, setIsLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
-  const [currentWorkspace, setCurrentWorkspace] = useState<Workspace | null>(null);
+  const [currentWorkspace, setCurrentWorkspace] = useState<Workspace | null>(
+    null
+  );
   const [calendarStatus, setCalendarStatus] = useState<{
     connected: boolean;
     provider: string | null;
@@ -123,7 +141,7 @@ export default function Home() {
   });
 
   // Show login page if not authenticated (handled by LoginRequired component)
-  if (status === "unauthenticated") {
+  if (status === 'unauthenticated') {
     // This redirect is handled at the session level
   }
 
@@ -138,46 +156,56 @@ export default function Home() {
 
     checkMobile();
     checkOnline();
-    window.addEventListener("resize", checkMobile);
-    window.addEventListener("online", checkOnline);
-    window.addEventListener("offline", checkOnline);
+    window.addEventListener('resize', checkMobile);
+    window.addEventListener('online', checkOnline);
+    window.addEventListener('offline', checkOnline);
 
     return () => {
-      window.removeEventListener("resize", checkMobile);
-      window.removeEventListener("online", checkOnline);
-      window.removeEventListener("offline", checkOnline);
+      window.removeEventListener('resize', checkMobile);
+      window.removeEventListener('online', checkOnline);
+      window.removeEventListener('offline', checkOnline);
     };
   }, []);
 
   // Fetch calendar sync status
   useEffect(() => {
-    fetch("/api/calendar/status")
-      .then((r) => r.json())
+    fetch('/api/calendar/status')
+      .then(r => r.json())
       .then(setCalendarStatus)
       .catch(console.error);
   }, []);
 
   // Get completed tasks for statistics
-  const completedTasks = useMemo(() => tasks.filter((t) => t.completed), [tasks]);
+  const completedTasks = useMemo(() => tasks.filter(t => t.completed), [tasks]);
 
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [listsData, labelsData, workspacesData, allTasks, templatesData, generatedCount, goalsData] = await Promise.all([
-        (await import("@/lib/actions/tasks")).getLists(),
-        (await import("@/lib/actions/tasks")).getLabels(),
+      const [
+        listsData,
+        labelsData,
+        workspacesData,
+        allTasks,
+        templatesData,
+        generatedCount,
+        goalsData,
+      ] = await Promise.all([
+        (await import('@/lib/actions/tasks')).getLists(),
+        (await import('@/lib/actions/tasks')).getLabels(),
         (async () => {
           try {
-            const res = await fetch("/api/workspaces");
+            const res = await fetch('/api/workspaces');
             return res.json();
           } catch {
             return [];
           }
         })(),
-        (await import("@/lib/actions/tasks")).getTasks({ includeCompleted: true }),
-        (await import("@/lib/actions/templates")).getTemplates(),
-        (await import("@/lib/actions/tasks")).generateRecurringTasks(),
-        (await import("@/lib/actions/goals")).getGoals(),
+        (await import('@/lib/actions/tasks')).getTasks({
+          includeCompleted: true,
+        }),
+        (await import('@/lib/actions/templates')).getTemplates(),
+        (await import('@/lib/actions/tasks')).generateRecurringTasks(),
+        (await import('@/lib/actions/goals')).getGoals(),
       ]);
       setLists(listsData);
       setLabels(labelsData);
@@ -209,49 +237,50 @@ export default function Home() {
   };
 
   const getViewTitle = () => {
-    if (searchQuery) return `${tTasks("searchPlaceholder", { query: searchQuery })}`;
+    if (searchQuery)
+      return `${tTasks('searchPlaceholder', { query: searchQuery })}`;
     if (currentFilterPreset) {
       const presetLabels: Record<FilterPreset, string> = {
-        needs_attention: tPresets("needsAttention"),
-        this_week: tPresets("thisWeek"),
-        with_labels: tPresets("withLabels"),
-        with_subtasks: tPresets("withSubtasks"),
-        completed: tNav("completed"),
+        needs_attention: tPresets('needsAttention'),
+        this_week: tPresets('thisWeek'),
+        with_labels: tPresets('withLabels'),
+        with_subtasks: tPresets('withSubtasks'),
+        completed: tNav('completed'),
       };
       return presetLabels[currentFilterPreset];
     }
-    if (currentView === "list" && currentListId) {
-      const list = lists.find((l) => l.id === currentListId);
-      return list ? `${list.emoji} ${list.name}` : "List";
+    if (currentView === 'list' && currentListId) {
+      const list = lists.find(l => l.id === currentListId);
+      return list ? `${list.emoji} ${list.name}` : 'List';
     }
-    return viewTitles[currentView] || tNav("today");
+    return viewTitles[currentView] || tNav('today');
   };
 
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Global shortcuts
-      if (e.key === "n" && (e.metaKey || e.ctrlKey)) {
+      if (e.key === 'n' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         handleNewTask();
       }
 
-      if (e.key === "/" && !(e.target instanceof HTMLInputElement)) {
+      if (e.key === '/' && !(e.target instanceof HTMLInputElement)) {
         e.preventDefault();
         searchInputRef.current?.focus();
       }
 
-      if (e.key === "?" && !(e.target instanceof HTMLInputElement)) {
+      if (e.key === '?' && !(e.target instanceof HTMLInputElement)) {
         e.preventDefault();
         // Open keyboard shortcuts dialog
-        const event = new KeyboardEvent("keydown", { key: "?" });
+        const event = new KeyboardEvent('keydown', { key: '?' });
         document.dispatchEvent(event);
       }
 
-      if (e.key === "Escape") {
+      if (e.key === 'Escape') {
         if (searchQuery) {
-          setSearchQuery("");
-          setCurrentView("today");
+          setSearchQuery('');
+          setCurrentView('today');
         }
         if (currentFilterPreset) {
           setCurrentFilterPreset(undefined);
@@ -259,82 +288,81 @@ export default function Home() {
       }
 
       // Quick navigation shortcuts
-      if (e.key === "1" && (e.metaKey || e.ctrlKey)) {
+      if (e.key === '1' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        handleViewChange("today");
+        handleViewChange('today');
       }
-      if (e.key === "2" && (e.metaKey || e.ctrlKey)) {
+      if (e.key === '2' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        handleViewChange("kanban");
+        handleViewChange('kanban');
       }
-      if (e.key === "3" && (e.metaKey || e.ctrlKey)) {
+      if (e.key === '3' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        handleViewChange("analytics");
+        handleViewChange('analytics');
       }
 
       // View navigation shortcuts
-      if (e.key === "g" && (e.metaKey || e.ctrlKey)) {
+      if (e.key === 'g' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        handleViewChange("gantt");
+        handleViewChange('gantt');
       }
-      if (e.key === "m" && (e.metaKey || e.ctrlKey)) {
+      if (e.key === 'm' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        handleViewChange("matrix");
+        handleViewChange('matrix');
       }
-      if (e.key === "c" && (e.metaKey || e.ctrlKey)) {
+      if (e.key === 'c' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        handleViewChange("calendar");
+        handleViewChange('calendar');
       }
-      if (e.key === "a" && (e.metaKey || e.ctrlKey)) {
+      if (e.key === 'a' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        handleViewChange("ai");
+        handleViewChange('ai');
       }
 
-      if (e.key === "g" && e.shiftKey && (e.metaKey || e.ctrlKey)) {
+      if (e.key === 'g' && e.shiftKey && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        handleViewChange("goals");
+        handleViewChange('goals');
       }
 
       // Assignment shortcut (Shift+A) - only when modal is open
-      if (e.key === "a" && e.shiftKey && modalOpen) {
+      if (e.key === 'a' && e.shiftKey && modalOpen) {
         e.preventDefault();
         // Switch to assign tab in modal
-        const assignEvent = new CustomEvent("openAssignTab");
+        const assignEvent = new CustomEvent('openAssignTab');
         document.dispatchEvent(assignEvent);
       }
 
       // Focus mode shortcut
-      if (e.key === "f" && e.shiftKey && !modalOpen) {
+      if (e.key === 'f' && e.shiftKey && !modalOpen) {
         e.preventDefault();
-        handleViewChange("focus");
+        handleViewChange('focus');
       }
     };
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [searchQuery, currentFilterPreset, modalOpen, setCurrentView, setSearchQuery, setCurrentFilterPreset, handleViewChange, searchInputRef]);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [
+    searchQuery,
+    currentFilterPreset,
+    modalOpen,
+    setCurrentView,
+    setSearchQuery,
+    setCurrentFilterPreset,
+    handleViewChange,
+    searchInputRef,
+  ]);
 
   // Render view-specific content
   const renderViewContent = () => {
-    if (currentView === "calendar") {
-      return (
-        <TaskCalendar
-          tasks={tasks}
-          onTaskClick={handleEditTask}
-        />
-      );
+    if (currentView === 'calendar') {
+      return <TaskCalendar tasks={tasks} onTaskClick={handleEditTask} />;
     }
 
-    if (currentView === "graph") {
-      return (
-        <TaskDependencyGraph
-          tasks={tasks}
-          onTaskClick={handleEditTask}
-        />
-      );
+    if (currentView === 'graph') {
+      return <TaskDependencyGraph tasks={tasks} onTaskClick={handleEditTask} />;
     }
 
-    if (currentView === "matrix") {
+    if (currentView === 'matrix') {
       return (
         <EisenhowerMatrix
           tasks={tasks}
@@ -347,13 +375,13 @@ export default function Home() {
       );
     }
 
-    if (currentView === "kanban") {
+    if (currentView === 'kanban') {
       return (
         <KanbanBoard
           tasks={tasks}
           lists={lists}
           onTaskClick={handleEditTask}
-          onTaskCreate={(task) => {
+          onTaskCreate={task => {
             setEditingTask(task as TaskWithRelations);
             setModalOpen(true);
           }}
@@ -361,36 +389,23 @@ export default function Home() {
       );
     }
 
-    if (currentView === "gantt") {
-      return (
-        <GanttChart
-          tasks={tasks}
-          onTaskClick={handleEditTask}
-        />
-      );
+    if (currentView === 'gantt') {
+      return <GanttChart tasks={tasks} onTaskClick={handleEditTask} />;
     }
 
-    if (currentView === "timeline") {
+    if (currentView === 'timeline') {
       return (
         <div className="p-6">
-          <TimelineView
-            tasks={tasks}
-            onTaskClick={handleEditTask}
-          />
+          <TimelineView tasks={tasks} onTaskClick={handleEditTask} />
         </div>
       );
     }
 
-    if (currentView === "analytics") {
-      return (
-        <TaskAnalytics
-          tasks={tasks}
-          completedTasks={completedTasks}
-        />
-      );
+    if (currentView === 'analytics') {
+      return <TaskAnalytics tasks={tasks} completedTasks={completedTasks} />;
     }
 
-    if (currentView === "investment") {
+    if (currentView === 'investment') {
       return (
         <div className="p-6">
           <TaskInvestmentPortfolio
@@ -401,7 +416,7 @@ export default function Home() {
       );
     }
 
-    if (currentView === "analytics_enhanced") {
+    if (currentView === 'analytics_enhanced') {
       return (
         <div className="space-y-6 p-6">
           <div className="flex items-center justify-between">
@@ -420,7 +435,9 @@ export default function Home() {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Cognitive Load</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Cognitive Load
+                </CardTitle>
                 <Brain className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -433,19 +450,21 @@ export default function Home() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Energy Budget</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Energy Budget
+                </CardTitle>
                 <Battery className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
-                  78/100
-                </div>
+                <div className="text-2xl font-bold">78/100</div>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Decisions Made</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Decisions Made
+                </CardTitle>
                 <Lightbulb className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -458,7 +477,9 @@ export default function Home() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">External Sources</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  External Sources
+                </CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -482,7 +503,7 @@ export default function Home() {
       );
     }
 
-    if (currentView === "goals") {
+    if (currentView === 'goals') {
       return (
         <div className="p-6">
           <GoalsDashboard
@@ -490,20 +511,22 @@ export default function Home() {
             onUpdateProgress={(id, increment) => {
               (async () => {
                 try {
-                  await (await import("@/lib/actions/goals")).updateGoalProgress(id, increment);
+                  await (
+                    await import('@/lib/actions/goals')
+                  ).updateGoalProgress(id, increment);
                   loadData();
                 } catch {
-                  toast.error("Failed to update goal progress");
+                  toast.error('Failed to update goal progress');
                 }
               })();
             }}
-            onResetGoal={(id) => {
+            onResetGoal={id => {
               (async () => {
                 try {
-                  await (await import("@/lib/actions/goals")).resetGoal(id);
+                  await (await import('@/lib/actions/goals')).resetGoal(id);
                   loadData();
                 } catch {
-                  toast.error("Failed to reset goal");
+                  toast.error('Failed to reset goal');
                 }
               })();
             }}
@@ -512,15 +535,17 @@ export default function Home() {
       );
     }
 
-    if (currentView === "calendar_sync") {
+    if (currentView === 'calendar_sync') {
       return (
         <div className="p-6">
           <CalendarSyncSettings
-            accessToken={calendarStatus?.connected ? "connected" : null}
+            accessToken={calendarStatus?.connected ? 'connected' : null}
             provider={calendarStatus?.provider}
             lastSynced={calendarStatus?.lastSync}
             expiresAt={calendarStatus?.expiresAt}
-            onAuth={() => { window.location.href = "/api/calendar/sync?action=auth"; }}
+            onAuth={() => {
+              window.location.href = '/api/calendar/sync?action=auth';
+            }}
             onSync={loadData}
             error={calendarStatus?.error}
           />
@@ -528,19 +553,23 @@ export default function Home() {
       );
     }
 
-    if (currentView === "ai") {
+    if (currentView === 'ai') {
       return (
         <div className="p-6">
           <AIAssistant
             tasks={tasks}
             lists={lists}
-            onAddTask={async (task) => {
+            onAddTask={async task => {
               try {
-                const newTask = await (await import("@/lib/actions/tasks")).createTask(task as unknown as import("@/types").CreateTaskInput);
+                const newTask = await (
+                  await import('@/lib/actions/tasks')
+                ).createTask(
+                  task as unknown as import('@/types').CreateTaskInput
+                );
                 setTasks([...tasks, newTask]);
-                toast.success("Task added successfully");
+                toast.success('Task added successfully');
               } catch (error) {
-                toast.error("Failed to add task");
+                toast.error('Failed to add task');
                 console.error(error);
               }
             }}
@@ -550,12 +579,12 @@ export default function Home() {
       );
     }
 
-    if (currentView === "focus") {
+    if (currentView === 'focus') {
       const currentTask = tasks.find(t => !t.completed);
       const fallbackTask: TaskWithRelations = {
         id: 1,
         user_id: null,
-        name: "Select a task to focus on",
+        name: 'Select a task to focus on',
         description: null,
         notes: null,
         list_id: 1,
@@ -563,13 +592,13 @@ export default function Home() {
         deadline: null,
         estimate: null,
         actual_time: null,
-        priority: "none",
-        recurring: "none",
+        priority: 'none',
+        recurring: 'none',
         recurring_config: null,
         completed: false,
         completed_at: null,
-        created_at: "",
-        updated_at: "",
+        created_at: '',
+        updated_at: '',
         sort_order: 0,
         archived: false,
         labels: [],
@@ -587,24 +616,20 @@ export default function Home() {
         <FocusMode
           task={currentTask || fallbackTask}
           open={true}
-          onOpenChange={(open) => !open && handleViewChange("today")}
+          onOpenChange={open => !open && handleViewChange('today')}
         />
       );
     }
 
-    if (currentView === "knowledge") {
+    if (currentView === 'knowledge') {
       return (
         <div className="p-6">
-          <KnowledgeGraph
-            tasks={tasks}
-            userId={1}
-            className="h-full"
-          />
+          <KnowledgeGraph tasks={tasks} userId={1} className="h-full" />
         </div>
       );
     }
 
-    if (currentView === "integrations") {
+    if (currentView === 'integrations') {
       return (
         <div className="p-6">
           <IntegrationMarketplace userId={1} />
@@ -620,7 +645,7 @@ export default function Home() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => handleViewChange("analytics")}
+              onClick={() => handleViewChange('analytics')}
               className="hidden md:flex"
             >
               <BarChart3 className="h-4 w-4 mr-1.5" />
@@ -629,7 +654,11 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-2">
             {filterListId && (
-              <Button variant="outline" size="sm" onClick={() => handleFilterList(undefined)}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleFilterList(undefined)}
+              >
                 Clear List Filter
               </Button>
             )}
@@ -716,19 +745,26 @@ export default function Home() {
         {!isOnline && (
           <div className="bg-yellow-500/10 border-b border-yellow-500/20 px-4 py-2 text-center text-sm">
             <WifiOff className="h-4 w-4 inline mr-1.5" />
-            You are offline. Changes will be saved locally and synced when you are back online.
+            You are offline. Changes will be saved locally and synced when you
+            are back online.
           </div>
         )}
         {isLoading ? (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-              <p className="mt-4 text-muted-foreground">Loading your tasks...</p>
+              <p className="mt-4 text-muted-foreground">
+                Loading your tasks...
+              </p>
             </div>
           </div>
         ) : (
           <>
-            <TaskStats tasks={tasks} lists={lists} completedTasks={completedTasks} />
+            <TaskStats
+              tasks={tasks}
+              lists={lists}
+              completedTasks={completedTasks}
+            />
             {renderViewContent()}
           </>
         )}
@@ -752,10 +788,16 @@ export default function Home() {
           variant="outline"
           size="icon"
           className="h-9 w-9"
-          onClick={() => handleViewChange("ai")}
+          onClick={() => handleViewChange('ai')}
           title="AI Assistant"
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            className="h-4 w-4"
+          >
             <path d="M12 2L14 8H20L10 13L14 19L2 16L8 10L2 4L12 2Z" />
           </svg>
         </Button>
