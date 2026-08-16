@@ -1,26 +1,26 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { BatchOperationModal } from "../batch-operation-modal";
-import type { Task } from "@/types";
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { BatchOperationModal } from '../batch-operation-modal';
+import type { Task } from '@/types';
 
 const mockTasks: Task[] = [
   {
     id: 1,
     user_id: 1,
-    name: "Task 1",
-    description: "Description 1",
-    priority: "high",
+    name: 'Task 1',
+    description: 'Description 1',
+    priority: 'high',
     completed: false,
     completed_at: null,
-    created_at: "2024-01-01",
-    updated_at: "2024-01-01",
-    date: "2024-01-15",
-    deadline: "2024-01-20",
+    created_at: '2024-01-01',
+    updated_at: '2024-01-01',
+    date: '2024-01-15',
+    deadline: '2024-01-20',
     estimate: null,
     actual_time: null,
     notes: null,
     list_id: 1,
-    recurring: "none",
+    recurring: 'none',
     recurring_config: null,
     sort_order: 0,
     archived: false,
@@ -28,20 +28,20 @@ const mockTasks: Task[] = [
   {
     id: 2,
     user_id: 1,
-    name: "Task 2",
-    description: "Description 2",
-    priority: "medium",
+    name: 'Task 2',
+    description: 'Description 2',
+    priority: 'medium',
     completed: true,
-    completed_at: "2024-01-10",
-    created_at: "2024-01-01",
-    updated_at: "2024-01-10",
-    date: "2024-01-10",
-    deadline: "2024-01-15",
+    completed_at: '2024-01-10',
+    created_at: '2024-01-01',
+    updated_at: '2024-01-10',
+    date: '2024-01-10',
+    deadline: '2024-01-15',
     estimate: null,
     actual_time: null,
     notes: null,
     list_id: 1,
-    recurring: "none",
+    recurring: 'none',
     recurring_config: null,
     sort_order: 1,
     archived: false,
@@ -49,17 +49,17 @@ const mockTasks: Task[] = [
 ];
 
 const mockLists = [
-  { id: 1, name: "Inbox" },
-  { id: 2, name: "Work" },
-  { id: 3, name: "Personal" },
+  { id: 1, name: 'Inbox' },
+  { id: 2, name: 'Work' },
+  { id: 3, name: 'Personal' },
 ];
 
 const mockLabels = [
-  { id: 1, name: "Important" },
-  { id: 2, name: "Urgent" },
+  { id: 1, name: 'Important' },
+  { id: 2, name: 'Urgent' },
 ];
 
-describe("BatchOperationModal", () => {
+describe('BatchOperationModal', () => {
   const mockOnOpenChange = vi.fn();
   const mockOnComplete = vi.fn();
 
@@ -67,7 +67,7 @@ describe("BatchOperationModal", () => {
     vi.clearAllMocks();
   });
 
-  it("renders with empty selection", () => {
+  it('renders with empty selection', () => {
     render(
       <BatchOperationModal
         open={true}
@@ -80,10 +80,10 @@ describe("BatchOperationModal", () => {
       />
     );
 
-    expect(screen.getByText("Batch Operations")).toBeInTheDocument();
+    expect(screen.getByText('Batch Operations')).toBeInTheDocument();
   });
 
-  it("shows correct selection summary", () => {
+  it('shows correct selection summary', () => {
     render(
       <BatchOperationModal
         open={true}
@@ -96,11 +96,11 @@ describe("BatchOperationModal", () => {
       />
     );
 
-    expect(screen.getByText("Selected")).toBeInTheDocument();
-    expect(screen.getByText("2")).toBeInTheDocument();
+    expect(screen.getByText('Selected')).toBeInTheDocument();
+    expect(screen.getByText('2')).toBeInTheDocument();
   });
 
-  it("displays pending and completed task counts", () => {
+  it('displays pending and completed task counts', () => {
     render(
       <BatchOperationModal
         open={true}
@@ -113,11 +113,11 @@ describe("BatchOperationModal", () => {
       />
     );
 
-    expect(screen.getByText("Pending")).toBeInTheDocument();
-    expect(screen.getByText("Completed")).toBeInTheDocument();
+    expect(screen.getByText('Pending')).toBeInTheDocument();
+    expect(screen.getByText('Completed')).toBeInTheDocument();
   });
 
-  it("allows selecting complete operation", async () => {
+  it('allows selecting complete operation', async () => {
     render(
       <BatchOperationModal
         open={true}
@@ -130,11 +130,11 @@ describe("BatchOperationModal", () => {
       />
     );
 
-    const completeButton = screen.getByText("Mark Complete");
+    const completeButton = screen.getByText('Mark Complete');
     fireEvent.click(completeButton);
   });
 
-  it("allows selecting delete operation", async () => {
+  it('allows selecting delete operation', async () => {
     render(
       <BatchOperationModal
         open={true}
@@ -147,11 +147,11 @@ describe("BatchOperationModal", () => {
       />
     );
 
-    const deleteButton = screen.getByText("Delete");
+    const deleteButton = screen.getByText('Delete');
     fireEvent.click(deleteButton);
   });
 
-  it("shows confirmation warning for delete operation", async () => {
+  it('shows confirmation warning for delete operation', async () => {
     render(
       <BatchOperationModal
         open={true}
@@ -164,16 +164,18 @@ describe("BatchOperationModal", () => {
       />
     );
 
-    const deleteButton = screen.getByText("Delete");
+    const deleteButton = screen.getByText('Delete');
     fireEvent.click(deleteButton);
 
     await waitFor(() => {
       // The delete operation should show a warning section
-      expect(screen.getByText(/This action cannot be undone/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/This action cannot be undone/i)
+      ).toBeInTheDocument();
     });
   });
 
-  it("allows selecting archive operation", async () => {
+  it('allows selecting archive operation', async () => {
     render(
       <BatchOperationModal
         open={true}
@@ -186,11 +188,11 @@ describe("BatchOperationModal", () => {
       />
     );
 
-    const archiveButton = screen.getByText("Archive");
+    const archiveButton = screen.getByText('Archive');
     fireEvent.click(archiveButton);
   });
 
-  it("allows selecting move operation", async () => {
+  it('allows selecting move operation', async () => {
     render(
       <BatchOperationModal
         open={true}
@@ -203,11 +205,11 @@ describe("BatchOperationModal", () => {
       />
     );
 
-    const moveButton = screen.getByText("Move to List");
+    const moveButton = screen.getByText('Move to List');
     fireEvent.click(moveButton);
   });
 
-  it("allows selecting set priority operation", async () => {
+  it('allows selecting set priority operation', async () => {
     render(
       <BatchOperationModal
         open={true}
@@ -220,11 +222,11 @@ describe("BatchOperationModal", () => {
       />
     );
 
-    const priorityButton = screen.getByText("Set Priority");
+    const priorityButton = screen.getByText('Set Priority');
     fireEvent.click(priorityButton);
   });
 
-  it("allows selecting add labels operation", async () => {
+  it('allows selecting add labels operation', async () => {
     render(
       <BatchOperationModal
         open={true}
@@ -237,11 +239,11 @@ describe("BatchOperationModal", () => {
       />
     );
 
-    const labelsButton = screen.getByText("Add Labels");
+    const labelsButton = screen.getByText('Add Labels');
     fireEvent.click(labelsButton);
   });
 
-  it("displays label selection options", async () => {
+  it('displays label selection options', async () => {
     render(
       <BatchOperationModal
         open={true}
@@ -254,17 +256,17 @@ describe("BatchOperationModal", () => {
       />
     );
 
-    const labelsButton = screen.getByText("Add Labels");
+    const labelsButton = screen.getByText('Add Labels');
     fireEvent.click(labelsButton);
 
     await waitFor(() => {
-      expect(screen.getByText("Select Labels")).toBeInTheDocument();
-      expect(screen.getByText("Important")).toBeInTheDocument();
-      expect(screen.getByText("Urgent")).toBeInTheDocument();
+      expect(screen.getByText('Select Labels')).toBeInTheDocument();
+      expect(screen.getByText('Important')).toBeInTheDocument();
+      expect(screen.getByText('Urgent')).toBeInTheDocument();
     });
   });
 
-  it("displays warning for destructive actions", async () => {
+  it('displays warning for destructive actions', async () => {
     render(
       <BatchOperationModal
         open={true}
@@ -277,15 +279,17 @@ describe("BatchOperationModal", () => {
       />
     );
 
-    const deleteButton = screen.getByText("Delete");
+    const deleteButton = screen.getByText('Delete');
     fireEvent.click(deleteButton);
 
     await waitFor(() => {
-      expect(screen.getByText("This action cannot be undone")).toBeInTheDocument();
+      expect(
+        screen.getByText('This action cannot be undone')
+      ).toBeInTheDocument();
     });
   });
 
-  it("shows cancel button", () => {
+  it('shows cancel button', () => {
     render(
       <BatchOperationModal
         open={true}
@@ -298,6 +302,6 @@ describe("BatchOperationModal", () => {
       />
     );
 
-    expect(screen.getByText("Cancel")).toBeInTheDocument();
+    expect(screen.getByText('Cancel')).toBeInTheDocument();
   });
 });
