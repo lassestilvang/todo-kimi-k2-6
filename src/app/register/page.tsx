@@ -1,19 +1,26 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "sonner";
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { toast } from 'sonner';
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleRegister = async () => {
@@ -23,27 +30,27 @@ export default function RegisterPage() {
     }
 
     if (password.length < 8) {
-      toast.error("Password must be at least 8 characters");
+      toast.error('Password must be at least 8 characters');
       return;
     }
 
     setIsLoading(true);
     try {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, password }),
       });
 
       if (response.ok) {
-        toast.success("Account created successfully! Please sign in.");
-        router.push("/login");
+        toast.success('Account created successfully! Please sign in.');
+        router.push('/login');
       } else {
         const data = await response.json();
-        toast.error(data.error || "Registration failed");
+        toast.error(data.error || 'Registration failed');
       }
     } catch {
-      toast.error("An error occurred");
+      toast.error('An error occurred');
     } finally {
       setIsLoading(false);
     }
@@ -65,7 +72,7 @@ export default function RegisterPage() {
               id="name"
               placeholder="John Doe"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={e => setName(e.target.value)}
               disabled={isLoading}
             />
           </div>
@@ -76,7 +83,7 @@ export default function RegisterPage() {
               type="email"
               placeholder="name@example.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={e => setEmail(e.target.value)}
               disabled={isLoading}
             />
           </div>
@@ -86,7 +93,7 @@ export default function RegisterPage() {
               id="password"
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={e => setPassword(e.target.value)}
               disabled={isLoading}
             />
           </div>
@@ -96,7 +103,7 @@ export default function RegisterPage() {
               id="confirmPassword"
               type="password"
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
+              onChange={e => setConfirmPassword(e.target.value)}
               disabled={isLoading}
             />
           </div>
@@ -105,14 +112,16 @@ export default function RegisterPage() {
           <Button
             className="w-full"
             onClick={handleRegister}
-            disabled={isLoading || !name || !email || !password || !confirmPassword}
+            disabled={
+              isLoading || !name || !email || !password || !confirmPassword
+            }
           >
-            {isLoading ? "Creating account..." : "Create Account"}
+            {isLoading ? 'Creating account...' : 'Create Account'}
           </Button>
           <Button
             variant="outline"
             className="w-full"
-            onClick={() => router.push("/login")}
+            onClick={() => router.push('/login')}
           >
             Already have an account? Sign In
           </Button>
