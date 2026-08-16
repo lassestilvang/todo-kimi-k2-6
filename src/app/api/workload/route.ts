@@ -1,11 +1,15 @@
-import { NextRequest } from "next/server";
-import { getDb } from "@/lib/db";
+import { NextRequest } from 'next/server';
+import { getDb } from '@/lib/db';
 import {
   generateWorkloadSuggestions,
   getUserWorkloadSummary,
   type UserWorkload,
-} from "@/lib/ai/workload";
-import { applyMiddleware, errorResponse, jsonResponse } from "@/lib/api-middleware";
+} from '@/lib/ai/workload';
+import {
+  applyMiddleware,
+  errorResponse,
+  jsonResponse,
+} from '@/lib/api-middleware';
 
 /**
  * Workload API routes.
@@ -29,22 +33,22 @@ export async function GET(request: NextRequest) {
          FROM tasks t`
       )
       .all() as Array<{
-        id: number;
-        name: string;
-        assignee_id: number | null;
-        priority: string;
-        date: string | null;
-        estimate: string | null;
-        completed: number;
-      }>;
+      id: number;
+      name: string;
+      assignee_id: number | null;
+      priority: string;
+      date: string | null;
+      estimate: string | null;
+      completed: number;
+    }>;
 
     // Get all users
     const users = db
-      .prepare("SELECT id, name, email FROM users")
+      .prepare('SELECT id, name, email FROM users')
       .all() as Array<{ id: number; name: string | null; email: string }>;
 
     // Calculate workload for each user
-    const userWorkloads: UserWorkload[] = users.map((user) => ({
+    const userWorkloads: UserWorkload[] = users.map(user => ({
       userId: user.id,
       userName: user.name || user.email,
       email: user.email,
@@ -57,24 +61,32 @@ export async function GET(request: NextRequest) {
     }));
 
     // Get workload summary for each user
-    const enrichedUsers = userWorkloads.map((user) =>
-      getUserWorkloadSummary(user, tasks.map((t) => ({ ...t, completed: t.completed === 1 })))
+    const enrichedUsers = userWorkloads.map(user =>
+      getUserWorkloadSummary(
+        user,
+        tasks.map(t => ({ ...t, completed: t.completed === 1 }))
+      )
     );
 
     // Generate suggestions
     const suggestions = await generateWorkloadSuggestions(
-      tasks.map((t) => ({ ...t, completed: t.completed === 1 })),
+      tasks.map(t => ({ ...t, completed: t.completed === 1 })),
       enrichedUsers
     );
 
-    return jsonResponse({
-      workloads: enrichedUsers,
-      suggestions,
-      averageWorkload: enrichedUsers.reduce((sum, u) => sum + u.totalTasks, 0) /
-        (enrichedUsers.length || 1),
-    }, 200, middlewareResult.headers);
+    return jsonResponse(
+      {
+        workloads: enrichedUsers,
+        suggestions,
+        averageWorkload:
+          enrichedUsers.reduce((sum, u) => sum + u.totalTasks, 0) /
+          (enrichedUsers.length || 1),
+      },
+      200,
+      middlewareResult.headers
+    );
   } catch (error) {
-    console.error("Error fetching workload:", error);
-    return errorResponse("Internal server error", 500);
+    console.error('Error fetching workload:', error);
+    return errorResponse('Internal server error', 500);
   }
 }
