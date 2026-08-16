@@ -1,8 +1,14 @@
-"use client";
+'use client';
 
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 
 export default function AuthErrorPage() {
   const router = useRouter();
@@ -17,7 +23,7 @@ export default function AuthErrorPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Button className="w-full" onClick={() => router.push("/login")}>
+          <Button className="w-full" onClick={() => router.push('/login')}>
             Back to Login
           </Button>
         </CardContent>
