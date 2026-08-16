@@ -1,11 +1,18 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import { ChevronLeft, Settings, Share2, Shield, Crown, AlertCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { WorkspaceMembers } from "@/components/task/workspace-members";
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import {
+  ChevronLeft,
+  Settings,
+  Share2,
+  Shield,
+  Crown,
+  AlertCircle,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { WorkspaceMembers } from '@/components/task/workspace-members';
 
 interface Workspace {
   id: number;
@@ -18,7 +25,7 @@ interface Workspace {
 interface WorkspaceMember {
   id: number;
   user_id: number;
-  role: "owner" | "admin" | "member" | "viewer";
+  role: 'owner' | 'admin' | 'member' | 'viewer';
   joined_at: string;
   user?: {
     id: number;
@@ -69,7 +76,7 @@ export default function WorkspacePage({ params }: WorkspacePageProps) {
 
   const handleMemberChange = (updatedMembers: WorkspaceMember[]) => {
     setMembers(updatedMembers);
-    setCurrentUser(updatedMembers.find((m) => m.user_id === 1) || null);
+    setCurrentUser(updatedMembers.find(m => m.user_id === 1) || null);
   };
 
   useEffect(() => {
@@ -91,26 +98,23 @@ export default function WorkspacePage({ params }: WorkspacePageProps) {
         <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
         <h2 className="text-xl font-bold mb-2">Workspace Not Found</h2>
         <p className="text-muted-foreground mb-4">
-          The workspace you are looking for does not exist or you do not have access.
+          The workspace you are looking for does not exist or you do not have
+          access.
         </p>
-        <Button onClick={() => router.push("/")}>Go Home</Button>
+        <Button onClick={() => router.push('/')}>Go Home</Button>
       </div>
     );
   }
 
-  const isOwner = currentUser?.role === "owner";
-  const isAdmin = currentUser?.role === "admin";
+  const isOwner = currentUser?.role === 'owner';
+  const isAdmin = currentUser?.role === 'admin';
 
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="border-b px-6 py-4">
         <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.push("/")}
-          >
+          <Button variant="ghost" size="sm" onClick={() => router.push('/')}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
 
@@ -140,7 +144,9 @@ export default function WorkspacePage({ params }: WorkspacePageProps) {
           {/* Overview Card */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm font-medium">Workspace Overview</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Workspace Overview
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
@@ -173,31 +179,33 @@ export default function WorkspacePage({ params }: WorkspacePageProps) {
           {/* Quick Stats */}
           <Card className="md:col-span-2">
             <CardHeader>
-              <CardTitle className="text-sm font-medium">Member Roles</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Member Roles
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="text-center">
                   <p className="text-2xl font-bold text-purple-600">
-                    {members.filter(m => m.role === "owner").length}
+                    {members.filter(m => m.role === 'owner').length}
                   </p>
                   <p className="text-xs text-muted-foreground">Owners</p>
                 </div>
                 <div className="text-center">
                   <p className="text-2xl font-bold text-blue-600">
-                    {members.filter(m => m.role === "admin").length}
+                    {members.filter(m => m.role === 'admin').length}
                   </p>
                   <p className="text-xs text-muted-foreground">Admins</p>
                 </div>
                 <div className="text-center">
                   <p className="text-2xl font-bold text-green-600">
-                    {members.filter(m => m.role === "member").length}
+                    {members.filter(m => m.role === 'member').length}
                   </p>
                   <p className="text-xs text-muted-foreground">Members</p>
                 </div>
                 <div className="text-center">
                   <p className="text-2xl font-bold text-gray-600">
-                    {members.filter(m => m.role === "viewer").length}
+                    {members.filter(m => m.role === 'viewer').length}
                   </p>
                   <p className="text-xs text-muted-foreground">Viewers</p>
                 </div>
