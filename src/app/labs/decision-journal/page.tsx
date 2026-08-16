@@ -1,19 +1,25 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   RotateCcw,
   Lightbulb,
   CheckCircle,
   AlertCircle,
   Plus,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { DecisionTracker } from "@/components/task/decision-tracker";
-import { DecisionAnalytics } from "@/components/task/decision-analytics";
-import { useSession } from "next-auth/react";
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
+import { DecisionTracker } from '@/components/task/decision-tracker';
+import { DecisionAnalytics } from '@/components/task/decision-analytics';
+import { useSession } from 'next-auth/react';
 
 export default function DecisionJournalPage() {
   const { data: session, status } = useSession();
@@ -22,12 +28,12 @@ export default function DecisionJournalPage() {
 
   // Redirect if not authenticated
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/login");
+    if (status === 'unauthenticated') {
+      router.push('/login');
     }
   }, [status, router]);
 
-  if (status === "loading" || !session) {
+  if (status === 'loading' || !session) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -41,7 +47,7 @@ export default function DecisionJournalPage() {
   // Fetch a recent task to associate with decisions
   useEffect(() => {
     // Fetch a recent task to associate with decisions
-    fetch("/api/tasks?limit=1")
+    fetch('/api/tasks?limit=1')
       .then(r => r.json())
       .then(data => {
         if (data.tasks?.length > 0) {
@@ -60,9 +66,12 @@ export default function DecisionJournalPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Decision Journal</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Decision Journal
+          </h1>
           <p className="text-muted-foreground">
-            Track your decisions, analyze outcomes, and improve your decision-making over time
+            Track your decisions, analyze outcomes, and improve your
+            decision-making over time
           </p>
         </div>
         <div className="flex gap-2">
@@ -79,7 +88,7 @@ export default function DecisionJournalPage() {
           <Button
             onClick={() => {
               // Open new decision dialog
-              const event = new CustomEvent("openDecisionDialog");
+              const event = new CustomEvent('openDecisionDialog');
               window.dispatchEvent(event);
             }}
           >
@@ -111,7 +120,9 @@ export default function DecisionJournalPage() {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-green-600">0.78</p>
-            <p className="text-xs text-muted-foreground">+0.12 from last month</p>
+            <p className="text-xs text-muted-foreground">
+              +0.12 from last month
+            </p>
           </CardContent>
         </Card>
 
@@ -162,15 +173,23 @@ export default function DecisionJournalPage() {
           <Card>
             <CardHeader>
               <CardTitle>Quick Templates</CardTitle>
-              <CardDescription>AI-generated templates for common decisions</CardDescription>
+              <CardDescription>
+                AI-generated templates for common decisions
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid gap-3">
                 {[
-                  { type: "priority", desc: "Decide task priority based on deadline and impact" },
-                  { type: "approach", desc: "Choose the best approach for problem solving" },
-                  { type: "tool", desc: "Select the right tool for the job" },
-                  { type: "timeline", desc: "Estimate realistic timelines" },
+                  {
+                    type: 'priority',
+                    desc: 'Decide task priority based on deadline and impact',
+                  },
+                  {
+                    type: 'approach',
+                    desc: 'Choose the best approach for problem solving',
+                  },
+                  { type: 'tool', desc: 'Select the right tool for the job' },
+                  { type: 'timeline', desc: 'Estimate realistic timelines' },
                 ].map(item => (
                   <div key={item.type} className="p-3 border rounded-lg">
                     <h4 className="font-medium text-sm">{item.desc}</h4>
@@ -193,9 +212,12 @@ export default function DecisionJournalPage() {
                 <div className="flex items-start gap-3 p-3 bg-amber-50/50 rounded-lg">
                   <AlertCircle className="h-5 w-5 text-amber-500 mt-0.5" />
                   <div>
-                    <h4 className="font-medium text-sm">Timeline decisions need improvement</h4>
+                    <h4 className="font-medium text-sm">
+                      Timeline decisions need improvement
+                    </h4>
                     <p className="text-sm text-muted-foreground">
-                      Your timeline decisions have a lower success rate. Consider adding buffer time.
+                      Your timeline decisions have a lower success rate.
+                      Consider adding buffer time.
                     </p>
                   </div>
                 </div>
@@ -203,9 +225,12 @@ export default function DecisionJournalPage() {
                 <div className="flex items-start gap-3 p-3 bg-green-50/50 rounded-lg">
                   <CheckCircle className="h-5 w-5 text-green-500 mt-0.5" />
                   <div>
-                    <h4 className="font-medium text-sm">Priority decisions are excellent</h4>
+                    <h4 className="font-medium text-sm">
+                      Priority decisions are excellent
+                    </h4>
                     <p className="text-sm text-muted-foreground">
-                      Your priority decisions are well-reasoned. Keep up the good work!
+                      Your priority decisions are well-reasoned. Keep up the
+                      good work!
                     </p>
                   </div>
                 </div>
