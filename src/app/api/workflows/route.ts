@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from 'next/server';
 import {
   getWorkflows,
   getWorkflow,
@@ -8,10 +8,13 @@ import {
   toggleWorkflow,
   executeWorkflow,
   getWorkflowExecutions,
-  checkTriggers,
-  evaluateConditions,
-} from "@/lib/actions/workflows";
-import { applyMiddleware, jsonResponse, errorResponse } from "@/lib/api-middleware";
+  type ExecutionStatus,
+} from '@/lib/actions/workflows';
+import {
+  applyMiddleware,
+  jsonResponse,
+  errorResponse,
+} from '@/lib/api-middleware';
 
 export async function GET(request: NextRequest) {
   const middleware = await applyMiddleware(request, { requireAuth: true });
@@ -21,34 +24,35 @@ export async function GET(request: NextRequest) {
 
   const userId = middleware.auth?.userId;
   if (!userId) {
-    return errorResponse("Authentication required", 401);
+    return errorResponse('Authentication required', 401);
   }
 
   const { searchParams } = new URL(request.url);
-  const id = searchParams.get("id");
-  const type = searchParams.get("type");
-  const executions = searchParams.get("executions") === "true";
-  const status = searchParams.get("status");
+  const id = searchParams.get('id');
+  const type = searchParams.get('type');
+  const executions = searchParams.get('executions') === 'true';
+  const statusParam = searchParams.get('status');
+  const validStatus: ExecutionStatus | undefined = statusParam && ['running', 'completed', 'failed', 'skipped'].includes(statusParam) ? statusParam as ExecutionStatus : undefined;
 
   try {
     // Get single workflow
     if (id) {
       const workflowId = Number(id);
       if (isNaN(workflowId)) {
-        return errorResponse("Invalid workflow ID", 400);
+        return errorResponse('Invalid workflow ID', 400);
       }
 
       if (executions) {
         const execs = await getWorkflowExecutions(workflowId, {
           limit: 50,
-          status: status as any
+          status: validStatus,
         });
         return jsonResponse({ workflow_id: workflowId, executions: execs });
       }
 
       const workflow = await getWorkflow(workflowId, userId);
       if (!workflow) {
-        return errorResponse("Workflow not found", 404);
+        return errorResponse('Workflow not found', 404);
       }
       return jsonResponse({ workflow });
     }
@@ -59,12 +63,15 @@ export async function GET(request: NextRequest) {
     // Filter by type if specified
     let filteredWorkflows = workflows;
     if (type) {
-      filteredWorkflows = workflows.filter((w: any) => w.trigger_type === type);
+      filteredWorkflows = workflows.filter(
+        (w: { trigger_type: string }) => w.trigger_type === type
+      );
     }
 
     return jsonResponse({ workflows: filteredWorkflows });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to fetch workflows";
+    const message =
+      error instanceof Error ? error.message : 'Failed to fetch workflows';
     return errorResponse(message, 500);
   }
 }
@@ -77,7 +84,7 @@ export async function POST(request: NextRequest) {
 
   const userId = middleware.auth?.userId;
   if (!userId) {
-    return errorResponse("Authentication required", 401);
+    return errorResponse('Authentication required', 401);
   }
 
   try {
@@ -85,22 +92,24 @@ export async function POST(request: NextRequest) {
     const { action, ...data } = body;
 
     switch (action) {
-      case "create":
+      case 'create':
         const workflow = await createWorkflow(userId, data);
         return jsonResponse({ success: true, workflow }, 201);
 
-      case "execute":
+      case 'execute':
         if (!data.workflowId) {
-          return errorResponse("Workflow ID required for execution", 400);
+          return errorResponse('Workflow ID required for execution', 400);
         }
-        const result = await executeWorkflow(data.workflowId, data.input || {}, userId);
-        // Remove success key to avoid duplication
-        const { success: _success, ...rest } = result;
-        return jsonResponse({ success: true, ...rest });
+        const { result, executionId } = await executeWorkflow(
+          data.workflowId,
+          data.input || {},
+          userId
+        );
+        return jsonResponse({ success: true, result, executionId });
 
-      case "toggle":
+      case 'toggle':
         if (!data.workflowId) {
-          return errorResponse("Workflow ID required", 400);
+          return errorResponse('Workflow ID required', 400);
         }
         const enabled = await toggleWorkflow(data.workflowId, userId);
         return jsonResponse({ success: true, enabled });
@@ -111,7 +120,10 @@ export async function POST(request: NextRequest) {
         return jsonResponse({ success: true, workflow: newWorkflow }, 201);
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to process workflow request";
+    const message =
+      error instanceof Error
+        ? error.message
+        : 'Failed to process workflow request';
     return errorResponse(message, 500);
   }
 }
@@ -124,15 +136,15 @@ export async function PUT(request: NextRequest) {
 
   const userId = middleware.auth?.userId;
   if (!userId) {
-    return errorResponse("Authentication required", 401);
+    return errorResponse('Authentication required', 401);
   }
 
   try {
     const { searchParams } = new URL(request.url);
-    const id = searchParams.get("id");
+    const id = searchParams.get('id');
 
     if (!id) {
-      return errorResponse("Workflow ID required", 400);
+      return errorResponse('Workflow ID required', 400);
     }
 
     const body = await request.json();
@@ -140,7 +152,8 @@ export async function PUT(request: NextRequest) {
 
     return jsonResponse({ success: true, workflow: updated });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to update workflow";
+    const message =
+      error instanceof Error ? error.message : 'Failed to update workflow';
     return errorResponse(message, 500);
   }
 }
@@ -153,25 +166,26 @@ export async function DELETE(request: NextRequest) {
 
   const userId = middleware.auth?.userId;
   if (!userId) {
-    return errorResponse("Authentication required", 401);
+    return errorResponse('Authentication required', 401);
   }
 
   try {
     const { searchParams } = new URL(request.url);
-    const id = searchParams.get("id");
+    const id = searchParams.get('id');
 
     if (!id) {
-      return errorResponse("Workflow ID required", 400);
+      return errorResponse('Workflow ID required', 400);
     }
 
     const deleted = await deleteWorkflow(Number(id), userId);
     if (!deleted) {
-      return errorResponse("Workflow not found or not deleted", 404);
+      return errorResponse('Workflow not found or not deleted', 404);
     }
 
     return jsonResponse({ success: true });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to delete workflow";
+    const message =
+      error instanceof Error ? error.message : 'Failed to delete workflow';
     return errorResponse(message, 500);
   }
 }
