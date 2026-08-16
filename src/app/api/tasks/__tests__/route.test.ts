@@ -1,4 +1,3 @@
- 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createTestDb } from '../../../../lib/db/test-db';
 import { setDb, resetDb } from '../../../../lib/db';
@@ -49,7 +48,8 @@ describe('API Routes - Tasks', () => {
       const lists = await getLists();
       const inboxList = lists.find(l => Number(l.is_inbox) === 1);
       const { createList } = await import('../../../../lib/actions/tasks');
-      const customList = lists.length > 1 ? lists[1] : await createList({ name: 'Custom' });
+      const customList =
+        lists.length > 1 ? lists[1] : await createList({ name: 'Custom' });
 
       await createTask({ name: 'Custom Task', list_id: customList.id });
       await createTask({ name: 'Inbox Task', list_id: inboxList!.id });
@@ -122,7 +122,9 @@ describe('API Routes - Tasks', () => {
     });
 
     it('should return error for non-existent task', async () => {
-      await expect(updateTask(99999, { name: 'New' })).rejects.toThrow('Task not found');
+      await expect(updateTask(99999, { name: 'New' })).rejects.toThrow(
+        'Task not found'
+      );
     });
   });
 
