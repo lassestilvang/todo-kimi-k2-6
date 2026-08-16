@@ -1,10 +1,15 @@
-"use client";
+'use client';
 
-import { TaskSuccessStories } from "@/components/task/task-success-stories";
-import { RefreshCw } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import Link from "next/link";
+import { TaskSuccessStories } from '@/components/task/task-success-stories';
+import { RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import Link from 'next/link';
 
 export default function StoriesPage() {
   return (
@@ -30,7 +35,7 @@ export default function StoriesPage() {
       <TaskSuccessStories
         task={{
           id: 1,
-          name: "Sample Task",
+          name: 'Sample Task',
           completed: true,
           completed_at: new Date().toISOString(),
         }}
