@@ -1,6 +1,4 @@
-import { NextRequest } from "next/server";
-import { wsHub, startWebSocketServer } from "@/lib/ws-server";
-import type { Task } from "@/types";
+import { NextRequest } from 'next/server';
 
 /**
  * WebSocket endpoint for real-time collaboration
@@ -17,27 +15,24 @@ export async function GET(request: NextRequest) {
   // This route documents what's available
 
   const { searchParams } = new URL(request.url);
-  const token = searchParams.get("token");
+  const token = searchParams.get('token');
 
   if (!token) {
-    return new Response("Authentication token required", { status: 401 });
+    return new Response('Authentication token required', { status: 401 });
   }
 
   // Return connection info
   return new Response(
     JSON.stringify({
-      message: "WebSocket Real-time Endpoint",
-      connection_format: "ws://localhost:3000/api/realtime?token=<token>&taskId=<task_id>",
-      available_actions: [
-        "task_update",
-        "typing",
-        "presence_update"
-      ],
-      ws_server_status: "Available",
+      message: 'WebSocket Real-time Endpoint',
+      connection_format:
+        'ws://localhost:3000/api/realtime?token=<token>&taskId=<task_id>',
+      available_actions: ['task_update', 'typing', 'presence_update'],
+      ws_server_status: 'Available',
     }),
     {
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
     }
   );
@@ -55,12 +50,12 @@ export async function POST() {
 
   return new Response(
     JSON.stringify({
-      error: "WebSocket server control not implemented in this endpoint",
-      suggestion: "Call startWebSocketServer() from your app initialization"
+      error: 'WebSocket server control not implemented in this endpoint',
+      suggestion: 'Call startWebSocketServer() from your app initialization',
     }),
     {
       status: 501,
-      headers: { "Content-Type": "application/json" }
+      headers: { 'Content-Type': 'application/json' },
     }
   );
 }
