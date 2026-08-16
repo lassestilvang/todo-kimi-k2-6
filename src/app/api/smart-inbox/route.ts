@@ -1,7 +1,11 @@
-import { NextRequest } from "next/server";
-import type { InboxSourceType } from "@/lib/actions/smart-inbox";
-import type { InboxSource } from "@/lib/actions/smart-inbox";
-import { applyMiddleware, errorResponse, jsonResponse } from "@/lib/api-middleware";
+import { NextRequest } from 'next/server';
+import type { InboxSourceType } from '@/lib/actions/smart-inbox';
+import type { InboxSource } from '@/lib/actions/smart-inbox';
+import {
+  applyMiddleware,
+  errorResponse,
+  jsonResponse,
+} from '@/lib/api-middleware';
 import {
   getSmartInbox,
   upsertInboxSource,
@@ -10,13 +14,13 @@ import {
   bulkConvertSourcesToTasks,
   deleteInboxSource,
   getInboxSummary,
-} from "@/lib/actions/smart-inbox";
-import { parseNaturalLanguageTask } from "@/lib/ai";
-import { getDb } from "@/lib/db";
+} from '@/lib/actions/smart-inbox';
+import { parseNaturalLanguageTask } from '@/lib/ai';
+import { getDb } from '@/lib/db';
 
 interface TriageUpdate {
   id: number;
-  predicted_priority?: "critical" | "high" | "medium" | "low" | "none";
+  predicted_priority?: 'critical' | 'high' | 'medium' | 'low' | 'none';
   predicted_due_date?: string;
   suggested_labels?: string;
   suggested_list?: string;
@@ -37,7 +41,9 @@ function calculatePriorityScore(priority: string, dueDate?: string): number {
   if (dueDate) {
     const due = new Date(dueDate);
     const now = new Date();
-    const diffDays = Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    const diffDays = Math.ceil(
+      (due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+    );
 
     if (diffDays <= 0) score += 30;
     else if (diffDays <= 1) score += 20;
@@ -48,7 +54,9 @@ function calculatePriorityScore(priority: string, dueDate?: string): number {
 }
 
 export async function GET(request: NextRequest) {
-  const middlewareResult = await applyMiddleware(request, { requireAuth: true });
+  const middlewareResult = await applyMiddleware(request, {
+    requireAuth: true,
+  });
   if (middlewareResult.error) {
     return middlewareResult.error;
   }
@@ -58,58 +66,61 @@ export async function GET(request: NextRequest) {
     limit?: number;
     status?: string;
     sourceType?: InboxSourceType;
-    sortBy?: "priority" | "date" | "confidence";
+    sortBy?: 'priority' | 'date' | 'confidence';
   } = {};
 
-  if (url.searchParams.has("limit")) {
-    const limit = url.searchParams.get("limit");
+  if (url.searchParams.has('limit')) {
+    const limit = url.searchParams.get('limit');
     if (limit) params.limit = parseInt(limit);
   }
-  if (url.searchParams.has("status")) {
-    const status = url.searchParams.get("status");
+  if (url.searchParams.has('status')) {
+    const status = url.searchParams.get('status');
     if (status) params.status = status;
   }
-  if (url.searchParams.has("sourceType")) {
-    const sourceType = url.searchParams.get("sourceType");
+  if (url.searchParams.has('sourceType')) {
+    const sourceType = url.searchParams.get('sourceType');
     if (sourceType) params.sourceType = sourceType as InboxSourceType;
   }
-  if (url.searchParams.has("sortBy")) {
-    const sortBy = url.searchParams.get("sortBy");
-    if (sortBy) params.sortBy = sortBy as "priority" | "date" | "confidence";
+  if (url.searchParams.has('sortBy')) {
+    const sortBy = url.searchParams.get('sortBy');
+    if (sortBy) params.sortBy = sortBy as 'priority' | 'date' | 'confidence';
   }
 
   try {
     const inbox = await getSmartInbox(params);
     return jsonResponse({ inbox }, 200, middlewareResult.headers);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to fetch smart inbox";
+    const message =
+      error instanceof Error ? error.message : 'Failed to fetch smart inbox';
     return errorResponse(message, 500);
   }
 }
 
 export async function POST(request: NextRequest) {
-  const middlewareResult = await applyMiddleware(request, { requireAuth: true });
+  const middlewareResult = await applyMiddleware(request, {
+    requireAuth: true,
+  });
   if (middlewareResult.error) {
     return middlewareResult.error;
   }
 
   if (!middlewareResult.auth?.isAuthenticated) {
-    return errorResponse("Unauthorized", 401);
+    return errorResponse('Unauthorized', 401);
   }
 
   try {
     const body = await request.json();
 
     // Handle AI triage
-    if (body.action === "triage") {
+    if (body.action === 'triage') {
       const userId = middlewareResult.auth.userId;
       if (!userId) {
-        return errorResponse("Unauthorized", 401);
+        return errorResponse('Unauthorized', 401);
       }
 
       const { itemIds } = body;
       if (!itemIds || !Array.isArray(itemIds) || itemIds.length === 0) {
-        return errorResponse("Invalid itemIds", 400);
+        return errorResponse('Invalid itemIds', 400);
       }
 
       const dbInstance = getDb();
@@ -118,7 +129,7 @@ export async function POST(request: NextRequest) {
       const items = dbInstance
         .prepare(
           `SELECT * FROM smart_inbox_sources
-           WHERE id IN (${itemIds.map(() => "?").join(",")})
+           WHERE id IN (${itemIds.map(() => '?').join(',')})
            AND user_id = ?
            AND status = 'pending'`
         )
@@ -132,20 +143,22 @@ export async function POST(request: NextRequest) {
 
       // Process each item with AI
       for (const item of items) {
-        const text = item.title + (item.description ? ` ${item.description}` : "");
+        const text =
+          item.title + (item.description ? ` ${item.description}` : '');
 
         let aiResult;
         try {
           aiResult = await parseNaturalLanguageTask(text);
         } catch (error) {
-          console.error("AI parsing failed, using fallback:", error);
+          console.error('AI parsing failed, using fallback:', error);
           aiResult = {
             name: item.title,
-            priority: item.priority as "critical" | "high" | "medium" | "low" | "none",
+            priority: item.priority as
+              'critical' | 'high' | 'medium' | 'low' | 'none',
             due_date: item.due_date,
             confidence: item.confidence || 50,
             labels: [],
-            matches: []
+            matches: [],
           };
         }
 
@@ -157,48 +170,55 @@ export async function POST(request: NextRequest) {
           predicted_priority: aiResult.priority || item.priority,
           predicted_due_date: predictedDueDate,
           suggested_labels: JSON.stringify(aiResult.labels || []),
-          ai_reasoning: `AI analysis detected: ${aiResult.priority || "normal priority"} task with ${predictedDueDate ? `due ${predictedDueDate}` : "no immediate deadline"}`,
+          ai_reasoning: `AI analysis detected: ${aiResult.priority || 'normal priority'} task with ${predictedDueDate ? `due ${predictedDueDate}` : 'no immediate deadline'}`,
         };
 
         updates.push(update);
 
         // Update the item with AI insights
-        dbInstance.prepare(`
+        dbInstance
+          .prepare(
+            `
           UPDATE smart_inbox_sources
           SET priority_score = ?, due_date = ?, updated_at = CURRENT_TIMESTAMP
           WHERE id = ?
-        `).run(
-          calculatePriorityScore(update.predicted_priority || "medium", predictedDueDate),
-          predictedDueDate,
-          item.id
-        );
+        `
+          )
+          .run(
+            calculatePriorityScore(
+              update.predicted_priority || 'medium',
+              predictedDueDate
+            ),
+            predictedDueDate,
+            item.id
+          );
       }
 
       return jsonResponse({ updates }, 200, middlewareResult.headers);
     }
 
     // Handle different action types
-    if (body.action === "convert") {
+    if (body.action === 'convert') {
       const task = await convertSourceToTask(body.sourceId);
       return jsonResponse({ task }, 200, middlewareResult.headers);
     }
 
-    if (body.action === "bulkConvert") {
+    if (body.action === 'bulkConvert') {
       const result = await bulkConvertSourcesToTasks(body.sourceIds || []);
       return jsonResponse({ result }, 200, middlewareResult.headers);
     }
 
-    if (body.action === "dismiss") {
+    if (body.action === 'dismiss') {
       await dismissSource(body.sourceId);
       return jsonResponse({ success: true }, 200, middlewareResult.headers);
     }
 
-    if (body.action === "delete") {
+    if (body.action === 'delete') {
       await deleteInboxSource(body.sourceId);
       return jsonResponse({ success: true }, 200, middlewareResult.headers);
     }
 
-    if (body.action === "summary") {
+    if (body.action === 'summary') {
       const summary = await getInboxSummary();
       return jsonResponse({ summary }, 200, middlewareResult.headers);
     }
@@ -207,14 +227,17 @@ export async function POST(request: NextRequest) {
     const source = await upsertInboxSource(body);
     return jsonResponse({ source }, 201, middlewareResult.headers);
   } catch (error) {
-    console.error("POST error:", error);
-    const message = error instanceof Error ? error.message : "Failed to process request";
+    console.error('POST error:', error);
+    const message =
+      error instanceof Error ? error.message : 'Failed to process request';
     return errorResponse(message, 500);
   }
 }
 
 export async function PUT(request: NextRequest) {
-  const middlewareResult = await applyMiddleware(request, { requireAuth: true });
+  const middlewareResult = await applyMiddleware(request, {
+    requireAuth: true,
+  });
   if (middlewareResult.error) {
     return middlewareResult.error;
   }
@@ -224,12 +247,14 @@ export async function PUT(request: NextRequest) {
     const { sourceId, updates } = body;
 
     if (!sourceId) {
-      return errorResponse("sourceId is required", 400);
+      return errorResponse('sourceId is required', 400);
     }
 
     const dbInstance = getDb();
 
-    dbInstance.prepare(`
+    dbInstance
+      .prepare(
+        `
       UPDATE smart_inbox_sources
       SET title = COALESCE(?, title),
           description = COALESCE(?, description),
@@ -243,49 +268,57 @@ export async function PUT(request: NextRequest) {
           metadata = ?,
           updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
-    `).run(
-      updates.title,
-      updates.description,
-      updates.due_date,
-      updates.priority,
-      updates.confidence,
-      updates.predicted_priority,
-      updates.predicted_due_date,
-      updates.suggested_labels ? JSON.stringify(updates.suggested_labels) : null,
-      updates.ai_reasoning,
-      updates.metadata ? JSON.stringify(updates.metadata) : null,
-      sourceId
-    );
+    `
+      )
+      .run(
+        updates.title,
+        updates.description,
+        updates.due_date,
+        updates.priority,
+        updates.confidence,
+        updates.predicted_priority,
+        updates.predicted_due_date,
+        updates.suggested_labels
+          ? JSON.stringify(updates.suggested_labels)
+          : null,
+        updates.ai_reasoning,
+        updates.metadata ? JSON.stringify(updates.metadata) : null,
+        sourceId
+      );
 
-    const source = await dbInstance.prepare(
-      "SELECT * FROM smart_inbox_sources WHERE id = ?"
-    ).get(sourceId);
+    const source = await dbInstance
+      .prepare('SELECT * FROM smart_inbox_sources WHERE id = ?')
+      .get(sourceId);
 
     return jsonResponse({ source }, 200, middlewareResult.headers);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to update source";
+    const message =
+      error instanceof Error ? error.message : 'Failed to update source';
     return errorResponse(message, 400);
   }
 }
 
 export async function DELETE(request: NextRequest) {
-  const middlewareResult = await applyMiddleware(request, { requireAuth: true });
+  const middlewareResult = await applyMiddleware(request, {
+    requireAuth: true,
+  });
   if (middlewareResult.error) {
     return middlewareResult.error;
   }
 
   const url = new URL(request.url);
-  const sourceIdParam = url.searchParams.get("sourceId");
+  const sourceIdParam = url.searchParams.get('sourceId');
 
   if (!sourceIdParam) {
-    return errorResponse("sourceId is required", 400);
+    return errorResponse('sourceId is required', 400);
   }
 
   try {
     await deleteInboxSource(parseInt(sourceIdParam));
     return jsonResponse({ success: true }, 200, middlewareResult.headers);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to delete source";
+    const message =
+      error instanceof Error ? error.message : 'Failed to delete source';
     return errorResponse(message, 400);
   }
 }
