@@ -1,18 +1,21 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { createTestDb } from "@/lib/db/test-db";
-import { setDb, resetDb } from "@/lib/db";
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { createTestDb } from '@/lib/db/test-db';
+import { setDb, resetDb } from '@/lib/db';
 
-function createMockRequest(url: string, options: { method?: string; body?: unknown } = {}): any {
-  const parsedUrl = new URL(url, "http://localhost");
+function createMockRequest(
+  url: string,
+  options: { method?: string; body?: unknown } = {}
+): any {
+  const parsedUrl = new URL(url, 'http://localhost');
   return {
     nextUrl: { searchParams: parsedUrl.searchParams },
     json: () => Promise.resolve(options.body),
-    method: options.method || "GET",
+    method: options.method || 'GET',
   };
 }
 
-describe("Integrations API", () => {
-  let route: typeof import("../route");
+describe('Integrations API', () => {
+  let route: typeof import('../route');
   let testDb: ReturnType<typeof createTestDb>;
 
   beforeEach(async () => {
@@ -33,7 +36,7 @@ describe("Integrations API", () => {
     `);
 
     vi.resetModules();
-    route = await import("../route");
+    route = await import('../route');
   });
 
   afterEach(() => {
@@ -41,9 +44,9 @@ describe("Integrations API", () => {
     vi.clearAllMocks();
   });
 
-  describe("GET /api/integrations", () => {
-    it("should return integrations array", async () => {
-      const request = createMockRequest("http://localhost/api/integrations");
+  describe('GET /api/integrations', () => {
+    it('should return integrations array', async () => {
+      const request = createMockRequest('http://localhost/api/integrations');
       const response = await route.GET(request);
 
       expect(response.status).toBe(200);
@@ -51,11 +54,11 @@ describe("Integrations API", () => {
       expect(Array.isArray(data)).toBe(true);
     });
 
-    it("should handle errors gracefully (mock returns 200)", async () => {
+    it('should handle errors gracefully (mock returns 200)', async () => {
       resetDb();
       setDb(createTestDb());
 
-      const request = createMockRequest("http://localhost/api/integrations");
+      const request = createMockRequest('http://localhost/api/integrations');
       const response = await route.GET(request);
 
       // Mock database is resilient and returns 200 even without tables
@@ -63,22 +66,26 @@ describe("Integrations API", () => {
     });
   });
 
-  describe("POST /api/integrations", () => {
-    it("should return 400 for missing type", async () => {
-      const request = createMockRequest("http://localhost/api/integrations", {
-        method: "POST",
-        body: { webhookUrl: "https://example.com/webhook" },
+  describe('POST /api/integrations', () => {
+    it('should return 400 for missing type', async () => {
+      const request = createMockRequest('http://localhost/api/integrations', {
+        method: 'POST',
+        body: { webhookUrl: 'https://example.com/webhook' },
       });
       const response = await route.POST(request);
 
       expect(response.status).toBe(400);
-      expect(await response.json()).toEqual({ error: "Type is required" });
+      expect(await response.json()).toEqual({ error: 'Type is required' });
     });
 
-    it("should handle creating integration (mock may not support ON CONFLICT)", async () => {
-      const request = createMockRequest("http://localhost/api/integrations", {
-        method: "POST",
-        body: { type: "slack", webhookUrl: "https://hooks.slack.com/test", enabled: true },
+    it('should handle creating integration (mock may not support ON CONFLICT)', async () => {
+      const request = createMockRequest('http://localhost/api/integrations', {
+        method: 'POST',
+        body: {
+          type: 'slack',
+          webhookUrl: 'https://hooks.slack.com/test',
+          enabled: true,
+        },
       });
       const response = await route.POST(request);
 
@@ -86,45 +93,50 @@ describe("Integrations API", () => {
       expect([201, 500]).toContain(response.status);
     });
 
-    it("should handle discord integration creation", async () => {
-      const request = createMockRequest("http://localhost/api/integrations", {
-        method: "POST",
-        body: { type: "discord", webhookUrl: "https://discord.com/test", channel: "general", enabled: true },
+    it('should handle discord integration creation', async () => {
+      const request = createMockRequest('http://localhost/api/integrations', {
+        method: 'POST',
+        body: {
+          type: 'discord',
+          webhookUrl: 'https://discord.com/test',
+          channel: 'general',
+          enabled: true,
+        },
       });
       const response = await route.POST(request);
 
       expect([201, 500]).toContain(response.status);
     });
 
-    it("should validate type field exists", async () => {
-      const request = createMockRequest("http://localhost/api/integrations", {
-        method: "POST",
-        body: { webhookUrl: "https://example.com/test" },
+    it('should validate type field exists', async () => {
+      const request = createMockRequest('http://localhost/api/integrations', {
+        method: 'POST',
+        body: { webhookUrl: 'https://example.com/test' },
       });
       const response = await route.POST(request);
 
       expect(response.status).toBe(400);
     });
 
-    it("should handle errors gracefully for database issues", async () => {
+    it('should handle errors gracefully for database issues', async () => {
       // The mock database may not support ON CONFLICT syntax
       // Just verify no crash and reasonable response
-      const request = createMockRequest("http://localhost/api/integrations", {
-        method: "POST",
-        body: { type: "slack", enabled: false },
+      const request = createMockRequest('http://localhost/api/integrations', {
+        method: 'POST',
+        body: { type: 'slack', enabled: false },
       });
       const response = await route.POST(request);
 
       expect([201, 500]).toContain(response.status);
     });
 
-    it("should handle errors gracefully", async () => {
+    it('should handle errors gracefully', async () => {
       resetDb();
       setDb(createTestDb());
 
-      const request = createMockRequest("http://localhost/api/integrations", {
-        method: "POST",
-        body: { type: "slack" },
+      const request = createMockRequest('http://localhost/api/integrations', {
+        method: 'POST',
+        body: { type: 'slack' },
       });
       const response = await route.POST(request);
 
