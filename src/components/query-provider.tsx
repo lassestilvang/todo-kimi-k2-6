@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { QueryClientProvider } from "@tanstack/react-query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-import { createQueryClient } from "@/lib/query-client";
-import { useEffect, useState } from "react";
-import { persistQueryClient } from "@/lib/persist-query-client";
+import { QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { createQueryClient } from '@/lib/query-client';
+import { useEffect, useState } from 'react';
+import { persistQueryClient } from '@/lib/persist-query-client';
 
 interface QueryProviderProps {
   children: React.ReactNode;
