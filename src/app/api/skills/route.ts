@@ -1,7 +1,11 @@
-import { NextRequest } from "next/server";
-import { applyMiddleware, jsonResponse, errorResponse } from "@/lib/api-middleware";
-import { getDb } from "@/lib/db";
-import { z } from "zod";
+import { NextRequest } from 'next/server';
+import {
+  applyMiddleware,
+  jsonResponse,
+  errorResponse,
+} from '@/lib/api-middleware';
+import { getDb } from '@/lib/db';
+import { z } from 'zod';
 
 const CreateSkillSchema = z.object({
   user_id: z.number(),
@@ -29,16 +33,20 @@ export async function GET(request: NextRequest) {
 
   const userId = middleware.auth?.userId;
   if (!userId) {
-    return errorResponse("User not authenticated", 401);
+    return errorResponse('User not authenticated', 401);
   }
 
   try {
     const db = getDb();
-    const skills = db.prepare(`
+    const skills = db
+      .prepare(
+        `
       SELECT * FROM user_skills
       WHERE user_id = ?
       ORDER BY proficiency_level DESC, skill_name ASC
-    `).all(userId) as Array<{
+    `
+      )
+      .all(userId) as Array<{
       id: number;
       user_id: number;
       skill_name: string;
@@ -50,8 +58,8 @@ export async function GET(request: NextRequest) {
 
     return jsonResponse({ skills });
   } catch (error: unknown) {
-    console.error("Failed to get skills:", error);
-    return errorResponse("Failed to get skills", 500);
+    console.error('Failed to get skills:', error);
+    return errorResponse('Failed to get skills', 500);
   }
 }
 
@@ -62,7 +70,7 @@ export async function POST(request: NextRequest) {
 
   const userId = middleware.auth?.userId;
   if (!userId) {
-    return errorResponse("User not authenticated", 401);
+    return errorResponse('User not authenticated', 401);
   }
 
   try {
@@ -70,28 +78,45 @@ export async function POST(request: NextRequest) {
     const parsed = CreateSkillSchema.safeParse(body);
 
     if (!parsed.success) {
-      return errorResponse("Invalid input: " + parsed.error.issues[0].message, 400);
+      return errorResponse(
+        'Invalid input: ' + parsed.error.issues[0].message,
+        400
+      );
     }
 
     const db = getDb();
-    const result = db.prepare(`
+    const result = db
+      .prepare(
+        `
       INSERT INTO user_skills (user_id, skill_name, proficiency_level, evidence_task_ids, created_at)
       VALUES (?, ?, ?, ?, datetime('now'))
-    `).run(
-      parsed.data.user_id,
-      parsed.data.skill_name,
-      parsed.data.proficiency_level || 1,
-      parsed.data.evidence_task_ids ? JSON.stringify(parsed.data.evidence_task_ids) : null
-    );
+    `
+      )
+      .run(
+        parsed.data.user_id,
+        parsed.data.skill_name,
+        parsed.data.proficiency_level || 1,
+        parsed.data.evidence_task_ids
+          ? JSON.stringify(parsed.data.evidence_task_ids)
+          : null
+      );
 
-    const skill = db.prepare(`
+    const skill = db
+      .prepare(
+        `
       SELECT * FROM user_skills WHERE id = ?
-    `).get(result.lastInsertRowid as number);
+    `
+      )
+      .get(result.lastInsertRowid as number);
 
     return jsonResponse({ skill }, 201);
   } catch (error: unknown) {
-    console.error("Failed to create skill:", error);
-    return errorResponse("Failed to create skill: " + (error instanceof Error ? error.message : "Unknown error"), 400);
+    console.error('Failed to create skill:', error);
+    return errorResponse(
+      'Failed to create skill: ' +
+        (error instanceof Error ? error.message : 'Unknown error'),
+      400
+    );
   }
 }
 
@@ -113,57 +138,71 @@ export async function PATCH(request: NextRequest) {
 
   const userId = middleware.auth?.userId;
   if (!userId) {
-    return errorResponse("User not authenticated", 401);
+    return errorResponse('User not authenticated', 401);
   }
 
   try {
     const body = await request.json();
 
     // Handle increment
-    if (body.action === "increment") {
+    if (body.action === 'increment') {
       const parsed = IncrementSkillSchema.safeParse(body);
       if (!parsed.success) {
-        return errorResponse("Invalid input: " + parsed.error.issues[0].message, 400);
+        return errorResponse(
+          'Invalid input: ' + parsed.error.issues[0].message,
+          400
+        );
       }
 
       const db = getDb();
 
       // Get existing skill or create new one
-      let skill = db.prepare(`
+      let skill = db
+        .prepare(
+          `
         SELECT * FROM user_skills WHERE user_id = ? AND skill_name = ?
-      `).get(userId, parsed.data.skill_name) as SkillRecord | undefined;
+      `
+        )
+        .get(userId, parsed.data.skill_name) as SkillRecord | undefined;
 
       if (!skill) {
         // Create new skill
-        const result = db.prepare(`
+        const result = db
+          .prepare(
+            `
           INSERT INTO user_skills (user_id, skill_name, proficiency_level, evidence_task_ids, last_used_at)
           VALUES (?, ?, 1, ?, datetime('now'))
-        `).run(
-          userId,
-          parsed.data.skill_name,
-          JSON.stringify([parsed.data.task_id])
-        );
+        `
+          )
+          .run(
+            userId,
+            parsed.data.skill_name,
+            JSON.stringify([parsed.data.task_id])
+          );
 
-        skill = db.prepare(`
+        skill = db
+          .prepare(
+            `
           SELECT * FROM user_skills WHERE id = ?
-        `).get(result.lastInsertRowid as number) as SkillRecord;
+        `
+          )
+          .get(result.lastInsertRowid as number) as SkillRecord;
       } else {
         // Update existing skill
         const evidence = skill.evidence_task_ids
-          ? JSON.parse(skill.evidence_task_ids) as number[]
+          ? (JSON.parse(skill.evidence_task_ids) as number[])
           : [];
 
         if (!evidence.includes(parsed.data.task_id)) {
           evidence.push(parsed.data.task_id);
 
-          db.prepare(`
+          db.prepare(
+            `
             UPDATE user_skills
             SET evidence_task_ids = ?, last_used_at = datetime('now')
             WHERE id = ?
-          `).run(
-            JSON.stringify(evidence),
-            skill.id
-          );
+          `
+          ).run(JSON.stringify(evidence), skill.id);
         }
       }
 
@@ -171,48 +210,69 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Handle recommendations
-    if (body.action === "recommendations") {
+    if (body.action === 'recommendations') {
       const currentTasks = body.currentTasks || 10;
       const db = getDb();
-      const skills = db.prepare(`
+      const skills = db
+        .prepare(
+          `
         SELECT * FROM user_skills WHERE user_id = ?
-      `).all(userId) as SkillRecord[];
+      `
+        )
+        .all(userId) as SkillRecord[];
 
       const skillKeywords: Record<string, string[]> = {
-        "design": ["design", "ui", "ux", "interface", "prototype"],
-        "development": ["code", "develop", "server", "api", "backend", "frontend"],
-        "research": ["research", "analyze", "study", "investigate"],
-        "writing": ["write", "document", "content", "report"],
-        "leadership": ["lead", "manage", "team", "coordinate"],
-        "planning": ["plan", "schedule", "strategy", "timeline"],
-        "communication": ["email", "present", "meeting", "discuss"],
-        "problem-solving": ["debug", "fix", "solve", "troubleshoot"],
+        design: ['design', 'ui', 'ux', 'interface', 'prototype'],
+        development: [
+          'code',
+          'develop',
+          'server',
+          'api',
+          'backend',
+          'frontend',
+        ],
+        research: ['research', 'analyze', 'study', 'investigate'],
+        writing: ['write', 'document', 'content', 'report'],
+        leadership: ['lead', 'manage', 'team', 'coordinate'],
+        planning: ['plan', 'schedule', 'strategy', 'timeline'],
+        communication: ['email', 'present', 'meeting', 'discuss'],
+        'problem-solving': ['debug', 'fix', 'solve', 'troubleshoot'],
       };
 
-      const skillNames = new Set(skills.map((s) => s.skill_name.toLowerCase()));
-      const recommendations = Object.entries(skillKeywords).map(([skill]) => {
-        const isCovered = skillNames.has(skill);
-        if (isCovered) {
-          return { skill_name: skill, recommended: false, reason: "Already developing this skill" };
-        }
+      const skillNames = new Set(skills.map(s => s.skill_name.toLowerCase()));
+      const recommendations = Object.entries(skillKeywords)
+        .map(([skill]) => {
+          const isCovered = skillNames.has(skill);
+          if (isCovered) {
+            return {
+              skill_name: skill,
+              recommended: false,
+              reason: 'Already developing this skill',
+            };
+          }
 
-        const score = currentTasks > 3;
-        return {
-          skill_name: skill,
-          recommended: score,
-          reason: score
-            ? "High demand skill with good opportunity for growth"
-            : "Consider after mastering current skills"
-        };
-      }).filter((r) => r.recommended);
+          const score = currentTasks > 3;
+          return {
+            skill_name: skill,
+            recommended: score,
+            reason: score
+              ? 'High demand skill with good opportunity for growth'
+              : 'Consider after mastering current skills',
+          };
+        })
+        .filter(r => r.recommended);
 
       return jsonResponse({ recommendations });
     }
 
-    return errorResponse("Invalid action", 400);
+    return errorResponse('Invalid action', 400);
   } catch (error: unknown) {
-    console.error("Failed to increment/get recommendations:", error);
-    return errorResponse("Operation failed: " + (error instanceof Error ? error.message : "Unknown error"), 500);
+    console.error('Failed to increment/get recommendations:', error);
+    return errorResponse(
+      'Operation failed: ' +
+        (error instanceof Error ? error.message : 'Unknown error'),
+      500
+    );
   }
 }
 
@@ -223,14 +283,14 @@ export async function PUT(request: NextRequest) {
 
   const userId = middleware.auth?.userId;
   if (!userId) {
-    return errorResponse("User not authenticated", 401);
+    return errorResponse('User not authenticated', 401);
   }
 
   const searchParams = request.nextUrl.searchParams;
-  const id = parseInt(searchParams.get("id") || "0", 10);
+  const id = parseInt(searchParams.get('id') || '0', 10);
 
   if (!id) {
-    return errorResponse("Skill ID required", 400);
+    return errorResponse('Skill ID required', 400);
   }
 
   try {
@@ -238,57 +298,74 @@ export async function PUT(request: NextRequest) {
     const parsed = UpdateSkillSchema.partial().safeParse(body);
 
     if (!parsed.success) {
-      return errorResponse("Invalid input: " + parsed.error.issues[0].message, 400);
+      return errorResponse(
+        'Invalid input: ' + parsed.error.issues[0].message,
+        400
+      );
     }
 
     const db = getDb();
 
     // Check if skill exists and belongs to user
-    const existing = db.prepare(`
+    const existing = db
+      .prepare(
+        `
       SELECT user_id FROM user_skills WHERE id = ?
-    `).get(id) as { user_id: number } | undefined;
+    `
+      )
+      .get(id) as { user_id: number } | undefined;
 
     if (!existing || existing.user_id !== userId) {
-      return errorResponse("Skill not found or access denied", 404);
+      return errorResponse('Skill not found or access denied', 404);
     }
 
     const setClauses: string[] = [];
     const values: (string | number)[] = [];
 
     if (parsed.data.skill_name !== undefined) {
-      setClauses.push("skill_name = ?");
+      setClauses.push('skill_name = ?');
       values.push(parsed.data.skill_name);
     }
     if (parsed.data.proficiency_level !== undefined) {
-      setClauses.push("proficiency_level = ?");
+      setClauses.push('proficiency_level = ?');
       values.push(parsed.data.proficiency_level);
     }
     if (parsed.data.evidence_task_ids !== undefined) {
-      setClauses.push("evidence_task_ids = ?");
+      setClauses.push('evidence_task_ids = ?');
       values.push(JSON.stringify(parsed.data.evidence_task_ids));
     }
 
     if (setClauses.length === 0) {
-      return errorResponse("No updates provided", 400);
+      return errorResponse('No updates provided', 400);
     }
 
     setClauses.push("last_used_at = datetime('now')");
     values.push(id, userId);
 
-    db.prepare(`
+    db.prepare(
+      `
       UPDATE user_skills
-      SET ${setClauses.join(", ")}
+      SET ${setClauses.join(', ')}
       WHERE id = ? AND user_id = ?
-    `).run(...values);
+    `
+    ).run(...values);
 
-    const skill = db.prepare(`
+    const skill = db
+      .prepare(
+        `
       SELECT * FROM user_skills WHERE id = ?
-    `).get(id);
+    `
+      )
+      .get(id);
 
     return jsonResponse({ skill });
   } catch (error: unknown) {
-    console.error("Failed to update skill:", error);
-    return errorResponse("Failed to update skill: " + (error instanceof Error ? error.message : "Unknown error"), 500);
+    console.error('Failed to update skill:', error);
+    return errorResponse(
+      'Failed to update skill: ' +
+        (error instanceof Error ? error.message : 'Unknown error'),
+      500
+    );
   }
 }
 
@@ -299,30 +376,38 @@ export async function DELETE(request: NextRequest) {
 
   const userId = middleware.auth?.userId;
   if (!userId) {
-    return errorResponse("User not authenticated", 401);
+    return errorResponse('User not authenticated', 401);
   }
 
   const searchParams = request.nextUrl.searchParams;
-  const id = parseInt(searchParams.get("id") || "0", 10);
+  const id = parseInt(searchParams.get('id') || '0', 10);
 
   if (!id) {
-    return errorResponse("Skill ID required", 400);
+    return errorResponse('Skill ID required', 400);
   }
 
   try {
     const db = getDb();
 
-    const result = db.prepare(`
+    const result = db
+      .prepare(
+        `
       DELETE FROM user_skills WHERE id = ? AND user_id = ?
-    `).run(id, userId);
+    `
+      )
+      .run(id, userId);
 
     if (result.changes === 0) {
-      return errorResponse("Skill not found or access denied", 404);
+      return errorResponse('Skill not found or access denied', 404);
     }
 
     return jsonResponse({ success: true });
   } catch (error: unknown) {
-    console.error("Failed to delete skill:", error);
-    return errorResponse("Failed to delete skill: " + (error instanceof Error ? error.message : "Unknown error"), 500);
+    console.error('Failed to delete skill:', error);
+    return errorResponse(
+      'Failed to delete skill: ' +
+        (error instanceof Error ? error.message : 'Unknown error'),
+      500
+    );
   }
 }
