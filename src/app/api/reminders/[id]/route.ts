@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { updateReminder, deleteReminder } from '@/lib/actions/reminders';
 
-export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   const { id } = await params;
   try {
     const reminderId = parseInt(id);
@@ -18,13 +21,19 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   } catch (error) {
     console.error('Error updating reminder:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to update reminder' },
+      {
+        error:
+          error instanceof Error ? error.message : 'Failed to update reminder',
+      },
       { status: 400 }
     );
   }
 }
 
-export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(
+  _: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   const { id } = await params;
   try {
     const reminderId = parseInt(id);
