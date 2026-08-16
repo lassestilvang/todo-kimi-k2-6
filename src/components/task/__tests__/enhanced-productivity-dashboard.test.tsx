@@ -1,9 +1,9 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
-import { render, screen } from "@testing-library/react";
-import { EnhancedProductivityDashboard } from "../enhanced-productivity-dashboard";
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import { EnhancedProductivityDashboard } from '../enhanced-productivity-dashboard';
 
 // Mock the hooks module
-vi.mock("@/hooks/use-enhanced-productivity", () => ({
+vi.mock('@/hooks/use-enhanced-productivity', () => ({
   useCognitiveLoad: vi.fn(),
   useEnergyBudget: vi.fn(),
   useExternalTasks: vi.fn(),
@@ -18,14 +18,14 @@ import {
   useExternalTasks,
   useDecisionShadow,
   useMoodTracking,
-} from "@/hooks/use-enhanced-productivity";
+} from '@/hooks/use-enhanced-productivity';
 
 const setupMockHooks = () => {
   (useCognitiveLoad as any).mockReturnValue({
     analysis: {
-      loadTrend: "stable",
+      loadTrend: 'stable',
       completionRate: 0.75,
-      recommendations: ["Focus on high-priority tasks"],
+      recommendations: ['Focus on high-priority tasks'],
     },
     loading: false,
     logLoad: vi.fn(),
@@ -59,7 +59,7 @@ const setupMockHooks = () => {
   });
 
   (useMoodTracking as any).mockReturnValue({
-    recommendations: { primaryMood: "balanced" },
+    recommendations: { primaryMood: 'balanced' },
     loading: false,
     logMood: vi.fn(),
     getRecommendations: vi.fn(),
@@ -67,7 +67,7 @@ const setupMockHooks = () => {
   });
 };
 
-describe("Enhanced Productivity Dashboard", () => {
+describe('Enhanced Productivity Dashboard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     setupMockHooks();
@@ -77,37 +77,37 @@ describe("Enhanced Productivity Dashboard", () => {
     vi.restoreAllMocks();
   });
 
-  describe("Overview Tab", () => {
-    it("should render all cards", () => {
+  describe('Overview Tab', () => {
+    it('should render all cards', () => {
       render(<EnhancedProductivityDashboard />);
 
-      expect(screen.getByText("Cognitive Load")).toBeInTheDocument();
-      expect(screen.getByText("Energy Budget")).toBeInTheDocument();
-      expect(screen.getByText("Decisions Made")).toBeInTheDocument();
-      expect(screen.getByText("External Sources")).toBeInTheDocument();
+      expect(screen.getByText('Cognitive Load')).toBeInTheDocument();
+      expect(screen.getByText('Energy Budget')).toBeInTheDocument();
+      expect(screen.getByText('Decisions Made')).toBeInTheDocument();
+      expect(screen.getByText('External Sources')).toBeInTheDocument();
     });
 
-    it("should display cognitive load status", () => {
+    it('should display cognitive load status', () => {
       render(<EnhancedProductivityDashboard />);
 
-      expect(screen.getByText("Stable")).toBeInTheDocument();
+      expect(screen.getByText('Stable')).toBeInTheDocument();
     });
 
-    it("should display energy balance", () => {
+    it('should display energy balance', () => {
       render(<EnhancedProductivityDashboard />);
 
-      expect(screen.getByText("78/100")).toBeInTheDocument();
+      expect(screen.getByText('78/100')).toBeInTheDocument();
     });
 
-    it("should show integration cards", () => {
+    it('should show integration cards', () => {
       render(<EnhancedProductivityDashboard />);
 
-      expect(screen.getByText("External Sources")).toBeInTheDocument();
+      expect(screen.getByText('External Sources')).toBeInTheDocument();
     });
   });
 
-  describe("Decision Shadow Tracker", () => {
-    it("should render loading state", () => {
+  describe('Decision Shadow Tracker', () => {
+    it('should render loading state', () => {
       (useDecisionShadow as any).mockReturnValue({
         analysis: null,
         loading: true,
@@ -117,10 +117,10 @@ describe("Enhanced Productivity Dashboard", () => {
 
       render(<EnhancedProductivityDashboard />);
       // Component should render without crashing with loading state
-      expect(screen.getByText("Decisions Made")).toBeInTheDocument();
+      expect(screen.getByText('Decisions Made')).toBeInTheDocument();
     });
 
-    it("should display total decisions", () => {
+    it('should display total decisions', () => {
       (useDecisionShadow as any).mockReturnValue({
         analysis: {
           totalDecisions: 15,
@@ -133,19 +133,19 @@ describe("Enhanced Productivity Dashboard", () => {
 
       render(<EnhancedProductivityDashboard />);
       // Decision count appears in decision analysis section
-      expect(screen.getByText("15")).toBeInTheDocument();
+      expect(screen.getByText('15')).toBeInTheDocument();
     });
   });
 
-  describe("Component Structure", () => {
-    it("should render the main dashboard container", () => {
+  describe('Component Structure', () => {
+    it('should render the main dashboard container', () => {
       render(<EnhancedProductivityDashboard />);
 
       const container = document.querySelector('.space-y-6');
       expect(container).toBeInTheDocument();
     });
 
-    it("should render all overview tabs", () => {
+    it('should render all overview tabs', () => {
       render(<EnhancedProductivityDashboard />);
 
       const tabs = screen.getAllByRole('tab');
