@@ -1,12 +1,22 @@
-import { NextRequest } from "next/server";
-import { getDb } from "@/lib/db";
-import { applyMiddleware, jsonResponse, errorResponse } from "@/lib/api-middleware";
-import { z } from "zod";
+import { NextRequest } from 'next/server';
+import { getDb } from '@/lib/db';
+import {
+  applyMiddleware,
+  jsonResponse,
+  errorResponse,
+} from '@/lib/api-middleware';
+import { z } from 'zod';
 
 const CreateHabitContextSchema = z.object({
   task_id: z.number(),
   user_id: z.number().optional(),
-  context_type: z.enum(["time_of_day", "location", "mood", "energy_level", "external_trigger"]),
+  context_type: z.enum([
+    'time_of_day',
+    'location',
+    'mood',
+    'energy_level',
+    'external_trigger',
+  ]),
   context_value: z.string(),
   success: z.boolean().optional(),
   frequency: z.number().min(1).optional(),
@@ -20,13 +30,13 @@ export async function GET(request: NextRequest) {
 
   const userId = middleware.auth?.userId;
   if (!userId) {
-    return errorResponse("User not authenticated", 401);
+    return errorResponse('User not authenticated', 401);
   }
 
   const db = getDb();
 
   const searchParams = request.nextUrl.searchParams;
-  const taskId = searchParams.get("task_id");
+  const taskId = searchParams.get('task_id');
 
   let query = `
     SELECT hc.*, t.name as task_name
@@ -37,11 +47,11 @@ export async function GET(request: NextRequest) {
   const params: (number | string)[] = [userId];
 
   if (taskId) {
-    query += " AND hc.task_id = ?";
+    query += ' AND hc.task_id = ?';
     params.push(parseInt(taskId, 10));
   }
 
-  query += " ORDER BY hc.created_at DESC";
+  query += ' ORDER BY hc.created_at DESC';
 
   const contexts = db.prepare(query).all(...params);
 
@@ -55,36 +65,48 @@ export async function POST(request: NextRequest) {
 
   const userId = middleware.auth?.userId;
   if (!userId) {
-    return errorResponse("User not authenticated", 401);
+    return errorResponse('User not authenticated', 401);
   }
 
   try {
     const body = await request.json();
-    const parsed = CreateHabitContextSchema.safeParse({ ...body, user_id: userId });
+    const parsed = CreateHabitContextSchema.safeParse({
+      ...body,
+      user_id: userId,
+    });
 
     if (!parsed.success) {
-      return errorResponse("Invalid input: " + parsed.error.issues[0].message, 400);
+      return errorResponse(
+        'Invalid input: ' + parsed.error.issues[0].message,
+        400
+      );
     }
 
-    const { task_id, context_type, context_value, success = false } = parsed.data;
+    const {
+      task_id,
+      context_type,
+      context_value,
+      success = false,
+    } = parsed.data;
 
     const db = getDb();
 
     // Check if task belongs to user
     const task = db
-      .prepare("SELECT id FROM tasks WHERE id = ? AND user_id = ?")
+      .prepare('SELECT id FROM tasks WHERE id = ? AND user_id = ?')
       .get(task_id, userId);
 
     if (!task) {
-      return errorResponse("Task not found or access denied", 404);
+      return errorResponse('Task not found or access denied', 404);
     }
 
     // Check if context already exists for this task and type
     const existingContext = db
       .prepare(
-        "SELECT id, frequency, success_rate FROM habit_contexts WHERE task_id = ? AND user_id = ? AND context_type = ?"
+        'SELECT id, frequency, success_rate FROM habit_contexts WHERE task_id = ? AND user_id = ? AND context_type = ?'
       )
-      .get(task_id, userId, context_type) as { id: number; frequency: number; success_rate: number } | undefined;
+      .get(task_id, userId, context_type) as
+      { id: number; frequency: number; success_rate: number } | undefined;
 
     let result;
 
@@ -116,13 +138,16 @@ export async function POST(request: NextRequest) {
     }
 
     const newContext = db
-      .prepare("SELECT * FROM habit_contexts WHERE id = ?")
+      .prepare('SELECT * FROM habit_contexts WHERE id = ?')
       .get(result.lastInsertRowid || existingContext?.id);
 
     return jsonResponse(newContext);
   } catch (error: unknown) {
-    console.error("Failed to create habit context:", error);
-    return errorResponse(`Failed to create habit context: ${error instanceof Error ? error.message : "Unknown error"}`, 500);
+    console.error('Failed to create habit context:', error);
+    return errorResponse(
+      `Failed to create habit context: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      500
+    );
   }
 }
 
@@ -133,28 +158,28 @@ export async function DELETE(request: NextRequest) {
 
   const userId = middleware.auth?.userId;
   if (!userId) {
-    return errorResponse("User not authenticated", 401);
+    return errorResponse('User not authenticated', 401);
   }
 
   const searchParams = request.nextUrl.searchParams;
-  const contextId = parseInt(searchParams.get("id") || "0", 10);
+  const contextId = parseInt(searchParams.get('id') || '0', 10);
 
   if (!contextId) {
-    return errorResponse("Context ID required", 400);
+    return errorResponse('Context ID required', 400);
   }
 
   const db = getDb();
 
   // Check if context belongs to user
   const existing = db
-    .prepare("SELECT id FROM habit_contexts WHERE id = ? AND user_id = ?")
+    .prepare('SELECT id FROM habit_contexts WHERE id = ? AND user_id = ?')
     .get(contextId, userId);
 
   if (!existing) {
-    return errorResponse("Context not found or access denied", 404);
+    return errorResponse('Context not found or access denied', 404);
   }
 
-  db.prepare("DELETE FROM habit_contexts WHERE id = ?").run(contextId);
+  db.prepare('DELETE FROM habit_contexts WHERE id = ?').run(contextId);
 
   return jsonResponse({ success: true });
 }
@@ -165,7 +190,8 @@ function calculateNewSuccessRate(
   newSuccess: boolean,
   _newFrequency: number
 ): number {
-  const totalSuccesses = (currentRate * currentFrequency) / 100 + (newSuccess ? 1 : 0);
+  const totalSuccesses =
+    (currentRate * currentFrequency) / 100 + (newSuccess ? 1 : 0);
   const totalRecords = currentFrequency + 1;
   return Math.round((totalSuccesses / totalRecords) * 100);
 }
