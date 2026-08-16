@@ -1,44 +1,54 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { MeetingRecorder } from "@/components/task/meeting-recorder";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Check, RefreshCw, MessageCircle } from "lucide-react";
-import { toast } from "sonner";
+import { useState } from 'react';
+import { MeetingRecorder } from '@/components/task/meeting-recorder';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Check, RefreshCw, MessageCircle } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface MeetingActionItem {
   description: string;
   assignee?: string;
   dueDate?: string;
-  priority: "high" | "medium" | "low";
+  priority: 'high' | 'medium' | 'low';
   confidence: number;
   context: string;
 }
 
 export default function MeetingAssistantPage() {
-  const [transcript, setTranscript] = useState("");
-  const [meetingTitle, setMeetingTitle] = useState("");
+  const [transcript, setTranscript] = useState('');
+  const [meetingTitle, setMeetingTitle] = useState('');
   const [actionItems, setActionItems] = useState<MeetingActionItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [meetingDate, setMeetingDate] = useState(new Date().toISOString().split("T")[0]);
+  const [meetingDate, setMeetingDate] = useState(
+    new Date().toISOString().split('T')[0]
+  );
 
   const extractActionItems = async () => {
     if (!transcript.trim()) {
-      toast.error("Please paste a meeting transcript or record a meeting first");
+      toast.error(
+        'Please paste a meeting transcript or record a meeting first'
+      );
       return;
     }
 
     setLoading(true);
     try {
-      const response = await fetch("/api/ai", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          type: "extractActionItems",
+          type: 'extractActionItems',
           input: {
             transcript,
             title: meetingTitle,
@@ -50,13 +60,16 @@ export default function MeetingAssistantPage() {
       if (response.ok) {
         const data = await response.json();
         setActionItems(data.actionItems || []);
-        toast.success(`Extracted ${data.actionItems?.length || 0} action item(s)`);
+        toast.success(
+          `Extracted ${data.actionItems?.length || 0} action item(s)`
+        );
       } else {
-        throw new Error("Failed to extract action items");
+        throw new Error('Failed to extract action items');
       }
     } catch {
       // Fallback to local extraction
-      const { extractActionItems: localExtract } = await import("@/lib/ai/meeting-transcription");
+      const { extractActionItems: localExtract } =
+        await import('@/lib/ai/meeting-transcription');
       const items = await localExtract(transcript, meetingTitle);
       setActionItems(items);
       toast.success(`Extracted ${items.length} action item(s)`);
@@ -70,9 +83,11 @@ export default function MeetingAssistantPage() {
 
     try {
       // In a real implementation, this would call the task creation API
-      toast.success(`Would create ${actionItems.length} task(s) from action items`);
+      toast.success(
+        `Would create ${actionItems.length} task(s) from action items`
+      );
     } catch {
-      toast.error("Failed to convert to tasks");
+      toast.error('Failed to convert to tasks');
     }
   };
 
@@ -104,7 +119,7 @@ export default function MeetingAssistantPage() {
                 <Input
                   placeholder="e.g., Q3 Planning Meeting"
                   value={meetingTitle}
-                  onChange={(e) => setMeetingTitle(e.target.value)}
+                  onChange={e => setMeetingTitle(e.target.value)}
                 />
               </div>
 
@@ -113,21 +128,26 @@ export default function MeetingAssistantPage() {
                 <Input
                   type="date"
                   value={meetingDate}
-                  onChange={(e) => setMeetingDate(e.target.value)}
+                  onChange={e => setMeetingDate(e.target.value)}
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Meeting Transcript</label>
+                <label className="text-sm font-medium">
+                  Meeting Transcript
+                </label>
                 <Textarea
                   placeholder="Paste your meeting transcript here..."
                   value={transcript}
-                  onChange={(e) => setTranscript(e.target.value)}
+                  onChange={e => setTranscript(e.target.value)}
                   rows={8}
                 />
               </div>
 
-              <Button onClick={extractActionItems} disabled={loading || !transcript.trim()}>
+              <Button
+                onClick={extractActionItems}
+                disabled={loading || !transcript.trim()}
+              >
                 {loading ? (
                   <>
                     <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
@@ -152,9 +172,9 @@ export default function MeetingAssistantPage() {
             </CardHeader>
             <CardContent>
               <MeetingRecorder
-                onTranscription={(transcript) => {
+                onTranscription={transcript => {
                   setTranscript(transcript);
-                  toast.success("Meeting recorded and transcribed");
+                  toast.success('Meeting recorded and transcribed');
                 }}
               />
             </CardContent>
@@ -171,16 +191,15 @@ export default function MeetingAssistantPage() {
                   <Badge variant="secondary">{actionItems.length}</Badge>
                 )}
               </CardTitle>
-              <CardDescription>
-                Review and convert to tasks
-              </CardDescription>
+              <CardDescription>Review and convert to tasks</CardDescription>
             </CardHeader>
             <CardContent>
               {actionItems.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <MessageCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p className="text-sm">
-                    No action items extracted yet. Paste a transcript or record a meeting.
+                    No action items extracted yet. Paste a transcript or record
+                    a meeting.
                   </p>
                 </div>
               ) : (
@@ -191,9 +210,17 @@ export default function MeetingAssistantPage() {
                       className="border rounded-lg p-3 hover:shadow-sm transition-shadow"
                     >
                       <div className="flex items-start justify-between mb-2">
-                        <h4 className="font-medium text-sm">{item.description}</h4>
+                        <h4 className="font-medium text-sm">
+                          {item.description}
+                        </h4>
                         <Badge
-                          variant={item.priority === "high" ? "destructive" : item.priority === "medium" ? "default" : "secondary"}
+                          variant={
+                            item.priority === 'high'
+                              ? 'destructive'
+                              : item.priority === 'medium'
+                                ? 'default'
+                                : 'secondary'
+                          }
                           className="text-xs"
                         >
                           {item.priority}
@@ -207,8 +234,12 @@ export default function MeetingAssistantPage() {
                       )}
 
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span>Confidence: {Math.round(item.confidence * 100)}%</span>
-                        {item.assignee && <span>Assignee: {item.assignee}</span>}
+                        <span>
+                          Confidence: {Math.round(item.confidence * 100)}%
+                        </span>
+                        {item.assignee && (
+                          <span>Assignee: {item.assignee}</span>
+                        )}
                       </div>
                     </div>
                   ))}
