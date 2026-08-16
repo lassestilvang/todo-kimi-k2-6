@@ -242,7 +242,15 @@
           "completed": { "type": "boolean" },
           "recurring": {
             "type": "string",
-            "enum": ["none", "daily", "weekly", "weekdays", "monthly", "yearly", "custom"]
+            "enum": [
+              "none",
+              "daily",
+              "weekly",
+              "weekdays",
+              "monthly",
+              "yearly",
+              "custom"
+            ]
           }
         }
       },
@@ -340,10 +348,22 @@
             "enum": ["critical", "high", "medium", "low", "none"]
           },
           "estimated_duration": { "type": "number", "nullable": true },
-          "suggested_date": { "type": "string", "format": "date", "nullable": true },
+          "suggested_date": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
           "recurring": {
             "type": "string",
-            "enum": ["none", "daily", "weekly", "weekdays", "monthly", "yearly", "custom"]
+            "enum": [
+              "none",
+              "daily",
+              "weekly",
+              "weekdays",
+              "monthly",
+              "yearly",
+              "custom"
+            ]
           },
           "deadline": { "type": "string", "format": "date", "nullable": true }
         }
