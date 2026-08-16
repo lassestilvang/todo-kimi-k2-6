@@ -1,14 +1,19 @@
 import { NextRequest } from 'next/server';
+import { getTaskById, updateTask, deleteTask } from '@/lib/actions/tasks';
 import {
-  getTaskById,
-  updateTask,
-  deleteTask,
-} from '@/lib/actions/tasks';
-import { applyMiddleware, errorResponse, jsonResponse } from '@/lib/api-middleware';
+  applyMiddleware,
+  errorResponse,
+  jsonResponse,
+} from '@/lib/api-middleware';
 
 // GET /api/tasks/[id] - Get a single task
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const middlewareResult = await applyMiddleware(request, { requireAuth: true });
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const middlewareResult = await applyMiddleware(request, {
+    requireAuth: true,
+  });
   if (middlewareResult.error) {
     return middlewareResult.error;
   }
@@ -32,8 +37,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 }
 
 // PATCH /api/tasks/[id] - Update a task
-export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const middlewareResult = await applyMiddleware(request, { requireAuth: true });
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const middlewareResult = await applyMiddleware(request, {
+    requireAuth: true,
+  });
   if (middlewareResult.error) {
     return middlewareResult.error;
   }
@@ -49,13 +59,21 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     return jsonResponse(task, 200, middlewareResult.headers);
   } catch (error) {
     console.error('Error updating task:', error);
-    return errorResponse(error instanceof Error ? error.message : 'Failed to update task', 400);
+    return errorResponse(
+      error instanceof Error ? error.message : 'Failed to update task',
+      400
+    );
   }
 }
 
 // DELETE /api/tasks/[id] - Delete a task
-export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const middlewareResult = await applyMiddleware(request, { requireAuth: true });
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const middlewareResult = await applyMiddleware(request, {
+    requireAuth: true,
+  });
   if (middlewareResult.error) {
     return middlewareResult.error;
   }
@@ -67,7 +85,11 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     }
 
     await deleteTask(taskId);
-    return jsonResponse({ message: 'Task deleted' }, 204, middlewareResult.headers);
+    return jsonResponse(
+      { message: 'Task deleted' },
+      204,
+      middlewareResult.headers
+    );
   } catch (error) {
     console.error('Error deleting task:', error);
     return errorResponse('Failed to delete task', 500);
