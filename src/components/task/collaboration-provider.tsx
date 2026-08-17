@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { createContext, useContext, useEffect, useState, useRef } from "react";
-import { wsClient } from "@/lib/ws";
-import type { TaskWithRelations } from "@/types";
+import { createContext, useContext, useEffect, useState, useRef } from 'react';
+import { wsClient } from '@/lib/ws';
+import type { TaskWithRelations } from '@/types';
 
 interface PresenceUser {
   userId: number;
@@ -21,7 +21,9 @@ interface CollaborationContextType {
   onTaskDelete: (taskId: number) => void;
 }
 
-const CollaborationContext = createContext<CollaborationContextType | null>(null);
+const CollaborationContext = createContext<CollaborationContextType | null>(
+  null
+);
 
 export function CollaborationProvider({
   children,
@@ -40,23 +42,23 @@ export function CollaborationProvider({
   const wsRef = useRef(wsClient);
 
   useEffect(() => {
-    const wsUrl = process.env["NEXT_PUBLIC_WS_URL"] || "ws://localhost:3001";
+    const wsUrl = process.env['NEXT_PUBLIC_WS_URL'] || 'ws://localhost:3001';
     wsRef.current.connect(wsUrl);
 
     // Task update handler - placeholder for future real-time collaboration
-    wsRef.current.subscribe("task_update", () => undefined);
+    wsRef.current.subscribe('task_update', () => undefined);
 
-    wsRef.current.subscribe("presence_change", (data) => {
+    wsRef.current.subscribe('presence_change', data => {
       const presenceData = data as PresenceUser;
-      setPresence((prev) => {
-        const filtered = prev.filter((p) => p.userId !== userId);
+      setPresence(prev => {
+        const filtered = prev.filter(p => p.userId !== userId);
         return [...filtered, presenceData];
       });
     });
 
     // Join presence
     wsRef.current.send({
-      type: "presence_change",
+      type: 'presence_change',
       userId,
       userName,
     });
@@ -69,9 +71,12 @@ export function CollaborationProvider({
     };
   }, [userId, userName]);
 
-  const onTaskUpdate = (taskId: number, updates: Partial<TaskWithRelations>) => {
+  const onTaskUpdate = (
+    taskId: number,
+    updates: Partial<TaskWithRelations>
+  ) => {
     wsRef.current.send({
-      type: "task_update",
+      type: 'task_update',
       taskId,
       data: updates,
     });
@@ -79,7 +84,7 @@ export function CollaborationProvider({
 
   const onTaskCreate = (task: TaskWithRelations) => {
     wsRef.current.send({
-      type: "task_created",
+      type: 'task_created',
       taskId: task.id,
       data: task,
     });
@@ -87,7 +92,7 @@ export function CollaborationProvider({
 
   const onTaskDelete = (taskId: number) => {
     wsRef.current.send({
-      type: "task_deleted",
+      type: 'task_deleted',
       taskId,
     });
   };
@@ -112,7 +117,9 @@ export function CollaborationProvider({
 export function useCollaboration() {
   const context = useContext(CollaborationContext);
   if (!context) {
-    throw new Error("useCollaboration must be used within CollaborationProvider");
+    throw new Error(
+      'useCollaboration must be used within CollaborationProvider'
+    );
   }
   return context;
 }
