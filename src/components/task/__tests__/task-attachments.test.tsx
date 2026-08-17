@@ -15,31 +15,87 @@ vi.mock('lucide-react', () => ({
 
 // Mock UI components
 vi.mock('@/components/ui/button', () => ({
-  Button: ({ children, onClick, variant }: { children: React.ReactNode; onClick?: () => void; variant?: string }) => (
-    <button onClick={onClick} data-testid={`button-${variant}`}>{children}</button>
+  Button: ({
+    children,
+    onClick,
+    variant,
+  }: {
+    children: React.ReactNode;
+    onClick?: () => void;
+    variant?: string;
+  }) => (
+    <button onClick={onClick} data-testid={`button-${variant}`}>
+      {children}
+    </button>
   ),
 }));
 
 vi.mock('@/components/ui/input', () => ({
-  Input: ({ type, onChange, disabled, id }: { type: string; onChange: (e: any) => void; disabled?: boolean; id?: string }) => (
-    <input type={type} onChange={onChange} disabled={disabled} id={id} data-testid="input-file" />
+  Input: ({
+    type,
+    onChange,
+    disabled,
+    id,
+  }: {
+    type: string;
+    onChange: (e: any) => void;
+    disabled?: boolean;
+    id?: string;
+  }) => (
+    <input
+      type={type}
+      onChange={onChange}
+      disabled={disabled}
+      id={id}
+      data-testid="input-file"
+    />
   ),
 }));
 
 vi.mock('@/components/ui/label', () => ({
-  Label: ({ children, htmlFor }: { children: React.ReactNode; htmlFor?: string }) => (
-    <label htmlFor={htmlFor}>{children}</label>
-  ),
+  Label: ({
+    children,
+    htmlFor,
+  }: {
+    children: React.ReactNode;
+    htmlFor?: string;
+  }) => <label htmlFor={htmlFor}>{children}</label>,
 }));
 
 vi.mock('@/components/ui/badge', () => ({
-  Badge: ({ children }: { children: React.ReactNode }) => <span data-testid="badge">{children}</span>,
+  Badge: ({ children }: { children: React.ReactNode }) => (
+    <span data-testid="badge">{children}</span>
+  ),
 }));
 
 const mockAttachments: TaskAttachment[] = [
-  { id: 1, task_id: 1, filename: 'document.pdf', file_size: 1024, mime_type: 'application/pdf', url: '/files/1', created_at: new Date().toISOString() },
-  { id: 2, task_id: 1, filename: 'image.png', file_size: 2048, mime_type: 'image/png', url: '/files/2', created_at: new Date().toISOString() },
-  { id: 3, task_id: 1, filename: 'archive.zip', file_size: 4096, mime_type: 'application/zip', url: '/files/3', created_at: new Date().toISOString() },
+  {
+    id: 1,
+    task_id: 1,
+    filename: 'document.pdf',
+    file_size: 1024,
+    mime_type: 'application/pdf',
+    url: '/files/1',
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: 2,
+    task_id: 1,
+    filename: 'image.png',
+    file_size: 2048,
+    mime_type: 'image/png',
+    url: '/files/2',
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: 3,
+    task_id: 1,
+    filename: 'archive.zip',
+    file_size: 4096,
+    mime_type: 'application/zip',
+    url: '/files/3',
+    created_at: new Date().toISOString(),
+  },
 ];
 
 const mockTask: TaskWithRelations = {
@@ -84,40 +140,75 @@ describe('TaskAttachments', () => {
   });
 
   it('should render upload area', () => {
-    render(<TaskAttachments task={mockTask} onAttachmentsChange={mockOnAttachmentsChange} />);
+    render(
+      <TaskAttachments
+        task={mockTask}
+        onAttachmentsChange={mockOnAttachmentsChange}
+      />
+    );
     expect(screen.getByText('Attachments')).toBeInTheDocument();
   });
 
   it('should show upload instruction for existing task', () => {
-    render(<TaskAttachments task={mockTask} onAttachmentsChange={mockOnAttachmentsChange} />);
+    render(
+      <TaskAttachments
+        task={mockTask}
+        onAttachmentsChange={mockOnAttachmentsChange}
+      />
+    );
     expect(screen.getByText(/Click to upload/)).toBeInTheDocument();
   });
 
   it('should show "Save task first" when no task id', () => {
-    render(<TaskAttachments task={undefined} onAttachmentsChange={mockOnAttachmentsChange} />);
+    render(
+      <TaskAttachments
+        task={undefined}
+        onAttachmentsChange={mockOnAttachmentsChange}
+      />
+    );
     expect(screen.getByText(/Save task first/)).toBeInTheDocument();
   });
 
   it('should display attached files count', () => {
-    render(<TaskAttachments task={mockTask} onAttachmentsChange={mockOnAttachmentsChange} />);
+    render(
+      <TaskAttachments
+        task={mockTask}
+        onAttachmentsChange={mockOnAttachmentsChange}
+      />
+    );
     expect(screen.getByText(/Attached Files/)).toBeInTheDocument();
   });
 
   it('should display file information', () => {
-    render(<TaskAttachments task={mockTask} onAttachmentsChange={mockOnAttachmentsChange} />);
+    render(
+      <TaskAttachments
+        task={mockTask}
+        onAttachmentsChange={mockOnAttachmentsChange}
+      />
+    );
     expect(screen.getByText('document.pdf')).toBeInTheDocument();
     expect(screen.getByText('image.png')).toBeInTheDocument();
   });
 
   it('should display file sizes', () => {
-    render(<TaskAttachments task={mockTask} onAttachmentsChange={mockOnAttachmentsChange} />);
+    render(
+      <TaskAttachments
+        task={mockTask}
+        onAttachmentsChange={mockOnAttachmentsChange}
+      />
+    );
     // Check for file sizes (in KB)
     const sizeElements = screen.getAllByText(/KB/);
     expect(sizeElements.length).toBeGreaterThan(0);
   });
 
   it('should show different icons for different file types', () => {
-    render(<TaskAttachments task={mockTask} onAttachmentsChange={mockOnAttachmentsChange} />);
+    render(
+      <TaskAttachments
+        task={mockTask}
+        onAttachmentsChange={mockOnAttachmentsChange}
+      />
+    );
     // Image attachment - should show image icon
     expect(screen.getByTestId('icon-image')).toBeInTheDocument();
     // PDF attachment - should show file text icon
@@ -127,25 +218,45 @@ describe('TaskAttachments', () => {
   });
 
   it('should render delete buttons for attachments', () => {
-    render(<TaskAttachments task={mockTask} onAttachmentsChange={mockOnAttachmentsChange} />);
+    render(
+      <TaskAttachments
+        task={mockTask}
+        onAttachmentsChange={mockOnAttachmentsChange}
+      />
+    );
     // Component renders with attachments
     expect(screen.getByText('document.pdf')).toBeInTheDocument();
   });
 
   it('should handle attachment deletion', async () => {
     // Test that the component handles delete action
-    render(<TaskAttachments task={mockTask} onAttachmentsChange={mockOnAttachmentsChange} />);
+    render(
+      <TaskAttachments
+        task={mockTask}
+        onAttachmentsChange={mockOnAttachmentsChange}
+      />
+    );
     // Component is rendered with delete functionality available
     expect(screen.getByText('Attached Files (3)')).toBeInTheDocument();
   });
 
   it('should handle empty attachments array', () => {
-    render(<TaskAttachments task={{ ...mockTask, attachments: [] }} onAttachmentsChange={mockOnAttachmentsChange} />);
+    render(
+      <TaskAttachments
+        task={{ ...mockTask, attachments: [] }}
+        onAttachmentsChange={mockOnAttachmentsChange}
+      />
+    );
     expect(screen.getByText('Attachments')).toBeInTheDocument();
   });
 
   it('should handle undefined attachments', () => {
-    render(<TaskAttachments task={{ ...mockTask, attachments: undefined } as any} onAttachmentsChange={mockOnAttachmentsChange} />);
+    render(
+      <TaskAttachments
+        task={{ ...mockTask, attachments: undefined } as any}
+        onAttachmentsChange={mockOnAttachmentsChange}
+      />
+    );
     expect(screen.getByText('Attachments')).toBeInTheDocument();
   });
 });
@@ -165,22 +276,26 @@ describe('TaskAttachments - Upload Flow Tests', () => {
   it('should handle successful file upload', async () => {
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({
-        id: 4,
-        task_id: 1,
-        filename: 'uploaded.pdf',
-        file_size: 2048,
-        mime_type: 'application/pdf',
-        url: '/files/4',
-        created_at: new Date().toISOString(),
-      }),
+      json: () =>
+        Promise.resolve({
+          id: 4,
+          task_id: 1,
+          filename: 'uploaded.pdf',
+          file_size: 2048,
+          mime_type: 'application/pdf',
+          url: '/files/4',
+          created_at: new Date().toISOString(),
+        }),
     } as Response);
 
     // Create a wrapper with mocked file input that handles file change
     const TestWrapper = () => {
       return (
         <div>
-          <TaskAttachments task={mockTask} onAttachmentsChange={mockOnAttachmentsChange} />
+          <TaskAttachments
+            task={mockTask}
+            onAttachmentsChange={mockOnAttachmentsChange}
+          />
         </div>
       );
     };
@@ -189,7 +304,9 @@ describe('TaskAttachments - Upload Flow Tests', () => {
 
     // Get the mocked file input and simulate file selection
     const fileInput = screen.getByTestId('input-file');
-    const file = new File(['content'], 'uploaded.pdf', { type: 'application/pdf' });
+    const file = new File(['content'], 'uploaded.pdf', {
+      type: 'application/pdf',
+    });
 
     // Simulate files property change
     fireEvent.change(fileInput, { target: { files: [file] } });
@@ -206,7 +323,12 @@ describe('TaskAttachments - Upload Flow Tests', () => {
       status: 500,
     } as Response);
 
-    render(<TaskAttachments task={mockTask} onAttachmentsChange={mockOnAttachmentsChange} />);
+    render(
+      <TaskAttachments
+        task={mockTask}
+        onAttachmentsChange={mockOnAttachmentsChange}
+      />
+    );
 
     const fileInput = screen.getByTestId('input-file');
     const file = new File(['content'], 'fail.pdf', { type: 'application/pdf' });
@@ -226,7 +348,12 @@ describe('TaskAttachments - Upload Flow Tests', () => {
     vi.mocked(global.fetch).mockRejectedValue(new Error('Network error'));
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(vi.fn());
 
-    render(<TaskAttachments task={mockTask} onAttachmentsChange={mockOnAttachmentsChange} />);
+    render(
+      <TaskAttachments
+        task={mockTask}
+        onAttachmentsChange={mockOnAttachmentsChange}
+      />
+    );
 
     const fileInput = screen.getByTestId('input-file');
     const file = new File(['content'], 'test.pdf', { type: 'application/pdf' });
@@ -245,16 +372,23 @@ describe('TaskAttachments - Upload Flow Tests', () => {
 
   it('should show uploading state during upload', async () => {
     let resolveUpload!: (value: any) => void;
-    const uploadPromise = new Promise((resolve) => {
+    const uploadPromise = new Promise(resolve => {
       resolveUpload = resolve;
     });
 
     vi.mocked(global.fetch).mockReturnValue(uploadPromise as any);
 
-    render(<TaskAttachments task={mockTask} onAttachmentsChange={mockOnAttachmentsChange} />);
+    render(
+      <TaskAttachments
+        task={mockTask}
+        onAttachmentsChange={mockOnAttachmentsChange}
+      />
+    );
 
     const fileInput = screen.getByTestId('input-file');
-    const file = new File(['content'], 'uploading.pdf', { type: 'application/pdf' });
+    const file = new File(['content'], 'uploading.pdf', {
+      type: 'application/pdf',
+    });
 
     fireEvent.change(fileInput, { target: { files: [file] } });
 
@@ -266,15 +400,16 @@ describe('TaskAttachments - Upload Flow Tests', () => {
     // Resolve the promise - resolveUpload is assigned due to closure capture
     resolveUpload({
       ok: true,
-      json: () => Promise.resolve({
-        id: 5,
-        task_id: 1,
-        filename: 'uploading.pdf',
-        file_size: 1024,
-        mime_type: 'application/pdf',
-        url: '/files/5',
-        created_at: new Date().toISOString(),
-      }),
+      json: () =>
+        Promise.resolve({
+          id: 5,
+          task_id: 1,
+          filename: 'uploading.pdf',
+          file_size: 1024,
+          mime_type: 'application/pdf',
+          url: '/files/5',
+          created_at: new Date().toISOString(),
+        }),
     });
 
     await waitFor(() => {
@@ -283,7 +418,12 @@ describe('TaskAttachments - Upload Flow Tests', () => {
   });
 
   it('should disable upload when no task ID', () => {
-    render(<TaskAttachments task={undefined} onAttachmentsChange={mockOnAttachmentsChange} />);
+    render(
+      <TaskAttachments
+        task={undefined}
+        onAttachmentsChange={mockOnAttachmentsChange}
+      />
+    );
 
     const fileInput = screen.getByTestId('input-file');
     expect(fileInput).toBeDisabled();
@@ -307,7 +447,12 @@ describe('TaskAttachments - Delete Flow Tests', () => {
       ok: true,
     } as Response);
 
-    render(<TaskAttachments task={mockTask} onAttachmentsChange={mockOnAttachmentsChange} />);
+    render(
+      <TaskAttachments
+        task={mockTask}
+        onAttachmentsChange={mockOnAttachmentsChange}
+      />
+    );
 
     // Find delete buttons by their icon (trash icon is rendered inside button)
     const trashIcons = screen.getAllByTestId('icon-trash');
@@ -331,7 +476,12 @@ describe('TaskAttachments - Delete Flow Tests', () => {
       status: 500,
     } as Response);
 
-    render(<TaskAttachments task={mockTask} onAttachmentsChange={mockOnAttachmentsChange} />);
+    render(
+      <TaskAttachments
+        task={mockTask}
+        onAttachmentsChange={mockOnAttachmentsChange}
+      />
+    );
 
     const trashIcons = screen.getAllByTestId('icon-trash');
     const deleteButton = trashIcons[0].closest('button');
@@ -352,7 +502,12 @@ describe('TaskAttachments - Delete Flow Tests', () => {
       ok: true,
     } as Response);
 
-    render(<TaskAttachments task={mockTask} onAttachmentsChange={mockOnAttachmentsChange} />);
+    render(
+      <TaskAttachments
+        task={mockTask}
+        onAttachmentsChange={mockOnAttachmentsChange}
+      />
+    );
 
     const trashIcons = screen.getAllByTestId('icon-trash');
     const deleteButton = trashIcons[0].closest('button');
@@ -374,7 +529,12 @@ describe('TaskAttachments - Delete Flow Tests', () => {
     vi.mocked(global.fetch).mockRejectedValue(new Error('Network error'));
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(vi.fn());
 
-    render(<TaskAttachments task={mockTask} onAttachmentsChange={mockOnAttachmentsChange} />);
+    render(
+      <TaskAttachments
+        task={mockTask}
+        onAttachmentsChange={mockOnAttachmentsChange}
+      />
+    );
 
     const trashIcons = screen.getAllByTestId('icon-trash');
     const deleteButton = trashIcons[0].closest('button');
@@ -397,32 +557,83 @@ describe('TaskAttachments - File Type Icons', () => {
     vi.clearAllMocks();
   });
 
-  const testCases: [string, string, string | undefined, string | undefined, string | undefined][] = [
-    ['should show paperclip icon for unknown type', 'unknown.xyz', 'application/pdf', undefined, undefined],
-    ['should show file text icon for text/plain', 'document.txt', 'text/plain', undefined, 'icon-file-text'],
-    ['should show file text icon for CSV', 'data.csv', 'text/csv', undefined, 'icon-file-text'],
-    ['should show file text icon for JSON', 'data.json', 'application/json', undefined, 'icon-file-text'],
-    ['should show paperclip icon for octet-stream', 'file.bin', 'application/octet-stream', 'icon-paperclip', undefined],
+  const testCases: [
+    string,
+    string,
+    string | undefined,
+    string | undefined,
+    string | undefined,
+  ][] = [
+    [
+      'should show paperclip icon for unknown type',
+      'unknown.xyz',
+      'application/pdf',
+      undefined,
+      undefined,
+    ],
+    [
+      'should show file text icon for text/plain',
+      'document.txt',
+      'text/plain',
+      undefined,
+      'icon-file-text',
+    ],
+    [
+      'should show file text icon for CSV',
+      'data.csv',
+      'text/csv',
+      undefined,
+      'icon-file-text',
+    ],
+    [
+      'should show file text icon for JSON',
+      'data.json',
+      'application/json',
+      undefined,
+      'icon-file-text',
+    ],
+    [
+      'should show paperclip icon for octet-stream',
+      'file.bin',
+      'application/octet-stream',
+      'icon-paperclip',
+      undefined,
+    ],
   ];
 
-  testCases.forEach(([testName, filename, mimeType, expectedIcon, _explicitIcon]) => {
-    it(testName, () => {
-      const taskWithFile = {
-        ...mockTask,
-        attachments: [
-          { id: 1, task_id: 1, filename, file_size: 100, mime_type: mimeType || 'application/octet-stream', url: '/files/1', created_at: new Date().toISOString() },
-        ],
-      };
+  testCases.forEach(
+    ([testName, filename, mimeType, expectedIcon, _explicitIcon]) => {
+      it(testName, () => {
+        const taskWithFile = {
+          ...mockTask,
+          attachments: [
+            {
+              id: 1,
+              task_id: 1,
+              filename,
+              file_size: 100,
+              mime_type: mimeType || 'application/octet-stream',
+              url: '/files/1',
+              created_at: new Date().toISOString(),
+            },
+          ],
+        };
 
-      render(<TaskAttachments task={taskWithFile} onAttachmentsChange={mockOnAttachmentsChange} />);
+        render(
+          <TaskAttachments
+            task={taskWithFile}
+            onAttachmentsChange={mockOnAttachmentsChange}
+          />
+        );
 
-      if (expectedIcon) {
-        expect(screen.getByTestId(expectedIcon)).toBeInTheDocument();
-      } else {
-        expect(screen.getByText(filename)).toBeInTheDocument();
-      }
-    });
-  });
+        if (expectedIcon) {
+          expect(screen.getByTestId(expectedIcon)).toBeInTheDocument();
+        } else {
+          expect(screen.getByText(filename)).toBeInTheDocument();
+        }
+      });
+    }
+  );
 });
 
 describe('TaskAttachments - File Size Display', () => {
@@ -432,11 +643,24 @@ describe('TaskAttachments - File Size Display', () => {
     const smallTask = {
       ...mockTask,
       attachments: [
-        { id: 1, task_id: 1, filename: 'tiny.txt', file_size: 100, mime_type: 'text/plain', url: '/files/1', created_at: new Date().toISOString() },
+        {
+          id: 1,
+          task_id: 1,
+          filename: 'tiny.txt',
+          file_size: 100,
+          mime_type: 'text/plain',
+          url: '/files/1',
+          created_at: new Date().toISOString(),
+        },
       ],
     };
 
-    render(<TaskAttachments task={smallTask} onAttachmentsChange={mockOnAttachmentsChange} />);
+    render(
+      <TaskAttachments
+        task={smallTask}
+        onAttachmentsChange={mockOnAttachmentsChange}
+      />
+    );
 
     expect(screen.getByText(/tiny\.txt/)).toBeInTheDocument();
   });
@@ -445,11 +669,24 @@ describe('TaskAttachments - File Size Display', () => {
     const kbTask = {
       ...mockTask,
       attachments: [
-        { id: 1, task_id: 1, filename: 'medium.pdf', file_size: 5120, mime_type: 'application/pdf', url: '/files/1', created_at: new Date().toISOString() },
+        {
+          id: 1,
+          task_id: 1,
+          filename: 'medium.pdf',
+          file_size: 5120,
+          mime_type: 'application/pdf',
+          url: '/files/1',
+          created_at: new Date().toISOString(),
+        },
       ],
     };
 
-    render(<TaskAttachments task={kbTask} onAttachmentsChange={mockOnAttachmentsChange} />);
+    render(
+      <TaskAttachments
+        task={kbTask}
+        onAttachmentsChange={mockOnAttachmentsChange}
+      />
+    );
 
     // 5120 bytes = 5.0 KB (to 1 decimal place)
     expect(screen.getByText(/5\.0 KB/)).toBeInTheDocument();
@@ -459,11 +696,24 @@ describe('TaskAttachments - File Size Display', () => {
     const largeTask = {
       ...mockTask,
       attachments: [
-        { id: 1, task_id: 1, filename: 'large.pdf', file_size: 1536000, mime_type: 'application/pdf', url: '/files/1', created_at: new Date().toISOString() },
+        {
+          id: 1,
+          task_id: 1,
+          filename: 'large.pdf',
+          file_size: 1536000,
+          mime_type: 'application/pdf',
+          url: '/files/1',
+          created_at: new Date().toISOString(),
+        },
       ],
     };
 
-    render(<TaskAttachments task={largeTask} onAttachmentsChange={mockOnAttachmentsChange} />);
+    render(
+      <TaskAttachments
+        task={largeTask}
+        onAttachmentsChange={mockOnAttachmentsChange}
+      />
+    );
 
     // 1536000 bytes = 1500 KB (to 1 decimal place)
     expect(screen.getByText(/1500\.0 KB/)).toBeInTheDocument();
@@ -474,7 +724,12 @@ describe('TaskAttachments - Multiple Attachments', () => {
   const mockOnAttachmentsChange = vi.fn();
 
   it('should display all attachments with correct count', () => {
-    render(<TaskAttachments task={mockTask} onAttachmentsChange={mockOnAttachmentsChange} />);
+    render(
+      <TaskAttachments
+        task={mockTask}
+        onAttachmentsChange={mockOnAttachmentsChange}
+      />
+    );
 
     expect(screen.getByText(/Attached Files \(3\)/)).toBeInTheDocument();
   });
@@ -495,7 +750,12 @@ describe('TaskAttachments - Multiple Attachments', () => {
       attachments: manyAttachments,
     };
 
-    render(<TaskAttachments task={largeTask} onAttachmentsChange={mockOnAttachmentsChange} />);
+    render(
+      <TaskAttachments
+        task={largeTask}
+        onAttachmentsChange={mockOnAttachmentsChange}
+      />
+    );
 
     expect(screen.getByText(/Attached Files \(10\)/)).toBeInTheDocument();
   });
