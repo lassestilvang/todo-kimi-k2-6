@@ -1,9 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
-import { WorkflowBuilder } from "@/components/task/workflow-builder";
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
+import { WorkflowBuilder } from '@/components/task/workflow-builder';
 
 // Mock sonner toast
-vi.mock("sonner", () => ({
+vi.mock('sonner', () => ({
   toast: {
     success: vi.fn(),
     error: vi.fn(),
@@ -14,7 +14,7 @@ vi.mock("sonner", () => ({
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
-describe("WorkflowBuilder Component", () => {
+describe('WorkflowBuilder Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockFetch.mockResolvedValue({
@@ -23,7 +23,7 @@ describe("WorkflowBuilder Component", () => {
     });
   });
 
-  it("should render the workflow builder title", async () => {
+  it('should render the workflow builder title', async () => {
     render(<WorkflowBuilder />);
 
     await waitFor(() => {
@@ -31,7 +31,7 @@ describe("WorkflowBuilder Component", () => {
     });
   });
 
-  it("should display no workflows message when empty", async () => {
+  it('should display no workflows message when empty', async () => {
     render(<WorkflowBuilder />);
 
     await waitFor(() => {
@@ -39,27 +39,27 @@ describe("WorkflowBuilder Component", () => {
     });
   });
 
-  it("should display new workflow button", async () => {
+  it('should display new workflow button', async () => {
     render(<WorkflowBuilder />);
 
     await waitFor(() => {
-      const newButton = screen.getByRole("button", { name: /new workflow/i });
+      const newButton = screen.getByRole('button', { name: /new workflow/i });
       expect(newButton).toBeInTheDocument();
     });
   });
 
-  it("should display trigger and action type definitions", () => {
+  it('should display trigger and action type definitions', () => {
     // Test that the trigger types are defined correctly
     const TRIGGER_TYPES = [
-      { value: "manual", label: "Manual Trigger" },
-      { value: "task_created", label: "Task Created" },
-      { value: "task_completed", label: "Task Completed" },
+      { value: 'manual', label: 'Manual Trigger' },
+      { value: 'task_created', label: 'Task Created' },
+      { value: 'task_completed', label: 'Task Completed' },
     ];
 
     const ACTION_TYPES = [
-      { value: "create_task", label: "Create Task" },
-      { value: "update_task", label: "Update Task" },
-      { value: "send_notification", label: "Send Notification" },
+      { value: 'create_task', label: 'Create Task' },
+      { value: 'update_task', label: 'Update Task' },
+      { value: 'send_notification', label: 'Send Notification' },
     ];
 
     // Verify types are defined
@@ -67,7 +67,7 @@ describe("WorkflowBuilder Component", () => {
     expect(ACTION_TYPES.length).toBeGreaterThan(0);
 
     // Verify labels contain expected words
-    expect(TRIGGER_TYPES[0].label).toContain("Manual");
-    expect(ACTION_TYPES[0].label).toContain("Create");
+    expect(TRIGGER_TYPES[0].label).toContain('Manual');
+    expect(ACTION_TYPES[0].label).toContain('Create');
   });
 });
