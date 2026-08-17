@@ -1,30 +1,56 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { X, UserPlus } from "lucide-react";
-import type { TaskWithRelations } from "@/types";
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { X, UserPlus } from 'lucide-react';
+import type { TaskWithRelations } from '@/types';
 
 interface TaskCollaborationProps {
   task?: TaskWithRelations;
-  onUpdate: (assignees: Array<{ user_id: number; user_email: string; user_name: string | null; permission: "view" | "edit" }>) => void;
+  onUpdate: (
+    assignees: Array<{
+      user_id: number;
+      user_email: string;
+      user_name: string | null;
+      permission: 'view' | 'edit';
+    }>
+  ) => void;
 }
 
 export function TaskCollaboration({ task, onUpdate }: TaskCollaborationProps) {
-  const [assignees, setAssignees] = useState<Array<{ user_id: number; user_email: string; user_name: string | null; permission: "view" | "edit" }>>(
-    task?.assignee ? [{
-      user_id: task.assignee.id,
-      user_email: task.assignee.email,
-      user_name: task.assignee.name,
-      permission: "edit"
-    }] : []
+  const [assignees, setAssignees] = useState<
+    Array<{
+      user_id: number;
+      user_email: string;
+      user_name: string | null;
+      permission: 'view' | 'edit';
+    }>
+  >(
+    task?.assignee
+      ? [
+          {
+            user_id: task.assignee.id,
+            user_email: task.assignee.email,
+            user_name: task.assignee.name,
+            permission: 'edit',
+          },
+        ]
+      : []
   );
-  const [newAssigneeEmail, setNewAssigneeEmail] = useState("");
-  const [newAssigneePermission, setNewAssigneePermission] = useState<"view" | "edit">("view");
+  const [newAssigneeEmail, setNewAssigneeEmail] = useState('');
+  const [newAssigneePermission, setNewAssigneePermission] = useState<
+    'view' | 'edit'
+  >('view');
 
   const handleAddAssignee = () => {
     if (!newAssigneeEmail.trim()) return;
@@ -34,11 +60,11 @@ export function TaskCollaboration({ task, onUpdate }: TaskCollaborationProps) {
       user_id: Math.floor(Math.random() * 10000),
       user_email: newAssigneeEmail,
       user_name: newAssigneeEmail.split('@')[0],
-      permission: newAssigneePermission
+      permission: newAssigneePermission,
     };
 
     setAssignees([...assignees, mockUser]);
-    setNewAssigneeEmail("");
+    setNewAssigneeEmail('');
     onUpdate([...assignees, mockUser]);
   };
 
@@ -53,7 +79,8 @@ export function TaskCollaboration({ task, onUpdate }: TaskCollaborationProps) {
       <div>
         <h3 className="font-medium mb-2">Task Assignment</h3>
         <p className="text-sm text-muted-foreground mb-3">
-          Assign this task to team members. They will receive notifications about this task.
+          Assign this task to team members. They will receive notifications
+          about this task.
         </p>
 
         <div className="space-y-3">
@@ -61,12 +88,14 @@ export function TaskCollaboration({ task, onUpdate }: TaskCollaborationProps) {
             <Input
               placeholder="Enter user email..."
               value={newAssigneeEmail}
-              onChange={(e) => setNewAssigneeEmail(e.target.value)}
+              onChange={e => setNewAssigneeEmail(e.target.value)}
               className="flex-1"
             />
             <Select
               value={newAssigneePermission}
-              onValueChange={(v) => setNewAssigneePermission(v as "view" | "edit")}
+              onValueChange={v =>
+                setNewAssigneePermission(v as 'view' | 'edit')
+              }
             >
               <SelectTrigger className="w-20">
                 <SelectValue />
@@ -89,7 +118,7 @@ export function TaskCollaboration({ task, onUpdate }: TaskCollaborationProps) {
           <div className="space-y-2">
             <Label>Current Assignees</Label>
             <div className="flex flex-wrap gap-2">
-              {assignees.map((assignee) => (
+              {assignees.map(assignee => (
                 <Badge
                   key={assignee.user_id}
                   variant="secondary"
@@ -110,7 +139,9 @@ export function TaskCollaboration({ task, onUpdate }: TaskCollaborationProps) {
                 </Badge>
               ))}
               {assignees.length === 0 && (
-                <p className="text-sm text-muted-foreground">No assignees yet</p>
+                <p className="text-sm text-muted-foreground">
+                  No assignees yet
+                </p>
               )}
             </div>
           </div>
@@ -120,7 +151,8 @@ export function TaskCollaboration({ task, onUpdate }: TaskCollaborationProps) {
       <div className="pt-2 border-t">
         <h3 className="font-medium mb-2">Share Link</h3>
         <p className="text-sm text-muted-foreground mb-3">
-          Generate a shareable link for this task. Anyone with the link can view it.
+          Generate a shareable link for this task. Anyone with the link can view
+          it.
         </p>
         <Button
           variant="outline"
