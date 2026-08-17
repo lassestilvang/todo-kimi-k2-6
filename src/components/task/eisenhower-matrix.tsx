@@ -1,42 +1,46 @@
-"use client";
+'use client';
 
-import { useMemo } from "react";
-import { TaskWithRelations } from "@/types";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { useMemo } from 'react';
+import { TaskWithRelations } from '@/types';
+import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
 
 interface EisenhowerMatrixProps {
   tasks: TaskWithRelations[];
   onTaskClick: (task: TaskWithRelations) => void;
-  onAddTask: (priority: "critical" | "high" | "medium" | "low") => void;
+  onAddTask: (priority: 'critical' | 'high' | 'medium' | 'low') => void;
 }
 
-export function EisenhowerMatrix({ tasks, onTaskClick, onAddTask }: EisenhowerMatrixProps) {
+export function EisenhowerMatrix({
+  tasks,
+  onTaskClick,
+  onAddTask,
+}: EisenhowerMatrixProps) {
   const quadrants = useMemo(() => {
     return [
       {
-        title: "Urgent & Important",
-        description: "Do it now",
-        color: "bg-red-100 dark:bg-red-900/20",
-        tasks: tasks.filter((t) => t.priority === "critical" && !t.completed),
+        title: 'Urgent & Important',
+        description: 'Do it now',
+        color: 'bg-red-100 dark:bg-red-900/20',
+        tasks: tasks.filter(t => t.priority === 'critical' && !t.completed),
       },
       {
-        title: "Not Urgent & Important",
-        description: "Schedule it",
-        color: "bg-green-100 dark:bg-green-900/20",
-        tasks: tasks.filter((t) => t.priority === "high" && !t.completed),
+        title: 'Not Urgent & Important',
+        description: 'Schedule it',
+        color: 'bg-green-100 dark:bg-green-900/20',
+        tasks: tasks.filter(t => t.priority === 'high' && !t.completed),
       },
       {
-        title: "Urgent & Not Important",
-        description: "Delegate it",
-        color: "bg-yellow-100 dark:bg-yellow-900/20",
-        tasks: tasks.filter((t) => t.priority === "medium" && !t.completed),
+        title: 'Urgent & Not Important',
+        description: 'Delegate it',
+        color: 'bg-yellow-100 dark:bg-yellow-900/20',
+        tasks: tasks.filter(t => t.priority === 'medium' && !t.completed),
       },
       {
-        title: "Not Urgent & Not Important",
-        description: "Eliminate it",
-        color: "bg-gray-100 dark:bg-gray-900/20",
-        tasks: tasks.filter((t) => t.priority === "low" && !t.completed),
+        title: 'Not Urgent & Not Important',
+        description: 'Eliminate it',
+        color: 'bg-gray-100 dark:bg-gray-900/20',
+        tasks: tasks.filter(t => t.priority === 'low' && !t.completed),
       },
     ];
   }, [tasks]);
@@ -52,21 +56,24 @@ export function EisenhowerMatrix({ tasks, onTaskClick, onAddTask }: EisenhowerMa
 
       <div className="grid grid-cols-2 gap-4">
         {quadrants.map((quadrant, index) => (
-          <div
-            key={index}
-            className={`rounded-lg p-3 ${quadrant.color}`}
-          >
+          <div key={index} className={`rounded-lg p-3 ${quadrant.color}`}>
             <div className="flex items-center justify-between mb-2">
               <h4 className="font-medium text-sm">{quadrant.title}</h4>
               <Button
                 variant="ghost"
                 size="sm"
                 className="h-6 w-6"
-                onClick={() => onAddTask(
-                  index === 0 ? "critical" :
-                  index === 1 ? "high" :
-                  index === 2 ? "medium" : "low"
-                )}
+                onClick={() =>
+                  onAddTask(
+                    index === 0
+                      ? 'critical'
+                      : index === 1
+                        ? 'high'
+                        : index === 2
+                          ? 'medium'
+                          : 'low'
+                  )
+                }
               >
                 <Plus className="h-3 w-3" />
               </Button>
@@ -81,7 +88,7 @@ export function EisenhowerMatrix({ tasks, onTaskClick, onAddTask }: EisenhowerMa
                   No tasks
                 </p>
               ) : (
-                quadrant.tasks.slice(0, 5).map((task) => (
+                quadrant.tasks.slice(0, 5).map(task => (
                   <div
                     key={task.id}
                     className="text-xs p-2 bg-background rounded cursor-pointer hover:opacity-80"
@@ -93,7 +100,9 @@ export function EisenhowerMatrix({ tasks, onTaskClick, onAddTask }: EisenhowerMa
                         {new Date(task.deadline) < new Date() ? (
                           <span className="text-red-500">Overdue</span>
                         ) : (
-                          <span>Due: {new Date(task.deadline).toLocaleDateString()}</span>
+                          <span>
+                            Due: {new Date(task.deadline).toLocaleDateString()}
+                          </span>
                         )}
                       </div>
                     )}
