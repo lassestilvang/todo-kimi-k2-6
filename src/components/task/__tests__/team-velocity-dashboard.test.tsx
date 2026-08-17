@@ -11,7 +11,9 @@ vi.mock('recharts', () => ({
   XAxis: () => null,
   YAxis: () => null,
   Tooltip: () => null,
-  ResponsiveContainer: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  ResponsiveContainer: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
   CartesianGrid: () => null,
   Legend: () => null,
   AreaChart: () => null,
@@ -80,11 +82,18 @@ describe('TeamVelocityDashboard', () => {
     });
 
     expect(screen.getByText('Team Velocity')).toBeInTheDocument();
-    expect(screen.getByText('Track team performance and predict future capacity')).toBeInTheDocument();
+    expect(
+      screen.getByText('Track team performance and predict future capacity')
+    ).toBeInTheDocument();
   });
 
   it('shows loading skeletons initially', async () => {
-    mockFetch.mockImplementation(() => new Promise(() => { void 0; }));
+    mockFetch.mockImplementation(
+      () =>
+        new Promise(() => {
+          void 0;
+        })
+    );
 
     render(<TeamVelocityDashboard />);
 
@@ -181,7 +190,9 @@ describe('TeamVelocityDashboard', () => {
     });
 
     await waitFor(() => {
-      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/api/team-velocity'));
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/team-velocity')
+      );
     });
   });
 
@@ -249,7 +260,9 @@ describe('TeamVelocityDashboard', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText('No sprint data available yet')).toBeInTheDocument();
+      expect(
+        screen.getByText('No sprint data available yet')
+      ).toBeInTheDocument();
     });
   });
 });
@@ -261,16 +274,18 @@ describe('TeamVelocityDashboard - Component States', () => {
 
   it('calculates team health correctly for high performance', async () => {
     const highPerformanceReport = {
-      sprints: Array(6).fill(null).map((_, i) => ({
-        id: i + 1,
-        name: `Sprint ${i + 1}`,
-        period_start: '2024-01-01',
-        period_end: '2024-01-14',
-        planned_points: 20,
-        completed_points: 18,
-        completion_rate: 90,
-        burn_rate: 3,
-      })),
+      sprints: Array(6)
+        .fill(null)
+        .map((_, i) => ({
+          id: i + 1,
+          name: `Sprint ${i + 1}`,
+          period_start: '2024-01-01',
+          period_end: '2024-01-14',
+          planned_points: 20,
+          completed_points: 18,
+          completion_rate: 90,
+          burn_rate: 3,
+        })),
       velocity: 18,
       predictedVelocity: 19,
       capacity: 40,
@@ -294,7 +309,15 @@ describe('TeamVelocityDashboard - Component States', () => {
   it('displays metrics card correctly', async () => {
     mockFetch.mockResolvedValue({
       ok: true,
-      json: async () => ({ report: { sprints: [], velocity: 0, predictedVelocity: 0, capacity: 0, burndown: [] } }),
+      json: async () => ({
+        report: {
+          sprints: [],
+          velocity: 0,
+          predictedVelocity: 0,
+          capacity: 0,
+          burndown: [],
+        },
+      }),
     });
 
     await act(async () => {
