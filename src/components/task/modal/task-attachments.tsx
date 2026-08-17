@@ -1,18 +1,28 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Paperclip, Trash2, Image, FileText, FileArchive, Plus } from "lucide-react";
-import type { TaskWithRelations, TaskAttachment } from "@/types";
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Paperclip,
+  Trash2,
+  Image,
+  FileText,
+  FileArchive,
+  Plus,
+} from 'lucide-react';
+import type { TaskWithRelations, TaskAttachment } from '@/types';
 
 interface TaskAttachmentsProps {
   task?: TaskWithRelations;
   onAttachmentsChange: (attachments: TaskAttachment[]) => void;
 }
 
-export function TaskAttachments({ task, onAttachmentsChange }: TaskAttachmentsProps) {
+export function TaskAttachments({
+  task,
+  onAttachmentsChange,
+}: TaskAttachmentsProps) {
   const [isUploading, setIsUploading] = useState(false);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -22,11 +32,11 @@ export function TaskAttachments({ task, onAttachmentsChange }: TaskAttachmentsPr
     setIsUploading(true);
     try {
       const formData = new FormData();
-      formData.append("file", file);
-      formData.append("taskId", String(task.id));
+      formData.append('file', file);
+      formData.append('taskId', String(task.id));
 
-      const response = await fetch("/api/attachments", {
-        method: "POST",
+      const response = await fetch('/api/attachments', {
+        method: 'POST',
         body: formData,
       });
 
@@ -34,36 +44,37 @@ export function TaskAttachments({ task, onAttachmentsChange }: TaskAttachmentsPr
         const attachment = await response.json();
         onAttachmentsChange([...(task.attachments || []), attachment]);
       } else {
-        throw new Error("Upload failed");
+        throw new Error('Upload failed');
       }
     } catch (error) {
-      console.error("Failed to upload:", error);
+      console.error('Failed to upload:', error);
     } finally {
       setIsUploading(false);
-      e.target.value = "";
+      e.target.value = '';
     }
   };
 
   const handleDelete = async (attachmentId: number) => {
     try {
       const response = await fetch(`/api/attachments?id=${attachmentId}`, {
-        method: "DELETE",
+        method: 'DELETE',
       });
 
       if (response.ok) {
         onAttachmentsChange(
-          (task?.attachments || []).filter((a) => a.id !== attachmentId)
+          (task?.attachments || []).filter(a => a.id !== attachmentId)
         );
       }
     } catch (error) {
-      console.error("Failed to delete:", error);
+      console.error('Failed to delete:', error);
     }
   };
 
   const getFileIcon = (mimeType: string) => {
-    if (mimeType.startsWith("image/")) return <Image className="h-4 w-4" />;
-    if (mimeType === "application/pdf") return <FileText className="h-4 w-4" />;
-    if (mimeType.includes("zip") || mimeType.includes("archive")) return <FileArchive className="h-4 w-4" />;
+    if (mimeType.startsWith('image/')) return <Image className="h-4 w-4" />;
+    if (mimeType === 'application/pdf') return <FileText className="h-4 w-4" />;
+    if (mimeType.includes('zip') || mimeType.includes('archive'))
+      return <FileArchive className="h-4 w-4" />;
     return <Paperclip className="h-4 w-4" />;
   };
 
@@ -85,7 +96,11 @@ export function TaskAttachments({ task, onAttachmentsChange }: TaskAttachmentsPr
           >
             <Plus className="h-6 w-6" />
             <span className="text-sm">
-              {task?.id ? (isUploading ? "Uploading..." : "Click to upload") : "Save task first"}
+              {task?.id
+                ? isUploading
+                  ? 'Uploading...'
+                  : 'Click to upload'
+                : 'Save task first'}
             </span>
           </Label>
         </div>
@@ -95,7 +110,7 @@ export function TaskAttachments({ task, onAttachmentsChange }: TaskAttachmentsPr
         <div className="space-y-2">
           <Label>Attached Files ({task.attachments.length})</Label>
           <div className="space-y-2 max-h-60 overflow-y-auto">
-            {task.attachments.map((att) => (
+            {task.attachments.map(att => (
               <div
                 key={att.id}
                 className="flex items-center justify-between p-2 bg-muted rounded"
