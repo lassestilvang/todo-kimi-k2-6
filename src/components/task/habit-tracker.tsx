@@ -1,13 +1,28 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useMemo, useCallback } from "react";
-import { Flame, Calendar, TrendingUp, Award, Target, ChevronLeft, ChevronRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
-import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval, isToday } from "date-fns";
-import type { Task, HabitStreak, HabitCompletion } from "@/types";
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import {
+  Flame,
+  Calendar,
+  TrendingUp,
+  Award,
+  Target,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+import {
+  format,
+  addDays,
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+  isToday,
+} from 'date-fns';
+import type { Task, HabitStreak, HabitCompletion } from '@/types';
 
 interface HabitTrackerProps {
   tasks: Task[];
@@ -20,20 +35,33 @@ interface HabitWithStreak extends Task {
 }
 
 // Get streak level for badge styling
-function getStreakLevel(streak: number): { level: string; color: string; nextThreshold: number } {
-  if (streak >= 100) return { level: "Legendary", color: "bg-yellow-500", nextThreshold: 150 };
-  if (streak >= 50) return { level: "Master", color: "bg-yellow-500", nextThreshold: 100 };
-  if (streak >= 30) return { level: "Expert", color: "bg-orange-500", nextThreshold: 50 };
-  if (streak >= 20) return { level: "Pro", color: "bg-red-500", nextThreshold: 30 };
-  if (streak >= 10) return { level: "Strong", color: "bg-pink-500", nextThreshold: 20 };
-  if (streak >= 5) return { level: "Building", color: "bg-purple-500", nextThreshold: 10 };
-  if (streak >= 1) return { level: "Starter", color: "bg-blue-500", nextThreshold: 5 };
-  return { level: "Beginner", color: "bg-gray-500", nextThreshold: 1 };
+function getStreakLevel(streak: number): {
+  level: string;
+  color: string;
+  nextThreshold: number;
+} {
+  if (streak >= 100)
+    return { level: 'Legendary', color: 'bg-yellow-500', nextThreshold: 150 };
+  if (streak >= 50)
+    return { level: 'Master', color: 'bg-yellow-500', nextThreshold: 100 };
+  if (streak >= 30)
+    return { level: 'Expert', color: 'bg-orange-500', nextThreshold: 50 };
+  if (streak >= 20)
+    return { level: 'Pro', color: 'bg-red-500', nextThreshold: 30 };
+  if (streak >= 10)
+    return { level: 'Strong', color: 'bg-pink-500', nextThreshold: 20 };
+  if (streak >= 5)
+    return { level: 'Building', color: 'bg-purple-500', nextThreshold: 10 };
+  if (streak >= 1)
+    return { level: 'Starter', color: 'bg-blue-500', nextThreshold: 5 };
+  return { level: 'Beginner', color: 'bg-gray-500', nextThreshold: 1 };
 }
 
 export function HabitTracker({ tasks, className }: HabitTrackerProps) {
   const [streaks, setStreaks] = useState<Record<number, HabitStreak>>({});
-  const [completions, setCompletions] = useState<Record<number, HabitCompletion[]>>({});
+  const [completions, setCompletions] = useState<
+    Record<number, HabitCompletion[]>
+  >({});
   const [isLoading, setIsLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
@@ -47,8 +75,8 @@ export function HabitTracker({ tasks, className }: HabitTrackerProps) {
     setIsLoading(true);
     try {
       const [streaksRes, completionsRes] = await Promise.all([
-        fetch("/api/habits"),
-        fetch("/api/habit-completions")
+        fetch('/api/habits'),
+        fetch('/api/habit-completions'),
       ]);
 
       if (streaksRes.ok) {
@@ -72,7 +100,7 @@ export function HabitTracker({ tasks, className }: HabitTrackerProps) {
         setCompletions(completionsMap);
       }
     } catch (error) {
-      console.error("Failed to fetch habit data:", error);
+      console.error('Failed to fetch habit data:', error);
     } finally {
       setIsLoading(false);
     }
@@ -96,12 +124,16 @@ export function HabitTracker({ tasks, className }: HabitTrackerProps) {
 
   // Summary statistics
   const summaryStats = useMemo(() => {
-    const totalStreakDays = Object.values(streaks).reduce((sum, s) => sum + s.streak_count, 0);
-    const longestStreak = Object.keys(streaks).length > 0
-      ? Math.max(...Object.values(streaks).map(s => s.streak_count))
-      : 0;
+    const totalStreakDays = Object.values(streaks).reduce(
+      (sum, s) => sum + s.streak_count,
+      0
+    );
+    const longestStreak =
+      Object.keys(streaks).length > 0
+        ? Math.max(...Object.values(streaks).map(s => s.streak_count))
+        : 0;
     const activeHabits = habitsWithStreak.length;
-    const today = format(new Date(), "yyyy-MM-dd");
+    const today = format(new Date(), 'yyyy-MM-dd');
     const completedToday = habitsWithStreak.filter(h =>
       h.completions.some(c => c.date === today)
     ).length;
@@ -109,21 +141,24 @@ export function HabitTracker({ tasks, className }: HabitTrackerProps) {
     return { totalStreakDays, longestStreak, activeHabits, completedToday };
   }, [streaks, habitsWithStreak]);
 
-  const handleToggleCompletion = useCallback(async (taskId: number, date: string) => {
-    try {
-      const res = await fetch("/api/habit-completions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ task_id: taskId, date }),
-      });
+  const handleToggleCompletion = useCallback(
+    async (taskId: number, date: string) => {
+      try {
+        const res = await fetch('/api/habit-completions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ task_id: taskId, date }),
+        });
 
-      if (res.ok) {
-        await fetchHabitData();
+        if (res.ok) {
+          await fetchHabitData();
+        }
+      } catch (error) {
+        console.error('Failed to toggle completion:', error);
       }
-    } catch (error) {
-      console.error("Failed to toggle completion:", error);
-    }
-  }, [fetchHabitData]);
+    },
+    [fetchHabitData]
+  );
 
   // Generate calendar days for current month view
   const calendarDays = useMemo(() => {
@@ -133,7 +168,7 @@ export function HabitTracker({ tasks, className }: HabitTrackerProps) {
   }, [currentMonth]);
 
   const renderHabitCalendar = (habit: HabitWithStreak) => {
-    const completionsMap = new Map(habit.completions.map((c) => [c.date, true]));
+    const completionsMap = new Map(habit.completions.map(c => [c.date, true]));
 
     return (
       <Card key={habit.id} className="mb-4">
@@ -144,7 +179,10 @@ export function HabitTracker({ tasks, className }: HabitTrackerProps) {
               {habit.streak && habit.streak.streak_count > 0 && (
                 <>
                   <Badge
-                    className={cn("text-white", getStreakLevel(habit.streak.streak_count).color)}
+                    className={cn(
+                      'text-white',
+                      getStreakLevel(habit.streak.streak_count).color
+                    )}
                   >
                     <Flame className="h-3 w-3 mr-1" />
                     {habit.streak.streak_count}
@@ -164,7 +202,7 @@ export function HabitTracker({ tasks, className }: HabitTrackerProps) {
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm font-medium">
-                  {format(currentMonth, "MMMM yyyy")}
+                  {format(currentMonth, 'MMMM yyyy')}
                 </span>
               </div>
               <div className="flex gap-1">
@@ -187,21 +225,25 @@ export function HabitTracker({ tasks, className }: HabitTrackerProps) {
 
             {/* Day labels */}
             <div className="grid grid-cols-7 gap-1 text-xs text-muted-foreground">
-              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(day => (
-                <div key={day} className="text-center py-1">{day}</div>
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                <div key={day} className="text-center py-1">
+                  {day}
+                </div>
               ))}
             </div>
 
             {/* Calendar grid */}
             <div className="grid grid-cols-7 gap-1">
               {/* Empty cells for days before month start */}
-              {calendarDays.length > 0 && calendarDays[0] && Array.from({ length: calendarDays[0].getDay() }).map((_, i) => (
-                <div key={`empty-${i}`} className="aspect-square" />
-              ))}
+              {calendarDays.length > 0 &&
+                calendarDays[0] &&
+                Array.from({ length: calendarDays[0].getDay() }).map((_, i) => (
+                  <div key={`empty-${i}`} className="aspect-square" />
+                ))}
 
               {/* Actual days */}
               {calendarDays.map(day => {
-                const dateStr = format(day, "yyyy-MM-dd");
+                const dateStr = format(day, 'yyyy-MM-dd');
                 const isCompleted = completionsMap.get(dateStr);
                 const isCurrentToday = isToday(day);
 
@@ -209,15 +251,15 @@ export function HabitTracker({ tasks, className }: HabitTrackerProps) {
                   <button
                     key={dateStr}
                     className={cn(
-                      "aspect-square rounded-md border flex items-center justify-center text-xs transition-colors relative group",
+                      'aspect-square rounded-md border flex items-center justify-center text-xs transition-colors relative group',
                       isCompleted
-                        ? "bg-green-500 text-white border-green-500"
+                        ? 'bg-green-500 text-white border-green-500'
                         : isCurrentToday
-                        ? "border-dashed border-muted-foreground"
-                        : "border-muted hover:bg-muted/50"
+                          ? 'border-dashed border-muted-foreground'
+                          : 'border-muted hover:bg-muted/50'
                     )}
                     onClick={() => handleToggleCompletion(habit.id, dateStr)}
-                    title={format(day, "MMM d, yyyy")}
+                    title={format(day, 'MMM d, yyyy')}
                   >
                     {day.getDate()}
                     {isCurrentToday && !isCompleted && (
@@ -235,7 +277,7 @@ export function HabitTracker({ tasks, className }: HabitTrackerProps) {
 
   if (isLoading) {
     return (
-      <Card className={cn("w-full", className)}>
+      <Card className={cn('w-full', className)}>
         <CardContent className="pt-6">
           <div className="animate-pulse space-y-3">
             <div className="h-4 bg-muted rounded w-3/4"></div>
@@ -249,11 +291,12 @@ export function HabitTracker({ tasks, className }: HabitTrackerProps) {
 
   if (habitsWithStreak.length === 0) {
     return (
-      <Card className={cn("w-full", className)}>
+      <Card className={cn('w-full', className)}>
         <CardContent className="pt-6 text-center">
           <Award className="h-8 w-8 mx-auto mb-2 opacity-30" />
           <p className="text-sm text-muted-foreground">
-            No recurring habits found. Start a recurring task to track your streak!
+            No recurring habits found. Start a recurring task to track your
+            streak!
           </p>
         </CardContent>
       </Card>
@@ -261,14 +304,16 @@ export function HabitTracker({ tasks, className }: HabitTrackerProps) {
   }
 
   return (
-    <div className={cn("space-y-4", className)}>
+    <div className={cn('space-y-4', className)}>
       {/* Summary Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center gap-2">
               <Flame className="h-4 w-4 text-orange-500" />
-              <span className="text-2xl font-bold">{summaryStats.totalStreakDays}</span>
+              <span className="text-2xl font-bold">
+                {summaryStats.totalStreakDays}
+              </span>
             </div>
             <p className="text-xs text-muted-foreground">Total Streak Days</p>
           </CardContent>
@@ -277,7 +322,9 @@ export function HabitTracker({ tasks, className }: HabitTrackerProps) {
           <CardContent className="pt-4">
             <div className="flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-green-500" />
-              <span className="text-2xl font-bold">{summaryStats.longestStreak}</span>
+              <span className="text-2xl font-bold">
+                {summaryStats.longestStreak}
+              </span>
             </div>
             <p className="text-xs text-muted-foreground">Longest Streak</p>
           </CardContent>
@@ -286,7 +333,9 @@ export function HabitTracker({ tasks, className }: HabitTrackerProps) {
           <CardContent className="pt-4">
             <div className="flex items-center gap-2">
               <Target className="h-4 w-4 text-blue-500" />
-              <span className="text-2xl font-bold">{summaryStats.activeHabits}</span>
+              <span className="text-2xl font-bold">
+                {summaryStats.activeHabits}
+              </span>
             </div>
             <p className="text-xs text-muted-foreground">Active Habits</p>
           </CardContent>
@@ -295,7 +344,9 @@ export function HabitTracker({ tasks, className }: HabitTrackerProps) {
           <CardContent className="pt-4">
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4 text-purple-500" />
-              <span className="text-2xl font-bold">{summaryStats.completedToday}</span>
+              <span className="text-2xl font-bold">
+                {summaryStats.completedToday}
+              </span>
             </div>
             <p className="text-xs text-muted-foreground">Done Today</p>
           </CardContent>
