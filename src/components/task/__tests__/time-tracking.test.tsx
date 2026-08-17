@@ -14,27 +14,65 @@ vi.mock('lucide-react', () => ({
 
 // Mock UI components
 vi.mock('@/components/ui/button', () => ({
-  Button: ({ children, onClick, variant, disabled }: { children: React.ReactNode; onClick?: () => void; variant?: string; disabled?: boolean }) => (
-    <button onClick={onClick} disabled={disabled} data-testid={`button-${variant || 'default'}`}>{children}</button>
+  Button: ({
+    children,
+    onClick,
+    variant,
+    disabled,
+  }: {
+    children: React.ReactNode;
+    onClick?: () => void;
+    variant?: string;
+    disabled?: boolean;
+  }) => (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      data-testid={`button-${variant || 'default'}`}
+    >
+      {children}
+    </button>
   ),
 }));
 
 vi.mock('@/components/ui/input', () => ({
-  Input: ({ value, onChange, type, placeholder }: { value: string | number; onChange: (e: any) => void; type: string; placeholder?: string }) => (
-    <input value={value} onChange={onChange} type={type} placeholder={placeholder} data-testid="input" />
+  Input: ({
+    value,
+    onChange,
+    type,
+    placeholder,
+  }: {
+    value: string | number;
+    onChange: (e: any) => void;
+    type: string;
+    placeholder?: string;
+  }) => (
+    <input
+      value={value}
+      onChange={onChange}
+      type={type}
+      placeholder={placeholder}
+      data-testid="input"
+    />
   ),
 }));
 
 vi.mock('@/components/ui/label', () => ({
-  Label: ({ children }: { children: React.ReactNode }) => <label data-testid="label">{children}</label>,
+  Label: ({ children }: { children: React.ReactNode }) => (
+    <label data-testid="label">{children}</label>
+  ),
 }));
 
 vi.mock('@/components/ui/popover', () => ({
   Popover: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="popover">{children}</div>
   ),
-  PopoverContent: ({ children }: { children: React.ReactNode }) => <div data-testid="popover-content">{children}</div>,
-  PopoverTrigger: ({ children }: { children: React.ReactNode }) => <div data-testid="popover-trigger">{children}</div>,
+  PopoverContent: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="popover-content">{children}</div>
+  ),
+  PopoverTrigger: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="popover-trigger">{children}</div>
+  ),
 }));
 
 vi.mock('@/lib/utils', () => ({
@@ -123,9 +161,7 @@ describe('TimeTracking', () => {
 
   it('should handle log time with zero elapsed', () => {
     const onLogTime = vi.fn();
-    render(
-      <TimeTracking {...defaultProps} onLogTime={onLogTime} />
-    );
+    render(<TimeTracking {...defaultProps} onLogTime={onLogTime} />);
 
     // Log Time button should be disabled when elapsed is 0
   });
@@ -155,14 +191,22 @@ describe('TimeTracking', () => {
   });
 
   it('should handle entries without duration', () => {
-    const entriesNoDuration = [{ ...mockTimeEntries[0], duration_seconds: null }];
+    const entriesNoDuration = [
+      { ...mockTimeEntries[0], duration_seconds: null },
+    ];
     render(<TimeTracking {...defaultProps} timeEntries={entriesNoDuration} />);
     expect(screen.getByText('Time Tracking')).toBeInTheDocument();
   });
 
   it('should call onDeleteEntry when delete is clicked', () => {
     const onDeleteEntry = vi.fn();
-    render(<TimeTracking {...defaultProps} timeEntries={mockTimeEntries} onDeleteEntry={onDeleteEntry} />);
+    render(
+      <TimeTracking
+        {...defaultProps}
+        timeEntries={mockTimeEntries}
+        onDeleteEntry={onDeleteEntry}
+      />
+    );
 
     // Find delete buttons and click them
     const deleteButtons = screen.getAllByText('×');
