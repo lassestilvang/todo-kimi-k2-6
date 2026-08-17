@@ -1,16 +1,22 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { DecisionEntry } from "@/types";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, Edit, Star, CheckCircle2, MoreVertical } from "lucide-react";
-import { toast } from "sonner";
+import { useState } from 'react';
+import { DecisionEntry } from '@/types';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Trash2, Edit, Star, CheckCircle2, MoreVertical } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface TaskDecisionTabProps {
   task: { id: number; name: string };
@@ -19,31 +25,35 @@ interface TaskDecisionTabProps {
 }
 
 const decisionTypes = [
-  { value: "priority", label: "Priority Decision" },
-  { value: "approach", label: "Approach Decision" },
-  { value: "tool", label: "Tool Selection" },
-  { value: "timeline", label: "Timeline Decision" },
-  { value: "allocation", label: "Resource Allocation" },
-  { value: "cancellation", label: "Cancellation Decision" },
+  { value: 'priority', label: 'Priority Decision' },
+  { value: 'approach', label: 'Approach Decision' },
+  { value: 'tool', label: 'Tool Selection' },
+  { value: 'timeline', label: 'Timeline Decision' },
+  { value: 'allocation', label: 'Resource Allocation' },
+  { value: 'cancellation', label: 'Cancellation Decision' },
 ];
 
-export function TaskDecisionTab({ task, decisions = [], onDecisionsChange }: TaskDecisionTabProps) {
+export function TaskDecisionTab({
+  task,
+  decisions = [],
+  onDecisionsChange,
+}: TaskDecisionTabProps) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [showOutcomeForm, setShowOutcomeForm] = useState<number | null>(null);
   const [newDecision, setNewDecision] = useState({
-    decision_type: "approach" as const,
-    question: "",
-    rationale: "",
-    options: [{ option_text: "", pros: "", cons: "" }],
+    decision_type: 'approach' as const,
+    question: '',
+    rationale: '',
+    options: [{ option_text: '', pros: '', cons: '' }],
   });
 
   const handleAddDecision = async () => {
     if (!newDecision.question.trim()) return;
 
     try {
-      const response = await fetch("/api/decisions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/decisions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           task_id: task.id,
           user_id: 1,
@@ -58,25 +68,28 @@ export function TaskDecisionTab({ task, decisions = [], onDecisionsChange }: Tas
         const createdDecision = await response.json();
         onDecisionsChange?.([...decisions, createdDecision]);
         setNewDecision({
-          decision_type: "approach",
-          question: "",
-          rationale: "",
-          options: [{ option_text: "", pros: "", cons: "" }],
+          decision_type: 'approach',
+          question: '',
+          rationale: '',
+          options: [{ option_text: '', pros: '', cons: '' }],
         });
         setShowAddForm(false);
-        toast.success("Decision recorded");
+        toast.success('Decision recorded');
       } else {
-        toast.error("Failed to record decision");
+        toast.error('Failed to record decision');
       }
     } catch (error) {
-      toast.error("Failed to record decision");
+      toast.error('Failed to record decision');
     }
   };
 
   const handleAddOption = () => {
     setNewDecision({
       ...newDecision,
-      options: [...newDecision.options, { option_text: "", pros: "", cons: "" }],
+      options: [
+        ...newDecision.options,
+        { option_text: '', pros: '', cons: '' },
+      ],
     });
   };
 
@@ -91,42 +104,51 @@ export function TaskDecisionTab({ task, decisions = [], onDecisionsChange }: Tas
 
   const handleUpdateOption = (index: number, field: string, value: string) => {
     const newOptions = [...newDecision.options];
-    newOptions[index][field as keyof typeof newOptions[0]] = value;
+    newOptions[index][field as keyof (typeof newOptions)[0]] = value;
     setNewDecision({ ...newDecision, options: newOptions });
   };
 
   const handleDeleteDecision = async (decisionId: number) => {
     try {
-      await fetch(`/api/decisions/${decisionId}`, { method: "DELETE" });
+      await fetch(`/api/decisions/${decisionId}`, { method: 'DELETE' });
       onDecisionsChange?.(decisions.filter(d => d.id !== decisionId));
-      toast.success("Decision removed");
+      toast.success('Decision removed');
     } catch (error) {
-      toast.error("Failed to remove decision");
+      toast.error('Failed to remove decision');
     }
   };
 
-  const handleOutcomeSave = async (decisionId: number, rating: number, outcome: string, notes?: string) => {
+  const handleOutcomeSave = async (
+    decisionId: number,
+    rating: number,
+    outcome: string,
+    notes?: string
+  ) => {
     try {
       const response = await fetch(`/api/decisions/${decisionId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ outcome_rating: rating, outcome, outcome_notes: notes }),
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          outcome_rating: rating,
+          outcome,
+          outcome_notes: notes,
+        }),
       });
 
       if (response.ok) {
-        toast.success("Outcome recorded");
+        toast.success('Outcome recorded');
         onDecisionsChange?.([]);
         setShowOutcomeForm(null);
       }
     } catch (error) {
-      toast.error("Failed to save outcome");
+      toast.error('Failed to save outcome');
     }
   };
 
   const getOutcomeColor = (rating: number) => {
-    if (rating > 0) return "text-green-600";
-    if (rating < 0) return "text-red-600";
-    return "text-amber-500";
+    if (rating > 0) return 'text-green-600';
+    if (rating < 0) return 'text-red-600';
+    return 'text-amber-500';
   };
 
   return (
@@ -135,10 +157,7 @@ export function TaskDecisionTab({ task, decisions = [], onDecisionsChange }: Tas
         <h3 className="font-medium flex items-center gap-2">
           Decision Journal
         </h3>
-        <Button
-          size="sm"
-          onClick={() => setShowAddForm(true)}
-        >
+        <Button size="sm" onClick={() => setShowAddForm(true)}>
           Add Decision
         </Button>
       </div>
@@ -150,13 +169,18 @@ export function TaskDecisionTab({ task, decisions = [], onDecisionsChange }: Tas
             <div className="space-y-3">
               <Select
                 value={newDecision.decision_type}
-                onValueChange={(value) => setNewDecision({ ...newDecision, decision_type: value as any })}
+                onValueChange={value =>
+                  setNewDecision({
+                    ...newDecision,
+                    decision_type: value as any,
+                  })
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {decisionTypes.map((type) => (
+                  {decisionTypes.map(type => (
                     <SelectItem key={type.value} value={type.value}>
                       {type.label}
                     </SelectItem>
@@ -169,7 +193,9 @@ export function TaskDecisionTab({ task, decisions = [], onDecisionsChange }: Tas
                 <Input
                   placeholder="What decision are you making?"
                   value={newDecision.question}
-                  onChange={(e) => setNewDecision({ ...newDecision, question: e.target.value })}
+                  onChange={e =>
+                    setNewDecision({ ...newDecision, question: e.target.value })
+                  }
                 />
               </div>
 
@@ -178,7 +204,12 @@ export function TaskDecisionTab({ task, decisions = [], onDecisionsChange }: Tas
                 <Textarea
                   placeholder="Why are you making this decision?"
                   value={newDecision.rationale}
-                  onChange={(e) => setNewDecision({ ...newDecision, rationale: e.target.value })}
+                  onChange={e =>
+                    setNewDecision({
+                      ...newDecision,
+                      rationale: e.target.value,
+                    })
+                  }
                   rows={2}
                 />
               </div>
@@ -191,17 +222,23 @@ export function TaskDecisionTab({ task, decisions = [], onDecisionsChange }: Tas
                       <Input
                         placeholder={`Option ${i + 1}`}
                         value={opt.option_text}
-                        onChange={(e) => handleUpdateOption(i, "option_text", e.target.value)}
+                        onChange={e =>
+                          handleUpdateOption(i, 'option_text', e.target.value)
+                        }
                       />
                       <Input
                         placeholder="Pros (comma separated)"
                         value={opt.pros}
-                        onChange={(e) => handleUpdateOption(i, "pros", e.target.value)}
+                        onChange={e =>
+                          handleUpdateOption(i, 'pros', e.target.value)
+                        }
                       />
                       <Input
                         placeholder="Cons (comma separated)"
                         value={opt.cons}
-                        onChange={(e) => handleUpdateOption(i, "cons", e.target.value)}
+                        onChange={e =>
+                          handleUpdateOption(i, 'cons', e.target.value)
+                        }
                       />
                       {newDecision.options.length > 1 && (
                         <Button
@@ -234,13 +271,15 @@ export function TaskDecisionTab({ task, decisions = [], onDecisionsChange }: Tas
       {/* Existing Decisions */}
       {decisions.length > 0 ? (
         <div className="space-y-3">
-          {decisions.map((decision) => (
+          {decisions.map(decision => (
             <Card key={decision.id}>
               <CardContent className="pt-4">
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="text-xs">
-                      {decisionTypes.find(t => t.value === decision.decision_type)?.label || decision.decision_type}
+                      {decisionTypes.find(
+                        t => t.value === decision.decision_type
+                      )?.label || decision.decision_type}
                     </Badge>
                     <span className="text-xs text-muted-foreground">
                       {new Date(decision.created_at).toLocaleDateString()}
@@ -267,13 +306,27 @@ export function TaskDecisionTab({ task, decisions = [], onDecisionsChange }: Tas
 
                   {/* Outcome */}
                   {decision.outcome_rating !== null && (
-                    <div className={`mt-2 p-2 rounded text-xs ${
-                      decision.outcome_rating > 0 ? "bg-green-50" :
-                      decision.outcome_rating < 0 ? "bg-red-50" : "bg-amber-50"
-                    }`}>
+                    <div
+                      className={`mt-2 p-2 rounded text-xs ${
+                        decision.outcome_rating > 0
+                          ? 'bg-green-50'
+                          : decision.outcome_rating < 0
+                            ? 'bg-red-50'
+                            : 'bg-amber-50'
+                      }`}
+                    >
                       <div className="flex items-center gap-1">
-                        <Star className={`h-3 w-3 ${getOutcomeColor(decision.outcome_rating)}`} />
-                        <span>Outcome: {decision.outcome_rating > 0 ? "Positive" : decision.outcome_rating < 0 ? "Negative" : "Neutral"}</span>
+                        <Star
+                          className={`h-3 w-3 ${getOutcomeColor(decision.outcome_rating)}`}
+                        />
+                        <span>
+                          Outcome:{' '}
+                          {decision.outcome_rating > 0
+                            ? 'Positive'
+                            : decision.outcome_rating < 0
+                              ? 'Negative'
+                              : 'Neutral'}
+                        </span>
                       </div>
                       {decision.outcome && (
                         <p className="mt-1">{decision.outcome}</p>
@@ -320,7 +373,8 @@ export function TaskDecisionTab({ task, decisions = [], onDecisionsChange }: Tas
         </div>
       ) : (
         <p className="text-sm text-muted-foreground text-center py-4">
-          No decisions recorded yet. Click "Add Decision" to start tracking your decision-making process.
+          No decisions recorded yet. Click "Add Decision" to start tracking your
+          decision-making process.
         </p>
       )}
     </div>
