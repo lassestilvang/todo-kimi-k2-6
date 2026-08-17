@@ -6,33 +6,74 @@ import type { TimeEntry } from '@/types';
 
 // Mock lucide-react icons
 vi.mock('lucide-react', () => ({
-  Clock: () => React.createElement('span', { 'data-testid': 'icon-clock' }, 'Clock'),
-  Play: () => React.createElement('span', { 'data-testid': 'icon-play' }, 'Play'),
-  Pause: () => React.createElement('span', { 'data-testid': 'icon-pause' }, 'Pause'),
-  StopCircle: () => React.createElement('span', { 'data-testid': 'icon-stop' }, 'Stop'),
-  Plus: () => React.createElement('span', { 'data-testid': 'icon-plus' }, 'Plus'),
+  Clock: () =>
+    React.createElement('span', { 'data-testid': 'icon-clock' }, 'Clock'),
+  Play: () =>
+    React.createElement('span', { 'data-testid': 'icon-play' }, 'Play'),
+  Pause: () =>
+    React.createElement('span', { 'data-testid': 'icon-pause' }, 'Pause'),
+  StopCircle: () =>
+    React.createElement('span', { 'data-testid': 'icon-stop' }, 'Stop'),
+  Plus: () =>
+    React.createElement('span', { 'data-testid': 'icon-plus' }, 'Plus'),
 }));
 
 // Mock UI components
 vi.mock('@/components/ui/button', () => ({
   Button: ({ children, onClick, variant, disabled }: any) =>
-    React.createElement('button', { onClick, disabled, 'data-testid': `button-${variant || 'default'}`, className: 'btn' }, children),
+    React.createElement(
+      'button',
+      {
+        onClick,
+        disabled,
+        'data-testid': `button-${variant || 'default'}`,
+        className: 'btn',
+      },
+      children
+    ),
 }));
 
 vi.mock('@/components/ui/input', () => ({
   Input: ({ value, onChange, type, placeholder }: any) =>
-    React.createElement('input', { value, onChange, type, placeholder, 'data-testid': 'input', className: 'input' }),
+    React.createElement('input', {
+      value,
+      onChange,
+      type,
+      placeholder,
+      'data-testid': 'input',
+      className: 'input',
+    }),
 }));
 
 vi.mock('@/components/ui/label', () => ({
-  Label: ({ children }: any) => React.createElement('label', { 'data-testid': 'label', className: 'label' }, children),
+  Label: ({ children }: any) =>
+    React.createElement(
+      'label',
+      { 'data-testid': 'label', className: 'label' },
+      children
+    ),
 }));
 
 // Mock Popover component
 vi.mock('@/components/ui/popover', () => ({
-  Popover: ({ children }: any) => React.createElement('div', { 'data-testid': 'popover', className: 'popover' }, children),
-  PopoverContent: ({ children }: any) => React.createElement('div', { 'data-testid': 'popover-content', className: 'popover-content' }, children),
-  PopoverTrigger: ({ children }: any) => React.createElement('div', { 'data-testid': 'popover-trigger', className: 'popover-trigger' }, children),
+  Popover: ({ children }: any) =>
+    React.createElement(
+      'div',
+      { 'data-testid': 'popover', className: 'popover' },
+      children
+    ),
+  PopoverContent: ({ children }: any) =>
+    React.createElement(
+      'div',
+      { 'data-testid': 'popover-content', className: 'popover-content' },
+      children
+    ),
+  PopoverTrigger: ({ children }: any) =>
+    React.createElement(
+      'div',
+      { 'data-testid': 'popover-trigger', className: 'popover-trigger' },
+      children
+    ),
 }));
 
 vi.mock('@/lib/utils', () => ({
@@ -156,7 +197,10 @@ describe('TimeTracking - Comprehensive Coverage', () => {
   });
 
   it('should calculate total time from entries', () => {
-    const totalTime = mockTimeEntries.reduce((sum, entry) => sum + (entry.duration_seconds || 0), 0);
+    const totalTime = mockTimeEntries.reduce(
+      (sum, entry) => sum + (entry.duration_seconds || 0),
+      0
+    );
     expect(totalTime).toBe(5400);
   });
 
@@ -164,7 +208,10 @@ describe('TimeTracking - Comprehensive Coverage', () => {
     const entriesWithUndefined: TimeEntry[] = [
       { ...mockTimeEntries[0], duration_seconds: null, end_time: null },
     ];
-    const totalTime = entriesWithUndefined.reduce((sum, entry) => sum + (entry.duration_seconds || 0), 0);
+    const totalTime = entriesWithUndefined.reduce(
+      (sum, entry) => sum + (entry.duration_seconds || 0),
+      0
+    );
     expect(totalTime).toBe(0);
   });
 
@@ -172,7 +219,10 @@ describe('TimeTracking - Comprehensive Coverage', () => {
     const entriesWithZero: TimeEntry[] = [
       { ...mockTimeEntries[0], duration_seconds: 0 },
     ];
-    const totalTime = entriesWithZero.reduce((sum, entry) => sum + (entry.duration_seconds || 0), 0);
+    const totalTime = entriesWithZero.reduce(
+      (sum, entry) => sum + (entry.duration_seconds || 0),
+      0
+    );
     expect(totalTime).toBe(0);
   });
 
