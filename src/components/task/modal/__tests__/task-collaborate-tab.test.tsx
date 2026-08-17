@@ -5,33 +5,57 @@ import type { TaskWithRelations } from '@/types';
 
 // Mock UI components
 vi.mock('@/components/ui/button', () => ({
-  Button: ({ children, onClick, variant }: { children: React.ReactNode; onClick?: () => void; variant?: string }) => (
-    <button onClick={onClick} data-testid={`button-${variant || 'default'}`}>{children}</button>
+  Button: ({
+    children,
+    onClick,
+    variant,
+  }: {
+    children: React.ReactNode;
+    onClick?: () => void;
+    variant?: string;
+  }) => (
+    <button onClick={onClick} data-testid={`button-${variant || 'default'}`}>
+      {children}
+    </button>
   ),
 }));
 
 vi.mock('@/components/ui/label', () => ({
-  Label: ({ children }: { children: React.ReactNode }) => <label>{children}</label>,
+  Label: ({ children }: { children: React.ReactNode }) => (
+    <label>{children}</label>
+  ),
 }));
 
 vi.mock('@/components/ui/select', () => ({
   Select: ({ value, onValueChange, children }: any) => (
     <div data-testid="select">{children}</div>
   ),
-  SelectContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  SelectItem: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  SelectTrigger: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  SelectContent: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+  SelectItem: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+  SelectTrigger: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
   SelectValue: () => <span>View</span>,
 }));
 
 vi.mock('@/components/ui/input', () => ({
-  Input: ({ placeholder }: { placeholder: string }) => <input placeholder={placeholder} data-testid="input" />,
+  Input: ({ placeholder }: { placeholder: string }) => (
+    <input placeholder={placeholder} data-testid="input" />
+  ),
 }));
 
 vi.mock('@/components/ui/badge', () => ({
-  Badge: ({ children, variant }: { children: React.ReactNode; variant?: string }) => (
-    <span data-testid={`badge-${variant || 'default'}`}>{children}</span>
-  ),
+  Badge: ({
+    children,
+    variant,
+  }: {
+    children: React.ReactNode;
+    variant?: string;
+  }) => <span data-testid={`badge-${variant || 'default'}`}>{children}</span>,
 }));
 
 vi.mock('sonner', () => ({
@@ -110,12 +134,16 @@ describe('TaskCollaborateTab', () => {
 
   it('should render share description', () => {
     render(<TaskCollaborateTab task={mockTask} />);
-    expect(screen.getByText(/Share this task with team members/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Share this task with team members/)
+    ).toBeInTheDocument();
   });
 
   it('should render user email input placeholder', () => {
     render(<TaskCollaborateTab task={mockTask} />);
-    expect(screen.getByPlaceholderText('Enter user email...')).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText('Enter user email...')
+    ).toBeInTheDocument();
   });
 
   it('should render share permission dropdown', () => {
@@ -149,7 +177,9 @@ describe('TaskCollaborateTab', () => {
 
   it('should render share link description', () => {
     render(<TaskCollaborateTab task={mockTask} />);
-    expect(screen.getByText(/Anyone with this link can view the task/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Anyone with this link can view the task/)
+    ).toBeInTheDocument();
   });
 
   it('should display assignee when task has assignee', () => {
