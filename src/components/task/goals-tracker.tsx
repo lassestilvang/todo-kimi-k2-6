@@ -1,16 +1,22 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Target, Award, Plus, Minus, RefreshCw } from "lucide-react";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { cn } from "@/lib/utils";
-import type { Goal } from "@/types";
+import { useState } from 'react';
+import { Target, Award, Plus, Minus, RefreshCw } from 'lucide-react';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { cn } from '@/lib/utils';
+import type { Goal } from '@/types';
 
 interface GoalsTrackerProps {
   goals: Goal[];
@@ -24,49 +30,64 @@ interface CreateGoalInput {
   description?: string;
   target_count: number;
   target_unit: string;
-  period: "daily" | "weekly" | "monthly" | "yearly";
+  period: 'daily' | 'weekly' | 'monthly' | 'yearly';
 }
 
-export function GoalsTracker({ goals, onAddGoal, onUpdateProgress, onResetGoal }: GoalsTrackerProps) {
+export function GoalsTracker({
+  goals,
+  onAddGoal,
+  onUpdateProgress,
+  onResetGoal,
+}: GoalsTrackerProps) {
   const [isCreating, setIsCreating] = useState(false);
   const [newGoal, setNewGoal] = useState<CreateGoalInput>({
-    name: "",
-    description: "",
+    name: '',
+    description: '',
     target_count: 10,
-    target_unit: "tasks",
-    period: "daily",
+    target_unit: 'tasks',
+    period: 'daily',
   });
 
   const handleCreateGoal = () => {
     if (!newGoal.name.trim()) return;
     onAddGoal({ ...newGoal, user_id: 1 }); // In real app, get from session
     setNewGoal({
-      name: "",
-      description: "",
+      name: '',
+      description: '',
       target_count: 10,
-      target_unit: "tasks",
-      period: "daily",
+      target_unit: 'tasks',
+      period: 'daily',
     });
     setIsCreating(false);
   };
 
   const getPeriodLabel = (period: string) => {
     switch (period) {
-      case "daily": return "Daily";
-      case "weekly": return "Weekly";
-      case "monthly": return "Monthly";
-      case "yearly": return "Yearly";
-      default: return period;
+      case 'daily':
+        return 'Daily';
+      case 'weekly':
+        return 'Weekly';
+      case 'monthly':
+        return 'Monthly';
+      case 'yearly':
+        return 'Yearly';
+      default:
+        return period;
     }
   };
 
   const getUnitLabel = (unit: string) => {
     switch (unit) {
-      case "tasks": return "Tasks";
-      case "hours": return "Hours";
-      case "pomodoros": return "Pomodoros";
-      case "minutes": return "Minutes";
-      default: return unit;
+      case 'tasks':
+        return 'Tasks';
+      case 'hours':
+        return 'Hours';
+      case 'pomodoros':
+        return 'Pomodoros';
+      case 'minutes':
+        return 'Minutes';
+      default:
+        return unit;
     }
   };
 
@@ -94,7 +115,7 @@ export function GoalsTracker({ goals, onAddGoal, onUpdateProgress, onResetGoal }
               <Label>Goal Name</Label>
               <Input
                 value={newGoal.name}
-                onChange={(e) => setNewGoal({ ...newGoal, name: e.target.value })}
+                onChange={e => setNewGoal({ ...newGoal, name: e.target.value })}
                 placeholder="e.g., Complete 10 tasks"
               />
             </div>
@@ -103,7 +124,9 @@ export function GoalsTracker({ goals, onAddGoal, onUpdateProgress, onResetGoal }
               <Label>Description (optional)</Label>
               <Input
                 value={newGoal.description}
-                onChange={(e) => setNewGoal({ ...newGoal, description: e.target.value })}
+                onChange={e =>
+                  setNewGoal({ ...newGoal, description: e.target.value })
+                }
                 placeholder="Add details..."
               />
             </div>
@@ -115,14 +138,21 @@ export function GoalsTracker({ goals, onAddGoal, onUpdateProgress, onResetGoal }
                   type="number"
                   min="1"
                   value={newGoal.target_count}
-                  onChange={(e) => setNewGoal({ ...newGoal, target_count: parseInt(e.target.value) || 1 })}
+                  onChange={e =>
+                    setNewGoal({
+                      ...newGoal,
+                      target_count: parseInt(e.target.value) || 1,
+                    })
+                  }
                 />
               </div>
               <div className="space-y-2">
                 <Label>Unit</Label>
                 <Select
                   value={newGoal.target_unit}
-                  onValueChange={(v) => setNewGoal({ ...newGoal, target_unit: v as string })}
+                  onValueChange={v =>
+                    setNewGoal({ ...newGoal, target_unit: v as string })
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -141,7 +171,12 @@ export function GoalsTracker({ goals, onAddGoal, onUpdateProgress, onResetGoal }
               <Label>Period</Label>
               <Select
                 value={newGoal.period}
-                onValueChange={(v) => setNewGoal({ ...newGoal, period: v as "daily" | "weekly" | "monthly" | "yearly" })}
+                onValueChange={v =>
+                  setNewGoal({
+                    ...newGoal,
+                    period: v as 'daily' | 'weekly' | 'monthly' | 'yearly',
+                  })
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -170,28 +205,44 @@ export function GoalsTracker({ goals, onAddGoal, onUpdateProgress, onResetGoal }
         {goals.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <Target className="h-8 w-8 mx-auto mb-2 opacity-30" />
-            <p className="text-sm">No goals yet. Create your first goal to get started!</p>
+            <p className="text-sm">
+              No goals yet. Create your first goal to get started!
+            </p>
           </div>
         ) : (
-          goals.map((goal) => {
-            const progress = goal.target_count > 0 ? Math.round((goal.current_count / goal.target_count) * 100) : 0;
+          goals.map(goal => {
+            const progress =
+              goal.target_count > 0
+                ? Math.round((goal.current_count / goal.target_count) * 100)
+                : 0;
             const isCompleted = goal.current_count >= goal.target_count;
 
             return (
-              <Card key={goal.id} className={cn("p-4", isCompleted && "border-green-200")}>
+              <Card
+                key={goal.id}
+                className={cn('p-4', isCompleted && 'border-green-200')}
+              >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <h4 className="font-medium">{goal.name}</h4>
-                      <Badge variant={isCompleted ? "default" : "secondary"} className="text-xs">
+                      <Badge
+                        variant={isCompleted ? 'default' : 'secondary'}
+                        className="text-xs"
+                      >
                         {getPeriodLabel(goal.period)}
                       </Badge>
                     </div>
                     {goal.description && (
-                      <p className="text-sm text-muted-foreground mb-2">{goal.description}</p>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        {goal.description}
+                      </p>
                     )}
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <span>{goal.current_count} / {goal.target_count} {getUnitLabel(goal.target_unit)}</span>
+                      <span>
+                        {goal.current_count} / {goal.target_count}{' '}
+                        {getUnitLabel(goal.target_unit)}
+                      </span>
                       <span>•</span>
                       <span>{progress}%</span>
                     </div>
@@ -215,7 +266,7 @@ export function GoalsTracker({ goals, onAddGoal, onUpdateProgress, onResetGoal }
                       <Plus className="h-3 w-3" />
                     </Button>
                   </div>
-              </div>
+                </div>
 
                 <Progress value={progress} className="h-2 mt-3" />
 
@@ -228,7 +279,11 @@ export function GoalsTracker({ goals, onAddGoal, onUpdateProgress, onResetGoal }
                       </div>
                     )}
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => onResetGoal(goal.id)}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onResetGoal(goal.id)}
+                  >
                     <RefreshCw className="h-3 w-3 mr-1" />
                     Reset
                   </Button>
