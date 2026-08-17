@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from 'react';
 import {
   Compass,
   Award,
@@ -8,13 +8,19 @@ import {
   CheckCircle,
   MapPin,
   GraduationCap,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Skeleton } from "@/components/ui/skeleton";
-import { toast } from "sonner";
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
+import { toast } from 'sonner';
 
 interface Skill {
   id: number;
@@ -41,47 +47,58 @@ interface CareerCompassProps {
 }
 
 const careerPaths: Record<string, CareerPath> = {
-  "full-stack-developer": {
-    role: "Full Stack Developer",
-    company: "Tech Companies",
+  'full-stack-developer': {
+    role: 'Full Stack Developer',
+    company: 'Tech Companies',
     matchScore: 0,
-    requiredSkills: ["development", "design", "planning", "technical", "research"],
+    requiredSkills: [
+      'development',
+      'design',
+      'planning',
+      'technical',
+      'research',
+    ],
     yourSkills: [],
     missingSkills: [],
     nextSteps: [],
   },
-  "project-manager": {
-    role: "Project Manager",
-    company: "Enterprise / Agencies",
+  'project-manager': {
+    role: 'Project Manager',
+    company: 'Enterprise / Agencies',
     matchScore: 0,
-    requiredSkills: ["planning", "leadership", "communication", "project-management"],
+    requiredSkills: [
+      'planning',
+      'leadership',
+      'communication',
+      'project-management',
+    ],
     yourSkills: [],
     missingSkills: [],
     nextSteps: [],
   },
-  "data-analyst": {
-    role: "Data Analyst",
-    company: "Analytics Firms",
+  'data-analyst': {
+    role: 'Data Analyst',
+    company: 'Analytics Firms',
     matchScore: 0,
-    requiredSkills: ["research", "analytical", "writing", "development"],
+    requiredSkills: ['research', 'analytical', 'writing', 'development'],
     yourSkills: [],
     missingSkills: [],
     nextSteps: [],
   },
-  "designer": {
-    role: "UI/UX Designer",
-    company: "Design Studios",
+  designer: {
+    role: 'UI/UX Designer',
+    company: 'Design Studios',
     matchScore: 0,
-    requiredSkills: ["design", "communication", "creative", "research"],
+    requiredSkills: ['design', 'communication', 'creative', 'research'],
     yourSkills: [],
     missingSkills: [],
     nextSteps: [],
   },
-  "product-manager": {
-    role: "Product Manager",
-    company: "SaaS Companies",
+  'product-manager': {
+    role: 'Product Manager',
+    company: 'SaaS Companies',
     matchScore: 0,
-    requiredSkills: ["planning", "leadership", "communication", "research"],
+    requiredSkills: ['planning', 'leadership', 'communication', 'research'],
     yourSkills: [],
     missingSkills: [],
     nextSteps: [],
@@ -97,17 +114,22 @@ export function CareerCompass({ skills = [] }: CareerCompassProps) {
   const generateCareerPaths = useMemo(() => {
     const paths = Object.entries(careerPaths).map(([key, path]) => {
       // Calculate match score
-      const matchedSkills = path.requiredSkills.filter(skill => skillNames.has(skill));
+      const matchedSkills = path.requiredSkills.filter(skill =>
+        skillNames.has(skill)
+      );
       const skillMatchCount = matchedSkills.length;
       const totalRequired = path.requiredSkills.length;
-      const missingSkills = path.requiredSkills.filter(skill => !skillNames.has(skill));
+      const missingSkills = path.requiredSkills.filter(
+        skill => !skillNames.has(skill)
+      );
 
       const matchScore = Math.round((skillMatchCount / totalRequired) * 100);
 
       // Calculate next steps
-      const nextSteps = missingSkills.length > 0
-        ? missingSkills.slice(0, 3).map(s => `Learn ${s} skill`)
-        : ["Ready to apply for roles in this area", "Build a portfolio"];
+      const nextSteps =
+        missingSkills.length > 0
+          ? missingSkills.slice(0, 3).map(s => `Learn ${s} skill`)
+          : ['Ready to apply for roles in this area', 'Build a portfolio'];
 
       return {
         ...path,
@@ -148,7 +170,8 @@ export function CareerCompass({ skills = [] }: CareerCompassProps) {
             Career Compass
           </CardTitle>
           <CardDescription>
-            Your personalized career guidance based on skills and accomplishments
+            Your personalized career guidance based on skills and
+            accomplishments
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -161,22 +184,32 @@ export function CareerCompass({ skills = [] }: CareerCompassProps) {
               </div>
 
               <div className="mb-4">
-                <Progress value={getTopRecommendation.matchScore} className="h-2 mb-2" />
+                <Progress
+                  value={getTopRecommendation.matchScore}
+                  className="h-2 mb-2"
+                />
                 <p className="text-sm text-muted-foreground">
-                  {getTopRecommendation.matchScore}% match for {getTopRecommendation.role}
+                  {getTopRecommendation.matchScore}% match for{' '}
+                  {getTopRecommendation.role}
                 </p>
               </div>
 
-              <Button onClick={() => {
-                toast.success(`Started journey toward ${getTopRecommendation.role}`);
-              }}>
+              <Button
+                onClick={() => {
+                  toast.success(
+                    `Started journey toward ${getTopRecommendation.role}`
+                  );
+                }}
+              >
                 Start Learning Path
               </Button>
             </div>
           ) : (
             <div className="text-center py-6">
               <GraduationCap className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-              <h4 className="font-medium mb-2">Complete more tasks to unlock career insights</h4>
+              <h4 className="font-medium mb-2">
+                Complete more tasks to unlock career insights
+              </h4>
               <p className="text-sm text-muted-foreground">
                 We will match your skills to career opportunities as you grow
               </p>
@@ -193,12 +226,17 @@ export function CareerCompass({ skills = [] }: CareerCompassProps) {
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {recommendations.map((path) => {
+          {recommendations.map(path => {
             const isRecommended = path === getTopRecommendation;
             const hasMatch = path.matchScore > 30;
 
             return (
-              <Card key={path.role} className={isRecommended ? "border-purple-200 bg-purple-50/50" : ""}>
+              <Card
+                key={path.role}
+                className={
+                  isRecommended ? 'border-purple-200 bg-purple-50/50' : ''
+                }
+              >
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
                     <div>
@@ -223,10 +261,16 @@ export function CareerCompass({ skills = [] }: CareerCompassProps) {
 
                     {/* Skills Match */}
                     <div>
-                      <h4 className="text-xs font-medium text-muted-foreground mb-1">Skills Match</h4>
+                      <h4 className="text-xs font-medium text-muted-foreground mb-1">
+                        Skills Match
+                      </h4>
                       <div className="flex flex-wrap gap-1">
                         {path.yourSkills.map(skill => (
-                          <Badge key={skill} variant="outline" className="text-xs">
+                          <Badge
+                            key={skill}
+                            variant="outline"
+                            className="text-xs"
+                          >
                             {skill}
                           </Badge>
                         ))}
@@ -236,10 +280,16 @@ export function CareerCompass({ skills = [] }: CareerCompassProps) {
                     {/* Missing Skills */}
                     {path.missingSkills.length > 0 && (
                       <div>
-                        <h4 className="text-xs font-medium text-muted-foreground mb-1">Gap to Close</h4>
+                        <h4 className="text-xs font-medium text-muted-foreground mb-1">
+                          Gap to Close
+                        </h4>
                         <div className="flex flex-wrap gap-1">
                           {path.missingSkills.map(skill => (
-                            <Badge key={skill} variant="secondary" className="text-xs">
+                            <Badge
+                              key={skill}
+                              variant="secondary"
+                              className="text-xs"
+                            >
                               {skill}
                             </Badge>
                           ))}
@@ -249,7 +299,9 @@ export function CareerCompass({ skills = [] }: CareerCompassProps) {
 
                     {/* Next Steps */}
                     <div>
-                      <h4 className="text-xs font-medium text-muted-foreground mb-1">Next Steps</h4>
+                      <h4 className="text-xs font-medium text-muted-foreground mb-1">
+                        Next Steps
+                      </h4>
                       <ul className="text-xs space-y-1">
                         {path.nextSteps.slice(0, 2).map((step, i) => (
                           <li key={i} className="flex items-start gap-2">
@@ -262,12 +314,16 @@ export function CareerCompass({ skills = [] }: CareerCompassProps) {
 
                     {/* Action */}
                     <Button
-                      variant={isRecommended ? "default" : "outline"}
+                      variant={isRecommended ? 'default' : 'outline'}
                       size="sm"
                       className="w-full"
                       disabled={!hasMatch}
                     >
-                      {isRecommended ? "Continue Path" : hasMatch ? "Explore Path" : "Locked"}
+                      {isRecommended
+                        ? 'Continue Path'
+                        : hasMatch
+                          ? 'Explore Path'
+                          : 'Locked'}
                     </Button>
                   </div>
                 </CardContent>
@@ -291,22 +347,30 @@ export function CareerCompass({ skills = [] }: CareerCompassProps) {
               <>
                 <div className="p-3 bg-amber-50/50 rounded-lg">
                   <p className="text-sm">
-                    <strong>Top Skill:</strong> {skills.reduce((max, s) =>
-                      s.proficiency_level > (max.skill?.proficiency_level || 0) ? { skill: s, proficiency: s.proficiency_level } : max,
+                    <strong>Top Skill:</strong>{' '}
+                    {skills.reduce(
+                      (max, s) =>
+                        s.proficiency_level >
+                        (max.skill?.proficiency_level || 0)
+                          ? { skill: s, proficiency: s.proficiency_level }
+                          : max,
                       {} as { skill?: Skill; proficiency: number }
-                    ).skill?.skill_name || "None"}
+                    ).skill?.skill_name || 'None'}
                   </p>
                 </div>
 
                 <div className="p-3 bg-green-50/50 rounded-lg">
                   <p className="text-sm">
-                    <strong>Recommendation:</strong> Focus on {recommendations[0]?.missingSkills[0]} skill to unlock {recommendations[0]?.role} role
+                    <strong>Recommendation:</strong> Focus on{' '}
+                    {recommendations[0]?.missingSkills[0]} skill to unlock{' '}
+                    {recommendations[0]?.role} role
                   </p>
                 </div>
               </>
             ) : (
               <p className="text-sm text-muted-foreground">
-                Complete more tasks to unlock personalized career recommendations
+                Complete more tasks to unlock personalized career
+                recommendations
               </p>
             )}
           </div>
