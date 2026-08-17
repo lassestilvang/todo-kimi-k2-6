@@ -1,11 +1,23 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { TaskConnectionsTab } from "../task-connections-tab";
-import type { Task, TaskConnection } from "@/types";
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { TaskConnectionsTab } from '../task-connections-tab';
+import type { Task, TaskConnection } from '@/types';
 
 // Mock UI components
-vi.mock("@/components/ui/button", () => ({
-  Button: ({ children, onClick, className, variant, size }: { children: React.ReactNode; onClick?: () => void; className?: string; variant?: string; size?: string }) => (
+vi.mock('@/components/ui/button', () => ({
+  Button: ({
+    children,
+    onClick,
+    className,
+    variant,
+    size,
+  }: {
+    children: React.ReactNode;
+    onClick?: () => void;
+    className?: string;
+    variant?: string;
+    size?: string;
+  }) => (
     <button
       onClick={onClick}
       className={className}
@@ -17,14 +29,14 @@ vi.mock("@/components/ui/button", () => ({
   ),
 }));
 
-vi.mock("@/components/ui/card", () => ({
+vi.mock('@/components/ui/card', () => ({
   Card: ({ children }: any) => <div data-testid="card">{children}</div>,
   CardContent: ({ children }: any) => <div>{children}</div>,
   CardHeader: ({ children }: any) => <div>{children}</div>,
   CardTitle: ({ children }: any) => <h3>{children}</h3>,
 }));
 
-vi.mock("@/components/ui/input", () => ({
+vi.mock('@/components/ui/input', () => ({
   Input: ({ value, onChange, placeholder }: any) => (
     <input
       value={value}
@@ -35,11 +47,11 @@ vi.mock("@/components/ui/input", () => ({
   ),
 }));
 
-vi.mock("@/components/ui/label", () => ({
+vi.mock('@/components/ui/label', () => ({
   Label: ({ children }: any) => <label>{children}</label>,
 }));
 
-vi.mock("@/components/ui/badge", () => ({
+vi.mock('@/components/ui/badge', () => ({
   Badge: ({ children, variant, className }: any) => (
     <span data-testid={`badge`} className={className}>
       {children}
@@ -47,38 +59,82 @@ vi.mock("@/components/ui/badge", () => ({
   ),
 }));
 
-vi.mock("@/components/ui/select", () => ({
+vi.mock('@/components/ui/select', () => ({
   Select: ({ value, onValueChange, children }: any) => (
     <div data-testid="select-wrapper">
       <select
         data-testid="select"
         value={value}
-        onChange={(e) => onValueChange(e.target.value)}
+        onChange={e => onValueChange(e.target.value)}
       >
         {children}
       </select>
     </div>
   ),
   SelectContent: ({ children }: any) => <div>{children}</div>,
-  SelectItem: ({ value, children }: any) => <option value={value}>{children}</option>,
-  SelectTrigger: ({ children }: any) => <div data-testid="select-trigger">{children}</div>,
+  SelectItem: ({ value, children }: any) => (
+    <option value={value}>{children}</option>
+  ),
+  SelectTrigger: ({ children }: any) => (
+    <div data-testid="select-trigger">{children}</div>
+  ),
   SelectValue: () => <span data-testid="select-value">Select...</span>,
 }));
 
-vi.mock("lucide-react", () => ({
-  Link: ({ className }: { className?: string }) => <span className={className} data-testid="link-icon">LINK</span>,
-  Filter: ({ className }: { className?: string }) => <span className={className} data-testid="filter-icon">FILTER</span>,
-  ExternalLink: ({ className }: { className?: string }) => <span className={className} data-testid="external-icon">EXT</span>,
-  Lightbulb: ({ className }: { className?: string }) => <span className={className} data-testid="lightbulb-icon">💡</span>,
-  BookOpen: ({ className }: { className?: string }) => <span className={className} data-testid="book-icon">📖</span>,
-  AlertTriangle: ({ className }: { className?: string }) => <span className={className} data-testid="alert-icon">⚠️</span>,
-  RefreshCw: ({ className }: { className?: string }) => <span className={className} data-testid="refresh-icon">🔄</span>,
-  X: ({ className }: { className?: string }) => <span className={className} data-testid="x-icon">X</span>,
-  Plus: ({ className }: { className?: string }) => <span className={className} data-testid="plus-icon">+</span>,
-  Trash2: ({ className }: { className?: string }) => <span className={className} data-testid="trash-icon">🗑️</span>,
+vi.mock('lucide-react', () => ({
+  Link: ({ className }: { className?: string }) => (
+    <span className={className} data-testid="link-icon">
+      LINK
+    </span>
+  ),
+  Filter: ({ className }: { className?: string }) => (
+    <span className={className} data-testid="filter-icon">
+      FILTER
+    </span>
+  ),
+  ExternalLink: ({ className }: { className?: string }) => (
+    <span className={className} data-testid="external-icon">
+      EXT
+    </span>
+  ),
+  Lightbulb: ({ className }: { className?: string }) => (
+    <span className={className} data-testid="lightbulb-icon">
+      💡
+    </span>
+  ),
+  BookOpen: ({ className }: { className?: string }) => (
+    <span className={className} data-testid="book-icon">
+      📖
+    </span>
+  ),
+  AlertTriangle: ({ className }: { className?: string }) => (
+    <span className={className} data-testid="alert-icon">
+      ⚠️
+    </span>
+  ),
+  RefreshCw: ({ className }: { className?: string }) => (
+    <span className={className} data-testid="refresh-icon">
+      🔄
+    </span>
+  ),
+  X: ({ className }: { className?: string }) => (
+    <span className={className} data-testid="x-icon">
+      X
+    </span>
+  ),
+  Plus: ({ className }: { className?: string }) => (
+    <span className={className} data-testid="plus-icon">
+      +
+    </span>
+  ),
+  Trash2: ({ className }: { className?: string }) => (
+    <span className={className} data-testid="trash-icon">
+      🗑️
+    </span>
+  ),
 }));
 
-vi.mock("sonner", () => ({
+vi.mock('sonner', () => ({
   toast: {
     success: vi.fn(),
     error: vi.fn(),
@@ -90,22 +146,22 @@ global.fetch = vi.fn();
 
 const createMockTask = (overrides: Partial<Task> = {}): Task => ({
   id: 1,
-  name: "Test Task",
-  description: "A test task",
+  name: 'Test Task',
+  description: 'A test task',
   notes: null,
   user_id: 1,
   list_id: 1,
-  date: "2024-01-15",
+  date: '2024-01-15',
   deadline: null,
   estimate: null,
   actual_time: null,
-  priority: "high",
-  recurring: "none",
+  priority: 'high',
+  recurring: 'none',
   recurring_config: null,
   completed: false,
   completed_at: null,
-  created_at: "2024-01-01",
-  updated_at: "2024-01-01",
+  created_at: '2024-01-01',
+  updated_at: '2024-01-01',
   sort_order: 0,
   labels: [],
   subtasks: [],
@@ -121,22 +177,24 @@ const createMockTask = (overrides: Partial<Task> = {}): Task => ({
   ...overrides,
 });
 
-const createMockConnection = (overrides: Partial<TaskConnection> = {}): TaskConnection => ({
+const createMockConnection = (
+  overrides: Partial<TaskConnection> = {}
+): TaskConnection => ({
   id: 1,
   source_task_id: 1,
   target_task_id: 2,
-  connection_type: "related",
-  notes: "Test connection",
+  connection_type: 'related',
+  notes: 'Test connection',
   strength: 0.5,
-  created_at: "2024-01-01",
+  created_at: '2024-01-01',
   ...overrides,
 });
 
-describe("TaskConnectionsTab", () => {
-  const mockTask = createMockTask({ id: 1, name: "Current Task" });
+describe('TaskConnectionsTab', () => {
+  const mockTask = createMockTask({ id: 1, name: 'Current Task' });
   const mockRelatedTasks: Task[] = [
-    createMockTask({ id: 2, name: "Related Task 1" }),
-    createMockTask({ id: 3, name: "Related Task 2" }),
+    createMockTask({ id: 2, name: 'Related Task 1' }),
+    createMockTask({ id: 3, name: 'Related Task 2' }),
   ];
 
   beforeEach(() => {
@@ -153,8 +211,8 @@ describe("TaskConnectionsTab", () => {
     vi.restoreAllMocks();
   });
 
-  describe("Initial Render", () => {
-    it("renders the component with title", () => {
+  describe('Initial Render', () => {
+    it('renders the component with title', () => {
       render(
         <TaskConnectionsTab
           task={mockTask}
@@ -163,10 +221,12 @@ describe("TaskConnectionsTab", () => {
         />
       );
 
-      expect(screen.getByText("Knowledge Graph Connections")).toBeInTheDocument();
+      expect(
+        screen.getByText('Knowledge Graph Connections')
+      ).toBeInTheDocument();
     });
 
-    it("shows empty state when no connections", () => {
+    it('shows empty state when no connections', () => {
       render(
         <TaskConnectionsTab
           task={mockTask}
@@ -178,7 +238,7 @@ describe("TaskConnectionsTab", () => {
       expect(screen.getByText(/No connections yet/)).toBeInTheDocument();
     });
 
-    it("has button to add connection in header", () => {
+    it('has button to add connection in header', () => {
       render(
         <TaskConnectionsTab
           task={mockTask}
@@ -187,11 +247,11 @@ describe("TaskConnectionsTab", () => {
         />
       );
 
-      const buttons = screen.getAllByTestId("button");
+      const buttons = screen.getAllByTestId('button');
       expect(buttons.length).toBeGreaterThan(0);
     });
 
-    it("renders link icon", () => {
+    it('renders link icon', () => {
       render(
         <TaskConnectionsTab
           task={mockTask}
@@ -200,10 +260,10 @@ describe("TaskConnectionsTab", () => {
         />
       );
 
-      expect(screen.getByTestId("link-icon")).toBeInTheDocument();
+      expect(screen.getByTestId('link-icon')).toBeInTheDocument();
     });
 
-    it("shows description text", () => {
+    it('shows description text', () => {
       render(
         <TaskConnectionsTab
           task={mockTask}
@@ -212,10 +272,12 @@ describe("TaskConnectionsTab", () => {
         />
       );
 
-      expect(screen.getByText(/Connect this task to other tasks/)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Connect this task to other tasks/)
+      ).toBeInTheDocument();
     });
 
-    it("has Add Connection button", () => {
+    it('has Add Connection button', () => {
       render(
         <TaskConnectionsTab
           task={mockTask}
@@ -224,12 +286,14 @@ describe("TaskConnectionsTab", () => {
         />
       );
 
-      expect(screen.getByRole("button", { name: "Add Connection" })).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: 'Add Connection' })
+      ).toBeInTheDocument();
     });
   });
 
-  describe("Add Connection Form", () => {
-    it("opens form when Add Connection button clicked", () => {
+  describe('Add Connection Form', () => {
+    it('opens form when Add Connection button clicked', () => {
       render(
         <TaskConnectionsTab
           task={mockTask}
@@ -238,16 +302,20 @@ describe("TaskConnectionsTab", () => {
         />
       );
 
-      const addButton = screen.getByRole("button", { name: "Add Connection" });
+      const addButton = screen.getByRole('button', { name: 'Add Connection' });
       fireEvent.click(addButton);
 
       // Should show form elements
-      expect(screen.getByTestId("select")).toBeInTheDocument();
-      expect(screen.getByPlaceholderText("Search tasks...")).toBeInTheDocument();
-      expect(screen.getByPlaceholderText("Add context about this connection...")).toBeInTheDocument();
+      expect(screen.getByTestId('select')).toBeInTheDocument();
+      expect(
+        screen.getByPlaceholderText('Search tasks...')
+      ).toBeInTheDocument();
+      expect(
+        screen.getByPlaceholderText('Add context about this connection...')
+      ).toBeInTheDocument();
     });
 
-    it("shows connection type select in form", () => {
+    it('shows connection type select in form', () => {
       render(
         <TaskConnectionsTab
           task={mockTask}
@@ -256,13 +324,13 @@ describe("TaskConnectionsTab", () => {
         />
       );
 
-      const addButton = screen.getByRole("button", { name: "Add Connection" });
+      const addButton = screen.getByRole('button', { name: 'Add Connection' });
       fireEvent.click(addButton);
 
-      expect(screen.getByTestId("select")).toBeInTheDocument();
+      expect(screen.getByTestId('select')).toBeInTheDocument();
     });
 
-    it("shows target task input in form", () => {
+    it('shows target task input in form', () => {
       render(
         <TaskConnectionsTab
           task={mockTask}
@@ -271,13 +339,15 @@ describe("TaskConnectionsTab", () => {
         />
       );
 
-      const addButton = screen.getByRole("button", { name: "Add Connection" });
+      const addButton = screen.getByRole('button', { name: 'Add Connection' });
       fireEvent.click(addButton);
 
-      expect(screen.getByPlaceholderText("Search tasks...")).toBeInTheDocument();
+      expect(
+        screen.getByPlaceholderText('Search tasks...')
+      ).toBeInTheDocument();
     });
 
-    it("shows notes input in form", () => {
+    it('shows notes input in form', () => {
       render(
         <TaskConnectionsTab
           task={mockTask}
@@ -286,13 +356,15 @@ describe("TaskConnectionsTab", () => {
         />
       );
 
-      const addButton = screen.getByRole("button", { name: "Add Connection" });
+      const addButton = screen.getByRole('button', { name: 'Add Connection' });
       fireEvent.click(addButton);
 
-      expect(screen.getByPlaceholderText("Add context about this connection...")).toBeInTheDocument();
+      expect(
+        screen.getByPlaceholderText('Add context about this connection...')
+      ).toBeInTheDocument();
     });
 
-    it("shows cancel button in form", () => {
+    it('shows cancel button in form', () => {
       render(
         <TaskConnectionsTab
           task={mockTask}
@@ -301,13 +373,13 @@ describe("TaskConnectionsTab", () => {
         />
       );
 
-      const addButton = screen.getByRole("button", { name: "Add Connection" });
+      const addButton = screen.getByRole('button', { name: 'Add Connection' });
       fireEvent.click(addButton);
 
-      expect(screen.getByText("Cancel")).toBeInTheDocument();
+      expect(screen.getByText('Cancel')).toBeInTheDocument();
     });
 
-    it("shows all connection types in select", () => {
+    it('shows all connection types in select', () => {
       render(
         <TaskConnectionsTab
           task={mockTask}
@@ -316,24 +388,22 @@ describe("TaskConnectionsTab", () => {
         />
       );
 
-      const addButton = screen.getByRole("button", { name: "Add Connection" });
+      const addButton = screen.getByRole('button', { name: 'Add Connection' });
       fireEvent.click(addButton);
 
       // Check for connection types
-      expect(screen.getByText("Prerequisite")).toBeInTheDocument();
-      expect(screen.getByText("Inspiration")).toBeInTheDocument();
-      expect(screen.getByText("Similar")).toBeInTheDocument();
-      expect(screen.getByText("Contrast")).toBeInTheDocument();
-      expect(screen.getByText("Related")).toBeInTheDocument();
-      expect(screen.getByText("Learned From")).toBeInTheDocument();
+      expect(screen.getByText('Prerequisite')).toBeInTheDocument();
+      expect(screen.getByText('Inspiration')).toBeInTheDocument();
+      expect(screen.getByText('Similar')).toBeInTheDocument();
+      expect(screen.getByText('Contrast')).toBeInTheDocument();
+      expect(screen.getByText('Related')).toBeInTheDocument();
+      expect(screen.getByText('Learned From')).toBeInTheDocument();
     });
   });
 
-  describe("Insights Section", () => {
-    it("shows insights section when connections exist", () => {
-      const connections: TaskConnection[] = [
-        createMockConnection({ id: 1 }),
-      ];
+  describe('Insights Section', () => {
+    it('shows insights section when connections exist', () => {
+      const connections: TaskConnection[] = [createMockConnection({ id: 1 })];
 
       render(
         <TaskConnectionsTab
@@ -343,10 +413,10 @@ describe("TaskConnectionsTab", () => {
         />
       );
 
-      expect(screen.getByText("Insights")).toBeInTheDocument();
+      expect(screen.getByText('Insights')).toBeInTheDocument();
     });
 
-    it("shows connection count in insights", () => {
+    it('shows connection count in insights', () => {
       const connections: TaskConnection[] = [
         createMockConnection({ id: 1 }),
         createMockConnection({ id: 2 }),
@@ -361,14 +431,12 @@ describe("TaskConnectionsTab", () => {
       );
 
       // The badge shows just the number
-      const badges = screen.getAllByTestId("badge");
+      const badges = screen.getAllByTestId('badge');
       expect(badges.length).toBeGreaterThan(0);
     });
 
-    it("shows insights content for connections", () => {
-      const connections: TaskConnection[] = [
-        createMockConnection({ id: 1 }),
-      ];
+    it('shows insights content for connections', () => {
+      const connections: TaskConnection[] = [createMockConnection({ id: 1 })];
 
       render(
         <TaskConnectionsTab
@@ -382,8 +450,8 @@ describe("TaskConnectionsTab", () => {
     });
   });
 
-  describe("Search Functionality", () => {
-    it("filters tasks by search query", () => {
+  describe('Search Functionality', () => {
+    it('filters tasks by search query', () => {
       render(
         <TaskConnectionsTab
           task={mockTask}
@@ -392,14 +460,14 @@ describe("TaskConnectionsTab", () => {
         />
       );
 
-      const addButton = screen.getByRole("button", { name: "Add Connection" });
+      const addButton = screen.getByRole('button', { name: 'Add Connection' });
       fireEvent.click(addButton);
 
-      const searchInput = screen.getByPlaceholderText("Search tasks...");
-      fireEvent.change(searchInput, { target: { value: "Related" } });
+      const searchInput = screen.getByPlaceholderText('Search tasks...');
+      fireEvent.change(searchInput, { target: { value: 'Related' } });
     });
 
-    it("shows all tasks when search is cleared", () => {
+    it('shows all tasks when search is cleared', () => {
       render(
         <TaskConnectionsTab
           task={mockTask}
@@ -408,17 +476,19 @@ describe("TaskConnectionsTab", () => {
         />
       );
 
-      const addButton = screen.getByRole("button", { name: "Add Connection" });
+      const addButton = screen.getByRole('button', { name: 'Add Connection' });
       fireEvent.click(addButton);
 
-      const searchInput = screen.getByPlaceholderText("Search tasks...") as HTMLInputElement;
-      fireEvent.change(searchInput, { target: { value: "Related" } });
-      fireEvent.change(searchInput, { target: { value: "" } });
+      const searchInput = screen.getByPlaceholderText(
+        'Search tasks...'
+      ) as HTMLInputElement;
+      fireEvent.change(searchInput, { target: { value: 'Related' } });
+      fireEvent.change(searchInput, { target: { value: '' } });
     });
   });
 
-  describe("Connection Types", () => {
-    it("renders all connection types in select", () => {
+  describe('Connection Types', () => {
+    it('renders all connection types in select', () => {
       render(
         <TaskConnectionsTab
           task={mockTask}
@@ -427,21 +497,21 @@ describe("TaskConnectionsTab", () => {
         />
       );
 
-      const addButton = screen.getByRole("button", { name: "Add Connection" });
+      const addButton = screen.getByRole('button', { name: 'Add Connection' });
       fireEvent.click(addButton);
 
       // Check for various connection types
-      expect(screen.getByText("Prerequisite")).toBeInTheDocument();
-      expect(screen.getByText("Inspiration")).toBeInTheDocument();
-      expect(screen.getByText("Similar")).toBeInTheDocument();
-      expect(screen.getByText("Contrast")).toBeInTheDocument();
-      expect(screen.getByText("Related")).toBeInTheDocument();
-      expect(screen.getByText("Learned From")).toBeInTheDocument();
+      expect(screen.getByText('Prerequisite')).toBeInTheDocument();
+      expect(screen.getByText('Inspiration')).toBeInTheDocument();
+      expect(screen.getByText('Similar')).toBeInTheDocument();
+      expect(screen.getByText('Contrast')).toBeInTheDocument();
+      expect(screen.getByText('Related')).toBeInTheDocument();
+      expect(screen.getByText('Learned From')).toBeInTheDocument();
     });
   });
 
-  describe("Edge Cases", () => {
-    it("handles empty related tasks array", () => {
+  describe('Edge Cases', () => {
+    it('handles empty related tasks array', () => {
       render(
         <TaskConnectionsTab
           task={mockTask}
@@ -450,13 +520,15 @@ describe("TaskConnectionsTab", () => {
         />
       );
 
-      expect(screen.getByRole("button", { name: "Add Connection" })).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: 'Add Connection' })
+      ).toBeInTheDocument();
     });
 
-    it("filters out current task from related tasks", () => {
+    it('filters out current task from related tasks', () => {
       const relatedWithCurrent = [
         mockTask, // Current task should be filtered out
-        createMockTask({ id: 2, name: "Other Task" }),
+        createMockTask({ id: 2, name: 'Other Task' }),
       ];
 
       render(
@@ -467,16 +539,16 @@ describe("TaskConnectionsTab", () => {
         />
       );
 
-      const addButton = screen.getByRole("button", { name: "Add Connection" });
+      const addButton = screen.getByRole('button', { name: 'Add Connection' });
       fireEvent.click(addButton);
 
       // Should only show "Other Task" options
-      const searchInput = screen.getByPlaceholderText("Search tasks...");
-      fireEvent.change(searchInput, { target: { value: "Other" } });
+      const searchInput = screen.getByPlaceholderText('Search tasks...');
+      fireEvent.change(searchInput, { target: { value: 'Other' } });
     });
 
-    it("handles API error gracefully", async () => {
-      (global.fetch as any).mockRejectedValue(new Error("Network error"));
+    it('handles API error gracefully', async () => {
+      (global.fetch as any).mockRejectedValue(new Error('Network error'));
 
       const mockOnConnectionsChange = vi.fn();
 
@@ -489,19 +561,19 @@ describe("TaskConnectionsTab", () => {
         />
       );
 
-      const addButton = screen.getByRole("button", { name: "Add Connection" });
+      const addButton = screen.getByRole('button', { name: 'Add Connection' });
       fireEvent.click(addButton);
 
-      const searchInput = screen.getByPlaceholderText("Search tasks...");
-      fireEvent.change(searchInput, { target: { value: "Task 2" } });
+      const searchInput = screen.getByPlaceholderText('Search tasks...');
+      fireEvent.change(searchInput, { target: { value: 'Task 2' } });
 
       // Should not throw
-      expect(screen.getByTestId("select")).toBeInTheDocument();
+      expect(screen.getByTestId('select')).toBeInTheDocument();
     });
   });
 
-  describe("onConnectionsChange callback", () => {
-    it("exists as a prop", () => {
+  describe('onConnectionsChange callback', () => {
+    it('exists as a prop', () => {
       const mockOnConnectionsChange = vi.fn();
 
       render(
