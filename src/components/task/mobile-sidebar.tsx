@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Calendar,
   CalendarDays,
@@ -17,30 +17,30 @@ import {
   BarChart3,
   Bot,
   Brain,
-} from "lucide-react";
-import { useTheme } from "next-themes";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+} from 'lucide-react';
+import { useTheme } from 'next-themes';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import type { List as ListType, Label as LabelType, Workspace } from "@/types";
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import type { List as ListType, Label as LabelType, Workspace } from '@/types';
 import {
   createList,
   deleteList,
   createLabel,
   deleteLabel,
   generateRecurringTasks,
-} from "@/lib/actions";
-import { toast } from "sonner";
-import { WorkspaceSelector } from "@/components/workspace/workspace-selector";
+} from '@/lib/actions';
+import { toast } from 'sonner';
+import { WorkspaceSelector } from '@/components/workspace/workspace-selector';
 
 interface MobileSidebarProps {
   lists: ListType[];
@@ -58,17 +58,17 @@ interface MobileSidebarProps {
 }
 
 const views = [
-  { id: "today", name: "Today", icon: Calendar },
-  { id: "next7", name: "Next 7 Days", icon: CalendarDays },
-  { id: "upcoming", name: "Upcoming", icon: CalendarRange },
-  { id: "kanban", name: "Kanban", icon: LayoutGrid },
-  { id: "all", name: "All", icon: LayoutGrid },
-  { id: "graph", name: "Dependencies", icon: LayoutGrid },
-  { id: "matrix", name: "Priority Matrix", icon: LayoutGrid },
-  { id: "gantt", name: "Gantt Chart", icon: BarChart3 },
-  { id: "ai", name: "AI Assistant", icon: Bot },
-  { id: "analytics", name: "Analytics", icon: BarChart3 },
-  { id: "analytics_enhanced", name: "Enhanced Analytics", icon: Brain },
+  { id: 'today', name: 'Today', icon: Calendar },
+  { id: 'next7', name: 'Next 7 Days', icon: CalendarDays },
+  { id: 'upcoming', name: 'Upcoming', icon: CalendarRange },
+  { id: 'kanban', name: 'Kanban', icon: LayoutGrid },
+  { id: 'all', name: 'All', icon: LayoutGrid },
+  { id: 'graph', name: 'Dependencies', icon: LayoutGrid },
+  { id: 'matrix', name: 'Priority Matrix', icon: LayoutGrid },
+  { id: 'gantt', name: 'Gantt Chart', icon: BarChart3 },
+  { id: 'ai', name: 'AI Assistant', icon: Bot },
+  { id: 'analytics', name: 'Analytics', icon: BarChart3 },
+  { id: 'analytics_enhanced', name: 'Enhanced Analytics', icon: Brain },
 ];
 
 export function MobileSidebar({
@@ -88,22 +88,22 @@ export function MobileSidebar({
   const [isOpen, setIsOpen] = useState(false);
   const [newListDialogOpen, setNewListDialogOpen] = useState(false);
   const [newLabelDialogOpen, setNewLabelDialogOpen] = useState(false);
-  const [listName, setListName] = useState("");
-  const [listEmoji, setListEmoji] = useState("📋");
-  const [labelName, setLabelName] = useState("");
-  const [labelIcon, setLabelIcon] = useState("🏷️");
-  const setHoveredList = useState<number | null>(null)[1];  
+  const [listName, setListName] = useState('');
+  const [listEmoji, setListEmoji] = useState('📋');
+  const [labelName, setLabelName] = useState('');
+  const [labelIcon, setLabelIcon] = useState('🏷️');
+  const setHoveredList = useState<number | null>(null)[1];
 
   const handleCreateList = async () => {
     if (!listName.trim()) return;
     try {
       await createList({ name: listName, emoji: listEmoji });
-      setListName("");
+      setListName('');
       setNewListDialogOpen(false);
       onRefresh?.();
-      toast.success("List created");
+      toast.success('List created');
     } catch {
-      toast.error("Failed to create list");
+      toast.error('Failed to create list');
     }
   };
 
@@ -111,12 +111,12 @@ export function MobileSidebar({
     if (!labelName.trim()) return;
     try {
       await createLabel({ name: labelName, icon: labelIcon });
-      setLabelName("");
+      setLabelName('');
       setNewLabelDialogOpen(false);
       onRefresh?.();
-      toast.success("Label created");
+      toast.success('Label created');
     } catch {
-      toast.error("Failed to create label");
+      toast.error('Failed to create label');
     }
   };
 
@@ -125,9 +125,9 @@ export function MobileSidebar({
     try {
       await deleteList(id);
       onRefresh?.();
-      toast.success("List deleted");
+      toast.success('List deleted');
     } catch {
-      toast.error("Failed to delete list");
+      toast.error('Failed to delete list');
     }
   };
 
@@ -136,9 +136,9 @@ export function MobileSidebar({
     try {
       await deleteLabel(id);
       onRefresh?.();
-      toast.success("Label deleted");
+      toast.success('Label deleted');
     } catch {
-      toast.error("Failed to delete label");
+      toast.error('Failed to delete label');
     }
   };
 
@@ -176,10 +176,10 @@ export function MobileSidebar({
               onClick={() => setIsOpen(false)}
             />
             <motion.div
-              initial={{ x: "-100%" }}
+              initial={{ x: '-100%' }}
               animate={{ x: 0 }}
-              exit={{ x: "-100%" }}
-              transition={{ type: "tween", duration: 0.3 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'tween', duration: 0.3 }}
               className="fixed top-0 left-0 h-full w-72 max-w-[80vw] bg-sidebar border-r z-50"
             >
               <div className="flex h-full flex-col">
@@ -204,7 +204,7 @@ export function MobileSidebar({
                   <WorkspaceSelector
                     workspaces={workspaces || []}
                     currentWorkspace={currentWorkspace || null}
-                    onWorkspaceChange={(ws) => {
+                    onWorkspaceChange={ws => {
                       onWorkspaceChange?.(ws);
                       setIsOpen(false);
                     }}
@@ -219,7 +219,7 @@ export function MobileSidebar({
                     size="icon"
                     className="h-8 w-8"
                     onClick={() => {
-                      setTheme(theme === "dark" ? "light" : "dark");
+                      setTheme(theme === 'dark' ? 'light' : 'dark');
                       setIsOpen(false);
                     }}
                   >
@@ -233,7 +233,7 @@ export function MobileSidebar({
                     <p className="px-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Views
                     </p>
-                    {views.map((view) => {
+                    {views.map(view => {
                       const Icon = view.icon;
                       const isActive = currentView === view.id;
                       return (
@@ -241,15 +241,15 @@ export function MobileSidebar({
                           key={view.id}
                           onClick={() => handleViewChange(view.id)}
                           className={cn(
-                            "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
+                            'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors',
                             isActive
-                              ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                              : "text-sidebar-foreground hover:bg-sidebar-accent/50"
+                              ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
+                              : 'text-sidebar-foreground hover:bg-sidebar-accent/50'
                           )}
                         >
                           <Icon className="h-4 w-4" />
                           <span className="flex-1 text-left">{view.name}</span>
-                          {view.id === "today" && (overdueCount ?? 0) > 0 && (
+                          {view.id === 'today' && (overdueCount ?? 0) > 0 && (
                             <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-medium text-white">
                               {overdueCount}
                             </span>
@@ -266,7 +266,9 @@ export function MobileSidebar({
                         onClick={async () => {
                           const count = await generateRecurringTasks();
                           if (count > 0) {
-                            toast.success(`Generated ${count} recurring task(s)`);
+                            toast.success(
+                              `Generated ${count} recurring task(s)`
+                            );
                           }
                           onRefresh?.();
                         }}
@@ -293,29 +295,34 @@ export function MobileSidebar({
                         <Plus className="h-3.5 w-3.5" />
                       </Button>
                     </div>
-                    {lists.map((list) => {
-                      const isActive = currentView === "list" && currentListId === list.id;
+                    {lists.map(list => {
+                      const isActive =
+                        currentView === 'list' && currentListId === list.id;
                       return (
                         <button
                           key={list.id}
-                          onClick={() => handleViewChange("list", list.id)}
+                          onClick={() => handleViewChange('list', list.id)}
                           onMouseEnter={() => setHoveredList(list.id)}
                           onMouseLeave={() => setHoveredList(null)}
                           className={cn(
-                            "group flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
+                            'group flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors',
                             isActive
-                              ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                              : "text-sidebar-foreground hover:bg-sidebar-accent/50"
+                              ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
+                              : 'text-sidebar-foreground hover:bg-sidebar-accent/50'
                           )}
                         >
-                          <span className="text-base leading-none">{list.emoji}</span>
-                          <span className="flex-1 text-left truncate">{list.name}</span>
+                          <span className="text-base leading-none">
+                            {list.emoji}
+                          </span>
+                          <span className="flex-1 text-left truncate">
+                            {list.name}
+                          </span>
                           {!list.is_inbox && (
                             <Button
                               variant="ghost"
                               size="icon"
                               className="h-5 w-5 opacity-0 group-hover:opacity-100"
-                              onClick={(e) => handleDeleteList(e, list.id)}
+                              onClick={e => handleDeleteList(e, list.id)}
                             >
                               <Trash2 className="h-3 w-3 text-red-500" />
                             </Button>
@@ -341,15 +348,17 @@ export function MobileSidebar({
                         <Plus className="h-3.5 w-3.5" />
                       </Button>
                     </div>
-                    {labels.map((label) => (
+                    {labels.map(label => (
                       <div
                         key={label.id}
                         className="group flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors"
                       >
-                        <span className="text-base leading-none">{label.icon}</span>
+                        <span className="text-base leading-none">
+                          {label.icon}
+                        </span>
                         <span className="flex-1 truncate">{label.name}</span>
                         <button
-                          onClick={(e) => handleDeleteLabel(e, label.id)}
+                          onClick={e => handleDeleteLabel(e, label.id)}
                           className="opacity-0 group-hover:opacity-100 transition-opacity"
                         >
                           <Trash2 className="h-3 w-3 text-red-500" />
@@ -375,7 +384,7 @@ export function MobileSidebar({
               <Label>Name</Label>
               <Input
                 value={listName}
-                onChange={(e) => setListName(e.target.value)}
+                onChange={e => setListName(e.target.value)}
                 placeholder="List name"
               />
             </div>
@@ -383,7 +392,7 @@ export function MobileSidebar({
               <Label>Emoji</Label>
               <Input
                 value={listEmoji}
-                onChange={(e) => setListEmoji(e.target.value)}
+                onChange={e => setListEmoji(e.target.value)}
                 placeholder="📋"
                 maxLength={2}
               />
@@ -406,7 +415,7 @@ export function MobileSidebar({
               <Label>Name</Label>
               <Input
                 value={labelName}
-                onChange={(e) => setLabelName(e.target.value)}
+                onChange={e => setLabelName(e.target.value)}
                 placeholder="Label name"
               />
             </div>
@@ -414,7 +423,7 @@ export function MobileSidebar({
               <Label>Icon</Label>
               <Input
                 value={labelIcon}
-                onChange={(e) => setLabelIcon(e.target.value)}
+                onChange={e => setLabelIcon(e.target.value)}
                 placeholder="🏷️"
                 maxLength={2}
               />
