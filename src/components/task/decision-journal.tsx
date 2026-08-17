@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useCallback } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import {
   Brain,
   Lightbulb,
@@ -10,16 +10,28 @@ import {
   RefreshCw,
   ThumbsUp,
   ThumbsDown,
-} from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
-import { toast } from "sonner";
+} from 'lucide-react';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface Decision {
   id: number;
@@ -38,35 +50,37 @@ interface DecisionJournalProps {
 }
 
 const DECISION_TYPES = [
-  { value: "priority", label: "Priority" },
-  { value: "approach", label: "Approach" },
-  { value: "tool", label: "Tool" },
-  { value: "timeline", label: "Timeline" },
-  { value: "allocation", label: "Allocation" },
-  { value: "cancellation", label: "Cancellation" },
-  { value: "feature", label: "Feature" },
+  { value: 'priority', label: 'Priority' },
+  { value: 'approach', label: 'Approach' },
+  { value: 'tool', label: 'Tool' },
+  { value: 'timeline', label: 'Timeline' },
+  { value: 'allocation', label: 'Allocation' },
+  { value: 'cancellation', label: 'Cancellation' },
+  { value: 'feature', label: 'Feature' },
 ];
 
 export function DecisionJournal({ className }: DecisionJournalProps) {
   const [decisions, setDecisions] = useState<Decision[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNewDecision, setShowNewDecision] = useState(false);
-  const [selectedType, setSelectedType] = useState("priority");
-  const [question, setQuestion] = useState("");
-  const [options, setOptions] = useState<string[]>(["Option 1", "Option 2"]);
+  const [selectedType, setSelectedType] = useState('priority');
+  const [question, setQuestion] = useState('');
+  const [options, setOptions] = useState<string[]>(['Option 1', 'Option 2']);
   const [chosenOption, setChosenOption] = useState(0);
-  const [rationale, setRationale] = useState("");
+  const [rationale, setRationale] = useState('');
 
   const loadDecisions = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch("/api/enhanced-productivity/decisions?limit=50");
+      const response = await fetch(
+        '/api/enhanced-productivity/decisions?limit=50'
+      );
       const data = await response.json();
       // Data is an array of decisions
       setDecisions(data);
     } catch (error) {
-      console.error("Failed to load decisions:", error);
-      toast.error("Failed to load decisions");
+      console.error('Failed to load decisions:', error);
+      toast.error('Failed to load decisions');
     } finally {
       setLoading(false);
     }
@@ -78,19 +92,19 @@ export function DecisionJournal({ className }: DecisionJournalProps) {
 
   const createDecision = async () => {
     if (!question.trim()) {
-      toast.error("Please enter a question");
+      toast.error('Please enter a question');
       return;
     }
 
     if (options.length < 2) {
-      toast.error("Please provide at least 2 options");
+      toast.error('Please provide at least 2 options');
       return;
     }
 
     try {
-      const response = await fetch("/api/enhanced-productivity/decisions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/enhanced-productivity/decisions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           decision_type: selectedType,
           question,
@@ -105,46 +119,53 @@ export function DecisionJournal({ className }: DecisionJournalProps) {
 
       const result = await response.json();
       if (result.id) {
-        setDecisions(prev => [{
-          id: result.id,
-          decision_type: selectedType,
-          question,
-          chosen_option_text: options[chosenOption],
-          rationale,
-          created_at: new Date().toISOString(),
-        }, ...prev]);
+        setDecisions(prev => [
+          {
+            id: result.id,
+            decision_type: selectedType,
+            question,
+            chosen_option_text: options[chosenOption],
+            rationale,
+            created_at: new Date().toISOString(),
+          },
+          ...prev,
+        ]);
         setShowNewDecision(false);
-        setQuestion("");
-        setOptions(["Option 1", "Option 2"]);
+        setQuestion('');
+        setOptions(['Option 1', 'Option 2']);
         setChosenOption(0);
-        setRationale("");
-        toast.success("Decision recorded");
+        setRationale('');
+        toast.success('Decision recorded');
       }
     } catch {
-      console.error("Failed to create decision");
-      toast.error("Failed to record decision");
+      console.error('Failed to create decision');
+      toast.error('Failed to record decision');
     }
   };
 
-  const recordOutcome = async (decisionId: number, rating: number, outcome: string) => {
+  const recordOutcome = async (
+    decisionId: number,
+    rating: number,
+    outcome: string
+  ) => {
     try {
       await fetch(`/api/enhanced-productivity/decisions/${decisionId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           outcome,
           outcome_rating: rating,
         }),
       });
-      toast.success("Outcome recorded");
+      toast.success('Outcome recorded');
       loadDecisions();
     } catch {
-      toast.error("Failed to record outcome");
+      toast.error('Failed to record outcome');
     }
   };
 
   const addOption = () => {
-    setOptions([...options, "New option"]);
+    setOptions([...options, 'New option']);
   };
 
   const removeOption = (index: number) => {
@@ -164,7 +185,7 @@ export function DecisionJournal({ className }: DecisionJournalProps) {
 
   if (loading) {
     return (
-      <div className={cn("space-y-4", className)}>
+      <div className={cn('space-y-4', className)}>
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-gray-200 rounded w-1/3" />
           <div className="grid grid-cols-3 gap-4">
@@ -178,7 +199,7 @@ export function DecisionJournal({ className }: DecisionJournalProps) {
   }
 
   return (
-    <div className={cn("space-y-4", className)}>
+    <div className={cn('space-y-4', className)}>
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -204,7 +225,10 @@ export function DecisionJournal({ className }: DecisionJournalProps) {
           <CardContent className="space-y-4">
             <div>
               <Label>Decision Type</Label>
-              <Select value={selectedType} onValueChange={(v) => v && setSelectedType(v)}>
+              <Select
+                value={selectedType}
+                onValueChange={v => v && setSelectedType(v)}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -223,7 +247,7 @@ export function DecisionJournal({ className }: DecisionJournalProps) {
               <Textarea
                 placeholder="What decision are you facing?"
                 value={question}
-                onChange={(e) => setQuestion(e.target.value)}
+                onChange={e => setQuestion(e.target.value)}
                 rows={2}
               />
             </div>
@@ -234,7 +258,7 @@ export function DecisionJournal({ className }: DecisionJournalProps) {
                 <div key={index} className="flex items-center gap-2 mb-2">
                   <Input
                     value={option}
-                    onChange={(e) => updateOption(index, e.target.value)}
+                    onChange={e => updateOption(index, e.target.value)}
                     placeholder={`Option ${index + 1}`}
                   />
                   {options.length > 1 && (
@@ -255,7 +279,10 @@ export function DecisionJournal({ className }: DecisionJournalProps) {
 
             <div>
               <Label>Chosen Option</Label>
-              <Select value={String(chosenOption)} onValueChange={(v) => v !== null && setChosenOption(parseInt(v))}>
+              <Select
+                value={String(chosenOption)}
+                onValueChange={v => v !== null && setChosenOption(parseInt(v))}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -274,13 +301,16 @@ export function DecisionJournal({ className }: DecisionJournalProps) {
               <Textarea
                 placeholder="Why did you choose this option?"
                 value={rationale}
-                onChange={(e) => setRationale(e.target.value)}
+                onChange={e => setRationale(e.target.value)}
                 rows={3}
               />
             </div>
 
             <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => setShowNewDecision(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setShowNewDecision(false)}
+              >
                 Cancel
               </Button>
               <Button onClick={createDecision}>Record Decision</Button>
@@ -292,7 +322,7 @@ export function DecisionJournal({ className }: DecisionJournalProps) {
       {/* Decision List */}
       {decisions.length > 0 ? (
         <div className="grid gap-3">
-          {decisions.map((decision) => (
+          {decisions.map(decision => (
             <motion.div
               key={decision.id}
               initial={{ opacity: 0, y: 10 }}
@@ -301,9 +331,13 @@ export function DecisionJournal({ className }: DecisionJournalProps) {
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base">
-                    {DECISION_TYPES.find(t => t.value === decision.decision_type)?.label || "Decision"}
+                    {DECISION_TYPES.find(
+                      t => t.value === decision.decision_type
+                    )?.label || 'Decision'}
                   </CardTitle>
-                  <CardDescription>{new Date(decision.created_at).toLocaleDateString()}</CardDescription>
+                  <CardDescription>
+                    {new Date(decision.created_at).toLocaleDateString()}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
@@ -314,53 +348,79 @@ export function DecisionJournal({ className }: DecisionJournalProps) {
 
                     <div>
                       <p className="font-medium text-sm mb-1">Chosen Option:</p>
-                      <p className="text-sm p-2 bg-muted rounded">{decision.chosen_option_text}</p>
+                      <p className="text-sm p-2 bg-muted rounded">
+                        {decision.chosen_option_text}
+                      </p>
                     </div>
 
                     <div>
                       <p className="font-medium text-sm mb-1">Rationale:</p>
-                      <p className="text-sm text-muted-foreground">{decision.rationale}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {decision.rationale}
+                      </p>
                     </div>
 
                     {/* Outcome Tracking */}
-                    {(decision.outcome_rating !== null && decision.outcome_rating !== undefined) && (
-                      <div className="pt-3 border-t">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Heart className="h-4 w-4 text-pink-500" />
-                          <span className="text-sm font-medium">Outcome</span>
-                          <Badge variant={decision.outcome_rating > 0 ? "default" : "destructive"}>
-                            {decision.outcome_rating > 0 ? "Good" : "Needs Improvement"}
-                          </Badge>
+                    {decision.outcome_rating !== null &&
+                      decision.outcome_rating !== undefined && (
+                        <div className="pt-3 border-t">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Heart className="h-4 w-4 text-pink-500" />
+                            <span className="text-sm font-medium">Outcome</span>
+                            <Badge
+                              variant={
+                                decision.outcome_rating > 0
+                                  ? 'default'
+                                  : 'destructive'
+                              }
+                            >
+                              {decision.outcome_rating > 0
+                                ? 'Good'
+                                : 'Needs Improvement'}
+                            </Badge>
+                          </div>
+                          <p className="text-sm">{decision.outcome}</p>
                         </div>
-                        <p className="text-sm">{decision.outcome}</p>
-                      </div>
-                    )}
+                      )}
 
-                    {decision.outcome_rating === null || decision.outcome_rating === undefined && (
-                      <div className="pt-3 border-t">
-                        <p className="text-xs text-muted-foreground mb-2">
-                          Rate the outcome of this decision
-                        </p>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => recordOutcome(decision.id, -1, "Not happy with this decision")}
-                          >
-                            <ThumbsDown className="h-4 w-4 mr-1" />
-                            Not great
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => recordOutcome(decision.id, 1, "This was a good decision")}
-                          >
-                            <ThumbsUp className="h-4 w-4 mr-1" />
-                            Good
-                          </Button>
+                    {decision.outcome_rating === null ||
+                      (decision.outcome_rating === undefined && (
+                        <div className="pt-3 border-t">
+                          <p className="text-xs text-muted-foreground mb-2">
+                            Rate the outcome of this decision
+                          </p>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() =>
+                                recordOutcome(
+                                  decision.id,
+                                  -1,
+                                  'Not happy with this decision'
+                                )
+                              }
+                            >
+                              <ThumbsDown className="h-4 w-4 mr-1" />
+                              Not great
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() =>
+                                recordOutcome(
+                                  decision.id,
+                                  1,
+                                  'This was a good decision'
+                                )
+                              }
+                            >
+                              <ThumbsUp className="h-4 w-4 mr-1" />
+                              Good
+                            </Button>
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      ))}
                   </div>
                 </CardContent>
               </Card>
@@ -373,7 +433,9 @@ export function DecisionJournal({ className }: DecisionJournalProps) {
             <div className="text-center py-8 text-muted-foreground">
               <Lightbulb className="h-8 w-8 mx-auto mb-2 opacity-30" />
               <p className="text-sm">No decisions recorded yet</p>
-              <p className="text-xs mt-1">Start tracking your decisions to get insights</p>
+              <p className="text-xs mt-1">
+                Start tracking your decisions to get insights
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -396,20 +458,31 @@ export function DecisionJournal({ className }: DecisionJournalProps) {
               </div>
               <div>
                 <p className="text-2xl font-bold">
-                  {decisions.filter(d => d.outcome_rating && d.outcome_rating > 0).length}
+                  {
+                    decisions.filter(
+                      d => d.outcome_rating && d.outcome_rating > 0
+                    ).length
+                  }
                 </p>
-                <p className="text-xs text-muted-foreground">Positive Outcomes</p>
+                <p className="text-xs text-muted-foreground">
+                  Positive Outcomes
+                </p>
               </div>
               <div>
                 <p className="text-2xl font-bold">
                   {Object.entries(
-                    decisions.reduce((acc, d) => {
-                      acc[d.decision_type] = (acc[d.decision_type] || 0) + 1;
-                      return acc;
-                    }, {} as Record<string, number>)
+                    decisions.reduce(
+                      (acc, d) => {
+                        acc[d.decision_type] = (acc[d.decision_type] || 0) + 1;
+                        return acc;
+                      },
+                      {} as Record<string, number>
+                    )
                   ).sort((a, b) => b[1] - a[1])[0]?.[1] || 0}
                 </p>
-                <p className="text-xs text-muted-foreground">Most Common Type</p>
+                <p className="text-xs text-muted-foreground">
+                  Most Common Type
+                </p>
               </div>
             </div>
           </CardContent>
