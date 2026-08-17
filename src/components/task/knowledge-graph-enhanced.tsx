@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useMemo } from "react";
+import { useMemo } from 'react';
 import {
   Brain,
   Network,
@@ -10,11 +10,17 @@ import {
   BookOpen,
   Lightbulb,
   Target,
-} from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+} from 'lucide-react';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   ResponsiveContainer,
   ScatterChart,
@@ -27,8 +33,8 @@ import {
   Pie,
   Cell,
   Legend,
-} from "recharts";
-import type { TaskWithRelations } from "@/types";
+} from 'recharts';
+import type { TaskWithRelations } from '@/types';
 
 interface KnowledgeGraphEnhancedProps {
   tasks: TaskWithRelations[];
@@ -72,7 +78,7 @@ export function KnowledgeGraphEnhanced({ tasks }: KnowledgeGraphEnhancedProps) {
           conns.push({
             sourceId: taskIds[i],
             targetId: taskIds[j],
-            connectionType: "label",
+            connectionType: 'label',
             strength: 0.8,
           });
         }
@@ -98,7 +104,7 @@ export function KnowledgeGraphEnhanced({ tasks }: KnowledgeGraphEnhancedProps) {
           conns.push({
             sourceId: t1.id,
             targetId: t2.id,
-            connectionType: "proximity",
+            connectionType: 'proximity',
             strength: 0.6,
           });
         }
@@ -109,7 +115,8 @@ export function KnowledgeGraphEnhanced({ tasks }: KnowledgeGraphEnhancedProps) {
     const assigneeGroups: Record<number, number[]> = {};
     tasks.forEach(task => {
       if (task.assignee_id) {
-        if (!assigneeGroups[task.assignee_id]) assigneeGroups[task.assignee_id] = [];
+        if (!assigneeGroups[task.assignee_id])
+          assigneeGroups[task.assignee_id] = [];
         assigneeGroups[task.assignee_id].push(task.id);
       }
     });
@@ -120,7 +127,7 @@ export function KnowledgeGraphEnhanced({ tasks }: KnowledgeGraphEnhancedProps) {
           conns.push({
             sourceId: taskIds[i],
             targetId: taskIds[j],
-            connectionType: "assignee",
+            connectionType: 'assignee',
             strength: 0.7,
           });
         }
@@ -138,7 +145,9 @@ export function KnowledgeGraphEnhanced({ tasks }: KnowledgeGraphEnhancedProps) {
 
     completedTasks.forEach(task => {
       // Look for similar task names
-      const words = (task.name + " " + (task.description || "")).toLowerCase().split(/\s+/);
+      const words = (task.name + ' ' + (task.description || ''))
+        .toLowerCase()
+        .split(/\s+/);
 
       words.forEach(word => {
         if (word.length < 4) return; // Skip short words
@@ -149,7 +158,7 @@ export function KnowledgeGraphEnhanced({ tasks }: KnowledgeGraphEnhancedProps) {
             description: `Tasks involving "${word}"`,
             relatedTasks: [],
             confidence: 0,
-            suggestedAction: "",
+            suggestedAction: '',
           });
         }
 
@@ -178,8 +187,10 @@ export function KnowledgeGraphEnhanced({ tasks }: KnowledgeGraphEnhancedProps) {
     });
 
     connections.forEach(conn => {
-      strengths[conn.sourceId] = (strengths[conn.sourceId] || 0) + conn.strength;
-      strengths[conn.targetId] = (strengths[conn.targetId] || 0) + conn.strength;
+      strengths[conn.sourceId] =
+        (strengths[conn.sourceId] || 0) + conn.strength;
+      strengths[conn.targetId] =
+        (strengths[conn.targetId] || 0) + conn.strength;
     });
 
     return strengths;
@@ -190,16 +201,18 @@ export function KnowledgeGraphEnhanced({ tasks }: KnowledgeGraphEnhancedProps) {
     const insights: string[] = [];
 
     if (patterns.length > 0) {
-      insights.push(`Identified ${patterns.length} recurring patterns in completed tasks`);
+      insights.push(
+        `Identified ${patterns.length} recurring patterns in completed tasks`
+      );
     }
 
     const completedCount = tasks.filter(t => t.completed).length;
     const totalCount = tasks.length;
 
     if (completedCount / totalCount > 0.7) {
-      insights.push("High completion rate suggests consistent workflow");
+      insights.push('High completion rate suggests consistent workflow');
     } else if (completedCount / totalCount < 0.3) {
-      insights.push("Consider breaking down large tasks for better progress");
+      insights.push('Consider breaking down large tasks for better progress');
     }
 
     const overdue = tasks.filter(
@@ -215,27 +228,35 @@ export function KnowledgeGraphEnhanced({ tasks }: KnowledgeGraphEnhancedProps) {
 
   // Prepare data for scatter chart
   const chartData = useMemo(() => {
-    return tasks.map(task => ({
-      name: task.name.substring(0, 20),
-      // X: task age (days since creation)
-      x: task.created_at
-        ? (new Date().getTime() - new Date(task.created_at).getTime()) / (1000 * 60 * 60 * 24)
-        : 0,
-      // Y: completion probability (based on strength)
-      y: taskStrengths[task.id] || 0,
-      completed: task.completed ? 1 : 0,
-      priority: task.priority,
-    })).sort((a, b) => a.x - b.x);
+    return tasks
+      .map(task => ({
+        name: task.name.substring(0, 20),
+        // X: task age (days since creation)
+        x: task.created_at
+          ? (new Date().getTime() - new Date(task.created_at).getTime()) /
+            (1000 * 60 * 60 * 24)
+          : 0,
+        // Y: completion probability (based on strength)
+        y: taskStrengths[task.id] || 0,
+        completed: task.completed ? 1 : 0,
+        priority: task.priority,
+      }))
+      .sort((a, b) => a.x - b.x);
   }, [tasks, taskStrengths]);
 
   // Get priority color
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case "critical": return "#ef4444";
-      case "high": return "#f97316";
-      case "medium": return "#eab308";
-      case "low": return "#3b82f6";
-      default: return "#6b7280";
+      case 'critical':
+        return '#ef4444';
+      case 'high':
+        return '#f97316';
+      case 'medium':
+        return '#eab308';
+      case 'low':
+        return '#3b82f6';
+      default:
+        return '#6b7280';
     }
   };
 
@@ -299,20 +320,21 @@ export function KnowledgeGraphEnhanced({ tasks }: KnowledgeGraphEnhancedProps) {
                     <div key={idx} className="border rounded-lg p-3">
                       <div className="flex items-start justify-between mb-2">
                         <div>
-                          <h5 className="font-medium text-sm">{pattern.description}</h5>
+                          <h5 className="font-medium text-sm">
+                            {pattern.description}
+                          </h5>
                           <p className="text-xs text-muted-foreground">
                             Related to {pattern.relatedTasks.length} tasks
                           </p>
                         </div>
-                        <Badge
-                          variant="outline"
-                          className="text-xs"
-                        >
+                        <Badge variant="outline" className="text-xs">
                           {(pattern.confidence * 100).toFixed(0)}%
                         </Badge>
                       </div>
                       {pattern.suggestedAction && (
-                        <p className="text-xs text-blue-600">{pattern.suggestedAction}</p>
+                        <p className="text-xs text-blue-600">
+                          {pattern.suggestedAction}
+                        </p>
                       )}
                     </div>
                   ))}
@@ -335,7 +357,10 @@ export function KnowledgeGraphEnhanced({ tasks }: KnowledgeGraphEnhancedProps) {
             ) : (
               <div className="space-y-2">
                 {insights.map((insight, idx) => (
-                  <div key={idx} className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
+                  <div
+                    key={idx}
+                    className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg"
+                  >
                     <Brain className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
                     <p className="text-sm">{insight}</p>
                   </div>
@@ -354,18 +379,24 @@ export function KnowledgeGraphEnhanced({ tasks }: KnowledgeGraphEnhancedProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Card className="bg-blue-500/5">
                 <CardContent className="p-4">
-                  <h5 className="font-medium text-sm mb-2">Key Success Patterns</h5>
+                  <h5 className="font-medium text-sm mb-2">
+                    Key Success Patterns
+                  </h5>
                   <ul className="text-xs space-y-1 text-muted-foreground">
                     <li>• Tasks with clear deadlines completed 30% faster</li>
                     <li>• Small tasks (under 30min) had 85% completion rate</li>
-                    <li>• Breaking large tasks into subtasks improved completion</li>
+                    <li>
+                      • Breaking large tasks into subtasks improved completion
+                    </li>
                   </ul>
                 </CardContent>
               </Card>
 
               <Card className="bg-amber-500/5">
                 <CardContent className="p-4">
-                  <h5 className="font-medium text-sm mb-2">Improvement Areas</h5>
+                  <h5 className="font-medium text-sm mb-2">
+                    Improvement Areas
+                  </h5>
                   <ul className="text-xs space-y-1 text-muted-foreground">
                     <li>• Tasks without assignees had lower completion</li>
                     <li>• Tasks without priorities were deprioritized</li>
