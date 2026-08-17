@@ -1,22 +1,28 @@
-"use client";
+'use client';
 
-import { useState, useMemo } from "react";
+import { useState, useMemo } from 'react';
+import { Layers, Plus, CheckCircle2, Calendar, Lightbulb } from 'lucide-react';
 import {
-  Layers,
-  Plus,
-  CheckCircle2,
-  Calendar,
-  Lightbulb,
-} from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
-import { format } from "date-fns";
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
 
 interface GoalCascadeProps {
   vision?: VisionGoal;
@@ -60,112 +66,130 @@ interface TaskNode {
 // Mock data for demonstration
 const mockVision: VisionGoal = {
   id: 1,
-  name: "Become a Senior Software Engineer",
-  description: "Develop expertise across the full stack with leadership skills",
-  target_date: "2025-12-31",
+  name: 'Become a Senior Software Engineer',
+  description: 'Develop expertise across the full stack with leadership skills',
+  target_date: '2025-12-31',
   progress: 65,
 };
 
 const mockAnnualGoals: GoalNode[] = [
   {
     id: 101,
-    title: "Master React Ecosystem",
-    description: "Deep understanding of React, Next.js, and modern patterns",
+    title: 'Master React Ecosystem',
+    description: 'Deep understanding of React, Next.js, and modern patterns',
     target_value: 10,
     current_value: 6,
-    deadline: "2025-03-31",
+    deadline: '2025-03-31',
     completed: false,
-    createdAt: "2024-01-15",
+    createdAt: '2024-01-15',
   },
   {
     id: 102,
-    title: "System Design Skills",
-    description: "Ability to design scalable architectures",
+    title: 'System Design Skills',
+    description: 'Ability to design scalable architectures',
     target_value: 5,
     current_value: 3,
-    deadline: "2025-06-30",
+    deadline: '2025-06-30',
     completed: false,
-    createdAt: "2024-01-15",
+    createdAt: '2024-01-15',
   },
   {
     id: 103,
-    title: "Leadership Experience",
-    description: "Lead at least 2 major projects or initiatives",
+    title: 'Leadership Experience',
+    description: 'Lead at least 2 major projects or initiatives',
     target_value: 2,
     current_value: 1,
-    deadline: "2025-12-31",
+    deadline: '2025-12-31',
     completed: false,
-    createdAt: "2024-01-15",
+    createdAt: '2024-01-15',
   },
 ];
 
 const mockQuarterlyGoals: GoalNode[] = [
   {
     id: 201,
-    title: "Complete Next.js Certification",
-    description: "Finish advanced Next.js course and certification",
+    title: 'Complete Next.js Certification',
+    description: 'Finish advanced Next.js course and certification',
     target_value: 1,
     current_value: 1,
-    deadline: "2025-03-15",
+    deadline: '2025-03-15',
     parent_id: 101,
     completed: true,
-    createdAt: "2025-01-10",
+    createdAt: '2025-01-10',
   },
   {
     id: 202,
-    title: "Build 3 Production Features",
-    description: "Implement and ship 3 complex features",
+    title: 'Build 3 Production Features',
+    description: 'Implement and ship 3 complex features',
     target_value: 3,
     current_value: 1,
-    deadline: "2025-03-31",
+    deadline: '2025-03-31',
     parent_id: 101,
     completed: false,
-    createdAt: "2025-01-10",
+    createdAt: '2025-01-10',
   },
 ];
 
 const mockMonthlyGoals: GoalNode[] = [
   {
     id: 301,
-    title: "Code Review 10 PRs",
-    description: "Review pull requests for the team",
+    title: 'Code Review 10 PRs',
+    description: 'Review pull requests for the team',
     target_value: 10,
     current_value: 4,
-    deadline: "2025-01-31",
+    deadline: '2025-01-31',
     parent_id: 202,
     completed: false,
-    createdAt: "2025-01-01",
+    createdAt: '2025-01-01',
   },
   {
     id: 302,
-    title: "Write 2 Learning Articles",
-    description: "Share knowledge through technical writing",
+    title: 'Write 2 Learning Articles',
+    description: 'Share knowledge through technical writing',
     target_value: 2,
     current_value: 0,
-    deadline: "2025-01-31",
+    deadline: '2025-01-31',
     parent_id: 101,
     completed: false,
-    createdAt: "2025-01-01",
+    createdAt: '2025-01-01',
   },
 ];
 
 const mockWeeklyGoals: GoalNode[] = [
   {
     id: 401,
-    title: "Ship Feature: User Analytics",
+    title: 'Ship Feature: User Analytics',
     target_value: 1,
     current_value: 0,
-    deadline: "2025-01-20",
+    deadline: '2025-01-20',
     parent_id: 301,
     completed: false,
-    createdAt: "2025-01-13",
+    createdAt: '2025-01-13',
   },
 ];
 
 const mockDailyTasks: TaskNode[] = [
-  { id: 501, name: "Design analytics schema", completed: true, priority: "high", date: "2025-01-16" },
-  { id: 502, name: "Implement analytics API", completed: true, priority: "high", date: "2025-01-17" },
-  { id: 503, name: "Add analytics to dashboard", completed: false, priority: "medium", date: "2025-01-18" },
+  {
+    id: 501,
+    name: 'Design analytics schema',
+    completed: true,
+    priority: 'high',
+    date: '2025-01-16',
+  },
+  {
+    id: 502,
+    name: 'Implement analytics API',
+    completed: true,
+    priority: 'high',
+    date: '2025-01-17',
+  },
+  {
+    id: 503,
+    name: 'Add analytics to dashboard',
+    completed: false,
+    priority: 'medium',
+    date: '2025-01-18',
+  },
 ];
 
 export function GoalCascade({
@@ -177,10 +201,17 @@ export function GoalCascade({
   dailyTasks = mockDailyTasks,
 }: GoalCascadeProps) {
   const [expandedVisions, setExpandedVisions] = useState<boolean>(true);
-  const [expandedYears, setExpandedYears] = useState<Set<number>>(new Set([2025]));
-  const [expandedQuarters, setExpandedQuarters] = useState<Set<number>>(new Set(quarterlyGoals.map(g => g.id)));
+  const [expandedYears, setExpandedYears] = useState<Set<number>>(
+    new Set([2025])
+  );
+  const [expandedQuarters, setExpandedQuarters] = useState<Set<number>>(
+    new Set(quarterlyGoals.map(g => g.id))
+  );
 
-  const calculateProgress = (goals: GoalNode[], timeframe: "annual" | "quarterly" | "monthly" | "weekly" = "annual") => {
+  const calculateProgress = (
+    goals: GoalNode[],
+    timeframe: 'annual' | 'quarterly' | 'monthly' | 'weekly' = 'annual'
+  ) => {
     if (goals.length === 0) return { overall: 0, completed: 0, total: 0 };
 
     const completed = goals.filter(g => g.completed).length;
@@ -189,11 +220,18 @@ export function GoalCascade({
     // Calculate weighted progress
     const weightedProgress = goals.reduce((sum, g) => {
       const progress = g.current_value / g.target_value;
-      return sum + (progress * g.target_value);
+      return sum + progress * g.target_value;
     }, 0);
 
     return {
-      overall: Math.min(100, Math.round((weightedProgress / goals.reduce((sum, g) => sum + g.target_value, 0)) * 100)),
+      overall: Math.min(
+        100,
+        Math.round(
+          (weightedProgress /
+            goals.reduce((sum, g) => sum + g.target_value, 0)) *
+            100
+        )
+      ),
       completed,
       total,
     };
@@ -209,25 +247,25 @@ export function GoalCascade({
   };
 
   const getRiskLevel = (goal: GoalNode) => {
-    if (goal.completed) return "completed";
+    if (goal.completed) return 'completed';
     const progress = goal.current_value / goal.target_value;
     const daysLeft = getDaysRemaining(goal.deadline);
 
     if (daysLeft !== null) {
-      if (daysLeft < 0) return "overdue";
-      if (progress < 0.3 && daysLeft < 14) return "high";
-      if (progress < 0.5 && daysLeft < 7) return "medium";
+      if (daysLeft < 0) return 'overdue';
+      if (progress < 0.3 && daysLeft < 14) return 'high';
+      if (progress < 0.5 && daysLeft < 7) return 'medium';
     }
 
-    return progress > 0.7 ? "low" : "medium";
+    return progress > 0.7 ? 'low' : 'medium';
   };
 
   const riskColors = {
-    completed: "bg-green-500 text-green-700",
-    low: "bg-green-100 text-green-700",
-    medium: "bg-amber-100 text-amber-700",
-    high: "bg-orange-100 text-orange-700",
-    overdue: "bg-red-100 text-red-700",
+    completed: 'bg-green-500 text-green-700',
+    low: 'bg-green-100 text-green-700',
+    medium: 'bg-amber-100 text-amber-700',
+    high: 'bg-orange-100 text-orange-700',
+    overdue: 'bg-red-100 text-red-700',
   };
 
   const currentYear = new Date().getFullYear();
@@ -248,21 +286,26 @@ export function GoalCascade({
               <div>
                 <h3 className="text-xl font-bold">{vision.name}</h3>
                 {vision.description && (
-                  <p className="text-muted-foreground mt-1">{vision.description}</p>
+                  <p className="text-muted-foreground mt-1">
+                    {vision.description}
+                  </p>
                 )}
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="font-medium">Overall Progress</span>
-                  <span className="text-sm font-semibold">{vision.progress}%</span>
+                  <span className="text-sm font-semibold">
+                    {vision.progress}%
+                  </span>
                 </div>
                 <Progress value={vision.progress} className="h-3" />
               </div>
 
               {vision.target_date && (
                 <div className="text-xs text-muted-foreground">
-                  Target date: {format(new Date(vision.target_date), "MMM d, yyyy")}
+                  Target date:{' '}
+                  {format(new Date(vision.target_date), 'MMM d, yyyy')}
                 </div>
               )}
 
@@ -270,7 +313,9 @@ export function GoalCascade({
                 <div className="border-t pt-4 space-y-4">
                   {/* Annual Goals Summary */}
                   <div>
-                    <h4 className="font-medium mb-3">Annual Goals ({currentYear})</h4>
+                    <h4 className="font-medium mb-3">
+                      Annual Goals ({currentYear})
+                    </h4>
                     <div className="grid gap-3">
                       {annualGoals.map(goal => (
                         <GoalItem
@@ -278,7 +323,9 @@ export function GoalCascade({
                           goal={goal}
                           level="annual"
                           isCompleted={goal.completed}
-                          progress={Math.round((goal.current_value / goal.target_value) * 100)}
+                          progress={Math.round(
+                            (goal.current_value / goal.target_value) * 100
+                          )}
                           daysRemaining={getDaysRemaining(goal.deadline)}
                           riskLevel={getRiskLevel(goal)}
                         />
@@ -309,15 +356,24 @@ export function GoalCascade({
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-sm">Annual Completion Rate</span>
-                  <Badge>{calculateProgress(annualGoals).completed}/{calculateProgress(annualGoals).total}</Badge>
+                  <Badge>
+                    {calculateProgress(annualGoals).completed}/
+                    {calculateProgress(annualGoals).total}
+                  </Badge>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm">Quarterly Completion Rate</span>
-                  <Badge>{calculateProgress(quarterlyGoals).completed}/{calculateProgress(quarterlyGoals).total}</Badge>
+                  <Badge>
+                    {calculateProgress(quarterlyGoals).completed}/
+                    {calculateProgress(quarterlyGoals).total}
+                  </Badge>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm">Monthly Completion Rate</span>
-                  <Badge>{calculateProgress(monthlyGoals).completed}/{calculateProgress(monthlyGoals).total}</Badge>
+                  <Badge>
+                    {calculateProgress(monthlyGoals).completed}/
+                    {calculateProgress(monthlyGoals).total}
+                  </Badge>
                 </div>
               </div>
             </div>
@@ -325,19 +381,27 @@ export function GoalCascade({
             <div>
               <h4 className="font-medium mb-3">Recommendations</h4>
               <div className="space-y-2 text-sm">
-                {getRiskLevel(mockAnnualGoals[0]) === "high" && (
+                {getRiskLevel(mockAnnualGoals[0]) === 'high' && (
                   <div className="p-3 bg-amber-50 border border-amber-200 rounded">
-                    <p className="text-amber-800">⚠️ "Master React Ecosystem" is behind schedule.</p>
-                    <p className="text-amber-700 text-xs mt-1">Consider breaking into smaller milestones</p>
+                    <p className="text-amber-800">
+                      ⚠️ "Master React Ecosystem" is behind schedule.
+                    </p>
+                    <p className="text-amber-700 text-xs mt-1">
+                      Consider breaking into smaller milestones
+                    </p>
                   </div>
                 )}
-                {getRiskLevel(mockQuarterlyGoals[0]) === "completed" && (
+                {getRiskLevel(mockQuarterlyGoals[0]) === 'completed' && (
                   <div className="p-3 bg-green-50 border border-green-200 rounded">
-                    <p className="text-green-800">✅ "Complete Next.js Certification" is on track!</p>
+                    <p className="text-green-800">
+                      ✅ "Complete Next.js Certification" is on track!
+                    </p>
                   </div>
                 )}
                 <div className="p-3 bg-blue-50 border border-blue-200 rounded">
-                  <p className="text-blue-800">💡 Next milestone: "Ship Feature: User Analytics"</p>
+                  <p className="text-blue-800">
+                    💡 Next milestone: "Ship Feature: User Analytics"
+                  </p>
                   <p className="text-blue-700 text-xs mt-1">Due in 4 days</p>
                 </div>
               </div>
@@ -357,9 +421,12 @@ export function GoalCascade({
         <CardContent>
           <div className="space-y-3">
             {weeklyGoals.map(weekly => {
-              const weekTasks = dailyTasks.filter(t =>
-                t.date && new Date(t.date) >= new Date(weekly.deadline || "") &&
-                t.date && new Date(t.date) <= new Date(weekly.deadline || "")
+              const weekTasks = dailyTasks.filter(
+                t =>
+                  t.date &&
+                  new Date(t.date) >= new Date(weekly.deadline || '') &&
+                  t.date &&
+                  new Date(t.date) <= new Date(weekly.deadline || '')
               );
               const completedTasks = weekTasks.filter(t => t.completed).length;
 
@@ -372,26 +439,41 @@ export function GoalCascade({
                         {getDaysRemaining(weekly.deadline)} days remaining
                       </p>
                     </div>
-                    <Badge variant={weekly.completed ? "default" : "outline"}>
-                      {weekly.completed ? "Done" : "In Progress"}
+                    <Badge variant={weekly.completed ? 'default' : 'outline'}>
+                      {weekly.completed ? 'Done' : 'In Progress'}
                     </Badge>
                   </div>
 
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-xs">
-                      <span className="flex-1">Tasks completed: {completedTasks}/{weekTasks.length}</span>
-                      <Progress value={(completedTasks / weekTasks.length) * 100 || 0} className="w-20 h-1.5" />
+                      <span className="flex-1">
+                        Tasks completed: {completedTasks}/{weekTasks.length}
+                      </span>
+                      <Progress
+                        value={(completedTasks / weekTasks.length) * 100 || 0}
+                        className="w-20 h-1.5"
+                      />
                     </div>
 
                     {weekTasks.map(task => (
-                      <div key={task.id} className="flex items-center gap-2 text-xs">
-                        <CheckCircle2 className={cn(
-                          "h-3 w-3",
-                          task.completed ? "text-green-500" : "text-muted-foreground"
-                        )} />
-                        <span className={cn(
-                          task.completed && "line-through text-muted-foreground"
-                        )}>
+                      <div
+                        key={task.id}
+                        className="flex items-center gap-2 text-xs"
+                      >
+                        <CheckCircle2
+                          className={cn(
+                            'h-3 w-3',
+                            task.completed
+                              ? 'text-green-500'
+                              : 'text-muted-foreground'
+                          )}
+                        />
+                        <span
+                          className={cn(
+                            task.completed &&
+                              'line-through text-muted-foreground'
+                          )}
+                        >
                           {task.name}
                         </span>
                         <Badge variant="outline" className="text-[9px] px-1">
@@ -433,23 +515,25 @@ export function GoalCascade({
                 <Input type="date" />
               </div>
               <div>
-                <label className="text-sm font-medium mb-2">Parent Goal (optional)</label>
+                <label className="text-sm font-medium mb-2">
+                  Parent Goal (optional)
+                </label>
                 <Select>
                   <SelectTrigger>
                     <SelectValue placeholder="Select parent" />
                   </SelectTrigger>
                   <SelectContent>
                     {annualGoals.map(g => (
-                      <SelectItem key={g.id} value={g.id.toString()}>{g.title}</SelectItem>
+                      <SelectItem key={g.id} value={g.id.toString()}>
+                        {g.title}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
             </div>
           </div>
-          <Button className="mt-4 w-full">
-            Create Cascaded Goal
-          </Button>
+          <Button className="mt-4 w-full">Create Cascaded Goal</Button>
         </CardContent>
       </Card>
     </div>
@@ -458,12 +542,12 @@ export function GoalCascade({
 
 // Helper component for goal items
 const riskColors = {
-    completed: "bg-green-500 text-green-700",
-    low: "bg-green-100 text-green-700",
-    medium: "bg-amber-100 text-amber-700",
-    high: "bg-orange-100 text-orange-700",
-    overdue: "bg-red-100 text-red-700",
-  };
+  completed: 'bg-green-500 text-green-700',
+  low: 'bg-green-100 text-green-700',
+  medium: 'bg-amber-100 text-amber-700',
+  high: 'bg-orange-100 text-orange-700',
+  overdue: 'bg-red-100 text-red-700',
+};
 
 function GoalItem({
   goal,
@@ -489,8 +573,13 @@ function GoalItem({
             <p className="text-xs text-muted-foreground">{goal.description}</p>
           )}
         </div>
-        <Badge className={cn(riskColors[riskLevel as keyof typeof riskColors], "text-xs")}>
-          {riskLevel === "completed" ? "Done" : riskLevel}
+        <Badge
+          className={cn(
+            riskColors[riskLevel as keyof typeof riskColors],
+            'text-xs'
+          )}
+        >
+          {riskLevel === 'completed' ? 'Done' : riskLevel}
         </Badge>
       </div>
 
@@ -500,10 +589,16 @@ function GoalItem({
             {goal.current_value} / {goal.target_value}
           </span>
           {daysRemaining !== null && (
-            <span className={cn(
-              daysRemaining < 0 ? "text-red-500" : daysRemaining < 7 ? "text-amber-500" : "text-muted-foreground"
-            )}>
-              {daysRemaining < 0 ? "Overdue" : `${daysRemaining}d left`}
+            <span
+              className={cn(
+                daysRemaining < 0
+                  ? 'text-red-500'
+                  : daysRemaining < 7
+                    ? 'text-amber-500'
+                    : 'text-muted-foreground'
+              )}
+            >
+              {daysRemaining < 0 ? 'Overdue' : `${daysRemaining}d left`}
             </span>
           )}
         </div>
@@ -527,4 +622,3 @@ function GoalItem({
     </div>
   );
 }
-
