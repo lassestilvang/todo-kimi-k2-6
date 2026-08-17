@@ -4,18 +4,28 @@ import { ProductivityDashboard } from '../productivity-dashboard';
 
 // Mock recharts
 vi.mock('recharts', () => ({
-  BarChart: ({ children }: { children: React.ReactNode }) => <div data-testid="bar-chart">{children}</div>,
+  BarChart: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="bar-chart">{children}</div>
+  ),
   Bar: () => <div data-testid="bar" />,
   XAxis: () => <div data-testid="x-axis" />,
   YAxis: () => <div data-testid="y-axis" />,
   Tooltip: () => <div data-testid="tooltip" />,
-  ResponsiveContainer: ({ children }: { children: React.ReactNode }) => <div data-testid="responsive-container">{children}</div>,
-  PieChart: ({ children }: { children: React.ReactNode }) => <div data-testid="pie-chart">{children}</div>,
+  ResponsiveContainer: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="responsive-container">{children}</div>
+  ),
+  PieChart: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="pie-chart">{children}</div>
+  ),
   Pie: () => <div data-testid="pie" />,
-  LineChart: ({ children }: { children: React.ReactNode }) => <div data-testid="line-chart">{children}</div>,
+  LineChart: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="line-chart">{children}</div>
+  ),
   Line: () => <div data-testid="line" />,
   CartesianGrid: () => <div data-testid="cartesian-grid" />,
-  AreaChart: ({ children }: { children: React.ReactNode }) => <div data-testid="area-chart">{children}</div>,
+  AreaChart: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="area-chart">{children}</div>
+  ),
   Area: () => <div data-testid="area" />,
   Legend: () => <div data-testid="legend" />,
 }));
@@ -41,7 +51,7 @@ describe('ProductivityDashboard', () => {
       recurring_config: null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-      sort_order: 0
+      sort_order: 0,
     },
     {
       id: 2,
@@ -63,7 +73,7 @@ describe('ProductivityDashboard', () => {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       sort_order: 0,
-      completed_at: new Date().toISOString()
+      completed_at: new Date().toISOString(),
     },
   ];
 
