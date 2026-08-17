@@ -1,15 +1,29 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { Brain, Lightbulb, TrendingUp, Target, CheckCircle, AlertCircle } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import type { TaskWithRelations } from "@/types";
+import { useState, useEffect } from 'react';
+import {
+  Brain,
+  Lightbulb,
+  TrendingUp,
+  Target,
+  CheckCircle,
+  AlertCircle,
+} from 'lucide-react';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import type { TaskWithRelations } from '@/types';
 
 interface Insight {
   id: string;
-  type: "lesson_learned" | "pattern_observed" | "success_factor" | "failure_reason";
+  type:
+    'lesson_learned' | 'pattern_observed' | 'success_factor' | 'failure_reason';
   title: string;
   content: string;
   confidence: number;
@@ -32,11 +46,18 @@ interface InsightsPanelProps {
   className?: string;
 }
 
-export function InsightsPanel({ tasks, userId, onInsightClick, className }: InsightsPanelProps) {
+export function InsightsPanel({
+  tasks,
+  userId,
+  onInsightClick,
+  className,
+}: InsightsPanelProps) {
   const [insights, setInsights] = useState<Insight[]>([]);
   const [skills, setSkills] = useState<Skill[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeView, setActiveView] = useState<"insights" | "skills" | "analytics">("insights");
+  const [activeView, setActiveView] = useState<
+    'insights' | 'skills' | 'analytics'
+  >('insights');
 
   useEffect(() => {
     loadInsightsAndSkills();
@@ -58,41 +79,41 @@ export function InsightsPanel({ tasks, userId, onInsightClick, className }: Insi
     }
   };
 
-  const getInsightIcon = (type: Insight["type"]) => {
+  const getInsightIcon = (type: Insight['type']) => {
     switch (type) {
-      case "lesson_learned":
+      case 'lesson_learned':
         return <Lightbulb className="h-4 w-4" />;
-      case "pattern_observed":
+      case 'pattern_observed':
         return <TrendingUp className="h-4 w-4" />;
-      case "success_factor":
+      case 'success_factor':
         return <CheckCircle className="h-4 w-4" />;
-      case "failure_reason":
+      case 'failure_reason':
         return <AlertCircle className="h-4 w-4" />;
       default:
         return <Brain className="h-4 w-4" />;
     }
   };
 
-  const getInsightColor = (type: Insight["type"]) => {
+  const getInsightColor = (type: Insight['type']) => {
     switch (type) {
-      case "lesson_learned":
-        return "bg-blue-500/10 border-blue-500/20";
-      case "pattern_observed":
-        return "bg-green-500/10 border-green-500/20";
-      case "success_factor":
-        return "bg-emerald-500/10 border-emerald-500/20";
-      case "failure_reason":
-        return "bg-orange-500/10 border-orange-500/20";
+      case 'lesson_learned':
+        return 'bg-blue-500/10 border-blue-500/20';
+      case 'pattern_observed':
+        return 'bg-green-500/10 border-green-500/20';
+      case 'success_factor':
+        return 'bg-emerald-500/10 border-emerald-500/20';
+      case 'failure_reason':
+        return 'bg-orange-500/10 border-orange-500/20';
       default:
-        return "bg-purple-500/10 border-purple-500/20";
+        return 'bg-purple-500/10 border-purple-500/20';
     }
   };
 
   const getConfidenceColor = (confidence: number) => {
-    if (confidence >= 0.8) return "text-green-600";
-    if (confidence >= 0.6) return "text-blue-600";
-    if (confidence >= 0.4) return "text-yellow-600";
-    return "text-gray-600";
+    if (confidence >= 0.8) return 'text-green-600';
+    if (confidence >= 0.6) return 'text-blue-600';
+    if (confidence >= 0.4) return 'text-yellow-600';
+    return 'text-gray-600';
   };
 
   const generateMockInsights = (taskList: TaskWithRelations[]): Insight[] => {
@@ -106,12 +127,12 @@ export function InsightsPanel({ tasks, userId, onInsightClick, className }: Insi
       const mostCommonPriority = getMostCommon(taskTypes);
 
       insights.push({
-        id: "insight-1",
-        type: "pattern_observed",
+        id: 'insight-1',
+        type: 'pattern_observed',
         title: `${mostCommonPriority.charAt(0).toUpperCase() + mostCommonPriority.slice(1)} Priority Tasks Completed Most`,
         content: `You tend to complete ${mostCommonPriority} priority tasks most frequently. This suggests a natural working rhythm that aligns with task importance levels.`,
         confidence: 0.8,
-        context_tags: ["priority", "completion", "behavior"],
+        context_tags: ['priority', 'completion', 'behavior'],
         task_id: null,
         created_at: new Date().toISOString(),
       });
@@ -119,37 +140,50 @@ export function InsightsPanel({ tasks, userId, onInsightClick, className }: Insi
 
     if (completedTasks.some(t => t.time_entries?.length > 0)) {
       // Insight about time tracking
-      const avgTime = completedTasks.reduce((sum, t) => {
-        if (t.time_entries && t.time_entries.length > 0) {
-          return sum + t.time_entries.reduce((timeSum, entry) => timeSum + (entry.duration_seconds || 0), 0);
-        }
-        return sum;
-      }, 0) / completedTasks.filter(t => t.time_entries?.length > 0).length;
+      const avgTime =
+        completedTasks.reduce((sum, t) => {
+          if (t.time_entries && t.time_entries.length > 0) {
+            return (
+              sum +
+              t.time_entries.reduce(
+                (timeSum, entry) => timeSum + (entry.duration_seconds || 0),
+                0
+              )
+            );
+          }
+          return sum;
+        }, 0) / completedTasks.filter(t => t.time_entries?.length > 0).length;
 
       insights.push({
-        id: "insight-2",
-        type: "success_factor",
-        title: "Time Tracking Reveals Productivity Patterns",
+        id: 'insight-2',
+        type: 'success_factor',
+        title: 'Time Tracking Reveals Productivity Patterns',
         content: `On average, your tasks take ${Math.round(avgTime / 60)} minutes to complete. This data can help you estimate future tasks more accurately.`,
         confidence: 0.7,
-        context_tags: ["time-tracking", "estimation", "productivity"],
+        context_tags: ['time-tracking', 'estimation', 'productivity'],
         task_id: null,
         created_at: new Date().toISOString(),
       });
     }
 
-    if (completedTasks.some(t => t.priority === 'high' || t.priority === 'critical')) {
+    if (
+      completedTasks.some(
+        t => t.priority === 'high' || t.priority === 'critical'
+      )
+    ) {
       // Insight about high-priority task completion
-      const complexTasks = completedTasks.filter(t => t.priority === 'high' || t.priority === 'critical').length;
+      const complexTasks = completedTasks.filter(
+        t => t.priority === 'high' || t.priority === 'critical'
+      ).length;
       const totalTasks = completedTasks.length;
 
       insights.push({
-        id: "insight-3",
-        type: "lesson_learned",
+        id: 'insight-3',
+        type: 'lesson_learned',
         title: "You're Good at Handling Complex Tasks",
-        content: `Successfully completed ${complexTasks} out of ${totalTasks} complex (${Math.round(complexTasks/totalTasks*100)}%) priority tasks. This shows strong problem-solving capabilities.`,
+        content: `Successfully completed ${complexTasks} out of ${totalTasks} complex (${Math.round((complexTasks / totalTasks) * 100)}%) priority tasks. This shows strong problem-solving capabilities.`,
         confidence: 0.75,
-        context_tags: ["complexity", "problem-solving", "capability"],
+        context_tags: ['complexity', 'problem-solving', 'capability'],
         task_id: null,
         created_at: new Date().toISOString(),
       });
@@ -163,11 +197,18 @@ export function InsightsPanel({ tasks, userId, onInsightClick, className }: Insi
 
     // Infer skills from task names and descriptions
     const skillPatterns: Record<string, string[]> = {
-      'design': ['design', 'ui', 'ux', 'interface', 'layout', 'visual'],
-      'development': ['code', 'develop', 'implement', 'programming', 'software', 'build'],
-      'research': ['research', 'investigate', 'analyze', 'study', 'explore'],
-      'writing': ['write', 'document', 'content', 'article', 'post'],
-      'leadership': ['lead', 'manage', 'team', 'coordination', 'supervise'],
+      design: ['design', 'ui', 'ux', 'interface', 'layout', 'visual'],
+      development: [
+        'code',
+        'develop',
+        'implement',
+        'programming',
+        'software',
+        'build',
+      ],
+      research: ['research', 'investigate', 'analyze', 'study', 'explore'],
+      writing: ['write', 'document', 'content', 'article', 'post'],
+      leadership: ['lead', 'manage', 'team', 'coordination', 'supervise'],
     };
 
     const skillsMap = new Map<string, Skill>();
@@ -180,12 +221,15 @@ export function InsightsPanel({ tasks, userId, onInsightClick, className }: Insi
       const combinedText = taskName + ' ' + taskDesc;
 
       Object.entries(skillPatterns).forEach(([skillKey, keywords]) => {
-        const matchedKeywords = keywords.filter(keyword => combinedText.includes(keyword));
+        const matchedKeywords = keywords.filter(keyword =>
+          combinedText.includes(keyword)
+        );
         if (matchedKeywords.length > 0) {
           if (!skillsMap.has(skillKey)) {
             skillsMap.set(skillKey, {
               id: skillsMap.size + 1,
-              name: skillKey.charAt(0).toUpperCase() + skillKey.slice(1) + ' Work',
+              name:
+                skillKey.charAt(0).toUpperCase() + skillKey.slice(1) + ' Work',
               proficiency_level: 1,
               evidence_task_ids: [],
             });
@@ -237,7 +281,8 @@ export function InsightsPanel({ tasks, userId, onInsightClick, className }: Insi
           AI Insights & Skills
         </CardTitle>
         <CardDescription>
-          Discover patterns, lessons learned, and skill development from your task history
+          Discover patterns, lessons learned, and skill development from your
+          task history
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -245,31 +290,31 @@ export function InsightsPanel({ tasks, userId, onInsightClick, className }: Insi
           {/* View Selector */}
           <div className="flex gap-2 mb-4">
             <button
-              onClick={() => setActiveView("insights")}
+              onClick={() => setActiveView('insights')}
               className={`px-3 py-1 text-sm rounded-full transition-all ${
-                activeView === "insights"
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+                activeView === 'insights'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
               }`}
             >
               Insights ({insights.length})
             </button>
             <button
-              onClick={() => setActiveView("skills")}
+              onClick={() => setActiveView('skills')}
               className={`px-3 py-1 text-sm rounded-full transition-all ${
-                activeView === "skills"
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+                activeView === 'skills'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
               }`}
             >
               Skills ({skills.length})
             </button>
             <button
-              onClick={() => setActiveView("analytics")}
+              onClick={() => setActiveView('analytics')}
               className={`px-3 py-1 text-sm rounded-full transition-all ${
-                activeView === "analytics"
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+                activeView === 'analytics'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
               }`}
             >
               Analytics
@@ -277,17 +322,19 @@ export function InsightsPanel({ tasks, userId, onInsightClick, className }: Insi
           </div>
 
           {/* Insights View */}
-          {activeView === "insights" && (
+          {activeView === 'insights' && (
             <div className="space-y-4">
               {insights.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <Brain className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>No insights available yet.</p>
-                  <p className="text-sm">Complete more tasks to generate AI-powered insights</p>
+                  <p className="text-sm">
+                    Complete more tasks to generate AI-powered insights
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {insights.map((insight) => (
+                  {insights.map(insight => (
                     <Card
                       key={insight.id}
                       className={`cursor-pointer transition-all hover:scale-102 ${getInsightColor(insight.type)}`}
@@ -310,14 +357,21 @@ export function InsightsPanel({ tasks, userId, onInsightClick, className }: Insi
                                 <Badge variant="secondary" className="text-xs">
                                   {insight.type.replace('_', ' ')}
                                 </Badge>
-                                {insight.context_tags.map((tag) => (
-                                  <Badge key={tag} variant="outline" className="text-xs">
+                                {insight.context_tags.map(tag => (
+                                  <Badge
+                                    key={tag}
+                                    variant="outline"
+                                    className="text-xs"
+                                  >
                                     {tag}
                                   </Badge>
                                 ))}
                               </div>
-                              <div className={`text-xs font-medium ${getConfidenceColor(insight.confidence)}`}>
-                                {Math.round(insight.confidence * 100)}% confidence
+                              <div
+                                className={`text-xs font-medium ${getConfidenceColor(insight.confidence)}`}
+                              >
+                                {Math.round(insight.confidence * 100)}%
+                                confidence
                               </div>
                             </div>
                           </div>
@@ -331,28 +385,39 @@ export function InsightsPanel({ tasks, userId, onInsightClick, className }: Insi
           )}
 
           {/* Skills View */}
-          {activeView === "skills" && (
+          {activeView === 'skills' && (
             <div className="space-y-4">
               {skills.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>No skills tracked yet.</p>
-                  <p className="text-sm">Complete more tasks to track skill development</p>
+                  <p className="text-sm">
+                    Complete more tasks to track skill development
+                  </p>
                 </div>
               ) : (
                 <div className="grid gap-4">
-                  {skills.map((skill) => (
-                    <Card key={skill.id} className="hover:bg-muted/50 transition-colors">
+                  {skills.map(skill => (
+                    <Card
+                      key={skill.id}
+                      className="hover:bg-muted/50 transition-colors"
+                    >
                       <CardContent className="pt-4">
                         <div className="flex items-center justify-between mb-3">
-                          <h3 className="font-semibold text-lg">{skill.name}</h3>
+                          <h3 className="font-semibold text-lg">
+                            {skill.name}
+                          </h3>
                           <Badge variant="secondary">
                             Level {skill.proficiency_level}/5
                           </Badge>
                         </div>
-                        <Progress value={(skill.proficiency_level / 5) * 100} className="h-2 mb-2" />
+                        <Progress
+                          value={(skill.proficiency_level / 5) * 100}
+                          className="h-2 mb-2"
+                        />
                         <div className="text-sm text-muted-foreground">
-                          Evidence from {skill.evidence_task_ids.length} task{skill.evidence_task_ids.length !== 1 ? 's' : ''}
+                          Evidence from {skill.evidence_task_ids.length} task
+                          {skill.evidence_task_ids.length !== 1 ? 's' : ''}
                         </div>
                       </CardContent>
                     </Card>
@@ -363,24 +428,54 @@ export function InsightsPanel({ tasks, userId, onInsightClick, className }: Insi
           )}
 
           {/* Analytics View */}
-          {activeView === "analytics" && (
+          {activeView === 'analytics' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-lg">Insight Distribution</CardTitle>
+                  <CardTitle className="text-lg">
+                    Insight Distribution
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
                     {[
-                      { type: 'lesson_learned', count: insights.filter(i => i.type === 'lesson_learned').length, color: 'bg-blue-500' },
-                      { type: 'pattern_observed', count: insights.filter(i => i.type === 'pattern_observed').length, color: 'bg-green-500' },
-                      { type: 'success_factor', count: insights.filter(i => i.type === 'success_factor').length, color: 'bg-emerald-500' },
-                      { type: 'failure_reason', count: insights.filter(i => i.type === 'failure_reason').length, color: 'bg-orange-500' },
-                    ].map((item) => (
-                      <div key={item.type} className="flex items-center justify-between">
+                      {
+                        type: 'lesson_learned',
+                        count: insights.filter(i => i.type === 'lesson_learned')
+                          .length,
+                        color: 'bg-blue-500',
+                      },
+                      {
+                        type: 'pattern_observed',
+                        count: insights.filter(
+                          i => i.type === 'pattern_observed'
+                        ).length,
+                        color: 'bg-green-500',
+                      },
+                      {
+                        type: 'success_factor',
+                        count: insights.filter(i => i.type === 'success_factor')
+                          .length,
+                        color: 'bg-emerald-500',
+                      },
+                      {
+                        type: 'failure_reason',
+                        count: insights.filter(i => i.type === 'failure_reason')
+                          .length,
+                        color: 'bg-orange-500',
+                      },
+                    ].map(item => (
+                      <div
+                        key={item.type}
+                        className="flex items-center justify-between"
+                      >
                         <div className="flex items-center gap-2">
-                          <div className={`w-3 h-3 rounded-full ${item.color}`} />
-                          <span className="text-sm">{item.type.replace('_', ' ')}</span>
+                          <div
+                            className={`w-3 h-3 rounded-full ${item.color}`}
+                          />
+                          <span className="text-sm">
+                            {item.type.replace('_', ' ')}
+                          </span>
                         </div>
                         <Badge variant="secondary">{item.count}</Badge>
                       </div>
@@ -398,7 +493,17 @@ export function InsightsPanel({ tasks, userId, onInsightClick, className }: Insi
                     <div className="flex justify-between text-sm">
                       <span>Average Confidence</span>
                       <Badge variant="secondary">
-                        {insights.length > 0 ? Math.round(insights.reduce((sum, i) => sum + i.confidence, 0) / insights.length * 100) : 0}%
+                        {insights.length > 0
+                          ? Math.round(
+                              (insights.reduce(
+                                (sum, i) => sum + i.confidence,
+                                0
+                              ) /
+                                insights.length) *
+                                100
+                            )
+                          : 0}
+                        %
                       </Badge>
                     </div>
                     <div className="flex justify-between text-sm">
