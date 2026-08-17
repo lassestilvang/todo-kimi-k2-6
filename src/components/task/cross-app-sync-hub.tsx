@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   Database,
@@ -6,12 +6,18 @@ import {
   RefreshCw,
   Settings,
   Shield,
-  CheckCircle
-} from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { useExternalTasks } from "@/hooks/use-enhanced-productivity";
+  CheckCircle,
+} from 'lucide-react';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { useExternalTasks } from '@/hooks/use-enhanced-productivity';
 
 export function CrossAppSyncHub() {
   const { tasks, loading, convertToTask } = useExternalTasks();
@@ -99,19 +105,26 @@ export function CrossAppSyncHub() {
 interface IntegrationCardProps {
   name: string;
   icon: React.ReactNode;
-  status: "connected" | "disconnected";
+  status: 'connected' | 'disconnected';
   lastSync: string;
 }
 
-function IntegrationCard({ name, icon, status, lastSync }: IntegrationCardProps) {
+function IntegrationCard({
+  name,
+  icon,
+  status,
+  lastSync,
+}: IntegrationCardProps) {
   return (
-    <Card className={`transition-all ${status === "connected" ? "border-green-200" : "border-muted"}`}>
+    <Card
+      className={`transition-all ${status === 'connected' ? 'border-green-200' : 'border-muted'}`}
+    >
       <CardContent className="p-4">
         <div className="flex items-start justify-between mb-2">
           <div className="flex items-center gap-2">
             {icon}
             <span className="font-medium">{name}</span>
-            <Badge variant={status === "connected" ? "default" : "secondary"}>
+            <Badge variant={status === 'connected' ? 'default' : 'secondary'}>
               {status}
             </Badge>
           </div>
@@ -119,7 +132,7 @@ function IntegrationCard({ name, icon, status, lastSync }: IntegrationCardProps)
         <div className="text-xs text-muted-foreground mb-3">
           Last sync: {lastSync}
         </div>
-        {status === "connected" ? (
+        {status === 'connected' ? (
           <Button size="sm" variant="ghost" className="w-full">
             <RefreshCw className="h-4 w-4 mr-2" />
             Sync Now
@@ -154,11 +167,11 @@ interface ExternalTaskCardProps {
 
 function ExternalTaskCard({ task, onConvert }: ExternalTaskCardProps) {
   const priorityColors: Record<string, string> = {
-    critical: "bg-red-100 text-red-800",
-    high: "bg-amber-100 text-amber-800",
-    medium: "bg-blue-100 text-blue-800",
-    low: "bg-green-100 text-green-800",
-    none: "bg-gray-100 text-gray-800"
+    critical: 'bg-red-100 text-red-800',
+    high: 'bg-amber-100 text-amber-800',
+    medium: 'bg-blue-100 text-blue-800',
+    low: 'bg-green-100 text-green-800',
+    none: 'bg-gray-100 text-gray-800',
   };
 
   return (
@@ -170,7 +183,7 @@ function ExternalTaskCard({ task, onConvert }: ExternalTaskCardProps) {
             {task.description}
           </p>
         </div>
-        <Badge className={priorityColors[task.priority] || "bg-gray-100"}>
+        <Badge className={priorityColors[task.priority] || 'bg-gray-100'}>
           {task.priority}
         </Badge>
       </div>
