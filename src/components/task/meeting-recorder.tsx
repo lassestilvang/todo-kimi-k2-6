@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from 'react';
+import { Mic, MicOff, StopCircle, Check, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import {
-  Mic,
-  MicOff,
-  StopCircle,
-  Check,
-  Loader2,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { toast } from "sonner";
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { toast } from 'sonner';
 
 interface MeetingRecorderProps {
   onTranscription: (transcript: string) => void;
@@ -43,12 +43,12 @@ export function MeetingRecorder({ onTranscription }: MeetingRecorderProps) {
       mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
 
-      mediaRecorder.ondataavailable = (event) => {
+      mediaRecorder.ondataavailable = event => {
         chunksRef.current.push(event.data);
       };
 
       mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(chunksRef.current, { type: "audio/webm" });
+        const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
         // In a real implementation, this would upload to a transcription service
         // For demo purposes, we'll generate mock transcription
         const mockTranscript = generateMockTranscript(duration);
@@ -66,9 +66,11 @@ export function MeetingRecorder({ onTranscription }: MeetingRecorderProps) {
         setDuration(prev => prev + 1);
       }, 1000);
 
-      toast.success("Recording started");
+      toast.success('Recording started');
     } catch (error) {
-      toast.error("Failed to start recording. Please check microphone permissions.");
+      toast.error(
+        'Failed to start recording. Please check microphone permissions.'
+      );
     }
   };
 
@@ -100,7 +102,7 @@ export function MeetingRecorder({ onTranscription }: MeetingRecorderProps) {
       onTranscription(transcript);
       toast.success(`Transcribed ${duration} seconds of audio`);
     } catch (error) {
-      toast.error("Failed to transcribe");
+      toast.error('Failed to transcribe');
     } finally {
       setTranscribing(false);
     }
@@ -108,19 +110,20 @@ export function MeetingRecorder({ onTranscription }: MeetingRecorderProps) {
 
   const generateMockTranscript = (seconds: number): string => {
     const topics = [
-      "Project updates",
-      "Next quarter planning",
-      "Team capacity review",
-      "Client feedback analysis",
-      "Technical debt discussion",
-      "Marketing strategy session",
-      "Product roadmap review",
-      "Budget allocation meeting",
+      'Project updates',
+      'Next quarter planning',
+      'Team capacity review',
+      'Client feedback analysis',
+      'Technical debt discussion',
+      'Marketing strategy session',
+      'Product roadmap review',
+      'Budget allocation meeting',
     ];
 
-    const participants = ["Alex", "Jordan", "Taylor", "Morgan", "Casey"];
+    const participants = ['Alex', 'Jordan', 'Taylor', 'Morgan', 'Casey'];
     const selectedTopic = topics[Math.floor(Math.random() * topics.length)];
-    const speaker = participants[Math.floor(Math.random() * participants.length)];
+    const speaker =
+      participants[Math.floor(Math.random() * participants.length)];
 
     const transcript: string[] = [];
 
@@ -132,21 +135,27 @@ export function MeetingRecorder({ onTranscription }: MeetingRecorderProps) {
       const timespan = minute.toFixed(1);
 
       if (i % 3 === 0) {
-        transcript.push(`${timespan}:00 ${speaker}: We need to review the ${selectedTopic.toLowerCase()}.`);
+        transcript.push(
+          `${timespan}:00 ${speaker}: We need to review the ${selectedTopic.toLowerCase()}.`
+        );
       } else if (i % 3 === 1) {
-        transcript.push(`${timespan}:30 ${participants[Math.floor(Math.random() * participants.length)]}: I agree with that approach. Should we also consider...?`);
+        transcript.push(
+          `${timespan}:30 ${participants[Math.floor(Math.random() * participants.length)]}: I agree with that approach. Should we also consider...?`
+        );
       } else {
-        transcript.push(`${timespan}:45 ${speaker}: Let's assign action items to the team. Alex, can you handle the client feedback? Morgan, please prepare the budget allocation.`);
+        transcript.push(
+          `${timespan}:45 ${speaker}: Let's assign action items to the team. Alex, can you handle the client feedback? Morgan, please prepare the budget allocation.`
+        );
       }
     }
 
-    return transcript.join("\n");
+    return transcript.join('\n');
   };
 
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   return (
@@ -164,7 +173,10 @@ export function MeetingRecorder({ onTranscription }: MeetingRecorderProps) {
               <span className="text-sm font-medium">Recording in progress</span>
               <span className="text-lg font-mono">{formatTime(duration)}</span>
             </div>
-            <Progress value={Math.min(100, (duration / 300) * 100)} className="h-2" />
+            <Progress
+              value={Math.min(100, (duration / 300) * 100)}
+              className="h-2"
+            />
           </div>
         )}
 
@@ -173,10 +185,10 @@ export function MeetingRecorder({ onTranscription }: MeetingRecorderProps) {
             <Button
               onClick={startRecording}
               className="flex-1"
-              variant={recording ? "destructive" : "default"}
+              variant={recording ? 'destructive' : 'default'}
             >
               <Mic className="h-4 w-4 mr-2" />
-              {recording ? "Stop Recording" : "Start Recording"}
+              {recording ? 'Stop Recording' : 'Start Recording'}
             </Button>
           ) : (
             <Button
@@ -226,11 +238,9 @@ export function MeetingRecorder({ onTranscription }: MeetingRecorderProps) {
         )}
 
         <p className="text-xs text-muted-foreground text-center">
-          {!recording ? (
-            "Click to start recording audio from your microphone"
-          ) : (
-            "Recording is active. Click 'Stop' when the meeting is complete."
-          )}
+          {!recording
+            ? 'Click to start recording audio from your microphone'
+            : "Recording is active. Click 'Stop' when the meeting is complete."}
         </p>
       </CardContent>
     </Card>
