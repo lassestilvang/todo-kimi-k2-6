@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from 'react';
 import {
   Zap,
   Clock,
@@ -10,22 +10,34 @@ import {
   Settings,
   BarChart2,
   CheckCircle2,
-  AlertCircle
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { toast } from "sonner";
+  AlertCircle,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { toast } from 'sonner';
 
 interface EnergyEntry {
   id: number;
   date: string;
-  time_of_day: "morning" | "afternoon" | "evening";
+  time_of_day: 'morning' | 'afternoon' | 'evening';
   energy_level: number; // 1-10
   task_type?: string;
   notes?: string;
@@ -48,13 +60,20 @@ interface EnergySchedulerProps {
   }>;
 }
 
-const taskTypeEnergyMap: Record<string, { morning: number[]; afternoon: number[]; evening: number[] }> = {
-  "creative": { morning: [9, 10], afternoon: [14, 15, 16], evening: [19, 20] },
-  "analytical": { morning: [10, 11], afternoon: [13, 14, 15], evening: [18, 19] },
-  "collaborative": { morning: [10, 11, 12], afternoon: [14, 15], evening: [] },
-  "administrative": { morning: [8, 9, 10], afternoon: [13, 14, 15], evening: [17, 18] },
-  "physical": { morning: [7, 8, 9], afternoon: [], evening: [18, 19] },
-  "learning": { morning: [8, 9, 10], afternoon: [15, 16, 17], evening: [20, 21] },
+const taskTypeEnergyMap: Record<
+  string,
+  { morning: number[]; afternoon: number[]; evening: number[] }
+> = {
+  creative: { morning: [9, 10], afternoon: [14, 15, 16], evening: [19, 20] },
+  analytical: { morning: [10, 11], afternoon: [13, 14, 15], evening: [18, 19] },
+  collaborative: { morning: [10, 11, 12], afternoon: [14, 15], evening: [] },
+  administrative: {
+    morning: [8, 9, 10],
+    afternoon: [13, 14, 15],
+    evening: [17, 18],
+  },
+  physical: { morning: [7, 8, 9], afternoon: [], evening: [18, 19] },
+  learning: { morning: [8, 9, 10], afternoon: [15, 16, 17], evening: [20, 21] },
 };
 
 export function EnergyScheduler({ tasks = [] }: EnergySchedulerProps) {
@@ -62,12 +81,12 @@ export function EnergyScheduler({ tasks = [] }: EnergySchedulerProps) {
   const [showingSuggestions, setShowingSuggestions] = useState(false);
   const [suggestions, setSuggestions] = useState<EnergySuggestion[]>([]);
   const [sleepHours, setSleepHours] = useState(7.5);
-  const [energyPattern, setEnergyPattern] = useState("morning-peak");
+  const [energyPattern, setEnergyPattern] = useState('morning-peak');
   const [currentEnergyLevel, setCurrentEnergyLevel] = useState<number>(5);
 
   // Load energy data from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem("energy_scheduler_data");
+    const saved = localStorage.getItem('energy_scheduler_data');
     if (saved) {
       setEnergyData(JSON.parse(saved));
     }
@@ -75,7 +94,7 @@ export function EnergyScheduler({ tasks = [] }: EnergySchedulerProps) {
 
   // Save energy data
   useEffect(() => {
-    localStorage.setItem("energy_scheduler_data", JSON.stringify(energyData));
+    localStorage.setItem('energy_scheduler_data', JSON.stringify(energyData));
   }, [energyData]);
 
   // Calculate average energy by time of day
@@ -93,26 +112,32 @@ export function EnergyScheduler({ tasks = [] }: EnergySchedulerProps) {
     });
 
     return {
-      morning: byTime.morning.reduce((a, b) => a + b, 0) / (byTime.morning.length || 1),
-      afternoon: byTime.afternoon.reduce((a, b) => a + b, 0) / (byTime.afternoon.length || 1),
-      evening: byTime.evening.reduce((a, b) => a + b, 0) / (byTime.evening.length || 1),
+      morning:
+        byTime.morning.reduce((a, b) => a + b, 0) /
+        (byTime.morning.length || 1),
+      afternoon:
+        byTime.afternoon.reduce((a, b) => a + b, 0) /
+        (byTime.afternoon.length || 1),
+      evening:
+        byTime.evening.reduce((a, b) => a + b, 0) /
+        (byTime.evening.length || 1),
     };
   }, [energyData]);
 
   // Generate scheduling suggestions
   const generateSuggestions = async () => {
     if (tasks.length === 0) {
-      toast.info("Add some tasks to get scheduling suggestions");
+      toast.info('Add some tasks to get scheduling suggestions');
       return;
     }
 
     const newSuggestions: EnergySuggestion[] = [];
-    const today = new Date().toISOString().split("T")[0];
+    const today = new Date().toISOString().split('T')[0];
 
     tasks.forEach(task => {
       if (!task.date || task.date === today) {
-        let suggestedTime = "09:00";
-        let reasoning = "Default morning slot";
+        let suggestedTime = '09:00';
+        let reasoning = 'Default morning slot';
         let confidence = 0.5;
 
         // Consider priority
@@ -123,26 +148,33 @@ export function EnergyScheduler({ tasks = [] }: EnergySchedulerProps) {
           low: 0.4,
           none: 0.5,
         };
-        const priorityWeight = priorityWeights[task.priority as keyof typeof priorityWeights] || 0.5;
+        const priorityWeight =
+          priorityWeights[task.priority as keyof typeof priorityWeights] || 0.5;
 
         // Consider energy data
         if (averageEnergy) {
           const peakTime = Object.entries(averageEnergy).reduce(
-            (max, entry) => entry[1] > max.value ? { time: entry[0] as keyof typeof averageEnergy, value: entry[1] } : max,
-            { time: "morning", value: 0 }
+            (max, entry) =>
+              entry[1] > max.value
+                ? {
+                    time: entry[0] as keyof typeof averageEnergy,
+                    value: entry[1],
+                  }
+                : max,
+            { time: 'morning', value: 0 }
           );
 
-          if (peakTime.time === "morning") {
-            suggestedTime = "09:00";
-            reasoning = "Your energy peaks in the morning";
+          if (peakTime.time === 'morning') {
+            suggestedTime = '09:00';
+            reasoning = 'Your energy peaks in the morning';
             confidence = 0.8;
-          } else if (peakTime.time === "afternoon") {
-            suggestedTime = "14:00";
-            reasoning = "Your energy is highest in the afternoon";
+          } else if (peakTime.time === 'afternoon') {
+            suggestedTime = '14:00';
+            reasoning = 'Your energy is highest in the afternoon';
             confidence = 0.8;
           } else {
-            suggestedTime = "19:00";
-            reasoning = "Your energy peaks in the evening";
+            suggestedTime = '19:00';
+            reasoning = 'Your energy peaks in the evening';
             confidence = 0.8;
           }
         }
@@ -168,28 +200,33 @@ export function EnergyScheduler({ tasks = [] }: EnergySchedulerProps) {
   };
 
   const addEnergyEntry = () => {
-    const today = new Date().toISOString().split("T")[0];
+    const today = new Date().toISOString().split('T')[0];
     const newEntry: EnergyEntry = {
       id: Date.now(),
       date: today,
-      time_of_day: "morning",
+      time_of_day: 'morning',
       energy_level: 5,
-      task_type: "general",
-      notes: "",
+      task_type: 'general',
+      notes: '',
     };
     setEnergyData(prev => [...prev, newEntry]);
-    toast.success("Energy entry added");
+    toast.success('Energy entry added');
   };
 
   const flowProtection = useMemo(() => {
     // Calculate how much time is "protected" for focused work
-    const peakHours = averageEnergy ? Object.entries(averageEnergy).filter(e => e[1] >= 7).length : 0;
+    const peakHours = averageEnergy
+      ? Object.entries(averageEnergy).filter(e => e[1] >= 7).length
+      : 0;
     const protectedPercentage = (peakHours / 3) * 100;
 
     return {
       isProtected: protectedPercentage > 50,
       percentage: protectedPercentage,
-      reason: protectedPercentage > 50 ? "Your energy peaks align with focused work hours" : "Consider adjusting your energy tracking to identify peak focus times",
+      reason:
+        protectedPercentage > 50
+          ? 'Your energy peaks align with focused work hours'
+          : 'Consider adjusting your energy tracking to identify peak focus times',
     };
   }, [averageEnergy]);
 
@@ -212,7 +249,7 @@ export function EnergyScheduler({ tasks = [] }: EnergySchedulerProps) {
             <div>
               <h4 className="font-medium mb-3">Your Energy Profile</h4>
               <div className="grid grid-cols-3 gap-4">
-                {["morning", "afternoon", "evening"].map(time => (
+                {['morning', 'afternoon', 'evening'].map(time => (
                   <div key={time} className="text-center">
                     <div className="text-xs text-muted-foreground mb-1">
                       {time.charAt(0).toUpperCase() + time.slice(1)}
@@ -222,7 +259,9 @@ export function EnergyScheduler({ tasks = [] }: EnergySchedulerProps) {
                         <div
                           key={i}
                           className={`w-1 h-3 rounded-full ${
-                            averageEnergy && averageEnergy[time as keyof typeof averageEnergy] >= i + 1
+                            averageEnergy &&
+                            averageEnergy[time as keyof typeof averageEnergy] >=
+                              i + 1
                               ? 'bg-yellow-400'
                               : 'bg-gray-200'
                           }`}
@@ -230,7 +269,12 @@ export function EnergyScheduler({ tasks = [] }: EnergySchedulerProps) {
                       ))}
                     </div>
                     <div className="text-xs">
-                      {averageEnergy ? Math.round(averageEnergy[time as keyof typeof averageEnergy]) : "--"}/10
+                      {averageEnergy
+                        ? Math.round(
+                            averageEnergy[time as keyof typeof averageEnergy]
+                          )
+                        : '--'}
+                      /10
                     </div>
                   </div>
                 ))}
@@ -238,19 +282,28 @@ export function EnergyScheduler({ tasks = [] }: EnergySchedulerProps) {
             </div>
 
             {/* Flow Protection */}
-            <Card className={`border-${flowProtection.isProtected ? 'green-500' : 'amber-500'}`}>
+            <Card
+              className={`border-${flowProtection.isProtected ? 'green-500' : 'amber-500'}`}
+            >
               <CardContent className="pt-4">
                 <div className="flex items-start gap-3">
-                  <Brain className={`h-5 w-5 ${flowProtection.isProtected ? 'text-green-500' : 'text-amber-500'}`} />
+                  <Brain
+                    className={`h-5 w-5 ${flowProtection.isProtected ? 'text-green-500' : 'text-amber-500'}`}
+                  />
                   <div>
                     <h5 className="font-medium">
-                      {flowProtection.isProtected ? "Protected Focus Time" : "Focus Time Opportunity"}
+                      {flowProtection.isProtected
+                        ? 'Protected Focus Time'
+                        : 'Focus Time Opportunity'}
                     </h5>
                     <p className="text-sm text-muted-foreground">
                       {flowProtection.reason}
                     </p>
                     <div className="mt-2">
-                      <Progress value={flowProtection.percentage} className="h-2" />
+                      <Progress
+                        value={flowProtection.percentage}
+                        className="h-2"
+                      />
                     </div>
                   </div>
                 </div>
@@ -264,7 +317,10 @@ export function EnergyScheduler({ tasks = [] }: EnergySchedulerProps) {
                 <Button variant="outline" size="sm" onClick={addEnergyEntry}>
                   Add Energy Entry
                 </Button>
-                <Button onClick={generateSuggestions} disabled={tasks.length === 0}>
+                <Button
+                  onClick={generateSuggestions}
+                  disabled={tasks.length === 0}
+                >
                   Get Schedule Suggestions
                 </Button>
               </div>
@@ -296,10 +352,15 @@ export function EnergyScheduler({ tasks = [] }: EnergySchedulerProps) {
                         {suggestion.reasoning}
                       </div>
                     </div>
-                    <Badge className={
-                      suggestion.confidence > 0.8 ? "default" :
-                      suggestion.confidence > 0.5 ? "secondary" : "outline"
-                    }>
+                    <Badge
+                      className={
+                        suggestion.confidence > 0.8
+                          ? 'default'
+                          : suggestion.confidence > 0.5
+                            ? 'secondary'
+                            : 'outline'
+                      }
+                    >
                       {Math.round(suggestion.confidence * 100)}% match
                     </Badge>
                   </div>
@@ -316,23 +377,43 @@ export function EnergyScheduler({ tasks = [] }: EnergySchedulerProps) {
           <CardTitle className="text-lg">Log Your Energy</CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={e => { e.preventDefault(); addEnergyEntry(); }}>
+          <form
+            onSubmit={e => {
+              e.preventDefault();
+              addEnergyEntry();
+            }}
+          >
             <div className="space-y-4">
               <div>
                 <Label>Time of Day</Label>
-                <Select defaultValue="morning" onValueChange={v => {
-                  const latest = energyData[energyData.length - 1];
-                  if (latest) {
-                    setEnergyData(prev => prev.map(e => e.id === latest.id ? { ...e, time_of_day: v as any } : e));
-                  }
-                }}>
+                <Select
+                  defaultValue="morning"
+                  onValueChange={v => {
+                    const latest = energyData[energyData.length - 1];
+                    if (latest) {
+                      setEnergyData(prev =>
+                        prev.map(e =>
+                          e.id === latest.id
+                            ? { ...e, time_of_day: v as any }
+                            : e
+                        )
+                      );
+                    }
+                  }}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="morning">Morning (6am - 12pm)</SelectItem>
-                    <SelectItem value="afternoon">Afternoon (12pm - 6pm)</SelectItem>
-                    <SelectItem value="evening">Evening (6pm - 10pm)</SelectItem>
+                    <SelectItem value="morning">
+                      Morning (6am - 12pm)
+                    </SelectItem>
+                    <SelectItem value="afternoon">
+                      Afternoon (12pm - 6pm)
+                    </SelectItem>
+                    <SelectItem value="evening">
+                      Evening (6pm - 10pm)
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -350,7 +431,11 @@ export function EnergyScheduler({ tasks = [] }: EnergySchedulerProps) {
                     setCurrentEnergyLevel(v[0]);
                     const latest = energyData[energyData.length - 1];
                     if (latest) {
-                      setEnergyData(prev => prev.map(e => e.id === latest.id ? { ...e, energy_level: v[0] } : e));
+                      setEnergyData(prev =>
+                        prev.map(e =>
+                          e.id === latest.id ? { ...e, energy_level: v[0] } : e
+                        )
+                      );
                     }
                   }}
                 />
