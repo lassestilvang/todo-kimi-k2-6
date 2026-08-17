@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plug2,
   CheckCircle,
@@ -13,28 +13,34 @@ import {
   RefreshCw,
   Search,
   Filter,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cn } from "@/lib/utils";
+} from '@/components/ui/select';
+import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { cn } from '@/lib/utils';
 
 interface Integration {
   id: number;
   name: string;
   type: string;
   provider: string;
-  status: "active" | "pending" | "error" | "disconnected";
+  status: 'active' | 'pending' | 'error' | 'disconnected';
   last_synced_at?: string;
   sync_enabled: boolean;
   config: string;
@@ -49,7 +55,7 @@ interface MarketplaceIntegration {
   provider: string;
   featured: boolean;
   auth_methods: string[];
-  status: "available" | "installed" | "incompatible";
+  status: 'available' | 'installed' | 'incompatible';
   ratings?: {
     average: number;
     count: number;
@@ -61,13 +67,21 @@ interface IntegrationMarketplaceProps {
   userId?: number;
 }
 
-export function IntegrationMarketplace({ userId = 1 }: IntegrationMarketplaceProps) {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [installedIntegrations, setInstalledIntegrations] = useState<Integration[]>([]);
-  const [marketplaceIntegrations, setMarketplaceIntegrations] = useState<MarketplaceIntegration[]>([]);
+export function IntegrationMarketplace({
+  userId = 1,
+}: IntegrationMarketplaceProps) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [installedIntegrations, setInstalledIntegrations] = useState<
+    Integration[]
+  >([]);
+  const [marketplaceIntegrations, setMarketplaceIntegrations] = useState<
+    MarketplaceIntegration[]
+  >([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"installed" | "marketplace">("marketplace");
+  const [activeTab, setActiveTab] = useState<'installed' | 'marketplace'>(
+    'marketplace'
+  );
 
   useEffect(() => {
     loadData();
@@ -77,8 +91,12 @@ export function IntegrationMarketplace({ userId = 1 }: IntegrationMarketplacePro
     setIsLoading(true);
     try {
       const [installedRes, marketplaceRes] = await Promise.all([
-        fetch(`/api/integrations`).catch(() => ({ json: () => ({ integrations: [] }) })),
-        fetch(`/api/integrations/marketplace?category=${selectedCategory}${searchQuery ? `&q=${searchQuery}` : ""}`)
+        fetch(`/api/integrations`).catch(() => ({
+          json: () => ({ integrations: [] }),
+        })),
+        fetch(
+          `/api/integrations/marketplace?category=${selectedCategory}${searchQuery ? `&q=${searchQuery}` : ''}`
+        ),
       ]);
 
       if (installedRes) {
@@ -91,7 +109,7 @@ export function IntegrationMarketplace({ userId = 1 }: IntegrationMarketplacePro
         setMarketplaceIntegrations(marketplaceData || []);
       }
     } catch (error) {
-      console.error("Failed to load integrations:", error);
+      console.error('Failed to load integrations:', error);
     } finally {
       setIsLoading(false);
     }
@@ -100,30 +118,40 @@ export function IntegrationMarketplace({ userId = 1 }: IntegrationMarketplacePro
   const handleInstall = async (integrationId: string) => {
     try {
       await fetch(`/api/integrations`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: marketplaceIntegrations.find(i => i.id === integrationId)?.name || "Integration",
-          type: marketplaceIntegrations.find(i => i.id === integrationId)?.type || "other",
-          provider: marketplaceIntegrations.find(i => i.id === integrationId)?.provider || "unknown"
-        })
+          name:
+            marketplaceIntegrations.find(i => i.id === integrationId)?.name ||
+            'Integration',
+          type:
+            marketplaceIntegrations.find(i => i.id === integrationId)?.type ||
+            'other',
+          provider:
+            marketplaceIntegrations.find(i => i.id === integrationId)
+              ?.provider || 'unknown',
+        }),
       });
       loadData();
     } catch (error) {
-      console.error("Installation failed:", error);
+      console.error('Installation failed:', error);
     }
   };
 
   const handleSync = async (integrationId: number) => {
-    await fetch(`/api/integrations/${integrationId}/sync`, { method: "POST" });
+    await fetch(`/api/integrations/${integrationId}/sync`, { method: 'POST' });
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "active": return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case "pending": return <Clock className="h-4 w-4 text-amber-500" />;
-      case "error": return <AlertCircle className="h-4 w-4 text-red-500" />;
-      default: return <Plug2 className="h-4 w-4 text-muted-foreground" />;
+      case 'active':
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'pending':
+        return <Clock className="h-4 w-4 text-amber-500" />;
+      case 'error':
+        return <AlertCircle className="h-4 w-4 text-red-500" />;
+      default:
+        return <Plug2 className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
@@ -131,7 +159,9 @@ export function IntegrationMarketplace({ userId = 1 }: IntegrationMarketplacePro
     const stars = [];
     for (let i = 1; i <= 5; i++) {
       if (i <= avg) {
-        stars.push(<Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />);
+        stars.push(
+          <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+        );
       } else {
         stars.push(<Star key={i} className="h-4 w-4 text-gray-300" />);
       }
@@ -139,9 +169,10 @@ export function IntegrationMarketplace({ userId = 1 }: IntegrationMarketplacePro
     return stars;
   };
 
-  const filteredMarketplace = marketplaceIntegrations.filter(i =>
-    i.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    i.description.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredMarketplace = marketplaceIntegrations.filter(
+    i =>
+      i.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      i.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -158,18 +189,22 @@ export function IntegrationMarketplace({ userId = 1 }: IntegrationMarketplacePro
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Active Integrations</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Active Integrations
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {installedIntegrations.filter(i => i.status === "active").length}
+              {installedIntegrations.filter(i => i.status === 'active').length}
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total Integrations</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Integrations
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -184,7 +219,8 @@ export function IntegrationMarketplace({ userId = 1 }: IntegrationMarketplacePro
           </CardHeader>
           <CardContent>
             <div className="text-sm">
-              {installedIntegrations.find(i => i.last_synced_at)?.last_synced_at || "Never"}
+              {installedIntegrations.find(i => i.last_synced_at)
+                ?.last_synced_at || 'Never'}
             </div>
           </CardContent>
         </Card>
@@ -218,12 +254,15 @@ export function IntegrationMarketplace({ userId = 1 }: IntegrationMarketplacePro
                 <Input
                   placeholder="Search integrations..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={e => setSearchQuery(e.target.value)}
                   className="pl-10"
                 />
               </div>
 
-              <Select value={selectedCategory} onValueChange={setSelectedCategory as any}>
+              <Select
+                value={selectedCategory}
+                onValueChange={setSelectedCategory as any}
+              >
                 <SelectTrigger className="w-[180px]">
                   <Filter className="h-4 w-4 mr-2" />
                   <SelectValue placeholder="All Categories" />
@@ -232,7 +271,9 @@ export function IntegrationMarketplace({ userId = 1 }: IntegrationMarketplacePro
                   <SelectItem value="all">All Categories</SelectItem>
                   <SelectItem value="calendar">Calendar</SelectItem>
                   <SelectItem value="email">Email</SelectItem>
-                  <SelectItem value="project_mgmt">Project Management</SelectItem>
+                  <SelectItem value="project_mgmt">
+                    Project Management
+                  </SelectItem>
                   <SelectItem value="communication">Communication</SelectItem>
                 </SelectContent>
               </Select>
@@ -251,7 +292,7 @@ export function IntegrationMarketplace({ userId = 1 }: IntegrationMarketplacePro
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredMarketplace.map((integration) => (
+                {filteredMarketplace.map(integration => (
                   <motion.div
                     key={integration.id}
                     initial={{ opacity: 0, scale: 0.95 }}
@@ -290,10 +331,12 @@ export function IntegrationMarketplace({ userId = 1 }: IntegrationMarketplacePro
                           <Button
                             size="sm"
                             onClick={() => handleInstall(integration.id)}
-                            disabled={integration.status !== "available"}
+                            disabled={integration.status !== 'available'}
                           >
-                            {integration.status === "installed" ? "Installed" : "Install"}
-                            {integration.status !== "installed" && (
+                            {integration.status === 'installed'
+                              ? 'Installed'
+                              : 'Install'}
+                            {integration.status !== 'installed' && (
                               <Download className="h-4 w-4 ml-2" />
                             )}
                           </Button>
@@ -318,14 +361,19 @@ export function IntegrationMarketplace({ userId = 1 }: IntegrationMarketplacePro
             ) : installedIntegrations.length === 0 ? (
               <div className="text-center py-12">
                 <Plug2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p className="text-muted-foreground">No integrations installed yet</p>
-                <Button className="mt-4" onClick={() => setActiveTab("marketplace" as any)}>
-                          Browse Marketplace
-                        </Button>
+                <p className="text-muted-foreground">
+                  No integrations installed yet
+                </p>
+                <Button
+                  className="mt-4"
+                  onClick={() => setActiveTab('marketplace' as any)}
+                >
+                  Browse Marketplace
+                </Button>
               </div>
             ) : (
               <div className="grid gap-4">
-                {installedIntegrations.map((integration) => (
+                {installedIntegrations.map(integration => (
                   <Card key={integration.id}>
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
@@ -341,12 +389,16 @@ export function IntegrationMarketplace({ userId = 1 }: IntegrationMarketplacePro
                             <div className="flex items-center gap-2">
                               {getStatusIcon(integration.status)}
                               <span className="text-sm">
-                                {integration.status.charAt(0).toUpperCase() + integration.status.slice(1)}
+                                {integration.status.charAt(0).toUpperCase() +
+                                  integration.status.slice(1)}
                               </span>
                             </div>
                             {integration.last_synced_at && (
                               <div className="text-xs text-muted-foreground">
-                                Last synced: {new Date(integration.last_synced_at).toLocaleString()}
+                                Last synced:{' '}
+                                {new Date(
+                                  integration.last_synced_at
+                                ).toLocaleString()}
                               </div>
                             )}
                           </div>
