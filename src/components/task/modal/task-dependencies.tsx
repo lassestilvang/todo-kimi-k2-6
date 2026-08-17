@@ -1,14 +1,18 @@
-"use client";
+'use client';
 
-import { Link } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import type { TaskWithRelations } from "@/types";
-import { cn } from "@/lib/utils";
-import { format } from "date-fns";
+import { Link } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import type { TaskWithRelations } from '@/types';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
 
 interface TaskDependenciesProps {
   allTasks: TaskWithRelations[];
@@ -26,8 +30,8 @@ export function TaskDependencies({
   onSearchChange,
 }: TaskDependenciesProps) {
   const availableBlockingTasks = (allTasks || [])
-    .filter((t) => !t.completed && t.id)
-    .filter((t) => t.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    .filter(t => !t.completed && t.id)
+    .filter(t => t.name.toLowerCase().includes(searchQuery.toLowerCase()))
     .slice(0, 20);
 
   return (
@@ -38,13 +42,10 @@ export function TaskDependencies({
       </Label>
       <Popover>
         <PopoverTrigger>
-          <Button
-            variant="outline"
-            className="w-full justify-start"
-          >
+          <Button variant="outline" className="w-full justify-start">
             {selectedBlocks.length > 0
-              ? `${selectedBlocks.length} task${selectedBlocks.length > 1 ? "s" : ""} blocking`
-              : "Add blocking task"}
+              ? `${selectedBlocks.length} task${selectedBlocks.length > 1 ? 's' : ''} blocking`
+              : 'Add blocking task'}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-64" align="start">
@@ -52,22 +53,22 @@ export function TaskDependencies({
             <Input
               placeholder="Search tasks..."
               value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
+              onChange={e => onSearchChange(e.target.value)}
             />
             <div className="max-h-60 overflow-y-auto">
-              {availableBlockingTasks.map((t) => (
+              {availableBlockingTasks.map(t => (
                 <button
                   key={t.id}
                   className={cn(
-                    "w-full text-left text-sm rounded px-2 py-1.5 hover:bg-accent",
-                    selectedBlocks.includes(t.id) && "bg-accent"
+                    'w-full text-left text-sm rounded px-2 py-1.5 hover:bg-accent',
+                    selectedBlocks.includes(t.id) && 'bg-accent'
                   )}
                   onClick={() => onToggleBlocker(t.id)}
                 >
                   <div className="font-medium truncate">{t.name}</div>
                   {t.date && (
                     <div className="text-xs text-muted-foreground">
-                      {format(new Date(t.date), "MMM d")}
+                      {format(new Date(t.date), 'MMM d')}
                     </div>
                   )}
                 </button>
@@ -78,8 +79,8 @@ export function TaskDependencies({
       </Popover>
       {selectedBlocks.length > 0 && (
         <div className="flex flex-wrap gap-1 mt-2">
-          {selectedBlocks.map((id) => {
-            const blockedTask = allTasks?.find((t) => t.id === id);
+          {selectedBlocks.map(id => {
+            const blockedTask = allTasks?.find(t => t.id === id);
             return blockedTask ? (
               <Badge key={id} variant="secondary">
                 {blockedTask.name}
