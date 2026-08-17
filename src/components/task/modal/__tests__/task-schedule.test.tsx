@@ -10,12 +10,27 @@ vi.mock('lucide-react', () => ({
 
 // Mock UI components
 vi.mock('@/components/ui/label', () => ({
-  Label: ({ children }: { children: React.ReactNode }) => <label>{children}</label>,
+  Label: ({ children }: { children: React.ReactNode }) => (
+    <label>{children}</label>
+  ),
 }));
 
 vi.mock('@/components/ui/input', () => ({
-  Input: ({ type, value, onChange }: { type: string; value?: string; onChange?: (e: any) => void }) => (
-    <input type={type} value={value} onChange={onChange} data-testid={`input-${type}`} />
+  Input: ({
+    type,
+    value,
+    onChange,
+  }: {
+    type: string;
+    value?: string;
+    onChange?: (e: any) => void;
+  }) => (
+    <input
+      type={type}
+      value={value}
+      onChange={onChange}
+      data-testid={`input-${type}`}
+    />
   ),
 }));
 
@@ -55,7 +70,9 @@ describe('TaskSchedule', () => {
   it('should render estimate input', () => {
     render(<TaskSchedule {...defaultProps} />);
     expect(screen.getByText('Estimate (HH:mm)')).toBeInTheDocument();
-    const timeInputs = screen.getAllByTestId('input-time') as HTMLInputElement[];
+    const timeInputs = screen.getAllByTestId(
+      'input-time'
+    ) as HTMLInputElement[];
     expect(timeInputs.length).toBeGreaterThanOrEqual(1);
   });
 
@@ -77,7 +94,9 @@ describe('TaskSchedule', () => {
 
   it('should display current estimate value', () => {
     render(<TaskSchedule {...defaultProps} />);
-    const timeInputs = screen.getAllByTestId('input-time') as HTMLInputElement[];
+    const timeInputs = screen.getAllByTestId(
+      'input-time'
+    ) as HTMLInputElement[];
     expect((timeInputs[0] as HTMLInputElement).value).toBe('02:30');
   });
 
