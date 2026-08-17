@@ -1,19 +1,23 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { Battery, Clock, RefreshCw, AlertCircle } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { Slider } from "@/components/ui/slider";
-import { useEnergyBudget, useMoodTracking } from "@/hooks/use-enhanced-productivity";
+import { useState, useEffect } from 'react';
+import { Battery, Clock, RefreshCw, AlertCircle } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { Slider } from '@/components/ui/slider';
+import {
+  useEnergyBudget,
+  useMoodTracking,
+} from '@/hooks/use-enhanced-productivity';
 
 interface EnergyBudgetWidgetProps {
   className?: string;
 }
 
 export function EnergyBudgetWidget({ className }: EnergyBudgetWidgetProps) {
-  const { profile, budget, loading, logEnergy, updateProfile } = useEnergyBudget();
+  const { profile, budget, loading, logEnergy, updateProfile } =
+    useEnergyBudget();
   const { getRecommendations } = useMoodTracking();
 
   if (loading) {
@@ -28,13 +32,15 @@ export function EnergyBudgetWidget({ className }: EnergyBudgetWidgetProps) {
 
   const handleEnergyLog = async (spent: number) => {
     await logEnergy({
-      date: new Date().toISOString().split("T")[0],
+      date: new Date().toISOString().split('T')[0],
       energy_spent: spent,
-      activities: [{
-        task_id: null,
-        energy_cost: spent,
-        timestamp: new Date().toISOString()
-      }]
+      activities: [
+        {
+          task_id: null,
+          energy_cost: spent,
+          timestamp: new Date().toISOString(),
+        },
+      ],
     });
   };
 
@@ -64,7 +70,9 @@ export function EnergyBudgetWidget({ className }: EnergyBudgetWidgetProps) {
                 <span className="text-sm text-muted-foreground">points</span>
               </div>
               <Progress
-                value={(budget?.balance ?? 100) / (budget?.dailyLimit ?? 100) * 100}
+                value={
+                  ((budget?.balance ?? 100) / (budget?.dailyLimit ?? 100)) * 100
+                }
                 className="h-3"
               />
             </div>
@@ -144,7 +152,9 @@ export function EnergyBudgetWidget({ className }: EnergyBudgetWidgetProps) {
               {profile.peak_energy_times?.map((peak, idx) => (
                 <div key={idx} className="flex items-center gap-2 text-sm">
                   <Clock className="h-4 w-4 text-muted-foreground" />
-                  <span>{peak.start} - {peak.end}</span>
+                  <span>
+                    {peak.start} - {peak.end}
+                  </span>
                 </div>
               ))}
             </div>
