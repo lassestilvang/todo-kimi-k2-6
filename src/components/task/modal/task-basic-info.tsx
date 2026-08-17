@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import type { Priority, Recurring } from "@/types";
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import type { Priority, Recurring } from '@/types';
 
 interface TaskBasicInfoProps {
   name: string;
@@ -19,21 +19,21 @@ interface TaskBasicInfoProps {
 }
 
 const priorities: { value: Priority; label: string; color: string }[] = [
-  { value: "critical", label: "Critical", color: "bg-red-600" },
-  { value: "high", label: "High", color: "bg-red-500" },
-  { value: "medium", label: "Medium", color: "bg-amber-500" },
-  { value: "low", label: "Low", color: "bg-blue-500" },
-  { value: "none", label: "None", color: "bg-gray-400" },
+  { value: 'critical', label: 'Critical', color: 'bg-red-600' },
+  { value: 'high', label: 'High', color: 'bg-red-500' },
+  { value: 'medium', label: 'Medium', color: 'bg-amber-500' },
+  { value: 'low', label: 'Low', color: 'bg-blue-500' },
+  { value: 'none', label: 'None', color: 'bg-gray-400' },
 ];
 
 const recurringOptions: { value: Recurring; label: string }[] = [
-  { value: "none", label: "No recurrence" },
-  { value: "daily", label: "Every day" },
-  { value: "weekly", label: "Every week" },
-  { value: "weekdays", label: "Every weekday" },
-  { value: "monthly", label: "Every month" },
-  { value: "yearly", label: "Every year" },
-  { value: "custom", label: "Custom..." },
+  { value: 'none', label: 'No recurrence' },
+  { value: 'daily', label: 'Every day' },
+  { value: 'weekly', label: 'Every week' },
+  { value: 'weekdays', label: 'Every weekday' },
+  { value: 'monthly', label: 'Every month' },
+  { value: 'yearly', label: 'Every year' },
+  { value: 'custom', label: 'Custom...' },
 ];
 
 export function TaskBasicInfo({
@@ -54,7 +54,7 @@ export function TaskBasicInfo({
         <Label>Task Name</Label>
         <Input
           value={name}
-          onChange={(e) => onNameChange(e.target.value)}
+          onChange={e => onNameChange(e.target.value)}
           placeholder="What needs to be done?"
           className="text-base"
         />
@@ -64,7 +64,7 @@ export function TaskBasicInfo({
         <Label>Description</Label>
         <Textarea
           value={description}
-          onChange={(e) => onDescriptionChange(e.target.value)}
+          onChange={e => onDescriptionChange(e.target.value)}
           placeholder="Add details..."
           rows={3}
         />
@@ -74,7 +74,7 @@ export function TaskBasicInfo({
         <Label>Notes (Markdown supported)</Label>
         <Textarea
           value={notes}
-          onChange={(e) => onNotesChange(e.target.value)}
+          onChange={e => onNotesChange(e.target.value)}
           placeholder="Add notes..."
           rows={4}
           className="font-mono text-sm"
@@ -86,10 +86,10 @@ export function TaskBasicInfo({
           <Label>Priority</Label>
           <select
             value={priority}
-            onChange={(e) => onPriorityChange(e.target.value as Priority)}
+            onChange={e => onPriorityChange(e.target.value as Priority)}
             className="w-full px-3 py-2 border rounded-md bg-background"
           >
-            {priorities.map((p) => (
+            {priorities.map(p => (
               <option key={p.value} value={p.value}>
                 <span className={p.color}>{p.label}</span>
               </option>
@@ -100,10 +100,10 @@ export function TaskBasicInfo({
           <Label>Recurring</Label>
           <select
             value={recurring}
-            onChange={(e) => onRecurringChange(e.target.value as Recurring)}
+            onChange={e => onRecurringChange(e.target.value as Recurring)}
             className="w-full px-3 py-2 border rounded-md bg-background"
           >
-            {recurringOptions.map((r) => (
+            {recurringOptions.map(r => (
               <option key={r.value} value={r.value}>
                 {r.label}
               </option>
