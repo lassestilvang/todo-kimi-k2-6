@@ -1,18 +1,24 @@
- 
-"use client";
+'use client';
 
-import { useState } from "react";
-import { CheckCircle2, Move, Tag, Trash2, TrendingUp, ChevronDown } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useState } from 'react';
+import {
+  CheckCircle2,
+  Move,
+  Tag,
+  Trash2,
+  TrendingUp,
+  ChevronDown,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import { toast } from "sonner";
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
 
 interface BulkActionsMenuProps {
   selectedTasks: number[];
@@ -20,70 +26,75 @@ interface BulkActionsMenuProps {
   onRefresh: () => void;
 }
 
-export function BulkActionsMenu({ selectedTasks, onAction, onRefresh }: BulkActionsMenuProps) {
+export function BulkActionsMenu({
+  selectedTasks,
+  onAction,
+  onRefresh,
+}: BulkActionsMenuProps) {
   const [isMoving, setIsMoving] = useState(false);
   const [isLabeling, setIsLabeling] = useState(false);
-  const [listIdInput, setListIdInput] = useState("");
-  const [labelIdInput, setLabelIdInput] = useState("");
+  const [listIdInput, setListIdInput] = useState('');
+  const [labelIdInput, setLabelIdInput] = useState('');
 
   const handleMove = async () => {
     if (!listIdInput) return;
     const listId = parseInt(listIdInput);
     if (isNaN(listId)) {
-      toast.error("Please enter a valid list ID");
+      toast.error('Please enter a valid list ID');
       return;
     }
     try {
-      const { bulkUpdateTasks } = await import("@/lib/actions/tasks");
+      const { bulkUpdateTasks } = await import('@/lib/actions/tasks');
       await bulkUpdateTasks(selectedTasks, { list_id: listId });
       toast.success(`Moved ${selectedTasks.length} task(s)`);
       onAction();
       onRefresh();
     } catch {
-      toast.error("Failed to move tasks");
+      toast.error('Failed to move tasks');
     } finally {
       setIsMoving(false);
-      setListIdInput("");
+      setListIdInput('');
     }
   };
 
   const handleLabel = async () => {
     if (!labelIdInput) return;
     const labelIds = labelIdInput
-      .split(",")
-      .map((id) => parseInt(id.trim()))
-      .filter((id) => !isNaN(id));
+      .split(',')
+      .map(id => parseInt(id.trim()))
+      .filter(id => !isNaN(id));
     if (labelIds.length === 0) {
-      toast.error("Please enter valid label IDs");
+      toast.error('Please enter valid label IDs');
       return;
     }
     try {
-      const { bulkUpdateTasks } = await import("@/lib/actions/tasks");
+      const { bulkUpdateTasks } = await import('@/lib/actions/tasks');
       await bulkUpdateTasks(selectedTasks, { label_ids: labelIds });
       toast.success(`Labeled ${selectedTasks.length} task(s)`);
       onAction();
       onRefresh();
     } catch {
-      toast.error("Failed to label tasks");
+      toast.error('Failed to label tasks');
     } finally {
       setIsLabeling(false);
-      setLabelIdInput("");
+      setLabelIdInput('');
     }
   };
 
   const handleDelete = async () => {
     if (!confirm(`Delete ${selectedTasks.length} task(s)?`)) return;
     try {
-      const { bulkDeleteTasks, getTasksByIds } = await import("@/lib/actions/tasks");
+      const { bulkDeleteTasks, getTasksByIds } =
+        await import('@/lib/actions/tasks');
       // Store tasks for potential undo
       const tasksToDelete = await getTasksByIds(selectedTasks);
       await bulkDeleteTasks(selectedTasks);
       toast.success(`Deleted ${selectedTasks.length} task(s)`, {
         action: {
-          label: "Undo",
+          label: 'Undo',
           onClick: async () => {
             try {
-              const { createTask } = await import("@/lib/actions/tasks");
+              const { createTask } = await import('@/lib/actions/tasks');
               // Recreate all tasks
               for (const task of tasksToDelete) {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -91,23 +102,25 @@ export function BulkActionsMenu({ selectedTasks, onAction, onRefresh }: BulkActi
                   name: task.name,
                   priority: task.priority,
                 };
-                if (task.description) restoreData.description = task.description;
+                if (task.description)
+                  restoreData.description = task.description;
                 if (task.notes) restoreData.notes = task.notes;
                 if (task.list_id) restoreData.list_id = task.list_id;
                 if (task.date) restoreData.date = task.date;
                 if (task.deadline) restoreData.deadline = task.deadline;
                 if (task.recurring) restoreData.recurring = task.recurring;
-                if (task.recurring_config) restoreData.recurring_config = task.recurring_config;
+                if (task.recurring_config)
+                  restoreData.recurring_config = task.recurring_config;
                 // Recreate subtasks
                 if (task.subtasks?.length) {
-                  restoreData.subtasks = task.subtasks.map((s) => s.name);
+                  restoreData.subtasks = task.subtasks.map(s => s.name);
                 }
                 await createTask(restoreData);
               }
               onRefresh();
-              toast.success("Tasks restored");
+              toast.success('Tasks restored');
             } catch {
-              toast.error("Failed to restore tasks");
+              toast.error('Failed to restore tasks');
             }
           },
         },
@@ -115,31 +128,33 @@ export function BulkActionsMenu({ selectedTasks, onAction, onRefresh }: BulkActi
       onAction();
       onRefresh();
     } catch {
-      toast.error("Failed to delete tasks");
+      toast.error('Failed to delete tasks');
     }
   };
 
   const handleComplete = async () => {
     try {
-      const { bulkUpdateTasks } = await import("@/lib/actions/tasks");
+      const { bulkUpdateTasks } = await import('@/lib/actions/tasks');
       await bulkUpdateTasks(selectedTasks, { completed: true });
       toast.success(`Completed ${selectedTasks.length} task(s)`);
       onAction();
       onRefresh();
     } catch {
-      toast.error("Failed to complete tasks");
+      toast.error('Failed to complete tasks');
     }
   };
 
-  const handlePriorityChange = async (priority: "critical" | "high" | "medium" | "low") => {
+  const handlePriorityChange = async (
+    priority: 'critical' | 'high' | 'medium' | 'low'
+  ) => {
     try {
-      const { bulkUpdateTasks } = await import("@/lib/actions/tasks");
+      const { bulkUpdateTasks } = await import('@/lib/actions/tasks');
       await bulkUpdateTasks(selectedTasks, { priority });
       toast.success(`Updated priority on ${selectedTasks.length} task(s)`);
       onAction();
       onRefresh();
     } catch {
-      toast.error("Failed to update priority");
+      toast.error('Failed to update priority');
     }
   };
 
@@ -150,7 +165,7 @@ export function BulkActionsMenu({ selectedTasks, onAction, onRefresh }: BulkActi
           type="number"
           placeholder="List ID"
           value={listIdInput}
-          onChange={(e) => setListIdInput(e.target.value)}
+          onChange={e => setListIdInput(e.target.value)}
           className="w-20"
         />
         <Button size="sm" onClick={handleMove}>
@@ -170,7 +185,7 @@ export function BulkActionsMenu({ selectedTasks, onAction, onRefresh }: BulkActi
           type="text"
           placeholder="Label IDs (1,2,3)"
           value={labelIdInput}
-          onChange={(e) => setLabelIdInput(e.target.value)}
+          onChange={e => setLabelIdInput(e.target.value)}
           className="w-32"
         />
         <Button size="sm" onClick={handleLabel}>
@@ -204,19 +219,19 @@ export function BulkActionsMenu({ selectedTasks, onAction, onRefresh }: BulkActi
           <Tag className="h-3.5 w-3.5 mr-2" />
           Add Labels
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handlePriorityChange("critical")}>
+        <DropdownMenuItem onClick={() => handlePriorityChange('critical')}>
           <TrendingUp className="h-3.5 w-3.5 mr-2 text-red-500" />
           Set Critical
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handlePriorityChange("high")}>
+        <DropdownMenuItem onClick={() => handlePriorityChange('high')}>
           <TrendingUp className="h-3.5 w-3.5 mr-2 text-orange-500" />
           Set High
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handlePriorityChange("medium")}>
+        <DropdownMenuItem onClick={() => handlePriorityChange('medium')}>
           <TrendingUp className="h-3.5 w-3.5 mr-2 text-amber-500" />
           Set Medium
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handlePriorityChange("low")}>
+        <DropdownMenuItem onClick={() => handlePriorityChange('low')}>
           <TrendingUp className="h-3.5 w-3.5 mr-2 text-blue-500" />
           Set Low
         </DropdownMenuItem>
