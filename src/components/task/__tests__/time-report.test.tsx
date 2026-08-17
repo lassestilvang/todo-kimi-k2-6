@@ -9,7 +9,8 @@ vi.mock('recharts', () => ({
   XAxis: () => null,
   YAxis: () => null,
   Tooltip: () => null,
-  ResponsiveContainer: ({ children }: { children: React.ReactNode }) => children,
+  ResponsiveContainer: ({ children }: { children: React.ReactNode }) =>
+    children,
   PieChart: () => null,
   Pie: () => null,
   Cell: () => null,
@@ -20,14 +21,71 @@ vi.mock('recharts', () => ({
 
 describe('TimeReport', () => {
   const mockTasks: any[] = [
-    { id: 1, name: 'Task 1', completed: false, priority: 'high', labels: [], subtasks: [], reminders: [], logs: [], date: null, deadline: null, description: null, notes: null, estimate: null, actual_time: null, recurring: 'none', recurring_config: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), sort_order: 0 },
-    { id: 2, name: 'Task 2', completed: true, priority: 'medium', labels: [], subtasks: [], reminders: [], logs: [], date: null, deadline: null, description: null, notes: null, estimate: null, actual_time: null, recurring: 'none', recurring_config: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), sort_order: 0, completed_at: new Date().toISOString() },
+    {
+      id: 1,
+      name: 'Task 1',
+      completed: false,
+      priority: 'high',
+      labels: [],
+      subtasks: [],
+      reminders: [],
+      logs: [],
+      date: null,
+      deadline: null,
+      description: null,
+      notes: null,
+      estimate: null,
+      actual_time: null,
+      recurring: 'none',
+      recurring_config: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      sort_order: 0,
+    },
+    {
+      id: 2,
+      name: 'Task 2',
+      completed: true,
+      priority: 'medium',
+      labels: [],
+      subtasks: [],
+      reminders: [],
+      logs: [],
+      date: null,
+      deadline: null,
+      description: null,
+      notes: null,
+      estimate: null,
+      actual_time: null,
+      recurring: 'none',
+      recurring_config: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      sort_order: 0,
+      completed_at: new Date().toISOString(),
+    },
   ];
 
   // Use dates within the current week for proper filtering
   const mockTimeEntries = [
-    { id: 1, task_id: 1, start_time: new Date().toISOString(), end_time: new Date().toISOString(), duration_seconds: 3600, description: 'Test task 1', created_at: new Date().toISOString() },
-    { id: 2, task_id: 2, start_time: new Date().toISOString(), end_time: new Date().toISOString(), duration_seconds: 1800, description: 'Test task 2', created_at: new Date().toISOString() },
+    {
+      id: 1,
+      task_id: 1,
+      start_time: new Date().toISOString(),
+      end_time: new Date().toISOString(),
+      duration_seconds: 3600,
+      description: 'Test task 1',
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: 2,
+      task_id: 2,
+      start_time: new Date().toISOString(),
+      end_time: new Date().toISOString(),
+      duration_seconds: 1800,
+      description: 'Test task 2',
+      created_at: new Date().toISOString(),
+    },
   ];
 
   it('renders time report with data', () => {
@@ -47,12 +105,24 @@ describe('TimeReport', () => {
   });
 
   it('renders with month period', () => {
-    render(<TimeReport tasks={mockTasks} timeEntries={mockTimeEntries} period="month" />);
+    render(
+      <TimeReport
+        tasks={mockTasks}
+        timeEntries={mockTimeEntries}
+        period="month"
+      />
+    );
     expect(screen.getByText('Total Time')).toBeInTheDocument();
   });
 
   it('renders with all period', () => {
-    render(<TimeReport tasks={mockTasks} timeEntries={mockTimeEntries} period="all" />);
+    render(
+      <TimeReport
+        tasks={mockTasks}
+        timeEntries={mockTimeEntries}
+        period="all"
+      />
+    );
     expect(screen.getByText('Total Time')).toBeInTheDocument();
   });
 
@@ -63,7 +133,15 @@ describe('TimeReport', () => {
 
   it('handles entries with null duration', () => {
     const entriesWithNull = [
-      { id: 1, task_id: 1, start_time: new Date().toISOString(), end_time: new Date().toISOString(), duration_seconds: null, description: 'Test', created_at: new Date().toISOString() },
+      {
+        id: 1,
+        task_id: 1,
+        start_time: new Date().toISOString(),
+        end_time: new Date().toISOString(),
+        duration_seconds: null,
+        description: 'Test',
+        created_at: new Date().toISOString(),
+      },
     ];
     render(<TimeReport tasks={mockTasks} timeEntries={entriesWithNull} />);
     expect(screen.getByText('Total Time')).toBeInTheDocument();
@@ -71,7 +149,15 @@ describe('TimeReport', () => {
 
   it('handles entries with no matching task', () => {
     const entriesWithoutTask = [
-      { id: 1, task_id: 999, start_time: new Date().toISOString(), end_time: new Date().toISOString(), duration_seconds: 3600, description: 'Test', created_at: new Date().toISOString() },
+      {
+        id: 1,
+        task_id: 999,
+        start_time: new Date().toISOString(),
+        end_time: new Date().toISOString(),
+        duration_seconds: 3600,
+        description: 'Test',
+        created_at: new Date().toISOString(),
+      },
     ];
     render(<TimeReport tasks={mockTasks} timeEntries={entriesWithoutTask} />);
     expect(screen.getByText('Total Time')).toBeInTheDocument();
