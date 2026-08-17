@@ -1,12 +1,18 @@
-"use client";
+'use client';
 
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
-import type { TaskWithRelations } from "@/types";
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
+import type { TaskWithRelations } from '@/types';
 
 interface TaskCollaborateTabProps {
   task: TaskWithRelations;
@@ -16,7 +22,7 @@ export function TaskCollaborateTab({ task }: TaskCollaborateTabProps) {
   const handleGenerateShareLink = () => {
     const shareLink = `${window.location.origin}/share/${task.id}-${Math.random().toString(36).substr(2, 9)}`;
     navigator.clipboard.writeText(shareLink);
-    toast.success("Share link copied to clipboard!");
+    toast.success('Share link copied to clipboard!');
   };
 
   return (
@@ -31,10 +37,7 @@ export function TaskCollaborateTab({ task }: TaskCollaborateTabProps) {
           <h4 className="text-sm font-medium mb-2">Share with Users</h4>
           <div className="space-y-3">
             <div className="flex gap-2">
-              <Input
-                placeholder="Enter user email..."
-                className="flex-1"
-              />
+              <Input placeholder="Enter user email..." className="flex-1" />
               <Select
                 value="view"
                 // eslint-disable-next-line @typescript-eslint/no-empty-function
@@ -55,7 +58,10 @@ export function TaskCollaborateTab({ task }: TaskCollaborateTabProps) {
               <Label>Current Collaborators</Label>
               <div className="flex flex-wrap gap-2">
                 {task.assignee && (
-                  <Badge variant="secondary" className="flex items-center gap-1">
+                  <Badge
+                    variant="secondary"
+                    className="flex items-center gap-1"
+                  >
                     <span>{task.assignee.name || task.assignee.email}</span>
                   </Badge>
                 )}
