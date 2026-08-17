@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useMemo } from "react";
+import { useMemo } from 'react';
 import {
   Brain,
   Target,
@@ -11,11 +11,17 @@ import {
   Clock,
   Star,
   ArrowRight,
-} from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import type { TaskWithRelations } from "@/types";
+} from 'lucide-react';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import type { TaskWithRelations } from '@/types';
 
 interface CareerNavigatorProps {
   tasks: TaskWithRelations[];
@@ -39,7 +45,7 @@ interface CareerPath {
 interface LearningResource {
   title: string;
   url: string;
-  type: "course" | "article" | "video" | "book";
+  type: 'course' | 'article' | 'video' | 'book';
   estimatedTime: string;
 }
 
@@ -52,23 +58,29 @@ export function CareerNavigator({ tasks }: CareerNavigatorProps) {
     tasks.forEach(task => {
       if (!task.completed) return;
 
-      const text = (task.name + " " + (task.description || "")).toLowerCase();
+      const text = (task.name + ' ' + (task.description || '')).toLowerCase();
 
       // Skill keywords mapping
       const skillKeywords: Record<string, string[]> = {
-        "react": ["react", "jsx", "component", "hooks", "state"],
-        "typescript": ["typescript", "types", "interface", "generic"],
-        "node.js": ["nodejs", "node.js", "server", "express", "api"],
-        "python": ["python", "django", "flask", "data science"],
-        "javascript": ["javascript", "js", "frontend", "backend"],
-        "design": ["design", "ui/ux", "figma", "sketch", "figma"],
-        "project-management": ["project", "agile", "scrum", "kanban", "planning"],
-        "communication": ["communication", "presentation", "meeting", "client"],
-        "leadership": ["lead", "manage", "mentor", "team", "direct"],
-        "data-analysis": ["analysis", "analytics", "reporting", "dashboard"],
-        "machine-learning": ["ml", "ai", "model", "training", "tensor"],
-        "devops": ["devops", "ci/cd", "docker", "kubernetes", "deployment"],
-        "security": ["security", "auth", "encrypt", "vulnerability"],
+        react: ['react', 'jsx', 'component', 'hooks', 'state'],
+        typescript: ['typescript', 'types', 'interface', 'generic'],
+        'node.js': ['nodejs', 'node.js', 'server', 'express', 'api'],
+        python: ['python', 'django', 'flask', 'data science'],
+        javascript: ['javascript', 'js', 'frontend', 'backend'],
+        design: ['design', 'ui/ux', 'figma', 'sketch', 'figma'],
+        'project-management': [
+          'project',
+          'agile',
+          'scrum',
+          'kanban',
+          'planning',
+        ],
+        communication: ['communication', 'presentation', 'meeting', 'client'],
+        leadership: ['lead', 'manage', 'mentor', 'team', 'direct'],
+        'data-analysis': ['analysis', 'analytics', 'reporting', 'dashboard'],
+        'machine-learning': ['ml', 'ai', 'model', 'training', 'tensor'],
+        devops: ['devops', 'ci/cd', 'docker', 'kubernetes', 'deployment'],
+        security: ['security', 'auth', 'encrypt', 'vulnerability'],
       };
 
       Object.entries(skillKeywords).forEach(([skill, keywords]) => {
@@ -85,15 +97,17 @@ export function CareerNavigator({ tasks }: CareerNavigatorProps) {
     });
 
     // Convert to skill array with proficiency (max 5)
-    return Array.from(skillMap.entries()).map(([name, data]) => {
-      const proficiency = Math.min(Math.ceil(data.count / 2), 5);
-      return {
-        name,
-        proficiency,
-        evidence: data.tasks.slice(0, 3).map(t => t.name),
-        suggestedLevel: proficiency + 1,
-      };
-    }).sort((a, b) => b.proficiency - a.proficiency);
+    return Array.from(skillMap.entries())
+      .map(([name, data]) => {
+        const proficiency = Math.min(Math.ceil(data.count / 2), 5);
+        return {
+          name,
+          proficiency,
+          evidence: data.tasks.slice(0, 3).map(t => t.name),
+          suggestedLevel: proficiency + 1,
+        };
+      })
+      .sort((a, b) => b.proficiency - a.proficiency);
   }, [tasks]);
 
   // Generate career paths based on skills
@@ -102,53 +116,74 @@ export function CareerNavigator({ tasks }: CareerNavigatorProps) {
 
     const allPaths: CareerPath[] = [
       {
-        role: "Senior Software Engineer",
+        role: 'Senior Software Engineer',
         matchScore: Math.min(90, totalSkillValue * 8),
-        requiredSkills: ["javascript", "typescript", "react", "node.js"],
+        requiredSkills: ['javascript', 'typescript', 'react', 'node.js'],
         recommendedActions: [
-          "Build 2 more full-stack projects",
-          "Contribute to open-source",
-          "Learn advanced TypeScript patterns",
+          'Build 2 more full-stack projects',
+          'Contribute to open-source',
+          'Learn advanced TypeScript patterns',
         ],
       },
       {
-        role: "Frontend Specialist",
-        matchScore: Math.min(85, totalSkillValue * 7 + skills.filter(s => s.name.includes("react") || s.name.includes("design")).length * 5),
-        requiredSkills: ["react", "typescript", "design"],
+        role: 'Frontend Specialist',
+        matchScore: Math.min(
+          85,
+          totalSkillValue * 7 +
+            skills.filter(
+              s => s.name.includes('react') || s.name.includes('design')
+            ).length *
+              5
+        ),
+        requiredSkills: ['react', 'typescript', 'design'],
         recommendedActions: [
-          "Master React performance optimization",
-          "Learn UI/UX design principles",
-          "Build component library",
+          'Master React performance optimization',
+          'Learn UI/UX design principles',
+          'Build component library',
         ],
       },
       {
-        role: "Backend Engineer",
+        role: 'Backend Engineer',
         matchScore: Math.min(80, totalSkillValue * 7),
-        requiredSkills: ["node.js", "python", "api"],
+        requiredSkills: ['node.js', 'python', 'api'],
         recommendedActions: [
-          "Learn microservices architecture",
-          "Study system design",
-          "Build authentication systems",
+          'Learn microservices architecture',
+          'Study system design',
+          'Build authentication systems',
         ],
       },
       {
-        role: "Team Lead",
-        matchScore: Math.min(75, totalSkillValue * 6 + skills.filter(s => s.name.includes("leadership") || s.name.includes("project")).length * 6),
-        requiredSkills: ["leadership", "project-management", "communication"],
+        role: 'Team Lead',
+        matchScore: Math.min(
+          75,
+          totalSkillValue * 6 +
+            skills.filter(
+              s => s.name.includes('leadership') || s.name.includes('project')
+            ).length *
+              6
+        ),
+        requiredSkills: ['leadership', 'project-management', 'communication'],
         recommendedActions: [
-          "Take initiative on projects",
-          "Mentor junior team members",
-          "Lead planning sessions",
+          'Take initiative on projects',
+          'Mentor junior team members',
+          'Lead planning sessions',
         ],
       },
       {
-        role: "Data Analyst",
-        matchScore: Math.min(70, totalSkillValue * 5 + skills.filter(s => s.name.includes("data-analysis") || s.name.includes("python")).length * 8),
-        requiredSkills: ["python", "data-analysis", "javascript"],
+        role: 'Data Analyst',
+        matchScore: Math.min(
+          70,
+          totalSkillValue * 5 +
+            skills.filter(
+              s => s.name.includes('data-analysis') || s.name.includes('python')
+            ).length *
+              8
+        ),
+        requiredSkills: ['python', 'data-analysis', 'javascript'],
         recommendedActions: [
-          "Learn SQL and data visualization",
-          "Complete data analysis projects",
-          "Study statistics",
+          'Learn SQL and data visualization',
+          'Complete data analysis projects',
+          'Study statistics',
         ],
       },
     ];
@@ -162,48 +197,48 @@ export function CareerNavigator({ tasks }: CareerNavigatorProps) {
     const resources: LearningResource[] = [];
 
     topSkills.forEach(skill => {
-      if (skill.name.includes("react") || skill.name.includes("typescript")) {
+      if (skill.name.includes('react') || skill.name.includes('typescript')) {
         resources.push({
           title: `Advanced ${skill.name} Patterns`,
-          url: "https://fettblog.eu/typescript-advanced-types/",
-          type: "course",
-          estimatedTime: "4h",
+          url: 'https://fettblog.eu/typescript-advanced-types/',
+          type: 'course',
+          estimatedTime: '4h',
         });
         resources.push({
           title: `Mastering ${skill.name} Hooks`,
-          url: "https://react.dev/reference/react",
-          type: "video",
-          estimatedTime: "2h",
+          url: 'https://react.dev/reference/react',
+          type: 'video',
+          estimatedTime: '2h',
         });
       }
-      if (skill.name.includes("node.js") || skill.name.includes("api")) {
+      if (skill.name.includes('node.js') || skill.name.includes('api')) {
         resources.push({
-          title: "Node.js Design Patterns",
-          url: "https://refactoring.guru/design-patterns/nodejs",
-          type: "article",
-          estimatedTime: "3h",
+          title: 'Node.js Design Patterns',
+          url: 'https://refactoring.guru/design-patterns/nodejs',
+          type: 'article',
+          estimatedTime: '3h',
         });
         resources.push({
-          title: "Building RESTful APIs",
-          url: "https://restfulapi.net/",
-          type: "course",
-          estimatedTime: "5h",
-        });
-      }
-      if (skill.name.includes("design")) {
-        resources.push({
-          title: "UI/UX Design Fundamentals",
-          url: "https://www.nngroup.com/articles/",
-          type: "course",
-          estimatedTime: "6h",
+          title: 'Building RESTful APIs',
+          url: 'https://restfulapi.net/',
+          type: 'course',
+          estimatedTime: '5h',
         });
       }
-      if (skill.name.includes("leadership")) {
+      if (skill.name.includes('design')) {
         resources.push({
-          title: "Leading Technical Teams",
-          url: "https://www.amazon.com/",
-          type: "book",
-          estimatedTime: "8h",
+          title: 'UI/UX Design Fundamentals',
+          url: 'https://www.nngroup.com/articles/',
+          type: 'course',
+          estimatedTime: '6h',
+        });
+      }
+      if (skill.name.includes('leadership')) {
+        resources.push({
+          title: 'Leading Technical Teams',
+          url: 'https://www.amazon.com/',
+          type: 'book',
+          estimatedTime: '8h',
         });
       }
     });
@@ -271,13 +306,17 @@ export function CareerNavigator({ tasks }: CareerNavigatorProps) {
 
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <span>Evidenced by:</span>
-                        <span className="font-mono text-xs">{skill.evidence.slice(0, 2).join(", ")}</span>
+                        <span className="font-mono text-xs">
+                          {skill.evidence.slice(0, 2).join(', ')}
+                        </span>
                       </div>
 
                       {skill.suggestedLevel > skill.proficiency && (
                         <div className="mt-2 text-xs">
                           <span className="text-muted-foreground">
-                            Next level: {skill.suggestedLevel} - Complete {(skill.suggestedLevel - skill.proficiency) * 2} more related tasks
+                            Next level: {skill.suggestedLevel} - Complete{' '}
+                            {(skill.suggestedLevel - skill.proficiency) * 2}{' '}
+                            more related tasks
                           </span>
                         </div>
                       )}
@@ -296,7 +335,10 @@ export function CareerNavigator({ tasks }: CareerNavigatorProps) {
 
               <div className="space-y-3">
                 {careerPaths.map(path => (
-                  <div key={path.role} className="border rounded-lg p-3 hover:shadow-sm">
+                  <div
+                    key={path.role}
+                    className="border rounded-lg p-3 hover:shadow-sm"
+                  >
                     <div className="flex items-start justify-between mb-2">
                       <h5 className="font-medium text-sm">{path.role}</h5>
                       <Badge>{path.matchScore}% match</Badge>
@@ -304,7 +346,11 @@ export function CareerNavigator({ tasks }: CareerNavigatorProps) {
 
                     <div className="flex flex-wrap gap-1 mb-2">
                       {path.requiredSkills.map(skill => (
-                        <Badge key={skill} variant="outline" className="text-xs">
+                        <Badge
+                          key={skill}
+                          variant="outline"
+                          className="text-xs"
+                        >
                           {skill}
                         </Badge>
                       ))}
@@ -343,7 +389,10 @@ export function CareerNavigator({ tasks }: CareerNavigatorProps) {
               <div className="flex items-center justify-center gap-2 mb-2">
                 <CheckCircle2 className="h-5 w-5 text-green-500" />
                 <span className="text-2xl font-bold">
-                  {Math.round(skills.reduce((sum, s) => sum + s.proficiency, 0) / skills.length || 0)}
+                  {Math.round(
+                    skills.reduce((sum, s) => sum + s.proficiency, 0) /
+                      skills.length || 0
+                  )}
                 </span>
               </div>
               <p className="text-sm text-muted-foreground">Avg Proficiency</p>
@@ -360,7 +409,8 @@ export function CareerNavigator({ tasks }: CareerNavigatorProps) {
 
           <div className="mt-4 text-center">
             <p className="text-xs text-muted-foreground">
-              Your skills improve by completing related tasks. Each skill is extracted from your task history.
+              Your skills improve by completing related tasks. Each skill is
+              extracted from your task history.
             </p>
           </div>
         </CardContent>
@@ -377,22 +427,33 @@ export function CareerNavigator({ tasks }: CareerNavigatorProps) {
         <CardContent>
           {learningResources.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Complete tasks in key areas to receive personalized learning recommendations
+              Complete tasks in key areas to receive personalized learning
+              recommendations
             </p>
           ) : (
             <div className="space-y-3">
               {learningResources.map((resource, idx) => (
-                <div key={idx} className="border rounded-lg p-3 hover:shadow-sm">
+                <div
+                  key={idx}
+                  className="border rounded-lg p-3 hover:shadow-sm"
+                >
                   <div className="flex items-start justify-between">
                     <div>
                       <h5 className="font-medium text-sm">{resource.title}</h5>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                        <Badge variant="outline" className="text-xs">{resource.type}</Badge>
+                        <Badge variant="outline" className="text-xs">
+                          {resource.type}
+                        </Badge>
                         <span>{resource.estimatedTime} estimated</span>
                       </div>
                     </div>
                     <Button size="sm" className="w-full justify-center">
-                      <a href={resource.url} target="_blank" rel="noopener noreferrer" className="block w-full">
+                      <a
+                        href={resource.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block w-full"
+                      >
                         Learn More
                       </a>
                     </Button>
@@ -415,14 +476,19 @@ export function CareerNavigator({ tasks }: CareerNavigatorProps) {
         <CardContent>
           <div className="space-y-3">
             {skills.slice(0, 3).map((skill, idx) => (
-              <div key={skill.name} className="flex items-center gap-3 p-3 border rounded-lg">
+              <div
+                key={skill.name}
+                className="flex items-center gap-3 p-3 border rounded-lg"
+              >
                 <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-medium">
                   {idx + 1}
                 </div>
                 <div className="flex-1">
                   <h5 className="font-medium text-sm">Advance {skill.name}</h5>
                   <p className="text-xs text-muted-foreground">
-                    Complete {Math.max(1, skill.suggestedLevel - skill.proficiency) * 2} more related tasks
+                    Complete{' '}
+                    {Math.max(1, skill.suggestedLevel - skill.proficiency) * 2}{' '}
+                    more related tasks
                   </p>
                 </div>
                 {skill.suggestedLevel > skill.proficiency && (
@@ -435,7 +501,9 @@ export function CareerNavigator({ tasks }: CareerNavigatorProps) {
 
             {skills.length < 3 && (
               <div className="text-center py-4 text-muted-foreground">
-                <p className="text-sm">Complete more tasks to see your personalized career plan</p>
+                <p className="text-sm">
+                  Complete more tasks to see your personalized career plan
+                </p>
               </div>
             )}
           </div>
