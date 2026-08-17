@@ -1,15 +1,30 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { TaskConnection, Task } from "@/types";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Link, Filter, ExternalLink, Lightbulb, BookOpen, AlertTriangle, RefreshCw, X } from "lucide-react";
-import { toast } from "sonner";
+import { useState } from 'react';
+import { TaskConnection, Task } from '@/types';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Link,
+  Filter,
+  ExternalLink,
+  Lightbulb,
+  BookOpen,
+  AlertTriangle,
+  RefreshCw,
+  X,
+} from 'lucide-react';
+import { toast } from 'sonner';
 
 interface TaskConnectionsTabProps {
   task: Task;
@@ -19,24 +34,53 @@ interface TaskConnectionsTabProps {
 }
 
 const connectionTypes = [
-  { value: "prerequisite", label: "Prerequisite", description: "Must be completed before this task" },
-  { value: "inspiration", label: "Inspiration", description: "This task was inspired by" },
-  { value: "similar", label: "Similar", description: "Similar approach or outcome" },
-  { value: "contrast", label: "Contrast", description: "Different approach to compare" },
-  { value: "related", label: "Related", description: "Related but independent" },
-  { value: "learned_from", label: "Learned From", description: "Lessons learned" },
+  {
+    value: 'prerequisite',
+    label: 'Prerequisite',
+    description: 'Must be completed before this task',
+  },
+  {
+    value: 'inspiration',
+    label: 'Inspiration',
+    description: 'This task was inspired by',
+  },
+  {
+    value: 'similar',
+    label: 'Similar',
+    description: 'Similar approach or outcome',
+  },
+  {
+    value: 'contrast',
+    label: 'Contrast',
+    description: 'Different approach to compare',
+  },
+  {
+    value: 'related',
+    label: 'Related',
+    description: 'Related but independent',
+  },
+  {
+    value: 'learned_from',
+    label: 'Learned From',
+    description: 'Lessons learned',
+  },
 ];
 
-export function TaskConnectionsTab({ task, connections = [], relatedTasks = [], onConnectionsChange }: TaskConnectionsTabProps) {
+export function TaskConnectionsTab({
+  task,
+  connections = [],
+  relatedTasks = [],
+  onConnectionsChange,
+}: TaskConnectionsTabProps) {
   const [showAddConnection, setShowAddConnection] = useState(false);
   const [newConnection, setNewConnection] = useState({
-    targetTaskId: "",
-    connectionType: "related" as const,
-    notes: "",
+    targetTaskId: '',
+    connectionType: 'related' as const,
+    notes: '',
     strength: 0.5,
   });
 
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
 
   // Filter tasks (excluding current task)
@@ -58,9 +102,9 @@ export function TaskConnectionsTab({ task, connections = [], relatedTasks = [], 
     if (!newConnection.targetTaskId) return;
 
     try {
-      const response = await fetch("/api/task-connections", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/task-connections', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           source_task_id: task.id,
           target_task_id: parseInt(newConnection.targetTaskId),
@@ -74,26 +118,28 @@ export function TaskConnectionsTab({ task, connections = [], relatedTasks = [], 
         const createdConnection = await response.json();
         onConnectionsChange?.([...connections, createdConnection]);
         setNewConnection({
-          targetTaskId: "",
-          connectionType: "related",
-          notes: "",
+          targetTaskId: '',
+          connectionType: 'related',
+          notes: '',
           strength: 0.5,
         });
         setShowAddConnection(false);
-        toast.success("Connection added");
+        toast.success('Connection added');
       }
     } catch (error) {
-      toast.error("Failed to add connection");
+      toast.error('Failed to add connection');
     }
   };
 
   const handleDeleteConnection = async (connectionId: number) => {
     try {
-      await fetch(`/api/task-connections/${connectionId}`, { method: "DELETE" });
+      await fetch(`/api/task-connections/${connectionId}`, {
+        method: 'DELETE',
+      });
       onConnectionsChange?.(connections.filter(c => c.id !== connectionId));
-      toast.success("Connection removed");
+      toast.success('Connection removed');
     } catch (error) {
-      toast.error("Failed to remove connection");
+      toast.error('Failed to remove connection');
     }
   };
 
@@ -104,16 +150,14 @@ export function TaskConnectionsTab({ task, connections = [], relatedTasks = [], 
           <Link className="h-4 w-4" />
           Knowledge Graph Connections
         </h3>
-        <Button
-          size="sm"
-          onClick={() => setShowAddConnection(true)}
-        >
+        <Button size="sm" onClick={() => setShowAddConnection(true)}>
           Add Connection
         </Button>
       </div>
 
       <p className="text-sm text-muted-foreground">
-        Connect this task to other tasks to build a knowledge graph of your work.
+        Connect this task to other tasks to build a knowledge graph of your
+        work.
       </p>
 
       {/* Add Connection Form */}
@@ -125,17 +169,24 @@ export function TaskConnectionsTab({ task, connections = [], relatedTasks = [], 
                 <Label>Connection Type</Label>
                 <Select
                   value={newConnection.connectionType}
-                  onValueChange={(value) => setNewConnection({ ...newConnection, connectionType: value as any })}
+                  onValueChange={value =>
+                    setNewConnection({
+                      ...newConnection,
+                      connectionType: value as any,
+                    })
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {connectionTypes.map((type) => (
+                    {connectionTypes.map(type => (
                       <SelectItem key={type.value} value={type.value}>
                         <div>
                           <div>{type.label}</div>
-                          <div className="text-xs text-muted-foreground">{type.description}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {type.description}
+                          </div>
                         </div>
                       </SelectItem>
                     ))}
@@ -148,7 +199,7 @@ export function TaskConnectionsTab({ task, connections = [], relatedTasks = [], 
                 <Input
                   placeholder="Search tasks..."
                   value={searchQuery}
-                  onChange={(e) => handleSearch(e.target.value)}
+                  onChange={e => handleSearch(e.target.value)}
                 />
               </div>
 
@@ -157,13 +208,21 @@ export function TaskConnectionsTab({ task, connections = [], relatedTasks = [], 
                 <Input
                   placeholder="Add context about this connection..."
                   value={newConnection.notes}
-                  onChange={(e) => setNewConnection({ ...newConnection, notes: e.target.value })}
+                  onChange={e =>
+                    setNewConnection({
+                      ...newConnection,
+                      notes: e.target.value,
+                    })
+                  }
                 />
               </div>
 
               <div className="flex gap-2">
                 <Button onClick={handleAddConnection}>Add Connection</Button>
-                <Button variant="outline" onClick={() => setShowAddConnection(false)}>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowAddConnection(false)}
+                >
                   Cancel
                 </Button>
               </div>
@@ -175,8 +234,12 @@ export function TaskConnectionsTab({ task, connections = [], relatedTasks = [], 
       {/* Existing Connections */}
       {connections.length > 0 ? (
         <div className="space-y-3">
-          {connections.map((connection) => {
-            const targetTask = relatedTasks.find(t => t.id === (connection as any).target_task_id || (connection as any).source_task_id);
+          {connections.map(connection => {
+            const targetTask = relatedTasks.find(
+              t =>
+                t.id === (connection as any).target_task_id ||
+                (connection as any).source_task_id
+            );
             return (
               <Card key={connection.id}>
                 <CardContent className="pt-4">
@@ -184,10 +247,13 @@ export function TaskConnectionsTab({ task, connections = [], relatedTasks = [], 
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <Badge variant="outline" className="text-xs">
-                          {connectionTypes.find(t => t.value === connection.connection_type)?.label || connection.connection_type}
+                          {connectionTypes.find(
+                            t => t.value === connection.connection_type
+                          )?.label || connection.connection_type}
                         </Badge>
                         <Badge variant="secondary" className="text-xs">
-                          {(connection as any).target_task_id || (connection as any).source_task_id}
+                          {(connection as any).target_task_id ||
+                            (connection as any).source_task_id}
                         </Badge>
                       </div>
                       {connection.notes && (
@@ -196,7 +262,8 @@ export function TaskConnectionsTab({ task, connections = [], relatedTasks = [], 
                         </p>
                       )}
                       <div className="text-xs text-muted-foreground">
-                        Added: {new Date(connection.created_at).toLocaleDateString()}
+                        Added:{' '}
+                        {new Date(connection.created_at).toLocaleDateString()}
                       </div>
                     </div>
                     <Button
