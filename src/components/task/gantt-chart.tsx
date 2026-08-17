@@ -1,10 +1,17 @@
-"use client";
+'use client';
 
-import { useMemo } from "react";
-import { BarChart3 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { format, parseISO, addDays, startOfWeek, endOfWeek, eachDayOfInterval } from "date-fns";
-import type { TaskWithRelations } from "@/types";
+import { useMemo } from 'react';
+import { BarChart3 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import {
+  format,
+  parseISO,
+  addDays,
+  startOfWeek,
+  endOfWeek,
+  eachDayOfInterval,
+} from 'date-fns';
+import type { TaskWithRelations } from '@/types';
 
 interface GanttChartProps {
   tasks: TaskWithRelations[];
@@ -15,8 +22,8 @@ export function GanttChart({ tasks, onTaskClick }: GanttChartProps) {
   // Get date range for the chart
   const dateRange = useMemo(() => {
     const dates = tasks
-      .filter((t) => t.date || t.deadline)
-      .flatMap((t) => [
+      .filter(t => t.date || t.deadline)
+      .flatMap(t => [
         t.date ? new Date(t.date) : null,
         t.deadline ? new Date(t.deadline) : null,
       ])
@@ -34,8 +41,8 @@ export function GanttChart({ tasks, onTaskClick }: GanttChartProps) {
       };
     }
 
-    const minDate = new Date(Math.min(...dates.map((d) => d.getTime())));
-    const maxDate = new Date(Math.max(...dates.map((d) => d.getTime())));
+    const minDate = new Date(Math.min(...dates.map(d => d.getTime())));
+    const maxDate = new Date(Math.max(...dates.map(d => d.getTime())));
 
     // Expand to include weekends
     const start = startOfWeek(minDate);
@@ -51,17 +58,25 @@ export function GanttChart({ tasks, onTaskClick }: GanttChartProps) {
   // Prepare task data for Gantt chart
   const ganttTasks = useMemo(() => {
     return tasks
-      .filter((t) => t.date && !t.completed)
-      .map((task) => {
+      .filter(t => t.date && !t.completed)
+      .map(task => {
         const startDate = parseISO(task.date as string);
-        const endDate = task.deadline ? parseISO(task.deadline as string) : startDate;
+        const endDate = task.deadline
+          ? parseISO(task.deadline as string)
+          : startDate;
         const duration = Math.ceil(
           (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
         );
 
         // Calculate position as percentage
-        const totalDays = (dateRange.end.getTime() - dateRange.start.getTime()) / (1000 * 60 * 60 * 24);
-        const startOffset = ((startDate.getTime() - dateRange.start.getTime()) / (1000 * 60 * 60 * 24) / totalDays) * 100;
+        const totalDays =
+          (dateRange.end.getTime() - dateRange.start.getTime()) /
+          (1000 * 60 * 60 * 24);
+        const startOffset =
+          ((startDate.getTime() - dateRange.start.getTime()) /
+            (1000 * 60 * 60 * 24) /
+            totalDays) *
+          100;
         const width = ((duration + 1) / totalDays) * 100;
 
         return {
@@ -77,24 +92,24 @@ export function GanttChart({ tasks, onTaskClick }: GanttChartProps) {
   }, [dateRange, tasks]);
 
   const getPriorityColor = (priority: string, hasDependencies?: boolean) => {
-    if (hasDependencies) return "bg-purple-500";
+    if (hasDependencies) return 'bg-purple-500';
     switch (priority) {
-      case "critical":
-        return "bg-red-500";
-      case "high":
-        return "bg-orange-500";
-      case "medium":
-        return "bg-amber-500";
-      case "low":
-        return "bg-blue-500";
+      case 'critical':
+        return 'bg-red-500';
+      case 'high':
+        return 'bg-orange-500';
+      case 'medium':
+        return 'bg-amber-500';
+      case 'low':
+        return 'bg-blue-500';
       default:
-        return "bg-gray-500";
+        return 'bg-gray-500';
     }
   };
 
   // Calculate dependency lines for visualization (placeholder for future use)
   // TODO: Implement visual dependency arrows between tasks
-   
+
   // const dependencyLines = useMemo(() => {
   //   return [];
   // }, [ganttTasks]);
@@ -146,8 +161,8 @@ export function GanttChart({ tasks, onTaskClick }: GanttChartProps) {
                     className="text-center"
                     style={{ width: `${100 / dateRange.days.length}%` }}
                   >
-                    <div className="font-medium">{format(day, "d")}</div>
-                    <div className="opacity-60">{format(day, "EEE")}</div>
+                    <div className="font-medium">{format(day, 'd')}</div>
+                    <div className="opacity-60">{format(day, 'EEE')}</div>
                   </div>
                 ))}
               </div>
@@ -161,7 +176,7 @@ export function GanttChart({ tasks, onTaskClick }: GanttChartProps) {
                   <p>No tasks with dates to display</p>
                 </div>
               ) : (
-                ganttTasks.map((task) => (
+                ganttTasks.map(task => (
                   <div key={task.id} className="flex items-center">
                     <div className="w-48 text-sm font-medium truncate pr-2">
                       {task.name}
@@ -172,20 +187,25 @@ export function GanttChart({ tasks, onTaskClick }: GanttChartProps) {
                         style={{
                           marginLeft: `${task.startOffset}%`,
                           width: `${task.width}%`,
-                          minWidth: "40px",
+                          minWidth: '40px',
                         }}
                         onClick={() => onTaskClick(task)}
                         title={task.name}
                       >
                         <div className="absolute right-1 top-1/2 -translate-y-1/2">
-                          <Badge variant="secondary" className="text-[10px] px-1">
+                          <Badge
+                            variant="secondary"
+                            className="text-[10px] px-1"
+                          >
                             {task.duration}d
                           </Badge>
                         </div>
                         {/* Dependency indicator */}
                         {task.blockers && task.blockers.length > 0 && (
-                          <div className="absolute -left-1 -top-1 w-2 h-2 bg-purple-400 rounded-full opacity-0 group-hover:opacity-100"
-                               title={`${task.blockers.length} blocking task(s)`} />
+                          <div
+                            className="absolute -left-1 -top-1 w-2 h-2 bg-purple-400 rounded-full opacity-0 group-hover:opacity-100"
+                            title={`${task.blockers.length} blocking task(s)`}
+                          />
                         )}
                       </div>
                     </div>
