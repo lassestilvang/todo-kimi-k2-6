@@ -1,8 +1,16 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Download, Upload, FileJson, FileText, X, FileDown, RefreshCw } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useState } from 'react';
+import {
+  Download,
+  Upload,
+  FileJson,
+  FileText,
+  X,
+  FileDown,
+  RefreshCw,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -10,67 +18,75 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "sonner";
-import { exportData, exportCsv, importData } from "@/lib/actions";
-import { exportToPdf } from "@/lib/export/pdf";
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { toast } from 'sonner';
+import { exportData, exportCsv, importData } from '@/lib/actions';
+import { exportToPdf } from '@/lib/export/pdf';
 
 interface ImportExportProps {
   onRefresh: () => void;
 }
 
-type ExportFormat = "json" | "csv" | "pdf";
-type ImportSource = "file" | "paste" | "template";
+type ExportFormat = 'json' | 'csv' | 'pdf';
+type ImportSource = 'file' | 'paste' | 'template';
 
 export function ImportExport({ onRefresh }: ImportExportProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
-  const [jsonData, setJsonData] = useState("");
+  const [jsonData, setJsonData] = useState('');
   const [file, setFile] = useState<File | null>(null);
-  const [activeTab, setActiveTab] = useState<"export" | "import">("export");
-  const [exportFormat, setExportFormat] = useState<ExportFormat>("json");
-  const [importSource, setImportSource] = useState<ImportSource>("file");
+  const [activeTab, setActiveTab] = useState<'export' | 'import'>('export');
+  const [exportFormat, setExportFormat] = useState<ExportFormat>('json');
+  const [importSource, setImportSource] = useState<ImportSource>('file');
 
   const handleExport = async () => {
     setIsExporting(true);
     try {
-      if (exportFormat === "json") {
+      if (exportFormat === 'json') {
         const data = await exportData();
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        const blob = new Blob([JSON.stringify(data, null, 2)], {
+          type: 'application/json',
+        });
         const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
+        const a = document.createElement('a');
         a.href = url;
-        a.download = `taskflow-export-${new Date().toISOString().split("T")[0]}.json`;
+        a.download = `taskflow-export-${new Date().toISOString().split('T')[0]}.json`;
         a.click();
         URL.revokeObjectURL(url);
-        toast.success("JSON export downloaded");
-      } else if (exportFormat === "csv") {
+        toast.success('JSON export downloaded');
+      } else if (exportFormat === 'csv') {
         const csv = await exportCsv();
-        const blob = new Blob([csv], { type: "text/csv" });
+        const blob = new Blob([csv], { type: 'text/csv' });
         const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
+        const a = document.createElement('a');
         a.href = url;
-        a.download = `taskflow-export-${new Date().toISOString().split("T")[0]}.csv`;
+        a.download = `taskflow-export-${new Date().toISOString().split('T')[0]}.csv`;
         a.click();
         URL.revokeObjectURL(url);
-        toast.success("CSV export downloaded");
-      } else if (exportFormat === "pdf") {
+        toast.success('CSV export downloaded');
+      } else if (exportFormat === 'pdf') {
         // Fetch data first, then export to PDF
         const data = await exportData();
         await exportToPdf({
           tasks: data.tasks,
           lists: data.lists,
-          filename: `taskflow-export-${new Date().toISOString().split("T")[0]}.pdf`,
+          filename: `taskflow-export-${new Date().toISOString().split('T')[0]}.pdf`,
         });
-        toast.success("PDF export downloaded");
+        toast.success('PDF export downloaded');
       }
     } catch (error) {
-      toast.error("Export failed");
+      toast.error('Export failed');
       console.error(error);
     } finally {
       setIsExporting(false);
@@ -78,14 +94,14 @@ export function ImportExport({ onRefresh }: ImportExportProps) {
   };
 
   const handleImport = async () => {
-    if (importSource === "file" && !file) return;
-    if (importSource === "paste" && !jsonData.trim()) return;
+    if (importSource === 'file' && !file) return;
+    if (importSource === 'paste' && !jsonData.trim()) return;
 
     setIsImporting(true);
     try {
       let data;
 
-      if (importSource === "file") {
+      if (importSource === 'file') {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const text = await file!.text();
         data = JSON.parse(text);
@@ -94,12 +110,14 @@ export function ImportExport({ onRefresh }: ImportExportProps) {
       }
 
       const result = await importData(data);
-      toast.success(`Imported ${result.tasks} tasks, ${result.lists} lists, ${result.labels} labels`);
-      setJsonData("");
+      toast.success(
+        `Imported ${result.tasks} tasks, ${result.lists} lists, ${result.labels} labels`
+      );
+      setJsonData('');
       setFile(null);
       onRefresh();
     } catch (error) {
-      toast.error("Import failed. Check the file format.");
+      toast.error('Import failed. Check the file format.');
       console.error(error);
     } finally {
       setIsImporting(false);
@@ -108,11 +126,7 @@ export function ImportExport({ onRefresh }: ImportExportProps) {
 
   return (
     <>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => setIsOpen(true)}
-      >
+      <Button variant="outline" size="sm" onClick={() => setIsOpen(true)}>
         <Download className="h-4 w-4 mr-1.5" />
         Export / Import
       </Button>
@@ -122,58 +136,60 @@ export function ImportExport({ onRefresh }: ImportExportProps) {
           <DialogHeader>
             <DialogTitle>Data Export / Import</DialogTitle>
             <DialogDescription>
-              Export your tasks to backup files or import data from another source.
+              Export your tasks to backup files or import data from another
+              source.
             </DialogDescription>
           </DialogHeader>
 
           <div className="py-4">
             <div className="flex space-x-1 mb-4">
               <button
-                className={`px-3 py-1 text-sm rounded ${activeTab === "export" ? "bg-primary text-primary-foreground" : "bg-muted"}`}
-                onClick={() => setActiveTab("export")}
+                className={`px-3 py-1 text-sm rounded ${activeTab === 'export' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}
+                onClick={() => setActiveTab('export')}
               >
                 Export
               </button>
               <button
-                className={`px-3 py-1 text-sm rounded ${activeTab === "import" ? "bg-primary text-primary-foreground" : "bg-muted"}`}
-                onClick={() => setActiveTab("import")}
+                className={`px-3 py-1 text-sm rounded ${activeTab === 'import' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}
+                onClick={() => setActiveTab('import')}
               >
                 Import
               </button>
             </div>
 
-            {activeTab === "export" && (
+            {activeTab === 'export' && (
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>Export Format</Label>
                   <div className="flex gap-2">
                     <Button
-                      variant={exportFormat === "json" ? "default" : "outline"}
+                      variant={exportFormat === 'json' ? 'default' : 'outline'}
                       className="flex-1"
-                      onClick={() => setExportFormat("json")}
+                      onClick={() => setExportFormat('json')}
                     >
                       <FileJson className="h-4 w-4 mr-2" />
                       JSON
                     </Button>
                     <Button
-                      variant={exportFormat === "csv" ? "default" : "outline"}
+                      variant={exportFormat === 'csv' ? 'default' : 'outline'}
                       className="flex-1"
-                      onClick={() => setExportFormat("csv")}
+                      onClick={() => setExportFormat('csv')}
                     >
                       <FileText className="h-4 w-4 mr-2" />
                       CSV
                     </Button>
                     <Button
-                      variant={exportFormat === "pdf" ? "default" : "outline"}
+                      variant={exportFormat === 'pdf' ? 'default' : 'outline'}
                       className="flex-1"
-                      onClick={() => setExportFormat("pdf")}
+                      onClick={() => setExportFormat('pdf')}
                     >
                       <FileDown className="h-4 w-4 mr-2" />
                       PDF
                     </Button>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    JSON includes all data (tasks, lists, labels, templates). CSV includes tasks only. PDF is optimized for printing.
+                    JSON includes all data (tasks, lists, labels, templates).
+                    CSV includes tasks only. PDF is optimized for printing.
                   </p>
                 </div>
 
@@ -198,11 +214,14 @@ export function ImportExport({ onRefresh }: ImportExportProps) {
               </div>
             )}
 
-            {activeTab === "import" && (
+            {activeTab === 'import' && (
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>Import Source</Label>
-                  <Select value={importSource} onValueChange={(v) => setImportSource(v as ImportSource)}>
+                  <Select
+                    value={importSource}
+                    onValueChange={v => setImportSource(v as ImportSource)}
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -213,26 +232,26 @@ export function ImportExport({ onRefresh }: ImportExportProps) {
                   </Select>
                 </div>
 
-                {importSource === "file" && (
+                {importSource === 'file' && (
                   <div className="space-y-2">
                     <Label>Upload File</Label>
                     <Input
                       type="file"
                       accept=".json"
-                      onChange={(e) => setFile(e.target.files?.[0] || null)}
+                      onChange={e => setFile(e.target.files?.[0] || null)}
                       disabled={isImporting}
                     />
                   </div>
                 )}
 
-                {importSource === "paste" && (
+                {importSource === 'paste' && (
                   <div className="relative">
                     <Label>Paste JSON Data</Label>
                     <Textarea
                       placeholder="Paste exported JSON here..."
                       rows={6}
                       value={jsonData}
-                      onChange={(e) => setJsonData(e.target.value)}
+                      onChange={e => setJsonData(e.target.value)}
                       disabled={isImporting}
                     />
                     {jsonData && (
@@ -240,7 +259,7 @@ export function ImportExport({ onRefresh }: ImportExportProps) {
                         variant="ghost"
                         size="sm"
                         className="absolute right-2 top-2 h-6 w-6 p-0"
-                        onClick={() => setJsonData("")}
+                        onClick={() => setJsonData('')}
                       >
                         <X className="h-3 w-3" />
                       </Button>
@@ -252,7 +271,11 @@ export function ImportExport({ onRefresh }: ImportExportProps) {
                   variant="default"
                   className="w-full"
                   onClick={handleImport}
-                  disabled={isImporting || (importSource === "file" && !file) || (importSource === "paste" && !jsonData.trim())}
+                  disabled={
+                    isImporting ||
+                    (importSource === 'file' && !file) ||
+                    (importSource === 'paste' && !jsonData.trim())
+                  }
                 >
                   {isImporting ? (
                     <>
