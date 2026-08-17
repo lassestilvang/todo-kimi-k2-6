@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { X, Focus, Minimize2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { PomodoroTimer } from "./pomodoro-timer";
-import type { TaskWithRelations } from "@/types";
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, Focus, Minimize2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { PomodoroTimer } from './pomodoro-timer';
+import type { TaskWithRelations } from '@/types';
 
 interface FocusModeProps {
   task: TaskWithRelations;
@@ -22,8 +22,9 @@ export function FocusMode({ task, open, onOpenChange }: FocusModeProps) {
       setIsFullscreen(!!document.fullscreenElement);
     };
 
-    document.addEventListener("fullscreenchange", handleFullscreenChange);
-    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () =>
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
   const enterFullscreen = () => {
@@ -57,7 +58,7 @@ export function FocusMode({ task, open, onOpenChange }: FocusModeProps) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl max-h-[90vh] bg-background rounded-xl shadow-2xl border"
-            onClick={(e) => e.stopPropagation()}
+            onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between p-4 border-b">
               <div className="flex items-center gap-2">
@@ -69,7 +70,7 @@ export function FocusMode({ task, open, onOpenChange }: FocusModeProps) {
                   variant="ghost"
                   size="icon"
                   onClick={toggleFullscreen}
-                  title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+                  title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
                 >
                   <Minimize2 className="h-4 w-4" />
                 </Button>
@@ -128,7 +129,7 @@ export function FocusMode({ task, open, onOpenChange }: FocusModeProps) {
                       </p>
                     </div>
                   )}
-                  {task.priority !== "none" && (
+                  {task.priority !== 'none' && (
                     <div>
                       <span className="text-muted-foreground">Priority</span>
                       <p className="font-medium capitalize">{task.priority}</p>
@@ -147,8 +148,9 @@ export function FocusMode({ task, open, onOpenChange }: FocusModeProps) {
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: 0.1 * index }}
                           className={cn(
-                            "text-sm",
-                            subtask.completed && "line-through text-muted-foreground"
+                            'text-sm',
+                            subtask.completed &&
+                              'line-through text-muted-foreground'
                           )}
                         >
                           • {subtask.name}
