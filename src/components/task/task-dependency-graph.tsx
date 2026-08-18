@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useMemo, useState, useEffect, useRef } from "react";
-import { TaskWithRelations } from "@/types";
-import { Button } from "@/components/ui/button";
-import { Play, Pause, RotateCcw } from "lucide-react";
+import { useMemo, useState, useEffect, useRef } from 'react';
+import { TaskWithRelations } from '@/types';
+import { Button } from '@/components/ui/button';
+import { Play, Pause, RotateCcw } from 'lucide-react';
 
 interface TaskDependencyGraphProps {
   tasks: TaskWithRelations[];
@@ -29,7 +29,13 @@ interface Edge {
 }
 
 // Simple force-directed layout implementation
-function useForceLayout(nodes: Node[], edges: Edge[], width: number, height: number, isPlaying: boolean) {
+function useForceLayout(
+  nodes: Node[],
+  edges: Edge[],
+  width: number,
+  height: number,
+  isPlaying: boolean
+) {
   const [positions, setPositions] = useState<Node[]>(() =>
     nodes.map(n => ({ ...n, x: n.x, y: n.y, vx: 0, vy: 0, fx: null, fy: null }))
   );
@@ -141,7 +147,10 @@ function useForceLayout(nodes: Node[], edges: Edge[], width: number, height: num
   return { positions, resetPositions };
 }
 
-export function TaskDependencyGraph({ tasks, onTaskClick }: TaskDependencyGraphProps) {
+export function TaskDependencyGraph({
+  tasks,
+  onTaskClick,
+}: TaskDependencyGraphProps) {
   const [isPlaying, setIsPlaying] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 500, height: 400 });
@@ -166,7 +175,7 @@ export function TaskDependencyGraph({ tasks, onTaskClick }: TaskDependencyGraphP
   });
 
   const { positions, resetPositions } = useForceLayout(
-    tasks.map((task) => ({
+    tasks.map(task => ({
       id: task.id,
       name: task.name,
       completed: task.completed,
@@ -178,7 +187,10 @@ export function TaskDependencyGraph({ tasks, onTaskClick }: TaskDependencyGraphP
       fy: null,
     })),
     tasks.flatMap(task =>
-      (task.blocked_by || []).map(d => ({ from: d.depends_on_task_id, to: task.id }))
+      (task.blocked_by || []).map(d => ({
+        from: d.depends_on_task_id,
+        to: task.id,
+      }))
     ),
     dimensions.width,
     dimensions.height,
@@ -187,15 +199,22 @@ export function TaskDependencyGraph({ tasks, onTaskClick }: TaskDependencyGraphP
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case "critical": return "#dc2626";
-      case "high": return "#ea580c";
-      case "medium": return "#ca8a04";
-      case "low": return "#2563eb";
-      default: return "#6b7280";
+      case 'critical':
+        return '#dc2626';
+      case 'high':
+        return '#ea580c';
+      case 'medium':
+        return '#ca8a04';
+      case 'low':
+        return '#2563eb';
+      default:
+        return '#6b7280';
     }
   };
 
-  const blockedTasks = tasks.filter(t => t.blocked_by && t.blocked_by.length > 0);
+  const blockedTasks = tasks.filter(
+    t => t.blocked_by && t.blocked_by.length > 0
+  );
 
   if (tasks.length === 0) {
     return (
@@ -211,7 +230,8 @@ export function TaskDependencyGraph({ tasks, onTaskClick }: TaskDependencyGraphP
         <div>
           <h3 className="font-medium">Task Dependencies</h3>
           <p className="text-sm text-muted-foreground">
-            Showing {blockedTasks.length} blocked task{blockedTasks.length !== 1 ? 's' : ''}
+            Showing {blockedTasks.length} blocked task
+            {blockedTasks.length !== 1 ? 's' : ''}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -223,46 +243,64 @@ export function TaskDependencyGraph({ tasks, onTaskClick }: TaskDependencyGraphP
             size="sm"
             onClick={() => setIsPlaying(!isPlaying)}
           >
-            {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+            {isPlaying ? (
+              <Pause className="h-4 w-4" />
+            ) : (
+              <Play className="h-4 w-4" />
+            )}
           </Button>
         </div>
       </div>
 
-      <div ref={containerRef} className="border rounded-lg p-4 bg-muted/20 relative overflow-hidden">
-        <svg width="100%" height={dimensions.height} viewBox={`0 0 ${dimensions.width} ${dimensions.height}`}>
+      <div
+        ref={containerRef}
+        className="border rounded-lg p-4 bg-muted/20 relative overflow-hidden"
+      >
+        <svg
+          width="100%"
+          height={dimensions.height}
+          viewBox={`0 0 ${dimensions.width} ${dimensions.height}`}
+        >
           {/* Render edges */}
           <svg>
-            {tasks.flatMap(task =>
-              (task.blocked_by || []).map(d => ({ from: d.depends_on_task_id, to: task.id }))
-            ).map((edge, i) => {
-              const from = positions.find(n => n.id === edge.from);
-              const to = positions.find(n => n.id === edge.to);
-              if (!from || !to) return null;
+            {tasks
+              .flatMap(task =>
+                (task.blocked_by || []).map(d => ({
+                  from: d.depends_on_task_id,
+                  to: task.id,
+                }))
+              )
+              .map((edge, i) => {
+                const from = positions.find(n => n.id === edge.from);
+                const to = positions.find(n => n.id === edge.to);
+                if (!from || !to) return null;
 
-              return (
-                <line
-                  key={i}
-                  x1={from.x}
-                  y1={from.y}
-                  x2={to.x}
-                  y2={to.y}
-                  stroke="#ef4444"
-                  strokeWidth="2"
-                  strokeDasharray="5,5"
-                  opacity="0.6"
-                />
-              );
-            })}
+                return (
+                  <line
+                    key={i}
+                    x1={from.x}
+                    y1={from.y}
+                    x2={to.x}
+                    y2={to.y}
+                    stroke="#ef4444"
+                    strokeWidth="2"
+                    strokeDasharray="5,5"
+                    opacity="0.6"
+                  />
+                );
+              })}
           </svg>
 
           {/* Render nodes */}
-          {positions.map((node) => (
+          {positions.map(node => (
             <g key={node.id}>
               <circle
                 cx={node.x}
                 cy={node.y}
                 r={node.completed ? 15 : 20}
-                fill={node.completed ? "#10b981" : getPriorityColor(node.priority)}
+                fill={
+                  node.completed ? '#10b981' : getPriorityColor(node.priority)
+                }
                 stroke="white"
                 strokeWidth="2"
                 className="cursor-pointer hover:opacity-80"
@@ -290,7 +328,9 @@ export function TaskDependencyGraph({ tasks, onTaskClick }: TaskDependencyGraphP
       <div className="mt-4 space-y-2">
         <h4 className="text-sm font-medium">Blocked Tasks</h4>
         {blockedTasks.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-2">No blocked tasks</p>
+          <p className="text-sm text-muted-foreground text-center py-2">
+            No blocked tasks
+          </p>
         ) : (
           blockedTasks.map(task => (
             <div
@@ -305,7 +345,8 @@ export function TaskDependencyGraph({ tasks, onTaskClick }: TaskDependencyGraphP
                 {task.name}
               </span>
               <span className="text-xs text-muted-foreground">
-                blocked by {task.blocked_by?.length ?? 0} task{(task.blocked_by?.length ?? 0) > 1 ? 's' : ''}
+                blocked by {task.blocked_by?.length ?? 0} task
+                {(task.blocked_by?.length ?? 0) > 1 ? 's' : ''}
               </span>
             </div>
           ))
