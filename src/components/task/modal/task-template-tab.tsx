@@ -1,13 +1,19 @@
-"use client";
+'use client';
 
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
-import { toast } from "sonner";
-import { Save } from "lucide-react";
-import type { Template, TemplateCategory } from "@/types";
-import { createTemplate as createTemplateAction } from "@/lib/actions";
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import { toast } from 'sonner';
+import { Save } from 'lucide-react';
+import type { Template, TemplateCategory } from '@/types';
+import { createTemplate as createTemplateAction } from '@/lib/actions';
 
 interface TaskTemplateTabProps {
   name: string;
@@ -40,7 +46,7 @@ export function TaskTemplateTab({
 }: TaskTemplateTabProps) {
   const handleSaveTemplate = async () => {
     if (!name.trim()) {
-      toast.error("Task name is required to save as template");
+      toast.error('Task name is required to save as template');
       return;
     }
     try {
@@ -48,15 +54,15 @@ export function TaskTemplateTab({
         name,
         description,
         list_id: listId ? Number(listId) : undefined,
-        priority: priority as "critical" | "high" | "medium" | "low" | "none",
+        priority: priority as 'critical' | 'high' | 'medium' | 'low' | 'none',
         label_ids: selectedLabels,
         subtasks,
         category_id: selectedCategory || undefined,
       });
       onSuccess();
-      toast.success("Template saved");
+      toast.success('Template saved');
     } catch {
-      toast.error("Failed to save template");
+      toast.error('Failed to save template');
     }
   };
 
@@ -72,14 +78,14 @@ export function TaskTemplateTab({
         <div className="space-y-2">
           <Label>Category (optional)</Label>
           <Select
-            value={selectedCategory?.toString() || ""}
-            onValueChange={(v) => onCategoryChange(v ? Number(v) : null)}
+            value={selectedCategory?.toString() || ''}
+            onValueChange={v => onCategoryChange(v ? Number(v) : null)}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select a category..." />
             </SelectTrigger>
             <SelectContent>
-              {categories.map((cat) => (
+              {categories.map(cat => (
                 <SelectItem key={cat.id} value={String(cat.id)}>
                   {cat.name}
                 </SelectItem>
@@ -89,11 +95,7 @@ export function TaskTemplateTab({
         </div>
       )}
 
-      <Button
-        variant="outline"
-        className="w-full"
-        onClick={handleSaveTemplate}
-      >
+      <Button variant="outline" className="w-full" onClick={handleSaveTemplate}>
         <Save className="h-4 w-4 mr-2" />
         Save Current as Template
       </Button>
@@ -102,7 +104,7 @@ export function TaskTemplateTab({
 
       <h4 className="text-sm font-medium">Saved Templates</h4>
       <div className="space-y-2 max-h-60 overflow-y-auto">
-        {templates.map((template) => (
+        {templates.map(template => (
           <button
             key={template.id}
             className="w-full text-left text-sm rounded px-2 py-2 hover:bg-accent border"
