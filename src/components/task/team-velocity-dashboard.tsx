@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from 'react';
 import {
   Users,
   Clock,
@@ -9,20 +9,52 @@ import {
   Activity,
   Plus,
   RefreshCw,
-} from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip as ReTooltip, CartesianGrid, BarChart as ReBarChart, Bar } from "recharts";
-import { format, subWeeks, startOfWeek, parseISO } from "date-fns";
-import { toast } from "sonner";
+} from 'lucide-react';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip as ReTooltip,
+  CartesianGrid,
+  BarChart as ReBarChart,
+  Bar,
+} from 'recharts';
+import { format, subWeeks, startOfWeek, parseISO } from 'date-fns';
+import { toast } from 'sonner';
 
 interface TeamVelocityDashboardProps {
   workspaceId?: number;
-  teamMembers?: Array<{ id: number; name: string; email: string; taskCount: number }>;
+  teamMembers?: Array<{
+    id: number;
+    name: string;
+    email: string;
+    taskCount: number;
+  }>;
 }
 
 interface SprintData {
@@ -53,11 +85,18 @@ interface TeamMember {
   completionRate?: number;
 }
 
-export function TeamVelocityDashboard({ workspaceId, teamMembers: initialMembers }: TeamVelocityDashboardProps) {
+export function TeamVelocityDashboard({
+  workspaceId,
+  teamMembers: initialMembers,
+}: TeamVelocityDashboardProps) {
   const [report, setReport] = useState<VelocityReport | null>(null);
   const [loading, setLoading] = useState(true);
-  const [timeframe, setTimeframe] = useState<"week" | "month" | "quarter" | "year">("month");
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>(initialMembers || []);
+  const [timeframe, setTimeframe] = useState<
+    'week' | 'month' | 'quarter' | 'year'
+  >('month');
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>(
+    initialMembers || []
+  );
 
   useEffect(() => {
     fetchTeamVelocityReport();
@@ -67,18 +106,18 @@ export function TeamVelocityDashboard({ workspaceId, teamMembers: initialMembers
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      params.set("timeframe", timeframe);
-      if (workspaceId) params.set("workspaceId", workspaceId.toString());
+      params.set('timeframe', timeframe);
+      if (workspaceId) params.set('workspaceId', workspaceId.toString());
 
       const response = await fetch(`/api/team-velocity?${params.toString()}`);
       if (response.ok) {
         const data = await response.json();
         setReport(data.report);
       } else {
-        throw new Error("Failed to fetch report");
+        throw new Error('Failed to fetch report');
       }
     } catch (error) {
-      toast.error("Failed to load team velocity data");
+      toast.error('Failed to load team velocity data');
       console.error(error);
     } finally {
       setLoading(false);
@@ -89,10 +128,16 @@ export function TeamVelocityDashboard({ workspaceId, teamMembers: initialMembers
   const teamHealth = useMemo(() => {
     if (!report) return 0;
 
-    const avgCompletion = report.sprints.reduce((sum, s) => sum + s.completion_rate, 0) / report.sprints.length;
-    const velocityConsistency = report.velocity > 0 ? (report.predictedVelocity / report.velocity) : 0;
+    const avgCompletion =
+      report.sprints.reduce((sum, s) => sum + s.completion_rate, 0) /
+      report.sprints.length;
+    const velocityConsistency =
+      report.velocity > 0 ? report.predictedVelocity / report.velocity : 0;
 
-    return Math.min(100, Math.round(avgCompletion * 0.7 + Math.min(100, velocityConsistency * 30)));
+    return Math.min(
+      100,
+      Math.round(avgCompletion * 0.7 + Math.min(100, velocityConsistency * 30))
+    );
   }, [report]);
 
   // Calculate individual member stats
@@ -135,7 +180,7 @@ export function TeamVelocityDashboard({ workspaceId, teamMembers: initialMembers
           </p>
         </div>
         <div className="flex items-center gap-4">
-          <Select value={timeframe} onValueChange={(v) => setTimeframe(v as any)}>
+          <Select value={timeframe} onValueChange={v => setTimeframe(v as any)}>
             <SelectTrigger className="w-[150px]">
               <SelectValue placeholder="Select timeframe" />
             </SelectTrigger>
@@ -146,7 +191,9 @@ export function TeamVelocityDashboard({ workspaceId, teamMembers: initialMembers
               <SelectItem value="year">This Year</SelectItem>
             </SelectContent>
           </Select>
-          <Badge variant="outline">{report?.sprints.length || 0} sprint(s) analyzed</Badge>
+          <Badge variant="outline">
+            {report?.sprints.length || 0} sprint(s) analyzed
+          </Badge>
         </div>
       </div>
 
@@ -173,7 +220,9 @@ export function TeamVelocityDashboard({ workspaceId, teamMembers: initialMembers
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-green-600">{report?.predictedVelocity || 0}</p>
+            <p className="text-2xl font-bold text-green-600">
+              {report?.predictedVelocity || 0}
+            </p>
             <p className="text-xs text-muted-foreground">tasks/sprint</p>
           </CardContent>
         </Card>
@@ -201,14 +250,24 @@ export function TeamVelocityDashboard({ workspaceId, teamMembers: initialMembers
           <CardContent>
             <div className="flex items-center gap-2">
               <Badge
-                variant={teamHealth >= 80 ? "default" : teamHealth >= 60 ? "secondary" : "destructive"}
+                variant={
+                  teamHealth >= 80
+                    ? 'default'
+                    : teamHealth >= 60
+                      ? 'secondary'
+                      : 'destructive'
+                }
                 className="text-lg"
               >
                 {teamHealth}%
               </Badge>
             </div>
             <p className="text-xs text-muted-foreground">
-              {teamHealth >= 80 ? "Team is performing well" : teamHealth >= 60 ? "Team is on track" : "Attention needed"}
+              {teamHealth >= 80
+                ? 'Team is performing well'
+                : teamHealth >= 60
+                  ? 'Team is on track'
+                  : 'Attention needed'}
             </p>
           </CardContent>
         </Card>
@@ -219,7 +278,8 @@ export function TeamVelocityDashboard({ workspaceId, teamMembers: initialMembers
         <CardHeader>
           <CardTitle>Velocity Trends</CardTitle>
           <CardDescription>
-            Current velocity: {report?.velocity || 0} | Predicted: {report?.predictedVelocity || 0}
+            Current velocity: {report?.velocity || 0} | Predicted:{' '}
+            {report?.predictedVelocity || 0}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -261,7 +321,9 @@ export function TeamVelocityDashboard({ workspaceId, teamMembers: initialMembers
         <Card>
           <CardHeader>
             <CardTitle>Recent Sprints</CardTitle>
-            <CardDescription>Detailed sprint performance breakdown</CardDescription>
+            <CardDescription>
+              Detailed sprint performance breakdown
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -274,12 +336,20 @@ export function TeamVelocityDashboard({ workspaceId, teamMembers: initialMembers
                     <div>
                       <h4 className="font-medium">{sprint.name}</h4>
                       <p className="text-xs text-muted-foreground">
-                        {format(parseISO(sprint.period_start), "MMM d")} -{" "}
-                        {format(parseISO(sprint.period_end), "MMM d")}
+                        {format(parseISO(sprint.period_start), 'MMM d')} -{' '}
+                        {format(parseISO(sprint.period_end), 'MMM d')}
                       </p>
                     </div>
                     <div className="text-right">
-                      <Badge variant={sprint.completion_rate >= 80 ? "default" : sprint.completion_rate >= 70 ? "secondary" : "outline"}>
+                      <Badge
+                        variant={
+                          sprint.completion_rate >= 80
+                            ? 'default'
+                            : sprint.completion_rate >= 70
+                              ? 'secondary'
+                              : 'outline'
+                        }
+                      >
                         {sprint.completion_rate}% completion
                       </Badge>
                     </div>
@@ -287,11 +357,15 @@ export function TeamVelocityDashboard({ workspaceId, teamMembers: initialMembers
 
                   <div className="grid grid-cols-3 gap-4 text-center">
                     <div>
-                      <p className="text-2xl font-bold">{sprint.planned_points}</p>
+                      <p className="text-2xl font-bold">
+                        {sprint.planned_points}
+                      </p>
                       <p className="text-xs text-muted-foreground">Planned</p>
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-green-600">{sprint.completed_points}</p>
+                      <p className="text-2xl font-bold text-green-600">
+                        {sprint.completed_points}
+                      </p>
                       <p className="text-xs text-muted-foreground">Completed</p>
                     </div>
                     <div>
@@ -328,17 +402,41 @@ export function TeamVelocityDashboard({ workspaceId, teamMembers: initialMembers
               <h4 className="text-sm font-medium">Next Sprint Prediction</h4>
               <div className="text-center py-8">
                 <TrendingUp className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-                <p className="text-2xl font-bold mb-2">{report?.predictedVelocity || 0}</p>
-                <p className="text-muted-foreground">Predicted tasks for next sprint</p>
+                <p className="text-2xl font-bold mb-2">
+                  {report?.predictedVelocity || 0}
+                </p>
+                <p className="text-muted-foreground">
+                  Predicted tasks for next sprint
+                </p>
               </div>
 
               <div className="space-y-3">
                 <div>
                   <div className="flex justify-between text-sm mb-1">
                     <span>Capacity Utilization</span>
-                    <span>{report && report.velocity ? Math.min(100, Math.round((report.velocity / report.capacity) * 100)) : 0}%</span>
+                    <span>
+                      {report && report.velocity
+                        ? Math.min(
+                            100,
+                            Math.round(
+                              (report.velocity / report.capacity) * 100
+                            )
+                          )
+                        : 0}
+                      %
+                    </span>
                   </div>
-                  <Progress value={report && report.velocity ? Math.min(100, (report.velocity / report.capacity) * 100) : 0} className="h-2" />
+                  <Progress
+                    value={
+                      report && report.velocity
+                        ? Math.min(
+                            100,
+                            (report.velocity / report.capacity) * 100
+                          )
+                        : 0
+                    }
+                    className="h-2"
+                  />
                 </div>
               </div>
             </div>
@@ -351,7 +449,8 @@ export function TeamVelocityDashboard({ workspaceId, teamMembers: initialMembers
                     {report.predictedVelocity > report.velocity && (
                       <div className="p-3 bg-green-500/10 rounded-lg">
                         <p className="text-sm text-green-800">
-                          🎯 Velocity is increasing! Consider adding more capacity
+                          🎯 Velocity is increasing! Consider adding more
+                          capacity
                         </p>
                       </div>
                     )}
@@ -365,7 +464,8 @@ export function TeamVelocityDashboard({ workspaceId, teamMembers: initialMembers
                     {report.velocity > report.capacity * 0.9 && (
                       <div className="p-3 bg-red-500/10 rounded-lg">
                         <p className="text-sm text-red-800">
-                          ⚠️ Team is over capacity. Consider reducing sprint commitment.
+                          ⚠️ Team is over capacity. Consider reducing sprint
+                          commitment.
                         </p>
                       </div>
                     )}
