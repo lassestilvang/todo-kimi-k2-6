@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState } from 'react';
+import { Plus, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface TaskSubtasksProps {
   subtasks: string[];
@@ -20,12 +20,12 @@ export function TaskSubtasks({
   onSubtaskRemove,
   onSubtaskChange,
 }: TaskSubtasksProps) {
-  const [subtaskInput, setSubtaskInput] = useState("");
+  const [subtaskInput, setSubtaskInput] = useState('');
 
   const handleAdd = () => {
     if (!subtaskInput.trim()) return;
     onSubtaskAdd(subtaskInput.trim());
-    setSubtaskInput("");
+    setSubtaskInput('');
   };
 
   return (
@@ -34,9 +34,9 @@ export function TaskSubtasks({
       <div className="flex gap-2">
         <Input
           value={subtaskInput}
-          onChange={(e) => setSubtaskInput(e.target.value)}
+          onChange={e => setSubtaskInput(e.target.value)}
           placeholder="Add a subtask..."
-          onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+          onKeyDown={e => e.key === 'Enter' && handleAdd()}
         />
         <Button variant="outline" size="icon" onClick={handleAdd}>
           <Plus className="h-4 w-4" />
@@ -56,7 +56,7 @@ export function TaskSubtasks({
               >
                 <Input
                   value={subtask}
-                  onChange={(e) => onSubtaskChange(index, e.target.value)}
+                  onChange={e => onSubtaskChange(index, e.target.value)}
                   className="flex-1 border-none bg-transparent p-0 text-sm focus-visible:ring-0"
                 />
                 <Button
