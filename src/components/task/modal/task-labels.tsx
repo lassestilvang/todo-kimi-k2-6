@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { Tag } from "lucide-react";
-import { Label } from "@/components/ui/label";
-import type { Label as LabelType } from "@/types";
-import { cn } from "@/lib/utils";
+import { Tag } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import type { Label as LabelType } from '@/types';
+import { cn } from '@/lib/utils';
 
 interface TaskLabelsProps {
   labels: LabelType[];
@@ -11,7 +11,11 @@ interface TaskLabelsProps {
   onToggleLabel: (labelId: number) => void;
 }
 
-export function TaskLabels({ labels, selectedLabels, onToggleLabel }: TaskLabelsProps) {
+export function TaskLabels({
+  labels,
+  selectedLabels,
+  onToggleLabel,
+}: TaskLabelsProps) {
   if (labels.length === 0) return null;
 
   return (
@@ -21,15 +25,15 @@ export function TaskLabels({ labels, selectedLabels, onToggleLabel }: TaskLabels
         Labels
       </Label>
       <div className="flex flex-wrap gap-2">
-        {labels.map((label) => (
+        {labels.map(label => (
           <button
             key={label.id}
             onClick={() => onToggleLabel(label.id)}
             className={cn(
-              "inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs transition-all border",
+              'inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs transition-all border',
               selectedLabels.includes(label.id)
-                ? "border-transparent text-white"
-                : "border-input bg-background hover:bg-muted"
+                ? 'border-transparent text-white'
+                : 'border-input bg-background hover:bg-muted'
             )}
             style={
               selectedLabels.includes(label.id)
