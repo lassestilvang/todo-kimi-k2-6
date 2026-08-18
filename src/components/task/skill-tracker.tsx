@@ -1,12 +1,18 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { Target, Award, TrendingUp, Zap } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { TaskWithRelations } from "@/types";
+import { useState, useEffect } from 'react';
+import { Target, Award, TrendingUp, Zap } from 'lucide-react';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import type { TaskWithRelations } from '@/types';
 
 interface Skill {
   id: number;
@@ -47,15 +53,29 @@ export function SkillTracker({ tasks, userId, className }: SkillTrackerProps) {
 
   const inferSkillsFromTasks = (taskList: TaskWithRelations[]): Skill[] => {
     const skillPatterns: Record<string, string[]> = {
-      'design': ['design', 'ui', 'ux', 'interface', 'layout', 'visual'],
-      'development': ['code', 'develop', 'implement', 'programming', 'software', 'build'],
-      'research': ['research', 'investigate', 'analyze', 'study', 'explore'],
-      'writing': ['write', 'document', 'content', 'article', 'post', 'communication'],
-      'leadership': ['lead', 'manage', 'team', 'coordination', 'supervise'],
-      'planning': ['plan', 'strategy', 'organize', 'schedule', 'timeline'],
-      'analysis': ['analyze', 'evaluate', 'assess', 'review', 'critique'],
-      'creative': ['creative', 'creative', 'innovate', 'imagine', 'ideate'],
-      'technical': ['technical', 'tech', 'technology', 'tools', 'systems'],
+      design: ['design', 'ui', 'ux', 'interface', 'layout', 'visual'],
+      development: [
+        'code',
+        'develop',
+        'implement',
+        'programming',
+        'software',
+        'build',
+      ],
+      research: ['research', 'investigate', 'analyze', 'study', 'explore'],
+      writing: [
+        'write',
+        'document',
+        'content',
+        'article',
+        'post',
+        'communication',
+      ],
+      leadership: ['lead', 'manage', 'team', 'coordination', 'supervise'],
+      planning: ['plan', 'strategy', 'organize', 'schedule', 'timeline'],
+      analysis: ['analyze', 'evaluate', 'assess', 'review', 'critique'],
+      creative: ['creative', 'creative', 'innovate', 'imagine', 'ideate'],
+      technical: ['technical', 'tech', 'technology', 'tools', 'systems'],
     };
 
     const skillsMap = new Map<string, Skill>();
@@ -68,12 +88,17 @@ export function SkillTracker({ tasks, userId, className }: SkillTrackerProps) {
       const combinedText = taskName + ' ' + taskDesc;
 
       Object.entries(skillPatterns).forEach(([skillName, keywords]) => {
-        const matchedKeywords = keywords.filter(keyword => combinedText.includes(keyword));
+        const matchedKeywords = keywords.filter(keyword =>
+          combinedText.includes(keyword)
+        );
         if (matchedKeywords.length > 0) {
           if (!skillsMap.has(skillName)) {
             skillsMap.set(skillName, {
               id: skillsMap.size + 1,
-              name: skillName.charAt(0).toUpperCase() + skillName.slice(1) + ' Work',
+              name:
+                skillName.charAt(0).toUpperCase() +
+                skillName.slice(1) +
+                ' Work',
               proficiency_level: 1,
               evidence_task_ids: [],
               last_used_at: null,
@@ -158,65 +183,96 @@ export function SkillTracker({ tasks, userId, className }: SkillTrackerProps) {
           <TabsContent value="skills" className="space-y-4 mt-4">
             {skills.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                No skills tracked yet. Complete tasks to build your skills profile.
+                No skills tracked yet. Complete tasks to build your skills
+                profile.
               </div>
             ) : (
               <div className="grid gap-4">
-                {skills.map((skill) => {
+                {skills.map(skill => {
                   const stats = calculateSkillStats(skill);
                   return (
-                    <div key={skill.id} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
+                    <div
+                      key={skill.id}
+                      className="border rounded-lg p-4 hover:bg-muted/50 transition-colors"
+                    >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <h3 className="font-semibold text-lg mb-1">{skill.name}</h3>
+                          <h3 className="font-semibold text-lg mb-1">
+                            {skill.name}
+                          </h3>
                           <div className="flex items-center gap-2 mb-2">
-                            <div className={`w-3 h-3 rounded-full ${getProficiencyColor(skill.proficiency_level)}`} />
-                            <span className="text-sm text-muted-foreground">{getProficiencyLabel(skill.proficiency_level)}</span>
+                            <div
+                              className={`w-3 h-3 rounded-full ${getProficiencyColor(skill.proficiency_level)}`}
+                            />
+                            <span className="text-sm text-muted-foreground">
+                              {getProficiencyLabel(skill.proficiency_level)}
+                            </span>
                             <Badge variant="secondary" className="text-xs">
                               Level {skill.proficiency_level}/5
                             </Badge>
                           </div>
                         </div>
                         <div className="text-right">
-                          <div className="text-2xl font-bold text-primary">{stats.evidenceCount}</div>
-                          <div className="text-xs text-muted-foreground">Tasks</div>
+                          <div className="text-2xl font-bold text-primary">
+                            {stats.evidenceCount}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            Tasks
+                          </div>
                         </div>
                       </div>
 
                       <div className="mt-4 space-y-2">
                         <div className="flex justify-between text-sm mb-1">
                           <span>Proficiency Growth</span>
-                          <span>{Math.round((skill.proficiency_level / 5) * 100)}%</span>
+                          <span>
+                            {Math.round((skill.proficiency_level / 5) * 100)}%
+                          </span>
                         </div>
-                        <Progress value={(skill.proficiency_level / 5) * 100} className="h-2" />
+                        <Progress
+                          value={(skill.proficiency_level / 5) * 100}
+                          className="h-2"
+                        />
 
                         <div className="flex justify-between text-sm mb-1">
                           <span>Task Consistency</span>
                           <span>{Math.round(stats.completionRate * 100)}%</span>
                         </div>
-                        <Progress value={stats.completionRate * 100} className="h-2" />
+                        <Progress
+                          value={stats.completionRate * 100}
+                          className="h-2"
+                        />
                       </div>
 
-                      {skill.evidence_task_ids && skill.evidence_task_ids.length > 0 && (
-                        <div className="mt-3">
-                          <div className="text-xs text-muted-foreground mb-1">Evidence Tasks:</div>
-                          <div className="flex flex-wrap gap-1">
-                            {skill.evidence_task_ids.slice(0, 3).map((taskId) => {
-                              const task = tasks.find(t => t.id === taskId);
-                              return task ? (
-                                <Badge key={taskId} variant="outline" className="text-xs">
-                                  {task.name}
+                      {skill.evidence_task_ids &&
+                        skill.evidence_task_ids.length > 0 && (
+                          <div className="mt-3">
+                            <div className="text-xs text-muted-foreground mb-1">
+                              Evidence Tasks:
+                            </div>
+                            <div className="flex flex-wrap gap-1">
+                              {skill.evidence_task_ids
+                                .slice(0, 3)
+                                .map(taskId => {
+                                  const task = tasks.find(t => t.id === taskId);
+                                  return task ? (
+                                    <Badge
+                                      key={taskId}
+                                      variant="outline"
+                                      className="text-xs"
+                                    >
+                                      {task.name}
+                                    </Badge>
+                                  ) : null;
+                                })}
+                              {skill.evidence_task_ids.length > 3 && (
+                                <Badge variant="outline" className="text-xs">
+                                  +{skill.evidence_task_ids.length - 3} more
                                 </Badge>
-                              ) : null;
-                            })}
-                            {skill.evidence_task_ids.length > 3 && (
-                              <Badge variant="outline" className="text-xs">
-                                +{skill.evidence_task_ids.length - 3} more
-                              </Badge>
-                            )}
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
                     </div>
                   );
                 })}
@@ -238,11 +294,20 @@ export function SkillTracker({ tasks, userId, className }: SkillTrackerProps) {
                         <Badge variant="secondary">{skills.length}</Badge>
                       </div>
                     )}
-                    {skills.reduce((acc, skill) => acc + skill.proficiency_level, 0) > 0 && (
+                    {skills.reduce(
+                      (acc, skill) => acc + skill.proficiency_level,
+                      0
+                    ) > 0 && (
                       <div className="flex items-center justify-between">
                         <span className="text-sm">Average Proficiency</span>
                         <Badge variant="secondary">
-                          {Math.round(skills.reduce((acc, skill) => acc + skill.proficiency_level, 0) / Math.max(skills.length, 1))}/5
+                          {Math.round(
+                            skills.reduce(
+                              (acc, skill) => acc + skill.proficiency_level,
+                              0
+                            ) / Math.max(skills.length, 1)
+                          )}
+                          /5
                         </Badge>
                       </div>
                     )}
@@ -271,11 +336,17 @@ export function SkillTracker({ tasks, userId, className }: SkillTrackerProps) {
                     <div className="flex items-center justify-between">
                       <span className="text-sm">Skills Growing (4.0-4.9)</span>
                       <Badge variant="secondary">
-                        {skills.filter(s => s.proficiency_level >= 4 && s.proficiency_level < 5).length}
+                        {
+                          skills.filter(
+                            s =>
+                              s.proficiency_level >= 4 &&
+                              s.proficiency_level < 5
+                          ).length
+                        }
                       </Badge>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm">{"Skills New (<2.0)"}</span>
+                      <span className="text-sm">{'Skills New (<2.0)'}</span>
                       <Badge variant="secondary">
                         {skills.filter(s => s.proficiency_level < 2).length}
                       </Badge>
@@ -311,27 +382,38 @@ export function SkillTracker({ tasks, userId, className }: SkillTrackerProps) {
                 <div className="space-y-3">
                   {skills.length === 0 ? (
                     <div className="text-center py-6 text-muted-foreground">
-                      Complete more tasks to get personalized skill recommendations
+                      Complete more tasks to get personalized skill
+                      recommendations
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      {skills.filter(s => s.proficiency_level < 5).slice(0, 3).map((skill) => {
-                        const nextLevel = skill.proficiency_level + 1;
-                        const evidenceNeeded = Math.max(0, 5 - skill.evidence_task_ids?.length || 0);
-                        return (
-                          <div key={skill.id} className="flex items-center justify-between p-3 border rounded-lg">
-                            <div>
-                              <div className="font-medium">{skill.name}</div>
-                              <div className="text-sm text-muted-foreground">
-                                Level {nextLevel} needs {evidenceNeeded} more task{evidenceNeeded !== 1 ? 's' : ''}
+                      {skills
+                        .filter(s => s.proficiency_level < 5)
+                        .slice(0, 3)
+                        .map(skill => {
+                          const nextLevel = skill.proficiency_level + 1;
+                          const evidenceNeeded = Math.max(
+                            0,
+                            5 - skill.evidence_task_ids?.length || 0
+                          );
+                          return (
+                            <div
+                              key={skill.id}
+                              className="flex items-center justify-between p-3 border rounded-lg"
+                            >
+                              <div>
+                                <div className="font-medium">{skill.name}</div>
+                                <div className="text-sm text-muted-foreground">
+                                  Level {nextLevel} needs {evidenceNeeded} more
+                                  task{evidenceNeeded !== 1 ? 's' : ''}
+                                </div>
                               </div>
+                              <Badge variant="outline">
+                                Next: {nextLevel}/5
+                              </Badge>
                             </div>
-                            <Badge variant="outline">
-                              Next: {nextLevel}/5
-                            </Badge>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
                     </div>
                   )}
                 </div>
@@ -353,8 +435,16 @@ export function SkillTracker({ tasks, userId, className }: SkillTrackerProps) {
                       <div className="text-sm text-muted-foreground">
                         Based on your completed tasks, consider developing:
                       </div>
-                      {['Leadership', 'Communication', 'Project Management', 'Technical Writing'].map((skill, index) => (
-                        <div key={index} className="flex items-center justify-between p-2 bg-muted/30 rounded">
+                      {[
+                        'Leadership',
+                        'Communication',
+                        'Project Management',
+                        'Technical Writing',
+                      ].map((skill, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center justify-between p-2 bg-muted/30 rounded"
+                        >
                           <span>{skill}</span>
                           <Badge variant="secondary" className="text-xs">
                             High Priority
