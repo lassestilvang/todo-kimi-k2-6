@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { Download, X, Bell } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { useState, useEffect } from 'react';
+import { Download, X, Bell } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
 }
 
 interface PwaInstallPromptProps {
@@ -15,9 +15,11 @@ interface PwaInstallPromptProps {
 }
 
 export function PwaInstallPrompt({ onInstalled }: PwaInstallPromptProps) {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [deferredPrompt, setDeferredPrompt] =
+    useState<BeforeInstallPromptEvent | null>(null);
   const [isVisible, setIsVisible] = useState(false);
-  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>("default");
+  const [notificationPermission, setNotificationPermission] =
+    useState<NotificationPermission>('default');
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: BeforeInstallPromptEvent) => {
@@ -31,17 +33,23 @@ export function PwaInstallPrompt({ onInstalled }: PwaInstallPromptProps) {
       onInstalled?.();
     };
 
-    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt as EventListener);
-    window.addEventListener("appinstalled", handleInstalled);
+    window.addEventListener(
+      'beforeinstallprompt',
+      handleBeforeInstallPrompt as EventListener
+    );
+    window.addEventListener('appinstalled', handleInstalled);
 
     // Check notification permission
-    if ("Notification" in window) {
+    if ('Notification' in window) {
       setNotificationPermission(Notification.permission);
     }
 
     return () => {
-      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt as EventListener);
-      window.removeEventListener("appinstalled", handleInstalled);
+      window.removeEventListener(
+        'beforeinstallprompt',
+        handleBeforeInstallPrompt as EventListener
+      );
+      window.removeEventListener('appinstalled', handleInstalled);
     };
   }, [onInstalled]);
 
@@ -51,7 +59,7 @@ export function PwaInstallPrompt({ onInstalled }: PwaInstallPromptProps) {
     deferredPrompt.prompt();
 
     const choiceResult = await deferredPrompt.userChoice;
-    if (choiceResult.outcome === "accepted") {
+    if (choiceResult.outcome === 'accepted') {
       setIsVisible(false);
     }
 
@@ -64,7 +72,7 @@ export function PwaInstallPrompt({ onInstalled }: PwaInstallPromptProps) {
   };
 
   const handleNotificationRequest = async () => {
-    if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
       return;
     }
 
@@ -72,7 +80,7 @@ export function PwaInstallPrompt({ onInstalled }: PwaInstallPromptProps) {
     setNotificationPermission(permission);
   };
 
-  if (!isVisible || typeof window === "undefined") {
+  if (!isVisible || typeof window === 'undefined') {
     return null;
   }
 
@@ -109,7 +117,7 @@ export function PwaInstallPrompt({ onInstalled }: PwaInstallPromptProps) {
       </Card>
 
       {/* Notification prompt */}
-      {notificationPermission === "default" && (
+      {notificationPermission === 'default' && (
         <Card className="fixed bottom-20 right-4 z-50 w-64 p-4 shadow-lg border-blue-200 bg-background">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-2">
@@ -125,12 +133,16 @@ export function PwaInstallPrompt({ onInstalled }: PwaInstallPromptProps) {
               variant="ghost"
               size="icon"
               className="h-6 w-6"
-              onClick={() => setNotificationPermission("denied")}
+              onClick={() => setNotificationPermission('denied')}
             >
               <X className="h-3 w-3" />
             </Button>
           </div>
-          <Button size="sm" className="mt-3 w-full" onClick={handleNotificationRequest}>
+          <Button
+            size="sm"
+            className="mt-3 w-full"
+            onClick={handleNotificationRequest}
+          >
             Enable Notifications
           </Button>
         </Card>
@@ -145,15 +157,15 @@ export function usePwaInstalled() {
 
   useEffect(() => {
     const checkInstalled = () => {
-      if (window.matchMedia("(display-mode: standalone)").matches) {
+      if (window.matchMedia('(display-mode: standalone)').matches) {
         setIsInstalled(true);
       }
     };
 
     checkInstalled();
 
-    window.addEventListener("resize", checkInstalled);
-    return () => window.removeEventListener("resize", checkInstalled);
+    window.addEventListener('resize', checkInstalled);
+    return () => window.removeEventListener('resize', checkInstalled);
   }, []);
 
   return isInstalled;
