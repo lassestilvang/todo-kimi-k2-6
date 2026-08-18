@@ -1,34 +1,38 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useMemo } from "react";
-import { format, parseISO } from "date-fns";
-import { cn } from "@/lib/utils";
-import { motion, AnimatePresence } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+import { useState, useEffect, useMemo } from 'react';
+import { format, parseISO } from 'date-fns';
+import { cn } from '@/lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { toast } from "sonner";
-import { taskSchema, type TaskFormData } from "@/lib/validation";
-import { saveOfflineTask } from "@/lib/offline-storage";
+} from '@/components/ui/select';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { toast } from 'sonner';
+import { taskSchema, type TaskFormData } from '@/lib/validation';
+import { saveOfflineTask } from '@/lib/offline-storage';
 import type {
   TaskWithRelations,
   List,
@@ -37,8 +41,14 @@ import type {
   Recurring,
   Template,
   TemplateCategory,
-} from "@/types";
-import { createTask as createTaskAction, updateTask as updateTaskAction, addTaskComment, saveTemplateFromTask, getTemplateCategories } from "@/lib/actions";
+} from '@/types';
+import {
+  createTask as createTaskAction,
+  updateTask as updateTaskAction,
+  addTaskComment,
+  saveTemplateFromTask,
+  getTemplateCategories,
+} from '@/lib/actions';
 import {
   TaskBasicInfo,
   TaskSchedule,
@@ -54,9 +64,9 @@ import {
   TaskContextTab,
   TaskDecisionTab,
   TaskConnectionsTab,
-} from "./modal";
-import { TimeReport } from "./time-report";
-import { PomodoroTimer } from "./pomodoro-timer";
+} from './modal';
+import { TimeReport } from './time-report';
+import { PomodoroTimer } from './pomodoro-timer';
 // Icons
 import {
   Calendar,
@@ -75,7 +85,7 @@ import {
   Flame,
   Lightbulb,
   Brain,
-} from "lucide-react";
+} from 'lucide-react';
 
 interface TaskModalProps {
   task?: TaskWithRelations | undefined;
@@ -89,21 +99,21 @@ interface TaskModalProps {
 }
 
 const priorities: { value: Priority; label: string; color: string }[] = [
-  { value: "critical", label: "Critical", color: "bg-red-600" },
-  { value: "high", label: "High", color: "bg-red-500" },
-  { value: "medium", label: "Medium", color: "bg-amber-500" },
-  { value: "low", label: "Low", color: "bg-blue-500" },
-  { value: "none", label: "None", color: "bg-gray-400" },
+  { value: 'critical', label: 'Critical', color: 'bg-red-600' },
+  { value: 'high', label: 'High', color: 'bg-red-500' },
+  { value: 'medium', label: 'Medium', color: 'bg-amber-500' },
+  { value: 'low', label: 'Low', color: 'bg-blue-500' },
+  { value: 'none', label: 'None', color: 'bg-gray-400' },
 ];
 
 const recurringOptions: { value: Recurring; label: string }[] = [
-  { value: "none", label: "No recurrence" },
-  { value: "daily", label: "Every day" },
-  { value: "weekly", label: "Every week" },
-  { value: "weekdays", label: "Every weekday" },
-  { value: "monthly", label: "Every month" },
-  { value: "yearly", label: "Every year" },
-  { value: "custom", label: "Custom..." },
+  { value: 'none', label: 'No recurrence' },
+  { value: 'daily', label: 'Every day' },
+  { value: 'weekly', label: 'Every week' },
+  { value: 'weekdays', label: 'Every weekday' },
+  { value: 'monthly', label: 'Every month' },
+  { value: 'yearly', label: 'Every year' },
+  { value: 'custom', label: 'Custom...' },
 ];
 
 export function TaskModal({
@@ -116,103 +126,128 @@ export function TaskModal({
   onSuccess,
   allTasks,
 }: TaskModalProps) {
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [notes, setNotes] = useState("");
-  const [listId, setListId] = useState("1");
-  const [date, setDate] = useState("");
-  const [deadline, setDeadline] = useState("");
-  const [estimate, setEstimate] = useState("");
-  const [actualTime, setActualTime] = useState("");
-  const [priority, setPriority] = useState<Priority>("none");
-  const [recurring, setRecurring] = useState<Recurring>("none");
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [notes, setNotes] = useState('');
+  const [listId, setListId] = useState('1');
+  const [date, setDate] = useState('');
+  const [deadline, setDeadline] = useState('');
+  const [estimate, setEstimate] = useState('');
+  const [actualTime, setActualTime] = useState('');
+  const [priority, setPriority] = useState<Priority>('none');
+  const [recurring, setRecurring] = useState<Recurring>('none');
   const [selectedLabels, setSelectedLabels] = useState<number[]>([]);
-  const [subtaskInput, setSubtaskInput] = useState("");
+  const [subtaskInput, setSubtaskInput] = useState('');
   const [subtasks, setSubtasks] = useState<string[]>([]);
-  const [reminderInput, setReminderInput] = useState("");
+  const [reminderInput, setReminderInput] = useState('');
   const [reminders, setReminders] = useState<string[]>([]);
   const [recurringConfig, setRecurringConfig] = useState<{
     interval?: number;
-    unit?: "days" | "weeks" | "months" | "years";
+    unit?: 'days' | 'weeks' | 'months' | 'years';
   }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState<"task" | "template" | "comments" | "time" | "pomodoro" | "assign" | "attachments" | "collaborate" | "streak" | "schedule" | "context" | "decision" | "connections">("task");
-  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
-  const [assignees, setAssignees] = useState<Array<{ user_id: number; user_email: string; user_name: string | null; permission: "view" | "edit" }>>([]);
-  const [assigneeSearchQuery, setAssigneeSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState<
+    | 'task'
+    | 'template'
+    | 'comments'
+    | 'time'
+    | 'pomodoro'
+    | 'assign'
+    | 'attachments'
+    | 'collaborate'
+    | 'streak'
+    | 'schedule'
+    | 'context'
+    | 'decision'
+    | 'connections'
+  >('task');
+  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(
+    null
+  );
+  const [assignees, setAssignees] = useState<
+    Array<{
+      user_id: number;
+      user_email: string;
+      user_name: string | null;
+      permission: 'view' | 'edit';
+    }>
+  >([]);
+  const [assigneeSearchQuery, setAssigneeSearchQuery] = useState('');
   const [categories, setCategories] = useState<TemplateCategory[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
 
   // Dependencies (blockers)
   const [selectedBlocks, setSelectedBlocks] = useState<number[]>(
-    task?.blocked_by?.map((d) => d.depends_on_task_id) || []
+    task?.blocked_by?.map(d => d.depends_on_task_id) || []
   );
-  const [blockSearchQuery, setBlockSearchQuery] = useState("");
+  const [blockSearchQuery, setBlockSearchQuery] = useState('');
 
   // Comments
-  const [newComment, setNewComment] = useState("");
+  const [newComment, setNewComment] = useState('');
 
   const isEditing = !!task;
 
   // Get available tasks for blocking (exclude self and already completed)
   const availableBlockingTasks = (allTasks || [])
-    .filter((t) => !t.completed && t.id !== task?.id)
-    .filter((t) => t.name.toLowerCase().includes(blockSearchQuery.toLowerCase()))
+    .filter(t => !t.completed && t.id !== task?.id)
+    .filter(t => t.name.toLowerCase().includes(blockSearchQuery.toLowerCase()))
     .slice(0, 20);
 
   // Initialize form state when modal opens
   const initializeForm = () => {
     if (task) {
       setName(task.name);
-      setDescription(task.description || "");
-      setNotes(task.notes || "");
+      setDescription(task.description || '');
+      setNotes(task.notes || '');
       setListId(String(task.list_id || 1));
-      setDate(task.date || "");
-      setDeadline(task.deadline || "");
-      setEstimate(task.estimate || "");
-      setActualTime(task.actual_time || "");
+      setDate(task.date || '');
+      setDeadline(task.deadline || '');
+      setEstimate(task.estimate || '');
+      setActualTime(task.actual_time || '');
       setPriority(task.priority);
       setRecurring(task.recurring);
-      setSelectedLabels(task.labels.map((l) => l.id));
-      setSubtasks(task.subtasks.map((s) => s.name));
-      setReminders(task.reminders.map((r) => r.remind_at));
-      setSelectedBlocks(task.blocked_by?.map((d) => d.depends_on_task_id) || []);
-      if (task.recurring === "custom" && task.recurring_config) {
+      setSelectedLabels(task.labels.map(l => l.id));
+      setSubtasks(task.subtasks.map(s => s.name));
+      setReminders(task.reminders.map(r => r.remind_at));
+      setSelectedBlocks(task.blocked_by?.map(d => d.depends_on_task_id) || []);
+      if (task.recurring === 'custom' && task.recurring_config) {
         setRecurringConfig(JSON.parse(task.recurring_config));
       }
       // Load assignees
       if (task.assignee) {
-        setAssignees([{
-          user_id: task.assignee.id,
-          user_email: task.assignee.email,
-          user_name: task.assignee.name,
-          permission: "edit"
-        }]);
+        setAssignees([
+          {
+            user_id: task.assignee.id,
+            user_email: task.assignee.email,
+            user_name: task.assignee.name,
+            permission: 'edit',
+          },
+        ]);
       }
     } else {
       // Apply template if selected
       if (selectedTemplate) {
         setName(selectedTemplate.name);
-        setDescription(selectedTemplate.description || "");
+        setDescription(selectedTemplate.description || '');
         setListId(String(selectedTemplate.list_id || 1));
         setPriority(selectedTemplate.priority);
         setSelectedLabels(selectedTemplate.label_ids || []);
         setSubtasks(selectedTemplate.subtasks || []);
       } else {
-        setName("");
-        setDescription("");
-        setNotes("");
-        setListId("1");
-        setDate("");
-        setDeadline("");
-        setEstimate("");
-        setActualTime("");
-        setPriority("none");
-        setRecurring("none");
+        setName('');
+        setDescription('');
+        setNotes('');
+        setListId('1');
+        setDate('');
+        setDeadline('');
+        setEstimate('');
+        setActualTime('');
+        setPriority('none');
+        setRecurring('none');
         setSelectedLabels([]);
-        setSubtaskInput("");
+        setSubtaskInput('');
         setSubtasks([]);
-        setReminderInput("");
+        setReminderInput('');
         setReminders([]);
         setSelectedBlocks([]);
         setRecurringConfig({});
@@ -228,7 +263,7 @@ export function TaskModal({
       getTemplateCategories().then(setCategories).catch(console.error);
       return () => clearTimeout(timer);
     }
-     
+
     return undefined;
   }, [open]);
 
@@ -238,7 +273,9 @@ export function TaskModal({
     // Check for similar tasks before creating new one
     if (!isEditing && !task) {
       try {
-        const similarTasks = await (await import("@/lib/actions/tasks")).findSimilarTasks(name);
+        const similarTasks = await (
+          await import('@/lib/actions/tasks')
+        ).findSimilarTasks(name);
         if (similarTasks.length > 0) {
           const shouldContinue = confirm(
             `Found ${similarTasks.length} similar task(s): "${similarTasks[0].name}"\n\nDo you still want to create this task?`
@@ -248,7 +285,7 @@ export function TaskModal({
           }
         }
       } catch (error) {
-        console.error("Failed to check for similar tasks:", error);
+        console.error('Failed to check for similar tasks:', error);
       }
     }
 
@@ -264,9 +301,12 @@ export function TaskModal({
       actual_time: actualTime || undefined,
       priority,
       recurring,
-      recurring_config: recurring === "custom" && recurringConfig.interval && recurringConfig.unit
-        ? JSON.stringify(recurringConfig)
-        : undefined,
+      recurring_config:
+        recurring === 'custom' &&
+        recurringConfig.interval &&
+        recurringConfig.unit
+          ? JSON.stringify(recurringConfig)
+          : undefined,
       label_ids: selectedLabels,
       subtasks,
       reminders,
@@ -274,7 +314,8 @@ export function TaskModal({
 
     const parsed = taskSchema.safeParse(formData);
     if (!parsed.success) {
-      const errorMessage = parsed.error.issues[0]?.message || "Validation error";
+      const errorMessage =
+        parsed.error.issues[0]?.message || 'Validation error';
       toast.error(errorMessage);
       return;
     }
@@ -298,7 +339,7 @@ export function TaskModal({
           reminders: parsed.data.reminders,
           blocker_ids: selectedBlocks,
         });
-        toast.success("Task updated successfully");
+        toast.success('Task updated successfully');
       } else {
         await createTaskAction({
           name: parsed.data.name,
@@ -316,7 +357,7 @@ export function TaskModal({
           reminders: parsed.data.reminders,
           blocker_ids: selectedBlocks,
         });
-        toast.success("Task created successfully");
+        toast.success('Task created successfully');
       }
       onSuccess();
       onOpenChange(false);
@@ -324,13 +365,15 @@ export function TaskModal({
       // If offline, save to offline storage
       if (!navigator.onLine) {
         // Convert null values to undefined for offline storage
-        const offlineData = isEditing ? { id: task.id, ...parsed.data } : parsed.data;
-        saveOfflineTask(isEditing ? "update" : "create", offlineData as any);
-        toast.success("Task saved locally. Will sync when online.");
+        const offlineData = isEditing
+          ? { id: task.id, ...parsed.data }
+          : parsed.data;
+        saveOfflineTask(isEditing ? 'update' : 'create', offlineData as any);
+        toast.success('Task saved locally. Will sync when online.');
         onSuccess();
         onOpenChange(false);
       } else {
-        toast.error("Failed to save task. Please try again.");
+        toast.error('Failed to save task. Please try again.');
       }
       console.error(error);
     } finally {
@@ -339,49 +382,49 @@ export function TaskModal({
   };
 
   const toggleLabel = (labelId: number) => {
-    setSelectedLabels((prev) =>
+    setSelectedLabels(prev =>
       prev.includes(labelId)
-        ? prev.filter((id) => id !== labelId)
+        ? prev.filter(id => id !== labelId)
         : [...prev, labelId]
     );
   };
 
   const addSubtask = () => {
     if (!subtaskInput.trim()) return;
-    setSubtasks((prev) => [...prev, subtaskInput.trim()]);
-    setSubtaskInput("");
+    setSubtasks(prev => [...prev, subtaskInput.trim()]);
+    setSubtaskInput('');
   };
 
   const removeSubtask = (index: number) => {
-    setSubtasks((prev) => prev.filter((_, i) => i !== index));
+    setSubtasks(prev => prev.filter((_, i) => i !== index));
   };
 
   const addReminder = () => {
     if (!reminderInput.trim()) return;
-    setReminders((prev) => [...prev, reminderInput.trim()]);
-    setReminderInput("");
+    setReminders(prev => [...prev, reminderInput.trim()]);
+    setReminderInput('');
   };
 
   const removeReminder = (index: number) => {
-    setReminders((prev) => prev.filter((_, i) => i !== index));
+    setReminders(prev => prev.filter((_, i) => i !== index));
   };
 
   const toggleBlocker = (taskId: number) => {
-    setSelectedBlocks((prev) =>
+    setSelectedBlocks(prev =>
       prev.includes(taskId)
-        ? prev.filter((id) => id !== taskId)
+        ? prev.filter(id => id !== taskId)
         : [...prev, taskId]
     );
   };
 
   const handleUseTemplate = (template: Template) => {
     setName(template.name);
-    setDescription(template.description || "");
+    setDescription(template.description || '');
     setListId(String(template.list_id || 1));
     setPriority(template.priority);
     setSelectedLabels(template.label_ids || []);
     setSubtasks(template.subtasks || []);
-    setActiveTab("task");
+    setActiveTab('task');
   };
 
   const handleAddComment = async () => {
@@ -390,10 +433,10 @@ export function TaskModal({
       const comment = await addTaskComment(task.id, { content: newComment });
       // Refresh task to show the new comment
       onSuccess();
-      setNewComment("");
-      toast.success("Comment added");
+      setNewComment('');
+      toast.success('Comment added');
     } catch {
-      toast.error("Failed to add comment");
+      toast.error('Failed to add comment');
     }
   };
 
@@ -401,33 +444,31 @@ export function TaskModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden p-0">
         <DialogHeader className="px-6 pt-6 pb-2">
-          <DialogTitle>
-            {isEditing ? "Edit Task" : "New Task"}
-          </DialogTitle>
+          <DialogTitle>{isEditing ? 'Edit Task' : 'New Task'}</DialogTitle>
         </DialogHeader>
 
         <div className="px-6 pb-2">
           <div className="flex space-x-1 border-b">
             <button
               className={cn(
-                "pb-2 text-sm font-medium",
-                activeTab === "task"
-                  ? "border-b-2 border-primary text-primary"
-                  : "text-muted-foreground hover:text-foreground"
+                'pb-2 text-sm font-medium',
+                activeTab === 'task'
+                  ? 'border-b-2 border-primary text-primary'
+                  : 'text-muted-foreground hover:text-foreground'
               )}
-              onClick={() => setActiveTab("task")}
+              onClick={() => setActiveTab('task')}
             >
               Task
             </button>
             {templates.length > 0 && (
               <button
                 className={cn(
-                  "pb-2 text-sm font-medium",
-                  activeTab === "template"
-                    ? "border-b-2 border-primary text-primary"
-                    : "text-muted-foreground hover:text-foreground"
+                  'pb-2 text-sm font-medium',
+                  activeTab === 'template'
+                    ? 'border-b-2 border-primary text-primary'
+                    : 'text-muted-foreground hover:text-foreground'
                 )}
-                onClick={() => setActiveTab("template")}
+                onClick={() => setActiveTab('template')}
               >
                 Templates ({templates.length})
               </button>
@@ -435,12 +476,12 @@ export function TaskModal({
             {isEditing && (
               <button
                 className={cn(
-                  "pb-2 text-sm font-medium",
-                  activeTab === "comments"
-                    ? "border-b-2 border-primary text-primary"
-                    : "text-muted-foreground hover:text-foreground"
+                  'pb-2 text-sm font-medium',
+                  activeTab === 'comments'
+                    ? 'border-b-2 border-primary text-primary'
+                    : 'text-muted-foreground hover:text-foreground'
                 )}
-                onClick={() => setActiveTab("comments")}
+                onClick={() => setActiveTab('comments')}
               >
                 Comments
               </button>
@@ -448,12 +489,12 @@ export function TaskModal({
             {isEditing && (
               <button
                 className={cn(
-                  "pb-2 text-sm font-medium",
-                  activeTab === "time"
-                    ? "border-b-2 border-primary text-primary"
-                    : "text-muted-foreground hover:text-foreground"
+                  'pb-2 text-sm font-medium',
+                  activeTab === 'time'
+                    ? 'border-b-2 border-primary text-primary'
+                    : 'text-muted-foreground hover:text-foreground'
                 )}
-                onClick={() => setActiveTab("time")}
+                onClick={() => setActiveTab('time')}
               >
                 Time Tracking
               </button>
@@ -461,12 +502,12 @@ export function TaskModal({
             {isEditing && (
               <button
                 className={cn(
-                  "pb-2 text-sm font-medium",
-                  activeTab === "pomodoro"
-                    ? "border-b-2 border-primary text-primary"
-                    : "text-muted-foreground hover:text-foreground"
+                  'pb-2 text-sm font-medium',
+                  activeTab === 'pomodoro'
+                    ? 'border-b-2 border-primary text-primary'
+                    : 'text-muted-foreground hover:text-foreground'
                 )}
-                onClick={() => setActiveTab("pomodoro")}
+                onClick={() => setActiveTab('pomodoro')}
               >
                 Pomodoro
               </button>
@@ -474,12 +515,12 @@ export function TaskModal({
             {isEditing && (
               <button
                 className={cn(
-                  "pb-2 text-sm font-medium",
-                  activeTab === "assign"
-                    ? "border-b-2 border-primary text-primary"
-                    : "text-muted-foreground hover:text-foreground"
+                  'pb-2 text-sm font-medium',
+                  activeTab === 'assign'
+                    ? 'border-b-2 border-primary text-primary'
+                    : 'text-muted-foreground hover:text-foreground'
                 )}
-                onClick={() => setActiveTab("assign")}
+                onClick={() => setActiveTab('assign')}
               >
                 Assign
               </button>
@@ -487,12 +528,12 @@ export function TaskModal({
             {isEditing && (
               <button
                 className={cn(
-                  "pb-2 text-sm font-medium",
-                  activeTab === "attachments"
-                    ? "border-b-2 border-primary text-primary"
-                    : "text-muted-foreground hover:text-foreground"
+                  'pb-2 text-sm font-medium',
+                  activeTab === 'attachments'
+                    ? 'border-b-2 border-primary text-primary'
+                    : 'text-muted-foreground hover:text-foreground'
                 )}
-                onClick={() => setActiveTab("attachments")}
+                onClick={() => setActiveTab('attachments')}
               >
                 <Paperclip className="h-3.5 w-3.5 mr-1.5 inline" />
                 Files
@@ -501,26 +542,26 @@ export function TaskModal({
             {isEditing && (
               <button
                 className={cn(
-                  "pb-2 text-sm font-medium",
-                  activeTab === "collaborate"
-                    ? "border-b-2 border-primary text-primary"
-                    : "text-muted-foreground hover:text-foreground"
+                  'pb-2 text-sm font-medium',
+                  activeTab === 'collaborate'
+                    ? 'border-b-2 border-primary text-primary'
+                    : 'text-muted-foreground hover:text-foreground'
                 )}
-                onClick={() => setActiveTab("collaborate")}
+                onClick={() => setActiveTab('collaborate')}
               >
                 <Share2 className="h-3.5 w-3.5 mr-1.5 inline" />
                 Share
               </button>
             )}
-            {isEditing && task?.recurring !== "none" && (
+            {isEditing && task?.recurring !== 'none' && (
               <button
                 className={cn(
-                  "pb-2 text-sm font-medium",
-                  activeTab === "streak"
-                    ? "border-b-2 border-primary text-primary"
-                    : "text-muted-foreground hover:text-foreground"
+                  'pb-2 text-sm font-medium',
+                  activeTab === 'streak'
+                    ? 'border-b-2 border-primary text-primary'
+                    : 'text-muted-foreground hover:text-foreground'
                 )}
-                onClick={() => setActiveTab("streak")}
+                onClick={() => setActiveTab('streak')}
               >
                 <Flame className="h-3.5 w-3.5 mr-1.5 inline" />
                 Streak
@@ -529,12 +570,12 @@ export function TaskModal({
             {isEditing && (
               <button
                 className={cn(
-                  "pb-2 text-sm font-medium",
-                  activeTab === "context"
-                    ? "border-b-2 border-primary text-primary"
-                    : "text-muted-foreground hover:text-foreground"
+                  'pb-2 text-sm font-medium',
+                  activeTab === 'context'
+                    ? 'border-b-2 border-primary text-primary'
+                    : 'text-muted-foreground hover:text-foreground'
                 )}
-                onClick={() => setActiveTab("context")}
+                onClick={() => setActiveTab('context')}
               >
                 <Brain className="h-3.5 w-3.5 mr-1.5 inline" />
                 Context
@@ -543,12 +584,12 @@ export function TaskModal({
             {isEditing && (
               <button
                 className={cn(
-                  "pb-2 text-sm font-medium",
-                  activeTab === "decision"
-                    ? "border-b-2 border-primary text-primary"
-                    : "text-muted-foreground hover:text-foreground"
+                  'pb-2 text-sm font-medium',
+                  activeTab === 'decision'
+                    ? 'border-b-2 border-primary text-primary'
+                    : 'text-muted-foreground hover:text-foreground'
                 )}
-                onClick={() => setActiveTab("decision")}
+                onClick={() => setActiveTab('decision')}
               >
                 <Lightbulb className="h-3.5 w-3.5 mr-1.5 inline" />
                 Decisions
@@ -557,12 +598,12 @@ export function TaskModal({
             {isEditing && (
               <button
                 className={cn(
-                  "pb-2 text-sm font-medium",
-                  activeTab === "connections"
-                    ? "border-b-2 border-primary text-primary"
-                    : "text-muted-foreground hover:text-foreground"
+                  'pb-2 text-sm font-medium',
+                  activeTab === 'connections'
+                    ? 'border-b-2 border-primary text-primary'
+                    : 'text-muted-foreground hover:text-foreground'
                 )}
-                onClick={() => setActiveTab("connections")}
+                onClick={() => setActiveTab('connections')}
               >
                 <Link className="h-3.5 w-3.5 mr-1.5 inline" />
                 Connections
@@ -571,12 +612,12 @@ export function TaskModal({
             {isEditing && task && task.completed && (
               <button
                 className={cn(
-                  "pb-2 text-sm font-medium",
-                  activeTab === "schedule"
-                    ? "border-b-2 border-primary text-primary"
-                    : "text-muted-foreground hover:text-foreground"
+                  'pb-2 text-sm font-medium',
+                  activeTab === 'schedule'
+                    ? 'border-b-2 border-primary text-primary'
+                    : 'text-muted-foreground hover:text-foreground'
                 )}
-                onClick={() => setActiveTab("schedule")}
+                onClick={() => setActiveTab('schedule')}
               >
                 <Calendar className="h-3.5 w-3.5 mr-1.5 inline" />
                 Schedule
@@ -586,15 +627,17 @@ export function TaskModal({
         </div>
 
         <ScrollArea className="px-6 pb-6 max-h-[calc(90vh-120px)]">
-          {activeTab === "task" && (
+          {activeTab === 'task' && (
             <div className="space-y-5 pt-4">
               {!isEditing && templates.length > 0 && (
                 <div className="space-y-2">
                   <Label>Start from Template</Label>
                   <Select
-                    value={selectedTemplate?.id?.toString() || ""}
-                    onValueChange={(value) => {
-                      const template = templates.find((t) => t.id === Number(value));
+                    value={selectedTemplate?.id?.toString() || ''}
+                    onValueChange={value => {
+                      const template = templates.find(
+                        t => t.id === Number(value)
+                      );
                       setSelectedTemplate(template || null);
                     }}
                   >
@@ -602,8 +645,11 @@ export function TaskModal({
                       <SelectValue placeholder="Choose a template..." />
                     </SelectTrigger>
                     <SelectContent>
-                      {templates.map((template) => (
-                        <SelectItem key={template.id} value={String(template.id)}>
+                      {templates.map(template => (
+                        <SelectItem
+                          key={template.id}
+                          value={String(template.id)}
+                        >
                           {template.name}
                         </SelectItem>
                       ))}
@@ -615,7 +661,7 @@ export function TaskModal({
                 <Label>Task Name</Label>
                 <Input
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={e => setName(e.target.value)}
                   placeholder="What needs to be done?"
                   className="text-base"
                 />
@@ -625,7 +671,7 @@ export function TaskModal({
                 <Label>Description</Label>
                 <Textarea
                   value={description}
-                  onChange={(e) => setDescription(e.target.value)}
+                  onChange={e => setDescription(e.target.value)}
                   placeholder="Add details..."
                   rows={3}
                 />
@@ -635,7 +681,7 @@ export function TaskModal({
                 <Label>Notes (Markdown supported)</Label>
                 <Textarea
                   value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
+                  onChange={e => setNotes(e.target.value)}
                   placeholder="Add notes..."
                   rows={4}
                   className="font-mono text-sm"
@@ -651,7 +697,7 @@ export function TaskModal({
                   <Input
                     type="date"
                     value={date}
-                    onChange={(e) => setDate(e.target.value)}
+                    onChange={e => setDate(e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
@@ -662,7 +708,7 @@ export function TaskModal({
                   <Input
                     type="datetime-local"
                     value={deadline}
-                    onChange={(e) => setDeadline(e.target.value)}
+                    onChange={e => setDeadline(e.target.value)}
                   />
                 </div>
               </div>
@@ -670,12 +716,15 @@ export function TaskModal({
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label>List</Label>
-                  <Select value={listId} onValueChange={(v) => setListId(v || "1")}>
+                  <Select
+                    value={listId}
+                    onValueChange={v => setListId(v || '1')}
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {lists.map((list) => (
+                      {lists.map(list => (
                         <SelectItem key={list.id} value={String(list.id)}>
                           <span className="mr-1">{list.emoji}</span>
                           {list.name}
@@ -691,16 +740,18 @@ export function TaskModal({
                   </Label>
                   <Select
                     value={priority}
-                    onValueChange={(v) => setPriority(v as Priority)}
+                    onValueChange={v => setPriority(v as Priority)}
                   >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {priorities.map((p) => (
+                      {priorities.map(p => (
                         <SelectItem key={p.value} value={p.value}>
                           <div className="flex items-center gap-2">
-                            <span className={cn("h-2 w-2 rounded-full", p.color)} />
+                            <span
+                              className={cn('h-2 w-2 rounded-full', p.color)}
+                            />
                             {p.label}
                           </div>
                         </SelectItem>
@@ -715,13 +766,13 @@ export function TaskModal({
                   </Label>
                   <Select
                     value={recurring}
-                    onValueChange={(v) => setRecurring(v as Recurring)}
+                    onValueChange={v => setRecurring(v as Recurring)}
                   >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {recurringOptions.map((r) => (
+                      {recurringOptions.map(r => (
                         <SelectItem key={r.value} value={r.value}>
                           {r.label}
                         </SelectItem>
@@ -732,15 +783,15 @@ export function TaskModal({
               </div>
 
               {/* Custom recurring configuration */}
-              {recurring === "custom" && (
+              {recurring === 'custom' && (
                 <div className="flex items-end gap-2">
                   <div className="flex-1 space-y-2">
                     <Label>Repeat every</Label>
                     <Input
                       type="number"
                       min="1"
-                      value={recurringConfig.interval || ""}
-                      onChange={(e) =>
+                      value={recurringConfig.interval || ''}
+                      onChange={e =>
                         setRecurringConfig({
                           ...recurringConfig,
                           interval: parseInt(e.target.value) || 1,
@@ -752,11 +803,11 @@ export function TaskModal({
                   <div className="flex-1 space-y-2">
                     <Label>Unit</Label>
                     <Select
-                      value={recurringConfig.unit || "days"}
-                      onValueChange={(v) =>
+                      value={recurringConfig.unit || 'days'}
+                      onValueChange={v =>
                         setRecurringConfig({
                           ...recurringConfig,
-                          unit: v as "days" | "weeks" | "months" | "years",
+                          unit: v as 'days' | 'weeks' | 'months' | 'years',
                         })
                       }
                     >
@@ -783,7 +834,7 @@ export function TaskModal({
                   <Input
                     type="time"
                     value={estimate}
-                    onChange={(e) => setEstimate(e.target.value)}
+                    onChange={e => setEstimate(e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
@@ -794,7 +845,7 @@ export function TaskModal({
                   <Input
                     type="time"
                     value={actualTime}
-                    onChange={(e) => setActualTime(e.target.value)}
+                    onChange={e => setActualTime(e.target.value)}
                   />
                 </div>
               </div>
@@ -805,15 +856,15 @@ export function TaskModal({
                   Labels
                 </Label>
                 <div className="flex flex-wrap gap-2">
-                  {labels.map((label) => (
+                  {labels.map(label => (
                     <button
                       key={label.id}
                       onClick={() => toggleLabel(label.id)}
                       className={cn(
-                        "inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs transition-all border",
+                        'inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs transition-all border',
                         selectedLabels.includes(label.id)
-                          ? "border-transparent text-white"
-                          : "border-input bg-background hover:bg-muted"
+                          ? 'border-transparent text-white'
+                          : 'border-input bg-background hover:bg-muted'
                       )}
                       style={
                         selectedLabels.includes(label.id)
@@ -836,9 +887,9 @@ export function TaskModal({
                 <div className="flex gap-2">
                   <Input
                     value={subtaskInput}
-                    onChange={(e) => setSubtaskInput(e.target.value)}
+                    onChange={e => setSubtaskInput(e.target.value)}
                     placeholder="Add a subtask..."
-                    onKeyDown={(e) => e.key === "Enter" && addSubtask()}
+                    onKeyDown={e => e.key === 'Enter' && addSubtask()}
                   />
                   <Button variant="outline" size="icon" onClick={addSubtask}>
                     <Plus className="h-4 w-4" />
@@ -877,8 +928,8 @@ export function TaskModal({
                   <PopoverTrigger>
                     <Button variant="outline" className="w-full justify-start">
                       {selectedBlocks.length > 0
-                        ? `${selectedBlocks.length} task${selectedBlocks.length > 1 ? "s" : ""} blocking`
-                        : "Add blocking task"}
+                        ? `${selectedBlocks.length} task${selectedBlocks.length > 1 ? 's' : ''} blocking`
+                        : 'Add blocking task'}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-64" align="start">
@@ -886,22 +937,22 @@ export function TaskModal({
                       <Input
                         placeholder="Search tasks..."
                         value={blockSearchQuery}
-                        onChange={(e) => setBlockSearchQuery(e.target.value)}
+                        onChange={e => setBlockSearchQuery(e.target.value)}
                       />
                       <div className="max-h-60 overflow-y-auto">
-                        {availableBlockingTasks.map((t) => (
+                        {availableBlockingTasks.map(t => (
                           <button
                             key={t.id}
                             className={cn(
-                              "w-full text-left text-sm rounded px-2 py-1.5 hover:bg-accent",
-                              selectedBlocks.includes(t.id) && "bg-accent"
+                              'w-full text-left text-sm rounded px-2 py-1.5 hover:bg-accent',
+                              selectedBlocks.includes(t.id) && 'bg-accent'
                             )}
                             onClick={() => toggleBlocker(t.id)}
                           >
                             <div className="font-medium truncate">{t.name}</div>
                             {t.date && (
                               <div className="text-xs text-muted-foreground">
-                                {format(parseISO(t.date), "MMM d")}
+                                {format(parseISO(t.date), 'MMM d')}
                               </div>
                             )}
                           </button>
@@ -912,8 +963,8 @@ export function TaskModal({
                 </Popover>
                 {selectedBlocks.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-2">
-                    {selectedBlocks.map((id) => {
-                      const blockedTask = allTasks?.find((t) => t.id === id);
+                    {selectedBlocks.map(id => {
+                      const blockedTask = allTasks?.find(t => t.id === id);
                       return blockedTask ? (
                         <Badge key={id} variant="secondary">
                           {blockedTask.name}
@@ -933,7 +984,7 @@ export function TaskModal({
                   <Input
                     type="datetime-local"
                     value={reminderInput}
-                    onChange={(e) => setReminderInput(e.target.value)}
+                    onChange={e => setReminderInput(e.target.value)}
                   />
                   <Button variant="outline" size="icon" onClick={addReminder}>
                     <Plus className="h-4 w-4" />
@@ -947,7 +998,7 @@ export function TaskModal({
                         variant="secondary"
                         className="flex items-center gap-1"
                       >
-                        {format(parseISO(reminder), "MMM d, HH:mm")}
+                        {format(parseISO(reminder), 'MMM d, HH:mm')}
                         <button onClick={() => removeReminder(index)}>
                           <X className="h-3 w-3" />
                         </button>
@@ -963,12 +1014,14 @@ export function TaskModal({
                   <div className="space-y-2">
                     <Label>Activity Log</Label>
                     <div className="space-y-1 text-sm text-muted-foreground">
-                      {task.logs.slice(0, 10).map((log) => (
+                      {task.logs.slice(0, 10).map(log => (
                         <div key={log.id} className="flex gap-2">
-                          <span className="font-medium capitalize">{log.action}</span>
+                          <span className="font-medium capitalize">
+                            {log.action}
+                          </span>
                           <span>{log.details}</span>
                           <span className="ml-auto text-xs">
-                            {format(parseISO(log.created_at), "MMM d, HH:mm")}
+                            {format(parseISO(log.created_at), 'MMM d, HH:mm')}
                           </span>
                         </div>
                       ))}
@@ -979,7 +1032,7 @@ export function TaskModal({
             </div>
           )}
 
-          {activeTab === "time" && isEditing && task && (
+          {activeTab === 'time' && isEditing && task && (
             <TimeReport
               tasks={[task]}
               timeEntries={task.time_entries || []}
@@ -987,13 +1040,13 @@ export function TaskModal({
             />
           )}
 
-          {activeTab === "pomodoro" && isEditing && task && (
+          {activeTab === 'pomodoro' && isEditing && task && (
             <div className="pt-4">
               <PomodoroTimer task={task} />
             </div>
           )}
 
-          {activeTab === "template" && !isEditing && (
+          {activeTab === 'template' && !isEditing && (
             <TaskTemplateTab
               name={name}
               description={description}
@@ -1010,7 +1063,7 @@ export function TaskModal({
             />
           )}
 
-          {activeTab === "comments" && isEditing && task && (
+          {activeTab === 'comments' && isEditing && task && (
             <TaskCommentsTab
               task={task}
               comments={task.comments || []}
@@ -1018,15 +1071,15 @@ export function TaskModal({
             />
           )}
 
-          {activeTab === "attachments" && isEditing && task && (
+          {activeTab === 'attachments' && isEditing && task && (
             <TaskAttachments task={task} onAttachmentsChange={onSuccess} />
           )}
 
-          {activeTab === "collaborate" && isEditing && task && (
+          {activeTab === 'collaborate' && isEditing && task && (
             <TaskCollaborateTab task={task} />
           )}
 
-          {activeTab === "assign" && isEditing && (
+          {activeTab === 'assign' && isEditing && (
             <TaskAssignTab
               assignees={assignees}
               assigneeSearchQuery={assigneeSearchQuery}
@@ -1035,25 +1088,19 @@ export function TaskModal({
             />
           )}
 
-          {activeTab === "streak" && isEditing && task && (
+          {activeTab === 'streak' && isEditing && task && (
             <TaskStreakTab task={task} />
           )}
 
-          {activeTab === "context" && isEditing && task && (
-            <TaskContextTab
-              task={task}
-              contexts={task.habit_contexts as any}
-            />
+          {activeTab === 'context' && isEditing && task && (
+            <TaskContextTab task={task} contexts={task.habit_contexts as any} />
           )}
 
-          {activeTab === "decision" && isEditing && task && (
-            <TaskDecisionTab
-              task={task}
-              decisions={task.decisions as any}
-            />
+          {activeTab === 'decision' && isEditing && task && (
+            <TaskDecisionTab task={task} decisions={task.decisions as any} />
           )}
 
-          {activeTab === "connections" && isEditing && task && (
+          {activeTab === 'connections' && isEditing && task && (
             <TaskConnectionsTab
               task={task}
               connections={task.connections as any}
@@ -1061,25 +1108,26 @@ export function TaskModal({
             />
           )}
 
-          {activeTab === "schedule" && isEditing && task && (
+          {activeTab === 'schedule' && isEditing && task && (
             <div className="pt-4">
-              <TaskSchedule
-                task={task}
-                lists={lists}
-              />
+              <TaskSchedule task={task} lists={lists} />
             </div>
           )}
         </ScrollArea>
 
         <DialogFooter className="px-6 py-4">
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-          >
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={isSubmitting || !name.trim()}>
-            {isSubmitting ? "Saving..." : isEditing ? "Save Changes" : "Create Task"}
+          <Button
+            onClick={handleSubmit}
+            disabled={isSubmitting || !name.trim()}
+          >
+            {isSubmitting
+              ? 'Saving...'
+              : isEditing
+                ? 'Save Changes'
+                : 'Create Task'}
           </Button>
         </DialogFooter>
       </DialogContent>
