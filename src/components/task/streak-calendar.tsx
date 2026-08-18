@@ -1,10 +1,17 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useCallback } from "react";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isToday, isPast } from "date-fns";
-import { ChevronLeft, ChevronRight, Flame } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { useState, useEffect, useCallback } from 'react';
+import {
+  format,
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+  isToday,
+  isPast,
+} from 'date-fns';
+import { ChevronLeft, ChevronRight, Flame } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface StreakCalendarProps {
   taskId: number;
@@ -28,12 +35,12 @@ export function StreakCalendar({
 
   const handleDateClick = (date: Date) => {
     if (!onDateToggle) return;
-    const dateStr = format(date, "yyyy-MM-dd");
+    const dateStr = format(date, 'yyyy-MM-dd');
     onDateToggle(dateStr);
   };
 
   const isCompleted = (date: Date) => {
-    const dateStr = format(date, "yyyy-MM-dd");
+    const dateStr = format(date, 'yyyy-MM-dd');
     return completedDates.includes(dateStr);
   };
 
@@ -52,23 +59,36 @@ export function StreakCalendar({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setCurrentMonth(new Date(currentMonth.setMonth(currentMonth.getMonth() - 1)))}
+            onClick={() =>
+              setCurrentMonth(
+                new Date(currentMonth.setMonth(currentMonth.getMonth() - 1))
+              )
+            }
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <span className="font-medium">{format(currentMonth, "MMMM yyyy")}</span>
+          <span className="font-medium">
+            {format(currentMonth, 'MMMM yyyy')}
+          </span>
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setCurrentMonth(new Date(currentMonth.setMonth(currentMonth.getMonth() + 1)))}
+            onClick={() =>
+              setCurrentMonth(
+                new Date(currentMonth.setMonth(currentMonth.getMonth() + 1))
+              )
+            }
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
 
         <div className="grid grid-cols-7 gap-1">
-          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-            <div key={day} className="text-xs font-medium text-muted-foreground text-center py-1">
+          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+            <div
+              key={day}
+              className="text-xs font-medium text-muted-foreground text-center py-1"
+            >
               {day}
             </div>
           ))}
@@ -79,7 +99,7 @@ export function StreakCalendar({
           ))}
 
           {/* Day cells */}
-          {days.map((day) => {
+          {days.map(day => {
             const completed = isCompleted(day);
             const isCurrentDay = isToday(day);
             const isPastDay = isPast(day);
@@ -88,17 +108,19 @@ export function StreakCalendar({
               <button
                 key={day.toString()}
                 className={cn(
-                  "h-8 rounded-lg text-sm transition-all",
-                  "hover:bg-accent",
-                  completed && "bg-green-100 dark:bg-green-900/20",
-                  isCurrentDay && "ring-2 ring-primary",
-                  !isPastDay && !isCurrentDay && "opacity-50 cursor-not-allowed"
+                  'h-8 rounded-lg text-sm transition-all',
+                  'hover:bg-accent',
+                  completed && 'bg-green-100 dark:bg-green-900/20',
+                  isCurrentDay && 'ring-2 ring-primary',
+                  !isPastDay && !isCurrentDay && 'opacity-50 cursor-not-allowed'
                 )}
                 onClick={() => isPastDay && handleDateClick(day)}
                 disabled={!isPastDay && !isCurrentDay}
               >
-                <span className={cn("block text-center", completed && "font-bold")}>
-                  {format(day, "d")}
+                <span
+                  className={cn('block text-center', completed && 'font-bold')}
+                >
+                  {format(day, 'd')}
                 </span>
                 {completed && (
                   <div className="w-1 h-1 bg-green-500 rounded-full mx-auto mt-1" />
@@ -111,7 +133,12 @@ export function StreakCalendar({
 
       <div className="text-xs text-muted-foreground">
         <p>Complete this task daily to build your streak!</p>
-        <p>Current streak: <span className="font-medium text-orange-600">{streakCount} day{streakCount !== 1 ? "s" : ""}</span></p>
+        <p>
+          Current streak:{' '}
+          <span className="font-medium text-orange-600">
+            {streakCount} day{streakCount !== 1 ? 's' : ''}
+          </span>
+        </p>
       </div>
     </div>
   );
@@ -125,8 +152,8 @@ function calculateStreak(completedDates: string[]): number {
 
   // Check if the most recent completion is today or yesterday
   const lastCompleted = sortedDates[0];
-  const today = format(new Date(), "yyyy-MM-dd");
-  const yesterday = format(new Date(Date.now() - 86400000), "yyyy-MM-dd");
+  const today = format(new Date(), 'yyyy-MM-dd');
+  const yesterday = format(new Date(Date.now() - 86400000), 'yyyy-MM-dd');
 
   if (lastCompleted !== today && lastCompleted !== yesterday) {
     return 0; // Streak is broken
@@ -135,11 +162,14 @@ function calculateStreak(completedDates: string[]): number {
   // Count consecutive days
   let expectedDate = today;
   for (const date of sortedDates) {
-    if (date === expectedDate || (streak === 0 && (date === today || date === yesterday))) {
+    if (
+      date === expectedDate ||
+      (streak === 0 && (date === today || date === yesterday))
+    ) {
       streak++;
       const nextDate = new Date(expectedDate);
       nextDate.setDate(nextDate.getDate() - 1);
-      expectedDate = format(nextDate, "yyyy-MM-dd");
+      expectedDate = format(nextDate, 'yyyy-MM-dd');
     } else if (date !== expectedDate) {
       break;
     }
