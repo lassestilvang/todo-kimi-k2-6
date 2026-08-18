@@ -1,11 +1,19 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useMemo } from "react";
-import { Clock, User, CheckSquare, List, Tag, Share2, MessageSquare } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
-import type { TaskLog, User as UserType } from "@/types";
+import { useState, useEffect, useMemo } from 'react';
+import {
+  Clock,
+  User,
+  CheckSquare,
+  List,
+  Tag,
+  Share2,
+  MessageSquare,
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+import type { TaskLog, User as UserType } from '@/types';
 
 interface ActivityLog {
   id: number;
@@ -45,15 +53,15 @@ const activityIcons: Record<string, React.ReactNode> = {
 };
 
 const activityLabels: Record<string, string> = {
-  task_created: "Task created",
-  task_completed: "Task completed",
-  task_updated: "Task updated",
-  task_deleted: "Task deleted",
-  task_assigned: "Task assigned",
-  label_created: "Label created",
-  label_updated: "Label updated",
-  share_created: "Task shared",
-  comment_added: "Comment added",
+  task_created: 'Task created',
+  task_completed: 'Task completed',
+  task_updated: 'Task updated',
+  task_deleted: 'Task deleted',
+  task_assigned: 'Task assigned',
+  label_created: 'Label created',
+  label_updated: 'Label updated',
+  share_created: 'Task shared',
+  comment_added: 'Comment added',
 };
 
 function formatTimeAgo(date: string): string {
@@ -64,13 +72,16 @@ function formatTimeAgo(date: string): string {
   const diffHours = Math.floor(diffMins / 60);
   const diffDays = Math.floor(diffHours / 24);
 
-  if (diffMins < 1) return "just now";
+  if (diffMins < 1) return 'just now';
   if (diffMins < 60) return `${diffMins}m ago`;
   if (diffHours < 24) return `${diffHours}h ago`;
   return `${diffDays}d ago`;
 }
 
-export function TeamActivityFeed({ workspaceId, className }: TeamActivityFeedProps) {
+export function TeamActivityFeed({
+  workspaceId,
+  className,
+}: TeamActivityFeedProps) {
   const [activities, setActivities] = useState<ActivityWithUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -78,14 +89,14 @@ export function TeamActivityFeed({ workspaceId, className }: TeamActivityFeedPro
     const fetchActivities = async () => {
       setIsLoading(true);
       try {
-        const params = workspaceId ? `?workspace_id=${workspaceId}` : "";
+        const params = workspaceId ? `?workspace_id=${workspaceId}` : '';
         const res = await fetch(`/api/activity${params}`);
         if (res.ok) {
           const data = await res.json();
           setActivities(data);
         }
       } catch (error) {
-        console.error("Failed to fetch activities:", error);
+        console.error('Failed to fetch activities:', error);
       } finally {
         setIsLoading(false);
       }
@@ -104,7 +115,7 @@ export function TeamActivityFeed({ workspaceId, className }: TeamActivityFeedPro
 
   if (isLoading) {
     return (
-      <Card className={cn("w-full", className)}>
+      <Card className={cn('w-full', className)}>
         <CardContent className="pt-6">
           <div className="animate-pulse space-y-3">
             {[1, 2, 3, 4, 5].map(i => (
@@ -124,7 +135,7 @@ export function TeamActivityFeed({ workspaceId, className }: TeamActivityFeedPro
 
   if (recentActivities.length === 0) {
     return (
-      <Card className={cn("w-full", className)}>
+      <Card className={cn('w-full', className)}>
         <CardContent className="pt-6 text-center">
           <Clock className="h-8 w-8 mx-auto mb-2 opacity-30" />
           <p className="text-sm text-muted-foreground">
@@ -136,14 +147,15 @@ export function TeamActivityFeed({ workspaceId, className }: TeamActivityFeedPro
   }
 
   return (
-    <Card className={cn("w-full", className)}>
+    <Card className={cn('w-full', className)}>
       <CardHeader>
         <CardTitle className="text-base">Team Activity</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-1">
-          {recentActivities.map((activity) => {
-            const Icon = activityIcons[activity.action] || activityIcons.default;
+          {recentActivities.map(activity => {
+            const Icon =
+              activityIcons[activity.action] || activityIcons.default;
             const label = activityLabels[activity.action] || activity.action;
             const timeAgo = formatTimeAgo(activity.created_at);
 
@@ -158,16 +170,21 @@ export function TeamActivityFeed({ workspaceId, className }: TeamActivityFeedPro
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-sm">
-                      {activity.user?.name || activity.user?.email.split('@')[0] || "Someone"}
+                      {activity.user?.name ||
+                        activity.user?.email.split('@')[0] ||
+                        'Someone'}
                     </span>
                     <Badge variant="secondary" className="text-xs">
                       {label}
                     </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground mt-1 truncate">
-                    {activity.details || activity.entity_type + " #" + activity.entity_id}
+                    {activity.details ||
+                      activity.entity_type + ' #' + activity.entity_id}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-1">{timeAgo}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {timeAgo}
+                  </p>
                 </div>
               </div>
             );
