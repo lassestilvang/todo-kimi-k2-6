@@ -1,22 +1,32 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from 'react';
 import {
   UserCheck,
   TrendingUp,
   BookOpen,
   Award,
   ChevronDown,
-  ChevronUp
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Label } from "@/components/ui/label";
-import { format } from "date-fns";
-import { toast } from "sonner";
+  ChevronUp,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+import { Label } from '@/components/ui/label';
+import { format } from 'date-fns';
+import { toast } from 'sonner';
 
 interface Skill {
   id: number;
@@ -55,26 +65,74 @@ interface CareerPath {
 }
 
 const skillKeywords: Record<string, string[]> = {
-  "design": ["design", "ui", "ux", "interface", "prototype", "mockup", "wireframe"],
-  "development": ["code", "develop", "server", "api", "backend", "frontend", "implement", "feature"],
-  "research": ["research", "analyze", "study", "investigate", "survey", "data analysis"],
-  "writing": ["write", "document", "content", "copy", "blog", "article", "report"],
-  "leadership": ["lead", "manage", "team", "coordinate", "organize", "mentor", "guide"],
-  "planning": ["plan", "schedule", "organize", "strategy", "roadmap", "timeline"],
-  "communication": ["email", "present", "meeting", "call", "discuss", "talks"],
-  "problem-solving": ["debug", "fix", "solve", "troubleshoot", "issue", "bug"],
-  "marketing": ["campaign", "promote", "advert", "seo", "social", "growth"],
-  "sales": ["sell", "pitch", "demo", "client", "customer", "proposal"],
-  "finance": ["budget", "cost", "invoice", "payment", "pricing", "financial"],
-  "project-management": ["project", "milestone", "deliverable", "scope", "deadline"],
-  "analytical": ["analyze", "metrics", "kpi", "report", "insight", "data"],
-  "creative": ["create", "brainstorm", "innovate", "concept", "idea"],
-  "technical": ["setup", "configure", "deploy", "integration", "automation"],
+  design: [
+    'design',
+    'ui',
+    'ux',
+    'interface',
+    'prototype',
+    'mockup',
+    'wireframe',
+  ],
+  development: [
+    'code',
+    'develop',
+    'server',
+    'api',
+    'backend',
+    'frontend',
+    'implement',
+    'feature',
+  ],
+  research: [
+    'research',
+    'analyze',
+    'study',
+    'investigate',
+    'survey',
+    'data analysis',
+  ],
+  writing: [
+    'write',
+    'document',
+    'content',
+    'copy',
+    'blog',
+    'article',
+    'report',
+  ],
+  leadership: [
+    'lead',
+    'manage',
+    'team',
+    'coordinate',
+    'organize',
+    'mentor',
+    'guide',
+  ],
+  planning: ['plan', 'schedule', 'organize', 'strategy', 'roadmap', 'timeline'],
+  communication: ['email', 'present', 'meeting', 'call', 'discuss', 'talks'],
+  'problem-solving': ['debug', 'fix', 'solve', 'troubleshoot', 'issue', 'bug'],
+  marketing: ['campaign', 'promote', 'advert', 'seo', 'social', 'growth'],
+  sales: ['sell', 'pitch', 'demo', 'client', 'customer', 'proposal'],
+  finance: ['budget', 'cost', 'invoice', 'payment', 'pricing', 'financial'],
+  'project-management': [
+    'project',
+    'milestone',
+    'deliverable',
+    'scope',
+    'deadline',
+  ],
+  analytical: ['analyze', 'metrics', 'kpi', 'report', 'insight', 'data'],
+  creative: ['create', 'brainstorm', 'innovate', 'concept', 'idea'],
+  technical: ['setup', 'configure', 'deploy', 'integration', 'automation'],
 };
 
 export function SkillsGrowthTracker({ tasks = [] }: SkillsGrowthTrackerProps) {
   const [skills, setSkills] = useState<Skill[]>([]);
-  const [collapsedSkills, setCollapsedSkills] = useState<Set<string>>(new Set());
+  const [collapsedSkills, setCollapsedSkills] = useState<Set<string>>(
+    new Set()
+  );
   const [loading, setLoading] = useState(true);
 
   // Extract skills from completed tasks
@@ -85,7 +143,7 @@ export function SkillsGrowthTracker({ tasks = [] }: SkillsGrowthTrackerProps) {
       .filter(t => t.completed && t.completed_at)
       .forEach(task => {
         const taskName = task.name.toLowerCase();
-        const taskDesc = ((task as any).description || "").toLowerCase();
+        const taskDesc = ((task as any).description || '').toLowerCase();
         const combined = `${taskName} ${taskDesc}`;
 
         Object.entries(skillKeywords).forEach(([skill, keywords]) => {
@@ -108,8 +166,12 @@ export function SkillsGrowthTracker({ tasks = [] }: SkillsGrowthTrackerProps) {
         lastCompleted: tasks
           .filter(t => t.completed && data.tasks.includes(t.id))
           .sort((a, b) => {
-            const aDate = a.completed_at ? new Date(a.completed_at).getTime() : 0;
-            const bDate = b.completed_at ? new Date(b.completed_at).getTime() : 0;
+            const aDate = a.completed_at
+              ? new Date(a.completed_at).getTime()
+              : 0;
+            const bDate = b.completed_at
+              ? new Date(b.completed_at).getTime()
+              : 0;
             return bDate - aDate;
           })[0]?.completed_at,
       })),
@@ -122,7 +184,8 @@ export function SkillsGrowthTracker({ tasks = [] }: SkillsGrowthTrackerProps) {
     const { skillCounts } = extractedSkills;
     const completedTasks = tasks.filter(t => t.completed).length;
     const totalTasks = tasks.length;
-    const completionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+    const completionRate =
+      totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
     // Skill diversity
     const uniqueSkills = Object.keys(skillKeywords);
@@ -143,7 +206,9 @@ export function SkillsGrowthTracker({ tasks = [] }: SkillsGrowthTrackerProps) {
 
     // Based on current skill level
     if (progressMetrics.completionRate > 70) {
-      recommendations.push("Try tackling a new skill area to broaden your expertise");
+      recommendations.push(
+        'Try tackling a new skill area to broaden your expertise'
+      );
     }
 
     // Based on streak
@@ -159,16 +224,22 @@ export function SkillsGrowthTracker({ tasks = [] }: SkillsGrowthTrackerProps) {
     if (recentTasks.length >= 3) {
       const types = new Set(recentTasks.map(t => t.name.split(' ')[0]));
       if (types.size === 1) {
-        recommendations.push("Try diversifying your task types to build varied skills");
+        recommendations.push(
+          'Try diversifying your task types to build varied skills'
+        );
       }
     }
 
     // Based on skills not yet covered
     const coveredSkills = Object.keys(extractedSkills.skillCounts);
-    const uncoveredSkills = Object.keys(skillKeywords).filter(s => !coveredSkills.includes(s));
+    const uncoveredSkills = Object.keys(skillKeywords).filter(
+      s => !coveredSkills.includes(s)
+    );
 
     if (uncoveredSkills.length > 0) {
-      recommendations.push(`Explore new areas: ${uncoveredSkills.slice(0, 2).join(', ')}`);
+      recommendations.push(
+        `Explore new areas: ${uncoveredSkills.slice(0, 2).join(', ')}`
+      );
     }
 
     return recommendations;
@@ -178,7 +249,7 @@ export function SkillsGrowthTracker({ tasks = [] }: SkillsGrowthTrackerProps) {
   useEffect(() => {
     const loadSkills = async () => {
       try {
-        const response = await fetch("/api/skills");
+        const response = await fetch('/api/skills');
         if (response.ok) {
           const data = await response.json();
           const savedSkills = data.skills as Skill[];
@@ -191,7 +262,9 @@ export function SkillsGrowthTracker({ tasks = [] }: SkillsGrowthTrackerProps) {
 
           // Merge with extracted skills
           extractedSkills.skills.forEach(es => {
-            const existing = Array.from(mergedSkills.values()).find(s => s.skill_name === es.name);
+            const existing = Array.from(mergedSkills.values()).find(
+              s => s.skill_name === es.name
+            );
             if (!existing) {
               mergedSkills.set(es.name, {
                 id: 0, // Will be assigned by DB on save
@@ -200,7 +273,7 @@ export function SkillsGrowthTracker({ tasks = [] }: SkillsGrowthTrackerProps) {
                 proficiency_level: es.proficiency,
                 evidence_task_ids: es.tasks ? JSON.stringify(es.tasks) : null,
                 last_used_at: es.lastCompleted,
-                created_at: new Date().toISOString()
+                created_at: new Date().toISOString(),
               });
             }
           });
@@ -215,12 +288,12 @@ export function SkillsGrowthTracker({ tasks = [] }: SkillsGrowthTrackerProps) {
             proficiency_level: es.proficiency,
             evidence_task_ids: es.tasks ? JSON.stringify(es.tasks) : null,
             last_used_at: es.lastCompleted,
-            created_at: new Date().toISOString()
+            created_at: new Date().toISOString(),
           }));
           setSkills(convertedSkills);
         }
       } catch (error) {
-        console.error("Failed to load skills from API:", error);
+        console.error('Failed to load skills from API:', error);
         const convertedSkills: Skill[] = extractedSkills.skills.map(es => ({
           id: 0,
           user_id: 0,
@@ -228,7 +301,7 @@ export function SkillsGrowthTracker({ tasks = [] }: SkillsGrowthTrackerProps) {
           proficiency_level: es.proficiency,
           evidence_task_ids: es.tasks ? JSON.stringify(es.tasks) : null,
           last_used_at: es.lastCompleted,
-          created_at: new Date().toISOString()
+          created_at: new Date().toISOString(),
         }));
         setSkills(convertedSkills);
       } finally {
@@ -251,8 +324,15 @@ export function SkillsGrowthTracker({ tasks = [] }: SkillsGrowthTrackerProps) {
   };
 
   const getSkillLevelText = (level: number) => {
-    const levels = ["Beginner", "Novice", "Intermediate", "Advanced", "Expert", "Master"];
-    return levels[level] || "Beginner";
+    const levels = [
+      'Beginner',
+      'Novice',
+      'Intermediate',
+      'Advanced',
+      'Expert',
+      'Master',
+    ];
+    return levels[level] || 'Beginner';
   };
 
   if (loading) {
@@ -274,16 +354,22 @@ export function SkillsGrowthTracker({ tasks = [] }: SkillsGrowthTrackerProps) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-medium text-muted-foreground">Completion Rate</CardTitle>
+            <CardTitle className="text-xs font-medium text-muted-foreground">
+              Completion Rate
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">{Math.round(progressMetrics.completionRate)}%</p>
+            <p className="text-2xl font-bold">
+              {Math.round(progressMetrics.completionRate)}%
+            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-medium text-muted-foreground">Skills Developed</CardTitle>
+            <CardTitle className="text-xs font-medium text-muted-foreground">
+              Skills Developed
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">{skills.length}</p>
@@ -292,19 +378,27 @@ export function SkillsGrowthTracker({ tasks = [] }: SkillsGrowthTrackerProps) {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-medium text-muted-foreground">Total Completed</CardTitle>
+            <CardTitle className="text-xs font-medium text-muted-foreground">
+              Total Completed
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">{progressMetrics.totalCompleted}</p>
+            <p className="text-2xl font-bold">
+              {progressMetrics.totalCompleted}
+            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-medium text-muted-foreground">Skill Diversity</CardTitle>
+            <CardTitle className="text-xs font-medium text-muted-foreground">
+              Skill Diversity
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">{Math.round(progressMetrics.skillDiversity * 100)}%</p>
+            <p className="text-2xl font-bold">
+              {Math.round(progressMetrics.skillDiversity * 100)}%
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -344,7 +438,7 @@ export function SkillsGrowthTracker({ tasks = [] }: SkillsGrowthTrackerProps) {
         <CardContent>
           {hasSkills ? (
             <div className="space-y-3">
-              {skills.map((skill) => {
+              {skills.map(skill => {
                 const isCollapsed = collapsedSkills.has(String(skill.id));
                 const level = Math.max(1, skill.proficiency_level);
 
@@ -364,25 +458,45 @@ export function SkillsGrowthTracker({ tasks = [] }: SkillsGrowthTrackerProps) {
                               ({getSkillLevelText(level)})
                             </span>
                           </div>
-                          {isCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+                          {isCollapsed ? (
+                            <ChevronDown className="h-4 w-4" />
+                          ) : (
+                            <ChevronUp className="h-4 w-4" />
+                          )}
                         </div>
                       </CollapsibleTrigger>
                       <CollapsibleContent>
                         <div className="mt-3 space-y-3">
                           <div className="space-y-2">
-                            <Label className="text-xs">Proficiency Level: {level}/5</Label>
-                            <Progress value={(level / 5) * 100} className="h-2" />
+                            <Label className="text-xs">
+                              Proficiency Level: {level}/5
+                            </Label>
+                            <Progress
+                              value={(level / 5) * 100}
+                              className="h-2"
+                            />
                           </div>
 
                           {skill.last_used_at && (
                             <div className="text-xs text-muted-foreground">
-                              Last used: {format(new Date(skill.last_used_at), "MMM d, yyyy")}
+                              Last used:{' '}
+                              {format(
+                                new Date(skill.last_used_at),
+                                'MMM d, yyyy'
+                              )}
                             </div>
                           )}
 
                           <div className="text-xs">
-                            <span className="text-muted-foreground">Evidence: </span>
-                            <span>{skill.evidence_task_ids ? JSON.parse(skill.evidence_task_ids).length : 0} task(s)</span>
+                            <span className="text-muted-foreground">
+                              Evidence:{' '}
+                            </span>
+                            <span>
+                              {skill.evidence_task_ids
+                                ? JSON.parse(skill.evidence_task_ids).length
+                                : 0}{' '}
+                              task(s)
+                            </span>
                           </div>
                         </div>
                       </CollapsibleContent>
@@ -413,7 +527,7 @@ export function SkillsGrowthTracker({ tasks = [] }: SkillsGrowthTrackerProps) {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            {skills.slice(0, 5).map((skill) => {
+            {skills.slice(0, 5).map(skill => {
               const level = Math.max(1, skill.proficiency_level);
               return (
                 <div key={skill.id} className="text-center">
