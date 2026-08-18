@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Share2, Copy, UserPlus, Link, ExternalLink } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { useState } from 'react';
+import { Share2, Copy, UserPlus, Link, ExternalLink } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Dialog,
   DialogContent,
@@ -12,22 +12,31 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { toast } from "sonner";
-import type { User } from "@/types";
+} from '@/components/ui/select';
+import { toast } from 'sonner';
+import type { User } from '@/types';
 
 interface TaskSharingDialogProps {
   taskId: number;
-  assignees: { user_id: number; user_email: string; user_name: string | null; permission: "view" | "edit" }[];
+  assignees: {
+    user_id: number;
+    user_email: string;
+    user_name: string | null;
+    permission: 'view' | 'edit';
+  }[];
   users: User[];
-  onShare: (taskId: number, userId: number, permission: "view" | "edit") => void;
+  onShare: (
+    taskId: number,
+    userId: number,
+    permission: 'view' | 'edit'
+  ) => void;
   onUnshare: (taskId: number, userId: number) => void;
   onGenerateShareLink: (taskId: number) => string;
 }
@@ -41,7 +50,7 @@ export function TaskSharingDialog({
   onGenerateShareLink,
 }: TaskSharingDialogProps) {
   const [selectedUser, setSelectedUser] = useState<number | null>(null);
-  const [permission, setPermission] = useState<"view" | "edit">("view");
+  const [permission, setPermission] = useState<'view' | 'edit'>('view');
   const [isSharing, setIsSharing] = useState(false);
 
   const handleShare = async () => {
@@ -50,9 +59,9 @@ export function TaskSharingDialog({
     try {
       await onShare(taskId, selectedUser, permission);
       setSelectedUser(null);
-      toast.success("Task shared successfully");
+      toast.success('Task shared successfully');
     } catch (error) {
-      toast.error("Failed to share task");
+      toast.error('Failed to share task');
     } finally {
       setIsSharing(false);
     }
@@ -61,7 +70,7 @@ export function TaskSharingDialog({
   const handleCopyLink = () => {
     const shareLink = onGenerateShareLink(taskId);
     navigator.clipboard.writeText(shareLink);
-    toast.success("Share link copied to clipboard");
+    toast.success('Share link copied to clipboard');
   };
 
   const shareLink = onGenerateShareLink(taskId);
@@ -86,13 +95,20 @@ export function TaskSharingDialog({
           {/* Existing Assignees */}
           {assignees.length > 0 && (
             <div>
-              <Label className="text-xs font-medium mb-2">People with access</Label>
+              <Label className="text-xs font-medium mb-2">
+                People with access
+              </Label>
               <div className="space-y-2">
-                {assignees.map((assignee) => (
-                  <div key={assignee.user_id} className="flex items-center justify-between">
+                {assignees.map(assignee => (
+                  <div
+                    key={assignee.user_id}
+                    className="flex items-center justify-between"
+                  >
                     <div className="text-sm">
                       {assignee.user_name || assignee.user_email}
-                      <span className="text-muted-foreground text-xs ml-2">({assignee.permission})</span>
+                      <span className="text-muted-foreground text-xs ml-2">
+                        ({assignee.permission})
+                      </span>
                     </div>
                     <Button
                       variant="ghost"
@@ -110,16 +126,21 @@ export function TaskSharingDialog({
 
           {/* Share with User */}
           <div>
-            <Label className="text-xs font-medium mb-2">Share with someone</Label>
+            <Label className="text-xs font-medium mb-2">
+              Share with someone
+            </Label>
             <div className="space-y-3">
-              <Select value={selectedUser?.toString()} onValueChange={(v) => setSelectedUser(Number(v))}>
+              <Select
+                value={selectedUser?.toString()}
+                onValueChange={v => setSelectedUser(Number(v))}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a user..." />
                 </SelectTrigger>
                 <SelectContent>
                   {users
-                    .filter((u) => !assignees.some((a) => a.user_id === u.id))
-                    .map((user) => (
+                    .filter(u => !assignees.some(a => a.user_id === u.id))
+                    .map(user => (
                       <SelectItem key={user.id} value={user.id.toString()}>
                         {user.name || user.email}
                       </SelectItem>
@@ -127,7 +148,10 @@ export function TaskSharingDialog({
                 </SelectContent>
               </Select>
 
-              <Select value={permission} onValueChange={(v) => setPermission(v as "view" | "edit")}>
+              <Select
+                value={permission}
+                onValueChange={v => setPermission(v as 'view' | 'edit')}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Permission" />
                 </SelectTrigger>
@@ -137,9 +161,13 @@ export function TaskSharingDialog({
                 </SelectContent>
               </Select>
 
-              <Button onClick={handleShare} disabled={!selectedUser || isSharing} className="w-full">
+              <Button
+                onClick={handleShare}
+                disabled={!selectedUser || isSharing}
+                className="w-full"
+              >
                 <UserPlus className="h-4 w-4 mr-2" />
-                {isSharing ? "Sharing..." : "Share"}
+                {isSharing ? 'Sharing...' : 'Share'}
               </Button>
             </div>
           </div>
