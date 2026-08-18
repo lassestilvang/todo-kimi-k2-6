@@ -1,25 +1,25 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { WifiOff } from "lucide-react";
+import { useEffect, useState } from 'react';
+import { WifiOff } from 'lucide-react';
 
 export function OfflineIndicator() {
   const [isOnline, setIsOnline] = useState(true);
 
   useEffect(() => {
     // Check initial online status
-    setIsOnline(typeof navigator !== "undefined" ? navigator.onLine : true);
+    setIsOnline(typeof navigator !== 'undefined' ? navigator.onLine : true);
 
     // Listen for online/offline events
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
 
-    window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", handleOffline);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
 
     return () => {
-      window.removeEventListener("online", handleOnline);
-      window.removeEventListener("offline", handleOffline);
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
     };
   }, []);
 
@@ -36,5 +36,5 @@ export function OfflineIndicator() {
 }
 
 export function isBrowserOnline(): boolean {
-  return typeof navigator !== "undefined" && navigator.onLine;
+  return typeof navigator !== 'undefined' && navigator.onLine;
 }
