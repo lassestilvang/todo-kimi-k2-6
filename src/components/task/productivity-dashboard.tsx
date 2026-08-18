@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useMemo } from "react";
+import { useMemo } from 'react';
 import {
   Calendar,
   Target,
@@ -12,10 +12,16 @@ import {
   Clock,
   CheckCircle2,
   AlertCircle,
-} from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+} from 'lucide-react';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import {
   ResponsiveContainer,
   LineChart,
@@ -28,9 +34,9 @@ import {
   CartesianGrid,
   AreaChart,
   Area,
-} from "recharts";
-import { format, subDays, startOfWeek, parseISO, getWeek } from "date-fns";
-import type { TaskWithRelations } from "@/types";
+} from 'recharts';
+import { format, subDays, startOfWeek, parseISO, getWeek } from 'date-fns';
+import type { TaskWithRelations } from '@/types';
 
 interface ProductivityDashboardProps {
   tasks: TaskWithRelations[];
@@ -42,13 +48,16 @@ export function ProductivityDashboard({ tasks }: ProductivityDashboardProps) {
     const today = new Date();
     const days = Array.from({ length: 30 }, (_, i) => {
       const date = subDays(today, 29 - i);
-      const dateStr = format(date, "yyyy-MM-dd");
+      const dateStr = format(date, 'yyyy-MM-dd');
       const dayTasks = tasks.filter(
-        (t) => t.completed && t.completed_at && format(parseISO(t.completed_at), "yyyy-MM-dd") === dateStr
+        t =>
+          t.completed &&
+          t.completed_at &&
+          format(parseISO(t.completed_at), 'yyyy-MM-dd') === dateStr
       );
       return {
         date: dateStr,
-        displayDate: format(date, "MMM d"),
+        displayDate: format(date, 'MMM d'),
         count: dayTasks.length,
         completed: dayTasks.length > 0,
       };
@@ -70,15 +79,29 @@ export function ProductivityDashboard({ tasks }: ProductivityDashboardProps) {
   // Calculate completion rate trend
   const completionTrend = useMemo(() => {
     const lastWeek = tasks.filter(
-      (t) => t.completed && t.completed_at && new Date(t.completed_at) >= startOfWeek(new Date())
+      t =>
+        t.completed &&
+        t.completed_at &&
+        new Date(t.completed_at) >= startOfWeek(new Date())
     );
     const thisWeek = tasks.filter(
-      (t) => t.completed && t.completed_at && new Date(t.completed_at) >= startOfWeek(new Date())
+      t =>
+        t.completed &&
+        t.completed_at &&
+        new Date(t.completed_at) >= startOfWeek(new Date())
     );
 
     return [
-      { name: "Last Week", completed: lastWeek.length, rate: lastWeek.length > 0 ? 85 : 0 },
-      { name: "This Week", completed: thisWeek.length, rate: thisWeek.length > 0 ? 92 : 0 },
+      {
+        name: 'Last Week',
+        completed: lastWeek.length,
+        rate: lastWeek.length > 0 ? 85 : 0,
+      },
+      {
+        name: 'This Week',
+        completed: thisWeek.length,
+        rate: thisWeek.length > 0 ? 92 : 0,
+      },
     ];
   }, [tasks]);
 
@@ -93,11 +116,11 @@ export function ProductivityDashboard({ tasks }: ProductivityDashboardProps) {
     );
 
     return [
-      { name: "Critical", value: distribution.critical || 0, color: "#ef4444" },
-      { name: "High", value: distribution.high || 0, color: "#f97316" },
-      { name: "Medium", value: distribution.medium || 0, color: "#eab308" },
-      { name: "Low", value: distribution.low || 0, color: "#3b82f6" },
-      { name: "None", value: distribution.none || 0, color: "#6b7280" },
+      { name: 'Critical', value: distribution.critical || 0, color: '#ef4444' },
+      { name: 'High', value: distribution.high || 0, color: '#f97316' },
+      { name: 'Medium', value: distribution.medium || 0, color: '#eab308' },
+      { name: 'Low', value: distribution.low || 0, color: '#3b82f6' },
+      { name: 'None', value: distribution.none || 0, color: '#6b7280' },
     ];
   }, [tasks]);
 
@@ -106,7 +129,8 @@ export function ProductivityDashboard({ tasks }: ProductivityDashboardProps) {
   const completedThisWeek = useMemo(() => {
     const weekStart = startOfWeek(new Date());
     return tasks.filter(
-      (t) => t.completed && t.completed_at && new Date(t.completed_at) >= weekStart
+      t =>
+        t.completed && t.completed_at && new Date(t.completed_at) >= weekStart
     ).length;
   }, [tasks]);
 
@@ -114,7 +138,7 @@ export function ProductivityDashboard({ tasks }: ProductivityDashboardProps) {
 
   // Assigned tasks count
   const assignedTasks = useMemo(() => {
-    return tasks.filter((t) => t.assignee_id).length;
+    return tasks.filter(t => t.assignee_id).length;
   }, [tasks]);
 
   return (
@@ -123,11 +147,18 @@ export function ProductivityDashboard({ tasks }: ProductivityDashboardProps) {
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-medium text-muted-foreground">Completion Rate</CardTitle>
+            <CardTitle className="text-xs font-medium text-muted-foreground">
+              Completion Rate
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">
-              {tasks.length > 0 ? Math.round((tasks.filter((t) => t.completed).length / tasks.length) * 100) : 0}%
+              {tasks.length > 0
+                ? Math.round(
+                    (tasks.filter(t => t.completed).length / tasks.length) * 100
+                  )
+                : 0}
+              %
             </p>
           </CardContent>
         </Card>
@@ -146,7 +177,9 @@ export function ProductivityDashboard({ tasks }: ProductivityDashboardProps) {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-medium text-muted-foreground">Total Tasks</CardTitle>
+            <CardTitle className="text-xs font-medium text-muted-foreground">
+              Total Tasks
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">{tasks.length}</p>
@@ -155,10 +188,14 @@ export function ProductivityDashboard({ tasks }: ProductivityDashboardProps) {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-medium text-muted-foreground">Completed</CardTitle>
+            <CardTitle className="text-xs font-medium text-muted-foreground">
+              Completed
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">{tasks.filter((t) => t.completed).length}</p>
+            <p className="text-2xl font-bold">
+              {tasks.filter(t => t.completed).length}
+            </p>
           </CardContent>
         </Card>
 
@@ -186,7 +223,9 @@ export function ProductivityDashboard({ tasks }: ProductivityDashboardProps) {
         <CardContent>
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
-              <span>{completedThisWeek} of {weeklyGoal} tasks</span>
+              <span>
+                {completedThisWeek} of {weeklyGoal} tasks
+              </span>
               <span>{Math.round(goalProgress)}%</span>
             </div>
             <div className="h-2 bg-muted rounded-full overflow-hidden">
@@ -214,12 +253,12 @@ export function ProductivityDashboard({ tasks }: ProductivityDashboardProps) {
                 key={i}
                 className={`h-8 rounded-sm flex items-center justify-center text-xs ${
                   day.completed
-                    ? "bg-green-500 text-white"
-                    : "bg-muted/50 text-muted-foreground"
+                    ? 'bg-green-500 text-white'
+                    : 'bg-muted/50 text-muted-foreground'
                 }`}
                 title={day.displayDate}
               >
-                {format(new Date(day.date), "d")}
+                {format(new Date(day.date), 'd')}
               </div>
             ))}
           </div>
@@ -230,7 +269,9 @@ export function ProductivityDashboard({ tasks }: ProductivityDashboardProps) {
       <div className="grid grid-cols-2 gap-4">
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm font-medium">Completion Trend</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Completion Trend
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={150}>
@@ -252,7 +293,9 @@ export function ProductivityDashboard({ tasks }: ProductivityDashboardProps) {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm font-medium">Priority Distribution</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Priority Distribution
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={150}>
@@ -260,7 +303,11 @@ export function ProductivityDashboard({ tasks }: ProductivityDashboardProps) {
                 <XAxis dataKey="name" hide />
                 <YAxis hide />
                 <Tooltip />
-                <Bar dataKey="value" fill="hsl(var(--primary))" radius={[4, 4, 4, 4]} />
+                <Bar
+                  dataKey="value"
+                  fill="hsl(var(--primary))"
+                  radius={[4, 4, 4, 4]}
+                />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -282,11 +329,15 @@ export function ProductivityDashboard({ tasks }: ProductivityDashboardProps) {
               <p className="text-xs text-muted-foreground">First Task</p>
             </div>
             <div className="space-y-1">
-              <p className="text-2xl font-bold">{streakData.currentStreak >= 7 ? "🔥" : "🔒"}</p>
+              <p className="text-2xl font-bold">
+                {streakData.currentStreak >= 7 ? '🔥' : '🔒'}
+              </p>
               <p className="text-xs text-muted-foreground">7-Day Streak</p>
             </div>
             <div className="space-y-1">
-              <p className="text-2xl font-bold">{completedThisWeek >= 10 ? "🏆" : "🔒"}</p>
+              <p className="text-2xl font-bold">
+                {completedThisWeek >= 10 ? '🏆' : '🔒'}
+              </p>
               <p className="text-xs text-muted-foreground">10 Tasks/week</p>
             </div>
           </div>
