@@ -1,12 +1,23 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { ThumbsUp, ThumbsDown, Star, ChevronUp, ChevronDown } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { toast } from "sonner";
+import { useState, useEffect } from 'react';
+import {
+  ThumbsUp,
+  ThumbsDown,
+  Star,
+  ChevronUp,
+  ChevronDown,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { toast } from 'sonner';
 
 interface TaskVotingProps {
   taskId: number;
@@ -28,7 +39,11 @@ export function TaskVoting({
   disabled = false,
 }: TaskVotingProps) {
   const [vote, setVote] = useState<-1 | 1 | null>(initialVote);
-  const [stats, setStats] = useState<VoteStats>({ total: 0, count: 0, score: 0 });
+  const [stats, setStats] = useState<VoteStats>({
+    total: 0,
+    count: 0,
+    score: 0,
+  });
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -53,7 +68,7 @@ export function TaskVoting({
         }
       }
     } catch (error) {
-      console.error("Failed to load vote data:", error);
+      console.error('Failed to load vote data:', error);
     }
   };
 
@@ -63,9 +78,9 @@ export function TaskVoting({
     setLoading(true);
 
     try {
-      const response = await fetch("/api/task-votes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/task-votes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ task_id: taskId, value }),
       });
 
@@ -73,12 +88,14 @@ export function TaskVoting({
         const data = await response.json();
         setVote(value);
         setStats(data.stats);
-        toast.success(`Task ${value === 1 ? "prioritized" : "marked as reviewed"}!`);
+        toast.success(
+          `Task ${value === 1 ? 'prioritized' : 'marked as reviewed'}!`
+        );
       } else {
-        throw new Error("Failed to vote");
+        throw new Error('Failed to vote');
       }
     } catch (error) {
-      toast.error("Failed to vote on task");
+      toast.error('Failed to vote on task');
     } finally {
       setLoading(false);
     }
@@ -91,25 +108,25 @@ export function TaskVoting({
 
     try {
       const response = await fetch(`/api/task-votes?task_id=${taskId}`, {
-        method: "DELETE",
+        method: 'DELETE',
       });
 
       if (response.ok) {
         setVote(null);
         await loadVoteData();
-        toast.success("Vote removed");
+        toast.success('Vote removed');
       }
     } catch (error) {
-      toast.error("Failed to remove vote");
+      toast.error('Failed to remove vote');
     } finally {
       setLoading(false);
     }
   };
 
   const getScoreColor = (score: number) => {
-    if (score > 0.5) return "text-green-500";
-    if (score < -0.5) return "text-red-500";
-    return "text-amber-500";
+    if (score > 0.5) return 'text-green-500';
+    if (score < -0.5) return 'text-red-500';
+    return 'text-amber-500';
   };
 
   if (stats.count === 0) {
@@ -121,9 +138,9 @@ export function TaskVoting({
       <div className="flex items-center gap-2 text-xs">
         <Button
           size="sm"
-          variant={vote === 1 ? "default" : "outline"}
+          variant={vote === 1 ? 'default' : 'outline'}
           disabled={disabled || loading}
-          onClick={() => vote === 1 ? handleRemoveVote() : handleVote(1)}
+          onClick={() => (vote === 1 ? handleRemoveVote() : handleVote(1))}
           className="h-6 px-2"
         >
           <ThumbsUp className="h-3 w-3" />
@@ -131,14 +148,15 @@ export function TaskVoting({
         </Button>
 
         <span className={getScoreColor(stats.score)}>
-          <Star className="h-3 w-3 inline fill-current" /> {stats.score.toFixed(2)}
+          <Star className="h-3 w-3 inline fill-current" />{' '}
+          {stats.score.toFixed(2)}
         </span>
 
         <Button
           size="sm"
-          variant={vote === -1 ? "default" : "outline"}
+          variant={vote === -1 ? 'default' : 'outline'}
           disabled={disabled || loading}
-          onClick={() => vote === -1 ? handleRemoveVote() : handleVote(-1)}
+          onClick={() => (vote === -1 ? handleRemoveVote() : handleVote(-1))}
           className="h-6 px-2"
         >
           <ThumbsDown className="h-3 w-3" />
@@ -146,7 +164,7 @@ export function TaskVoting({
         </Button>
 
         <Badge variant="outline" className="text-xs">
-          {stats.count} {stats.count === 1 ? "vote" : "votes"}
+          {stats.count} {stats.count === 1 ? 'vote' : 'votes'}
         </Badge>
       </div>
     </TooltipProvider>
