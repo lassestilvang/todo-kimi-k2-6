@@ -1,13 +1,19 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Trash2, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "sonner";
-import type { RecurringException } from "@/types";
+import { useState } from 'react';
+import { Trash2, Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { toast } from 'sonner';
+import type { RecurringException } from '@/types';
 
 interface RecurringExceptionsProps {
   taskId: number;
@@ -22,7 +28,7 @@ export function RecurringExceptions({
   onAddException,
   onRemoveException,
 }: RecurringExceptionsProps) {
-  const [newExceptionDate, setNewExceptionDate] = useState("");
+  const [newExceptionDate, setNewExceptionDate] = useState('');
   const [isAdding, setIsAdding] = useState(false);
 
   const handleAddException = async () => {
@@ -30,9 +36,9 @@ export function RecurringExceptions({
     setIsAdding(true);
     try {
       await onAddException(newExceptionDate);
-      setNewExceptionDate("");
+      setNewExceptionDate('');
     } catch (error) {
-      console.error("Failed to add exception:", error);
+      console.error('Failed to add exception:', error);
     } finally {
       setIsAdding(false);
     }
@@ -42,7 +48,7 @@ export function RecurringExceptions({
     try {
       await onRemoveException(id);
     } catch (error) {
-      console.error("Failed to remove exception:", error);
+      console.error('Failed to remove exception:', error);
     }
   };
 
@@ -51,7 +57,8 @@ export function RecurringExceptions({
       <CardHeader>
         <CardTitle className="text-base">Recurring Task Exceptions</CardTitle>
         <CardDescription>
-          Skip this task on specific dates. Useful for holidays or days you don't want the task to recur.
+          Skip this task on specific dates. Useful for holidays or days you
+          don't want the task to recur.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -65,7 +72,7 @@ export function RecurringExceptions({
                 id="exception-date"
                 type="date"
                 value={newExceptionDate}
-                onChange={(e) => setNewExceptionDate(e.target.value)}
+                onChange={e => setNewExceptionDate(e.target.value)}
                 disabled={isAdding}
               />
             </div>
@@ -85,12 +92,14 @@ export function RecurringExceptions({
             <div className="space-y-2">
               <Label className="text-sm">Skipped dates</Label>
               <ul className="space-y-1">
-                {exceptions.map((exception) => (
+                {exceptions.map(exception => (
                   <li
                     key={exception.id}
                     className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
                   >
-                    <span>{new Date(exception.exception_date).toLocaleDateString()}</span>
+                    <span>
+                      {new Date(exception.exception_date).toLocaleDateString()}
+                    </span>
                     <Button
                       onClick={() => handleRemoveException(exception.id)}
                       variant="ghost"
