@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useMemo } from "react";
+import { useMemo } from 'react';
 import {
   Calendar,
   Target,
@@ -12,13 +12,38 @@ import {
   Clock,
   CheckCircle2,
   AlertCircle,
-} from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip as ReTooltip, BarChart as ReBarChart, Bar, CartesianGrid, AreaChart, Area } from "recharts";
-import { format, subDays, startOfWeek, subWeeks, parseISO, getWeek } from "date-fns";
-import type { TaskWithRelations } from "@/types";
+} from 'lucide-react';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip as ReTooltip,
+  BarChart as ReBarChart,
+  Bar,
+  CartesianGrid,
+  AreaChart,
+  Area,
+} from 'recharts';
+import {
+  format,
+  subDays,
+  startOfWeek,
+  subWeeks,
+  parseISO,
+  getWeek,
+} from 'date-fns';
+import type { TaskWithRelations } from '@/types';
 
 interface ProductivityDashboardEnhancedProps {
   tasks: TaskWithRelations[];
@@ -32,19 +57,26 @@ interface ProductivityDashboardEnhancedProps {
   teamVelocity?: number;
 }
 
-export function ProductivityDashboardEnhanced({ tasks, goals, teamVelocity }: ProductivityDashboardEnhancedProps) {
+export function ProductivityDashboardEnhanced({
+  tasks,
+  goals,
+  teamVelocity,
+}: ProductivityDashboardEnhancedProps) {
   // Enhanced streak calculation with heatmap data
   const streakData = useMemo(() => {
     const today = new Date();
     const days = Array.from({ length: 60 }, (_, i) => {
       const date = subDays(today, 59 - i);
-      const dateStr = format(date, "yyyy-MM-dd");
+      const dateStr = format(date, 'yyyy-MM-dd');
       const dayTasks = tasks.filter(
-        (t) => t.completed && t.completed_at && format(parseISO(t.completed_at), "yyyy-MM-dd") === dateStr
+        t =>
+          t.completed &&
+          t.completed_at &&
+          format(parseISO(t.completed_at), 'yyyy-MM-dd') === dateStr
       );
       return {
         date: dateStr,
-        displayDate: format(date, "MMM d"),
+        displayDate: format(date, 'MMM d'),
         count: dayTasks.length,
         completed: dayTasks.length > 0,
         week: getWeek(date),
@@ -80,7 +112,10 @@ export function ProductivityDashboardEnhanced({ tasks, goals, teamVelocity }: Pr
   // Completion rate trend over time
   const completionTrend = useMemo(() => {
     const lastMonth = tasks.filter(
-      (t) => t.completed && t.completed_at && new Date(t.completed_at) >= subWeeks(new Date(), 4)
+      t =>
+        t.completed &&
+        t.completed_at &&
+        new Date(t.completed_at) >= subWeeks(new Date(), 4)
     );
 
     const weekData = [];
@@ -88,14 +123,21 @@ export function ProductivityDashboardEnhanced({ tasks, goals, teamVelocity }: Pr
       const weekStart = subWeeks(new Date(), i);
       const weekEnd = subWeeks(weekStart, -1);
       const weekCompleted = tasks.filter(
-        (t) => t.completed && t.completed_at && new Date(t.completed_at) >= weekStart && new Date(t.completed_at) <= weekEnd
+        t =>
+          t.completed &&
+          t.completed_at &&
+          new Date(t.completed_at) >= weekStart &&
+          new Date(t.completed_at) <= weekEnd
       ).length;
       const weekTotal = tasks.filter(
-        (t) => t.completed_at && new Date(t.completed_at) >= weekStart && new Date(t.completed_at) <= weekEnd
+        t =>
+          t.completed_at &&
+          new Date(t.completed_at) >= weekStart &&
+          new Date(t.completed_at) <= weekEnd
       ).length;
 
       weekData.push({
-        week: format(weekStart, "MMM d"),
+        week: format(weekStart, 'MMM d'),
         completed: weekCompleted,
         total: weekTotal,
         rate: weekTotal > 0 ? Math.round((weekCompleted / weekTotal) * 100) : 0,
@@ -116,11 +158,11 @@ export function ProductivityDashboardEnhanced({ tasks, goals, teamVelocity }: Pr
     );
 
     return [
-      { name: "Critical", value: distribution.critical || 0, color: "#ef4444" },
-      { name: "High", value: distribution.high || 0, color: "#f97316" },
-      { name: "Medium", value: distribution.medium || 0, color: "#eab308" },
-      { name: "Low", value: distribution.low || 0, color: "#3b82f6" },
-      { name: "None", value: distribution.none || 0, color: "#6b7280" },
+      { name: 'Critical', value: distribution.critical || 0, color: '#ef4444' },
+      { name: 'High', value: distribution.high || 0, color: '#f97316' },
+      { name: 'Medium', value: distribution.medium || 0, color: '#eab308' },
+      { name: 'Low', value: distribution.low || 0, color: '#3b82f6' },
+      { name: 'None', value: distribution.none || 0, color: '#6b7280' },
     ];
   }, [tasks]);
 
@@ -129,7 +171,10 @@ export function ProductivityDashboardEnhanced({ tasks, goals, teamVelocity }: Pr
   const goalProgress = useMemo(() => {
     return activeGoals.map(goal => ({
       ...goal,
-      progress: goal.target_count > 0 ? Math.round((goal.current_count / goal.target_count) * 100) : 0,
+      progress:
+        goal.target_count > 0
+          ? Math.round((goal.current_count / goal.target_count) * 100)
+          : 0,
       remaining: Math.max(0, goal.target_count - goal.current_count),
       isCompleted: goal.current_count >= goal.target_count,
     }));
@@ -140,11 +185,15 @@ export function ProductivityDashboardEnhanced({ tasks, goals, teamVelocity }: Pr
   const completedThisWeek = useMemo(() => {
     const weekStart = startOfWeek(new Date());
     return tasks.filter(
-      (t) => t.completed && t.completed_at && new Date(t.completed_at) >= weekStart
+      t =>
+        t.completed && t.completed_at && new Date(t.completed_at) >= weekStart
     ).length;
   }, [tasks]);
 
-  const globalGoalProgress = Math.min((completedThisWeek / weeklyGoal) * 100, 100);
+  const globalGoalProgress = Math.min(
+    (completedThisWeek / weeklyGoal) * 100,
+    100
+  );
 
   // Heatmap for daily activity
   const heatmapData = useMemo(() => {
@@ -152,9 +201,9 @@ export function ProductivityDashboardEnhanced({ tasks, goals, teamVelocity }: Pr
     const today = new Date();
 
     for (let i = 0; i < 30; i++) {
-      const date = format(subDays(today, i), "yyyy-MM-dd");
+      const date = format(subDays(today, i), 'yyyy-MM-dd');
       const count = tasks.filter(
-        (t) => t.completed && t.completed_at && t.completed_at.startsWith(date)
+        t => t.completed && t.completed_at && t.completed_at.startsWith(date)
       ).length;
       heatmap[date] = count;
     }
@@ -164,12 +213,15 @@ export function ProductivityDashboardEnhanced({ tasks, goals, teamVelocity }: Pr
 
   // Completion rate by day of week
   const dayOfWeekStats = useMemo(() => {
-    const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     const dayStats = dayNames.map((day, index) => {
       const dayTasks = tasks.filter(t => t.completed && t.completed_at);
       const dayCompletions = dayTasks.filter(t => {
         const taskDate = new Date(t.completed_at!);
-        return taskDate.getDay() === (index + 1) || (index === 0 && taskDate.getDay() === 1);
+        return (
+          taskDate.getDay() === index + 1 ||
+          (index === 0 && taskDate.getDay() === 1)
+        );
       });
       return { day, count: dayCompletions.length };
     });
@@ -187,24 +239,36 @@ export function ProductivityDashboardEnhanced({ tasks, goals, teamVelocity }: Pr
 
     // Completion insight
     if (rate < 30) {
-      insights.push("Your completion rate is below 30%. Try breaking large tasks into smaller steps.");
+      insights.push(
+        'Your completion rate is below 30%. Try breaking large tasks into smaller steps.'
+      );
     } else if (rate < 60) {
-      insights.push("Keep going! With consistent effort, you can reach 80% completion.");
+      insights.push(
+        'Keep going! With consistent effort, you can reach 80% completion.'
+      );
     } else if (rate >= 80) {
-      insights.push("Excellent! Your completion rate is outstanding.");
+      insights.push('Excellent! Your completion rate is outstanding.');
     }
 
     // Overdue insight
     const now = new Date();
-    const overdue = tasks.filter(t => t.deadline && new Date(t.deadline) < now && !t.completed);
+    const overdue = tasks.filter(
+      t => t.deadline && new Date(t.deadline) < now && !t.completed
+    );
     if (overdue.length > 0) {
-      insights.push(`${overdue.length} task(s) are overdue. Focus on these first.`);
+      insights.push(
+        `${overdue.length} task(s) are overdue. Focus on these first.`
+      );
     }
 
     // Pattern insight
-    const highPriUncompleted = tasks.filter(t => t.priority === "high" && !t.completed);
+    const highPriUncompleted = tasks.filter(
+      t => t.priority === 'high' && !t.completed
+    );
     if (highPriUncompleted.length > 3) {
-      insights.push(`You have ${highPriUncompleted.length} high-priority tasks pending. Consider re-prioritizing.`);
+      insights.push(
+        `You have ${highPriUncompleted.length} high-priority tasks pending. Consider re-prioritizing.`
+      );
     }
 
     return insights;
@@ -214,12 +278,41 @@ export function ProductivityDashboardEnhanced({ tasks, goals, teamVelocity }: Pr
     <div className="space-y-6">
       {/* Header Stats with Enhanced Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
-        <StatCard title="Completion Rate" value={`${Math.round((tasks.filter((t) => t.completed).length / Math.max(tasks.length, 1)) * 100)}%`} icon={CheckCircle2} />
-        <StatCard title="Current Streak" value={streakData.currentStreak.toString()} icon={Flame} />
-        <StatCard title="Longest Streak" value={streakData.longestStreak.toString()} iconComponent={() => <Award className="h-4 w-4" />} />
-        <StatCard title="Total Tasks" value={tasks.length.toString()} icon={Target} />
-        <StatCard title="Completed" value={tasks.filter((t) => t.completed).length.toString()} icon={CheckCircle2} />
-        <StatCard title="Overdue" value={tasks.filter((t) => t.deadline && new Date(t.deadline) < new Date() && !t.completed).length.toString()} icon={AlertCircle} />
+        <StatCard
+          title="Completion Rate"
+          value={`${Math.round((tasks.filter(t => t.completed).length / Math.max(tasks.length, 1)) * 100)}%`}
+          icon={CheckCircle2}
+        />
+        <StatCard
+          title="Current Streak"
+          value={streakData.currentStreak.toString()}
+          icon={Flame}
+        />
+        <StatCard
+          title="Longest Streak"
+          value={streakData.longestStreak.toString()}
+          iconComponent={() => <Award className="h-4 w-4" />}
+        />
+        <StatCard
+          title="Total Tasks"
+          value={tasks.length.toString()}
+          icon={Target}
+        />
+        <StatCard
+          title="Completed"
+          value={tasks.filter(t => t.completed).length.toString()}
+          icon={CheckCircle2}
+        />
+        <StatCard
+          title="Overdue"
+          value={tasks
+            .filter(
+              t =>
+                t.deadline && new Date(t.deadline) < new Date() && !t.completed
+            )
+            .length.toString()}
+          icon={AlertCircle}
+        />
       </div>
 
       {/* Weekly Goal Progress */}
@@ -238,7 +331,11 @@ export function ProductivityDashboardEnhanced({ tasks, goals, teamVelocity }: Pr
                   <div className="flex justify-between text-sm">
                     <div>
                       <span className="font-medium">{goal.name}</span>
-                      {goal.isCompleted && <Badge className="ml-2" variant="default">Done</Badge>}
+                      {goal.isCompleted && (
+                        <Badge className="ml-2" variant="default">
+                          Done
+                        </Badge>
+                      )}
                     </div>
                     <span>{goal.progress}%</span>
                   </div>
@@ -261,7 +358,9 @@ export function ProductivityDashboardEnhanced({ tasks, goals, teamVelocity }: Pr
         <CardContent>
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
-              <span>{completedThisWeek} of {weeklyGoal} tasks</span>
+              <span>
+                {completedThisWeek} of {weeklyGoal} tasks
+              </span>
               <span>{Math.round(globalGoalProgress)}%</span>
             </div>
             <Progress value={globalGoalProgress} className="h-2" />
@@ -286,18 +385,18 @@ export function ProductivityDashboardEnhanced({ tasks, goals, teamVelocity }: Pr
           <div className="grid grid-cols-7 gap-1">
             {streakData.days.map((day, i) => {
               const heatLevel = day.count;
-              let bgColor = "bg-gray-100";
-              if (heatLevel >= 5) bgColor = "bg-green-500";
-              else if (heatLevel >= 3) bgColor = "bg-green-300";
-              else if (heatLevel >= 1) bgColor = "bg-green-100";
+              let bgColor = 'bg-gray-100';
+              if (heatLevel >= 5) bgColor = 'bg-green-500';
+              else if (heatLevel >= 3) bgColor = 'bg-green-300';
+              else if (heatLevel >= 1) bgColor = 'bg-green-100';
 
               return (
                 <div
                   key={i}
                   className={`${bgColor} h-8 rounded-sm flex items-center justify-center text-xs font-medium`}
-                  title={`${format(new Date(day.date), "MMM d")}: ${day.count} task(s) completed`}
+                  title={`${format(new Date(day.date), 'MMM d')}: ${day.count} task(s) completed`}
                 >
-                  {format(new Date(day.date), "d")}
+                  {format(new Date(day.date), 'd')}
                 </div>
               );
             })}
@@ -331,7 +430,7 @@ export function ProductivityDashboardEnhanced({ tasks, goals, teamVelocity }: Pr
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="week" />
                 <YAxis domain={[0, 100]} />
-                <ReTooltip formatter={(value) => [`${value}%`, "Rate"]} />
+                <ReTooltip formatter={value => [`${value}%`, 'Rate']} />
                 <Area
                   type="monotone"
                   dataKey="rate"
@@ -359,7 +458,11 @@ export function ProductivityDashboardEnhanced({ tasks, goals, teamVelocity }: Pr
                 <XAxis dataKey="name" />
                 <YAxis />
                 <ReTooltip />
-                <Bar dataKey="value" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                <Bar
+                  dataKey="value"
+                  fill="hsl(var(--primary))"
+                  radius={[4, 4, 0, 0]}
+                />
               </ReBarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -436,17 +539,29 @@ export function ProductivityDashboardEnhanced({ tasks, goals, teamVelocity }: Pr
             />
             <AchievementBadge
               title="90% Completion"
-              achieved={tasks.length > 0 && (tasks.filter((t) => t.completed).length / tasks.length) >= 0.9}
+              achieved={
+                tasks.length > 0 &&
+                tasks.filter(t => t.completed).length / tasks.length >= 0.9
+              }
               icon="🏆"
             />
             <AchievementBadge
               title="No Overdue Tasks"
-              achieved={tasks.filter((t) => t.deadline && new Date(t.deadline) < new Date() && !t.completed).length === 0}
+              achieved={
+                tasks.filter(
+                  t =>
+                    t.deadline &&
+                    new Date(t.deadline) < new Date() &&
+                    !t.completed
+                ).length === 0
+              }
               icon="⏱️"
             />
             <AchievementBadge
               title="Team Player"
-              achieved={tasks.filter((t) => t.assignee_id && !t.completed).length > 0}
+              achieved={
+                tasks.filter(t => t.assignee_id && !t.completed).length > 0
+              }
               icon="👥"
             />
           </div>
@@ -478,9 +593,7 @@ function StatCard({ title, value, icon: Icon, iconComponent }: StatCardProps) {
     <Card>
       <CardContent className="p-4">
         <div className="flex items-center gap-2">
-          <div className="p-2 bg-primary/10 rounded-full">
-            {renderIcon()}
-          </div>
+          <div className="p-2 bg-primary/10 rounded-full">{renderIcon()}</div>
           <div>
             <p className="text-xs text-muted-foreground">{title}</p>
             <p className="text-lg font-bold">{value}</p>
@@ -503,8 +616,8 @@ function AchievementBadge({ title, achieved, icon }: AchievementBadgeProps) {
     <div
       className={`p-3 rounded-lg border text-center transition-all ${
         achieved
-          ? "border-primary bg-primary/10"
-          : "border-muted bg-muted/30 opacity-50"
+          ? 'border-primary bg-primary/10'
+          : 'border-muted bg-muted/30 opacity-50'
       }`}
     >
       <div className="text-2xl mb-1">{icon}</div>
@@ -515,11 +628,11 @@ function AchievementBadge({ title, achieved, icon }: AchievementBadgeProps) {
 
 // Day of Week Stats helper
 const dayOfWeekStats = [
-  { day: "Mon", count: 0 },
-  { day: "Tue", count: 0 },
-  { day: "Wed", count: 0 },
-  { day: "Thu", count: 0 },
-  { day: "Fri", count: 0 },
-  { day: "Sat", count: 0 },
-  { day: "Sun", count: 0 },
+  { day: 'Mon', count: 0 },
+  { day: 'Tue', count: 0 },
+  { day: 'Wed', count: 0 },
+  { day: 'Thu', count: 0 },
+  { day: 'Fri', count: 0 },
+  { day: 'Sat', count: 0 },
+  { day: 'Sun', count: 0 },
 ];
