@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useRef } from "react";
-import { Plus, X, Zap, Mic, MicOff } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
-import { toast } from "sonner";
-import type { List } from "@/types";
+import { useState, useEffect, useRef } from 'react';
+import { Plus, X, Zap, Mic, MicOff } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
+import type { List } from '@/types';
 
 interface QuickCaptureProps {
   onTaskCreate: (text: string) => void;
@@ -16,7 +16,7 @@ interface QuickCaptureProps {
 
 export function QuickCapture({ onTaskCreate, lists }: QuickCaptureProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [isPulsing, setIsPulsing] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -25,11 +25,12 @@ export function QuickCapture({ onTaskCreate, lists }: QuickCaptureProps) {
 
   // Initialize speech recognition
   useEffect(() => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition && isOpen) {
       recognitionRef.current = new SpeechRecognition();
       recognitionRef.current.continuous = false;
-      recognitionRef.current.lang = "en-US";
+      recognitionRef.current.lang = 'en-US';
       recognitionRef.current.interimResults = false;
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -66,7 +67,7 @@ export function QuickCapture({ onTaskCreate, lists }: QuickCaptureProps) {
   useEffect(() => {
     if (isOpen) return;
     const interval = setInterval(() => {
-      setIsPulsing((prev) => !prev);
+      setIsPulsing(prev => !prev);
     }, 3000);
     return () => clearInterval(interval);
   }, [isOpen]);
@@ -77,17 +78,17 @@ export function QuickCapture({ onTaskCreate, lists }: QuickCaptureProps) {
 
     try {
       await onTaskCreate(input);
-      setInput("");
+      setInput('');
       setIsOpen(false);
-      toast.success("Task captured!");
+      toast.success('Task captured!');
     } catch {
-      toast.error("Failed to capture task");
+      toast.error('Failed to capture task');
     }
   };
 
   const toggleVoice = () => {
     if (!recognitionRef.current) {
-      toast.error("Voice input not supported");
+      toast.error('Voice input not supported');
       return;
     }
 
@@ -103,8 +104,8 @@ export function QuickCapture({ onTaskCreate, lists }: QuickCaptureProps) {
     return (
       <Button
         className={cn(
-          "fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-40 transition-all",
-          isPulsing && "animate-pulse"
+          'fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-40 transition-all',
+          isPulsing && 'animate-pulse'
         )}
         onClick={() => setIsOpen(true)}
         aria-label="Quick capture task"
@@ -137,20 +138,24 @@ export function QuickCapture({ onTaskCreate, lists }: QuickCaptureProps) {
             <Input
               ref={inputRef}
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={e => setInput(e.target.value)}
               placeholder="Type or speak a task..."
               className="flex-1"
               aria-label="Quick task input"
             />
             <Button
               type="button"
-              variant={isListening ? "destructive" : "ghost"}
+              variant={isListening ? 'destructive' : 'ghost'}
               size="icon"
               className="h-9 w-9"
               onClick={toggleVoice}
-              title={isListening ? "Stop listening" : "Start voice input"}
+              title={isListening ? 'Stop listening' : 'Start voice input'}
             >
-              {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+              {isListening ? (
+                <MicOff className="h-4 w-4" />
+              ) : (
+                <Mic className="h-4 w-4" />
+              )}
             </Button>
           </div>
 
@@ -178,14 +183,14 @@ export function QuickCapture({ onTaskCreate, lists }: QuickCaptureProps) {
 export function useQuickCapture() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === " ") {
+      if ((e.ctrlKey || e.metaKey) && e.key === ' ') {
         e.preventDefault();
-        const event = new CustomEvent("quick-capture-open");
+        const event = new CustomEvent('quick-capture-open');
         window.dispatchEvent(event);
       }
     };
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 }
