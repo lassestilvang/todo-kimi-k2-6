@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   Clock,
   Brain,
@@ -15,13 +15,26 @@ import {
   BarChart3,
   CheckCircle2,
   Target,
-} from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { cn } from "@/lib/utils";
-import { format, addHours, subHours, isSameDay, isToday, isTomorrow } from "date-fns";
+} from 'lucide-react';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { cn } from '@/lib/utils';
+import {
+  format,
+  addHours,
+  subHours,
+  isSameDay,
+  isToday,
+  isTomorrow,
+} from 'date-fns';
 
 interface TemporalContextAIProps {
   currentTasks?: Array<{
@@ -41,8 +54,8 @@ interface TimeContext {
   dayOfWeek: number;
   isWeekend: boolean;
   currentTime: Date;
-  timeOfDay: "morning" | "workday" | "afternoon" | "evening" | "night";
-  dayType: "today" | "tomorrow" | "upcoming" | "overdue";
+  timeOfDay: 'morning' | 'workday' | 'afternoon' | 'evening' | 'night';
+  dayType: 'today' | 'tomorrow' | 'upcoming' | 'overdue';
 }
 
 interface TemporalSuggestion {
@@ -50,10 +63,10 @@ interface TemporalSuggestion {
   title: string;
   description: string;
   confidence: number;
-  type: "priority" | "timing" | "energy" | "break" | "next_task" | "reflection";
+  type: 'priority' | 'timing' | 'energy' | 'break' | 'next_task' | 'reflection';
   suggested_at: Date;
   action?: {
-    type: "create_task" | "reschedule" | "mark_complete" | "add_note";
+    type: 'create_task' | 'reschedule' | 'mark_complete' | 'add_note';
     payload: any;
   };
 }
@@ -61,8 +74,8 @@ interface TemporalSuggestion {
 const mockTasks = [
   {
     id: 1,
-    name: "Review code from yesterday",
-    priority: "high",
+    name: 'Review code from yesterday',
+    priority: 'high',
     completed: true,
     date: null,
     deadline: null,
@@ -70,26 +83,26 @@ const mockTasks = [
   },
   {
     id: 2,
-    name: "Design system architecture",
-    priority: "critical",
+    name: 'Design system architecture',
+    priority: 'critical',
     completed: false,
     date: null,
-    deadline: "2025-01-20",
+    deadline: '2025-01-20',
     energy_level: 4,
   },
   {
     id: 3,
-    name: "Write documentation",
-    priority: "medium",
+    name: 'Write documentation',
+    priority: 'medium',
     completed: false,
     date: null,
-    deadline: "2025-01-25",
+    deadline: '2025-01-25',
     energy_level: 3,
   },
   {
     id: 4,
-    name: "Morning planning session",
-    priority: "low",
+    name: 'Morning planning session',
+    priority: 'low',
     completed: false,
     date: null,
     deadline: null,
@@ -97,11 +110,11 @@ const mockTasks = [
   },
   {
     id: 5,
-    name: "Deep work: API implementation",
-    priority: "critical",
+    name: 'Deep work: API implementation',
+    priority: 'critical',
     completed: false,
     date: null,
-    deadline: "2025-01-22",
+    deadline: '2025-01-22',
     energy_level: 6,
   },
 ];
@@ -111,7 +124,9 @@ export function TemporalContextAI({
   className,
 }: TemporalContextAIProps) {
   const [suggestions, setSuggestions] = useState<TemporalSuggestion[]>([]);
-  const [context, setContext] = useState<TimeContext>(() => getCurrentContext());
+  const [context, setContext] = useState<TimeContext>(() =>
+    getCurrentContext()
+  );
   const [energyReading, setEnergyReading] = useState<number>(7);
 
   // Recalculate context when time changes or in 15-minute intervals
@@ -133,49 +148,66 @@ export function TemporalContextAI({
   // Get time-based statistics
   const timeStats = useMemo(() => {
     const now = new Date();
-    const tasksByTime = currentTasks.reduce((acc, task) => {
-      if (task.deadline) {
-        const deadline = new Date(task.deadline);
-        const dayDiff = Math.ceil((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    const tasksByTime = currentTasks.reduce(
+      (acc, task) => {
+        if (task.deadline) {
+          const deadline = new Date(task.deadline);
+          const dayDiff = Math.ceil(
+            (deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+          );
 
-        if (dayDiff === 0) acc.today.push(task);
-        else if (dayDiff === 1) acc.tomorrow.push(task);
-        else if (dayDiff < 7) acc.thisWeek.push(task);
-        else acc.upcoming.push(task);
-      } else {
-        acc.noDeadline.push(task);
+          if (dayDiff === 0) acc.today.push(task);
+          else if (dayDiff === 1) acc.tomorrow.push(task);
+          else if (dayDiff < 7) acc.thisWeek.push(task);
+          else acc.upcoming.push(task);
+        } else {
+          acc.noDeadline.push(task);
+        }
+        return acc;
+      },
+      {
+        today: [] as typeof currentTasks,
+        tomorrow: [] as typeof currentTasks,
+        thisWeek: [] as typeof currentTasks,
+        upcoming: [] as typeof currentTasks,
+        noDeadline: [] as typeof currentTasks,
       }
-      return acc;
-    }, { today: [] as typeof currentTasks, tomorrow: [] as typeof currentTasks, thisWeek: [] as typeof currentTasks, upcoming: [] as typeof currentTasks, noDeadline: [] as typeof currentTasks });
+    );
 
     const completedCount = currentTasks.filter(t => t.completed).length;
-    const completionRate = currentTasks.length > 0 ? completedCount / currentTasks.length : 0;
+    const completionRate =
+      currentTasks.length > 0 ? completedCount / currentTasks.length : 0;
 
     return {
       byDeadline: tasksByTime,
       completionRate,
-      highPriorityPending: currentTasks.filter(t => !t.completed && (t.priority === "critical" || t.priority === "high")).length,
+      highPriorityPending: currentTasks.filter(
+        t =>
+          !t.completed && (t.priority === 'critical' || t.priority === 'high')
+      ).length,
     };
   }, [currentTasks]);
 
   // Energy insight
   const energyInsight = useMemo(() => {
-    const avgEnergy = currentTasks.reduce((sum, t) => sum + (t.energy_level || 5), 0) / currentTasks.length;
+    const avgEnergy =
+      currentTasks.reduce((sum, t) => sum + (t.energy_level || 5), 0) /
+      currentTasks.length;
     const isOptimal = avgEnergy >= 6 && avgEnergy <= 8;
 
     return {
       average: avgEnergy,
       optimal: isOptimal,
       message: isOptimal
-        ? "Your energy levels are well-balanced for focused work"
+        ? 'Your energy levels are well-balanced for focused work'
         : avgEnergy < 6
-          ? "Consider taking a short break before high-focus tasks"
-          : "Watch for signs of fatigue - plan a break soon",
+          ? 'Consider taking a short break before high-focus tasks'
+          : 'Watch for signs of fatigue - plan a break soon',
     };
   }, [currentTasks]);
 
   return (
-    <div className={cn("space-y-6", className)}>
+    <div className={cn('space-y-6', className)}>
       {/* Current Context Snapshot */}
       <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-accent/5">
         <CardHeader>
@@ -201,10 +233,11 @@ export function TemporalContextAI({
                   : `${context.hour - 12}:00 PM`}
               </div>
               <div className="text-sm text-muted-foreground mb-2">
-                {context.timeOfDay} • {format(context.currentTime, "EEEE, MMM d")}
+                {context.timeOfDay} •{' '}
+                {format(context.currentTime, 'EEEE, MMM d')}
               </div>
               <Badge variant="outline" className="text-xs">
-                {context.isWeekend ? "Weekend Mode" : "Workday Mode"}
+                {context.isWeekend ? 'Weekend Mode' : 'Workday Mode'}
               </Badge>
             </div>
 
@@ -214,9 +247,7 @@ export function TemporalContextAI({
                 <Zap className="h-4 w-4" />
                 Energy Level
               </h4>
-              <div className="text-2xl font-bold mb-2">
-                {energyReading}/10
-              </div>
+              <div className="text-2xl font-bold mb-2">{energyReading}/10</div>
               <Progress value={energyReading * 10} className="h-2 mb-2" />
               <p className="text-xs text-muted-foreground">
                 {energyInsight.message}
@@ -230,7 +261,7 @@ export function TemporalContextAI({
                 Today's Progress
               </h4>
               <div className="text-2xl font-bold mb-2">
-                {timeStats.completionRate * 100 | 0}%
+                {(timeStats.completionRate * 100) | 0}%
               </div>
               <div className="text-xs text-muted-foreground">
                 {timeStats.highPriorityPending} high-priority pending
@@ -257,7 +288,9 @@ export function TemporalContextAI({
               <div className="text-center py-8 text-muted-foreground">
                 <Brain className="h-12 w-12 mx-auto mb-4 opacity-30" />
                 <p>No suggestions at this moment</p>
-                <p className="text-xs mt-2">Your schedule looks well-balanced</p>
+                <p className="text-xs mt-2">
+                  Your schedule looks well-balanced
+                </p>
               </div>
             ) : (
               suggestions.map(suggestion => (
@@ -270,15 +303,20 @@ export function TemporalContextAI({
                       variant="outline"
                       className="text-xs font-medium capitalize"
                     >
-                      {suggestion.type.replace("_", " ")}
+                      {suggestion.type.replace('_', ' ')}
                     </Badge>
                     <div className="flex-1">
-                      <h5 className="font-medium text-sm">{suggestion.title}</h5>
+                      <h5 className="font-medium text-sm">
+                        {suggestion.title}
+                      </h5>
                       <p className="text-xs text-muted-foreground">
                         {suggestion.description}
                       </p>
                       <div className="flex items-center gap-2 mt-2">
-                        <Progress value={suggestion.confidence * 100} className="h-1.5 w-16" />
+                        <Progress
+                          value={suggestion.confidence * 100}
+                          className="h-1.5 w-16"
+                        />
                         <span className="text-xs text-muted-foreground">
                           {Math.round(suggestion.confidence * 100)}% confidence
                         </span>
@@ -326,10 +364,14 @@ export function TemporalContextAI({
               <h4 className="font-medium mb-3">Schedule Recommendations</h4>
               <div className="space-y-2">
                 <div className="p-3 bg-green-50 rounded">
-                  <p className="text-sm font-medium">✅ Peak hours: 9-11 AM, 2-4 PM</p>
+                  <p className="text-sm font-medium">
+                    ✅ Peak hours: 9-11 AM, 2-4 PM
+                  </p>
                 </div>
                 <div className="p-3 bg-amber-50 rounded">
-                  <p className="text-sm font-medium">⚠️ Schedule break: 11-12 AM</p>
+                  <p className="text-sm font-medium">
+                    ⚠️ Schedule break: 11-12 AM
+                  </p>
                 </div>
                 <div className="p-3 bg-blue-50 rounded">
                   <p className="text-sm font-medium">💡 Energy boost: 3-4 PM</p>
@@ -355,14 +397,17 @@ export function TemporalContextAI({
                 <h5 className="text-sm font-medium mb-2">Due Today</h5>
                 <div className="space-y-2">
                   {timeStats.byDeadline.today.map(task => (
-                    <div key={task.id} className="flex items-center gap-3 p-2 bg-muted/30 rounded">
+                    <div
+                      key={task.id}
+                      className="flex items-center gap-3 p-2 bg-muted/30 rounded"
+                    >
                       <div className="w-2 h-2 bg-red-500 rounded-full" />
                       <span className="text-sm flex-1">{task.name}</span>
                       <Badge
-                        variant={task.completed ? "default" : "outline"}
+                        variant={task.completed ? 'default' : 'outline'}
                         className="text-xs"
                       >
-                        {task.completed ? "Done" : "Pending"}
+                        {task.completed ? 'Done' : 'Pending'}
                       </Badge>
                     </div>
                   ))}
@@ -375,14 +420,17 @@ export function TemporalContextAI({
                 <h5 className="text-sm font-medium mb-2">Due This Week</h5>
                 <div className="space-y-2">
                   {timeStats.byDeadline.thisWeek.map(task => (
-                    <div key={task.id} className="flex items-center gap-3 p-2 bg-muted/30 rounded">
+                    <div
+                      key={task.id}
+                      className="flex items-center gap-3 p-2 bg-muted/30 rounded"
+                    >
                       <div className="w-2 h-2 bg-amber-500 rounded-full" />
                       <span className="text-sm flex-1">{task.name}</span>
                       <Badge
-                        variant={task.completed ? "default" : "outline"}
+                        variant={task.completed ? 'default' : 'outline'}
                         className="text-xs"
                       >
-                        {task.completed ? "Done" : "Pending"}
+                        {task.completed ? 'Done' : 'Pending'}
                       </Badge>
                     </div>
                   ))}
@@ -403,13 +451,13 @@ function getCurrentContext(): TimeContext {
   const dayOfWeek = now.getDay();
   const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
 
-  let timeOfDay: TimeContext["timeOfDay"];
-  if (hour >= 5 && hour < 9) timeOfDay = "morning";
-  else if (hour >= 9 && hour < 12) timeOfDay = "workday";
-  else if (hour >= 12 && hour < 15) timeOfDay = "afternoon";
-  else if (hour >= 15 && hour < 18) timeOfDay = "evening";
-  else if (hour >= 18 && hour < 22) timeOfDay = "night";
-  else timeOfDay = "morning";
+  let timeOfDay: TimeContext['timeOfDay'];
+  if (hour >= 5 && hour < 9) timeOfDay = 'morning';
+  else if (hour >= 9 && hour < 12) timeOfDay = 'workday';
+  else if (hour >= 12 && hour < 15) timeOfDay = 'afternoon';
+  else if (hour >= 15 && hour < 18) timeOfDay = 'evening';
+  else if (hour >= 18 && hour < 22) timeOfDay = 'night';
+  else timeOfDay = 'morning';
 
   return {
     hour,
@@ -417,14 +465,14 @@ function getCurrentContext(): TimeContext {
     isWeekend,
     currentTime: now,
     timeOfDay,
-    dayType: "today",
+    dayType: 'today',
   };
 }
 
 // Generate temporal-based suggestions
 function generateSuggestions(
   context: TimeContext,
-  tasks: TemporalContextAIProps["currentTasks"],
+  tasks: TemporalContextAIProps['currentTasks'],
   energyLevel: number
 ): TemporalSuggestion[] {
   const suggestions: TemporalSuggestion[] = [];
@@ -435,17 +483,18 @@ function generateSuggestions(
     const pendingTasks = tasks?.filter(t => !t.completed) || [];
     if (pendingTasks.length > 0) {
       suggestions.push({
-        id: "morning-planning",
-        title: "Morning Planning Session",
-        description: "Start your day by reviewing pending tasks and prioritizing",
+        id: 'morning-planning',
+        title: 'Morning Planning Session',
+        description:
+          'Start your day by reviewing pending tasks and prioritizing',
         confidence: 0.95,
-        type: "priority",
+        type: 'priority',
         suggested_at: new Date(now.getTime() + 30 * 60 * 1000),
         action: {
-          type: "create_task",
+          type: 'create_task',
           payload: {
-            name: "Daily planning & prioritization",
-            priority: "low",
+            name: 'Daily planning & prioritization',
+            priority: 'low',
           },
         },
       });
@@ -455,39 +504,45 @@ function generateSuggestions(
   // Energy-based break suggestion
   if (context.hour >= 10 && context.hour <= 14 && energyLevel < 6) {
     suggestions.push({
-      id: "break-suggestion",
-      title: "Take a Break",
-      description: "Your energy levels suggest a short break before continuing deep work",
+      id: 'break-suggestion',
+      title: 'Take a Break',
+      description:
+        'Your energy levels suggest a short break before continuing deep work',
       confidence: 0.85,
-      type: "break",
+      type: 'break',
       suggested_at: new Date(now.getTime() + 60 * 60 * 1000),
       action: {
-        type: "create_task",
+        type: 'create_task',
         payload: {
-          name: "5-minute energy break",
-          priority: "low",
+          name: '5-minute energy break',
+          priority: 'low',
         },
       },
     });
   }
 
   // Critical task suggestion
-  const criticalTask = tasks?.find(t => t.priority === "critical" && !t.completed);
+  const criticalTask = tasks?.find(
+    t => t.priority === 'critical' && !t.completed
+  );
   if (criticalTask) {
     const daysToDeadline = criticalTask.deadline
-      ? Math.ceil((new Date(criticalTask.deadline).getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+      ? Math.ceil(
+          (new Date(criticalTask.deadline).getTime() - now.getTime()) /
+            (1000 * 60 * 60 * 24)
+        )
       : 7;
 
     if (daysToDeadline <= 3) {
       suggestions.push({
-        id: "critical-task",
-        title: "Focus on Critical Task",
+        id: 'critical-task',
+        title: 'Focus on Critical Task',
         description: `"${criticalTask.name}" is due in ${daysToDeadline} days`,
         confidence: 0.98,
-        type: "next_task",
+        type: 'next_task',
         suggested_at: new Date(now.getTime() + 5 * 60 * 1000),
         action: {
-          type: "reschedule",
+          type: 'reschedule',
           payload: { task_id: criticalTask.id },
         },
       });
@@ -496,25 +551,27 @@ function generateSuggestions(
 
   // Afternoon deep work suggestion
   if (context.hour >= 14 && context.hour <= 16 && energyLevel >= 6) {
-    const deepWorkTasks = tasks?.filter(t =>
-      t.priority === "critical" &&
-      !t.completed &&
-      (!t.deadline || new Date(t.deadline) > now)
-    ) || [];
+    const deepWorkTasks =
+      tasks?.filter(
+        t =>
+          t.priority === 'critical' &&
+          !t.completed &&
+          (!t.deadline || new Date(t.deadline) > now)
+      ) || [];
 
     if (deepWorkTasks.length > 0) {
       const task = deepWorkTasks[0];
       suggestions.push({
-        id: "deep-work",
-        title: "Deep Work Block",
+        id: 'deep-work',
+        title: 'Deep Work Block',
         description: `Your energy is optimal for deep work. Consider: "${task.name}"`,
         confidence: 0.88,
-        type: "timing",
+        type: 'timing',
         suggested_at: new Date(now.getTime() + 15 * 60 * 1000),
         action: {
-          type: "create_task",
+          type: 'create_task',
           payload: {
-            name: "Deep work: " + task.name,
+            name: 'Deep work: ' + task.name,
             priority: task.priority,
           },
         },
@@ -529,17 +586,17 @@ function generateSuggestions(
     const completionRate = completedCount / totalCount;
 
     suggestions.push({
-      id: "end-of-day-reflection",
-      title: "End of Day Reflection",
+      id: 'end-of-day-reflection',
+      title: 'End of Day Reflection',
       description: `Today's completion rate: ${Math.round(completionRate * 100)}%`,
       confidence: 0.9,
-      type: "reflection",
+      type: 'reflection',
       suggested_at: new Date(now.getTime() + 30 * 60 * 1000),
       action: {
-        type: "add_note",
+        type: 'add_note',
         payload: {
           task_id: null,
-          note: `Daily reflection for ${format(now, "EEEE, MMM d")}`,
+          note: `Daily reflection for ${format(now, 'EEEE, MMM d')}`,
         },
       },
     });
@@ -547,27 +604,30 @@ function generateSuggestions(
 
   // Weekend focus suggestion
   if (context.isWeekend) {
-    const personalGrowthTasks = tasks?.filter(t =>
-      t.priority !== "critical" &&
-      !t.completed &&
-      t.name.toLowerCase().includes("learn") ||
-      t.name.toLowerCase().includes("growth") ||
-      t.name.toLowerCase().includes("skill")
-    ) || [];
+    const personalGrowthTasks =
+      tasks?.filter(
+        t =>
+          (t.priority !== 'critical' &&
+            !t.completed &&
+            t.name.toLowerCase().includes('learn')) ||
+          t.name.toLowerCase().includes('growth') ||
+          t.name.toLowerCase().includes('skill')
+      ) || [];
 
     if (personalGrowthTasks.length > 0) {
       suggestions.push({
-        id: "weekend-growth",
-        title: "Weekend Growth Time",
-        description: "Use personal growth time for non-critical skill development",
+        id: 'weekend-growth',
+        title: 'Weekend Growth Time',
+        description:
+          'Use personal growth time for non-critical skill development',
         confidence: 0.92,
-        type: "priority",
+        type: 'priority',
         suggested_at: new Date(now.getTime() + 60 * 60 * 1000),
         action: {
-          type: "create_task",
+          type: 'create_task',
           payload: {
-            name: "Weekend skill development",
-            priority: "low",
+            name: 'Weekend skill development',
+            priority: 'low',
           },
         },
       });
@@ -577,11 +637,11 @@ function generateSuggestions(
   // Low energy warning
   if (energyLevel < 4 && !context.isWeekend) {
     suggestions.push({
-      id: "low-energy-warning",
-      title: "Low Energy Detected",
-      description: "Consider a walk or coffee break to boost energy",
+      id: 'low-energy-warning',
+      title: 'Low Energy Detected',
+      description: 'Consider a walk or coffee break to boost energy',
       confidence: 0.85,
-      type: "energy",
+      type: 'energy',
       suggested_at: new Date(now.getTime() + 10 * 60 * 1000),
     });
   }
@@ -590,8 +650,12 @@ function generateSuggestions(
 }
 
 // Smart Task Selection based on Temporal Context
-export function useTemporalTaskSelection(tasks: TemporalContextAIProps["currentTasks"]) {
-  const [selectedTask, setSelectedTask] = useState<NonNullable<TemporalContextAIProps["currentTasks"]>[0] | null>(null);
+export function useTemporalTaskSelection(
+  tasks: TemporalContextAIProps['currentTasks']
+) {
+  const [selectedTask, setSelectedTask] = useState<
+    NonNullable<TemporalContextAIProps['currentTasks']>[0] | null
+  >(null);
 
   const getNextBestTask = useCallback(() => {
     const now = new Date();
@@ -602,7 +666,7 @@ export function useTemporalTaskSelection(tasks: TemporalContextAIProps["currentT
     if (pendingTasks.length === 0) return null;
 
     // Priority-based selection
-    const criticalTasks = pendingTasks.filter(t => t.priority === "critical");
+    const criticalTasks = pendingTasks.filter(t => t.priority === 'critical');
     if (criticalTasks.length > 0) {
       return criticalTasks[0];
     }
@@ -610,12 +674,17 @@ export function useTemporalTaskSelection(tasks: TemporalContextAIProps["currentT
     // Time-based selection
     if (context.hour >= 9 && context.hour <= 11) {
       // Morning: creative/high-focus
-      return pendingTasks.find(t => !t.energy_level || t.energy_level >= 6) || pendingTasks[0];
+      return (
+        pendingTasks.find(t => !t.energy_level || t.energy_level >= 6) ||
+        pendingTasks[0]
+      );
     }
 
     if (context.hour >= 14 && context.hour <= 16) {
       // Afternoon: medium focus
-      return pendingTasks.find(t => t.priority !== "critical") || pendingTasks[0];
+      return (
+        pendingTasks.find(t => t.priority !== 'critical') || pendingTasks[0]
+      );
     }
 
     return pendingTasks[0];
