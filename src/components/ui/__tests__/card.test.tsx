@@ -1,6 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '../card';
 
 describe('Card Component', () => {
   it('renders card with default size', () => {
