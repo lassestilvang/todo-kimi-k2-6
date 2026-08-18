@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect } from 'react';
 import {
   Brain,
   Heart,
@@ -12,21 +12,30 @@ import {
   Activity,
   CheckCircle,
   Clock,
-  AlertCircle
-} from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+  AlertCircle,
+} from 'lucide-react';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue
-} from "@/components/ui/select";
-import { useMoodTracking, useEnergyBudget } from "@/hooks/use-enhanced-productivity";
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  useMoodTracking,
+  useEnergyBudget,
+} from '@/hooks/use-enhanced-productivity';
 
 interface MoodAdaptiveTaskViewsProps {
   className?: string;
@@ -42,8 +51,8 @@ interface MoodAdaptiveTaskViewsProps {
   }>;
 }
 
-type MoodType = "energized" | "balanced" | "tired" | "stressed" | "inspired";
-type EnergyType = "high" | "medium" | "low";
+type MoodType = 'energized' | 'balanced' | 'tired' | 'stressed' | 'inspired';
+type EnergyType = 'high' | 'medium' | 'low';
 
 interface Task {
   id: number;
@@ -56,20 +65,24 @@ interface Task {
   tags?: string[];
 }
 
-export function MoodAdaptiveTaskViews({ className, tasks = [] }: MoodAdaptiveTaskViewsProps) {
+export function MoodAdaptiveTaskViews({
+  className,
+  tasks = [],
+}: MoodAdaptiveTaskViewsProps) {
   const { recommendations, loading: moodLoading } = useMoodTracking();
   const energyBudget = useEnergyBudget();
-  const [activeMoodView, setActiveMoodView] = useState<MoodType>("balanced");
-  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+  const [activeMoodView, setActiveMoodView] = useState<MoodType>('balanced');
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
 
   // Determine current mood from energy and explicit mood input
   const currentEnergy = energyBudget.budget?.balance ?? 100;
-  const energyPercent = (currentEnergy / (energyBudget.budget?.dailyLimit ?? 100)) * 100;
+  const energyPercent =
+    (currentEnergy / (energyBudget.budget?.dailyLimit ?? 100)) * 100;
 
   const deriveMoodFromEnergy = (): MoodType => {
-    if (energyPercent > 70) return "energized";
-    if (energyPercent > 40) return "balanced";
-    return "tired";
+    if (energyPercent > 70) return 'energized';
+    if (energyPercent > 40) return 'balanced';
+    return 'tired';
   };
 
   useEffect(() => {
@@ -82,11 +95,11 @@ export function MoodAdaptiveTaskViews({ className, tasks = [] }: MoodAdaptiveTas
 
   const getMoodColor = (mood: MoodType): string => {
     const colors: Record<MoodType, string> = {
-      energized: "bg-yellow-100 text-yellow-800 border-yellow-200",
-      balanced: "bg-green-100 text-green-800 border-green-200",
-      tired: "bg-blue-100 text-blue-800 border-blue-200",
-      stressed: "bg-red-100 text-red-800 border-red-200",
-      inspired: "bg-purple-100 text-purple-800 border-purple-200"
+      energized: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      balanced: 'bg-green-100 text-green-800 border-green-200',
+      tired: 'bg-blue-100 text-blue-800 border-blue-200',
+      stressed: 'bg-red-100 text-red-800 border-red-200',
+      inspired: 'bg-purple-100 text-purple-800 border-purple-200',
     };
     return colors[mood];
   };
@@ -97,7 +110,7 @@ export function MoodAdaptiveTaskViews({ className, tasks = [] }: MoodAdaptiveTas
       balanced: <Activity className="h-4 w-4" />,
       tired: <Cloud className="h-4 w-4" />,
       stressed: <AlertCircle className="h-4 w-4" />,
-      inspired: <Lightbulb className="h-4 w-4" />
+      inspired: <Lightbulb className="h-4 w-4" />,
     };
     return icons[mood];
   };
@@ -105,26 +118,36 @@ export function MoodAdaptiveTaskViews({ className, tasks = [] }: MoodAdaptiveTas
   const getFilteredTasks = (mood: MoodType): Task[] => {
     if (!tasks || tasks.length === 0) return [];
 
-    const parseEstimateMinutes = (estimate: string | null | undefined): number | null => {
+    const parseEstimateMinutes = (
+      estimate: string | null | undefined
+    ): number | null => {
       if (!estimate) return null;
       const match = estimate.match(/(\d+)\s*min/i);
       return match ? parseInt(match[1], 10) : null;
     };
 
     switch (mood) {
-      case "energized":
-        return tasks.filter(t => t.priority === "high" || t.priority === "critical");
-      case "balanced":
+      case 'energized':
+        return tasks.filter(
+          t => t.priority === 'high' || t.priority === 'critical'
+        );
+      case 'balanced':
         return tasks.filter(t => !t.completed);
-      case "tired":
+      case 'tired':
         return tasks.filter(t => {
           const mins = parseEstimateMinutes(t.estimate);
           return mins !== null && mins <= 15;
         });
-      case "stressed":
-        return tasks.filter(t => t.priority === "critical");
-      case "inspired":
-        return tasks.filter(t => t.tags && t.tags.some((tag: string) => ["creative", "idea", "brainstorm"].includes(tag)));
+      case 'stressed':
+        return tasks.filter(t => t.priority === 'critical');
+      case 'inspired':
+        return tasks.filter(
+          t =>
+            t.tags &&
+            t.tags.some((tag: string) =>
+              ['creative', 'idea', 'brainstorm'].includes(tag)
+            )
+        );
       default:
         return tasks;
     }
@@ -163,19 +186,32 @@ export function MoodAdaptiveTaskViews({ className, tasks = [] }: MoodAdaptiveTas
             <div className="flex items-center gap-2">
               <Badge className={`${getMoodColor(activeMoodView)} border`}>
                 {getMoodIcon(activeMoodView)}
-                {activeMoodView.charAt(0).toUpperCase() + activeMoodView.slice(1)} State
+                {activeMoodView.charAt(0).toUpperCase() +
+                  activeMoodView.slice(1)}{' '}
+                State
               </Badge>
             </div>
-            <Select value={activeMoodView} onValueChange={(v: any) => setActiveMoodView(v)}>
+            <Select
+              value={activeMoodView}
+              onValueChange={(v: any) => setActiveMoodView(v)}
+            >
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Select mood view" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="energized">Energized - High impact tasks</SelectItem>
-                <SelectItem value="balanced">Balanced - Daily routine</SelectItem>
+                <SelectItem value="energized">
+                  Energized - High impact tasks
+                </SelectItem>
+                <SelectItem value="balanced">
+                  Balanced - Daily routine
+                </SelectItem>
                 <SelectItem value="tired">Tired - Quick wins</SelectItem>
-                <SelectItem value="stressed">Stressed - Urgent priorities</SelectItem>
-                <SelectItem value="inspired">Inspired - Creative work</SelectItem>
+                <SelectItem value="stressed">
+                  Stressed - Urgent priorities
+                </SelectItem>
+                <SelectItem value="inspired">
+                  Inspired - Creative work
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -190,7 +226,8 @@ export function MoodAdaptiveTaskViews({ className, tasks = [] }: MoodAdaptiveTas
             </div>
             <Progress value={energyPercent} className="h-3" />
             <p className="text-xs text-muted-foreground mt-1">
-              Balance: {energyBudget.budget?.balance ?? 100} / {energyBudget.budget?.dailyLimit ?? 100} pts
+              Balance: {energyBudget.budget?.balance ?? 100} /{' '}
+              {energyBudget.budget?.dailyLimit ?? 100} pts
             </p>
           </div>
 
@@ -202,12 +239,14 @@ export function MoodAdaptiveTaskViews({ className, tasks = [] }: MoodAdaptiveTas
                 AI Recommendations
               </h4>
               <ul className="space-y-1">
-                {recommendations.recommendations.slice(0, 3).map((rec: string, idx: number) => (
-                  <li key={idx} className="flex items-start gap-2 text-sm">
-                    <CheckCircle className="h-3 w-3 text-green-500 mt-0.5 flex-shrink-0" />
-                    <span>{rec}</span>
-                  </li>
-                ))}
+                {recommendations.recommendations
+                  .slice(0, 3)
+                  .map((rec: string, idx: number) => (
+                    <li key={idx} className="flex items-start gap-2 text-sm">
+                      <CheckCircle className="h-3 w-3 text-green-500 mt-0.5 flex-shrink-0" />
+                      <span>{rec}</span>
+                    </li>
+                  ))}
               </ul>
             </div>
           )}
@@ -217,7 +256,11 @@ export function MoodAdaptiveTaskViews({ className, tasks = [] }: MoodAdaptiveTas
       {/* Task Views Toggle */}
       <Card>
         <CardHeader>
-          <CardTitle>Tasks for {activeMoodView.charAt(0).toUpperCase() + activeMoodView.slice(1)} Mood</CardTitle>
+          <CardTitle>
+            Tasks for{' '}
+            {activeMoodView.charAt(0).toUpperCase() + activeMoodView.slice(1)}{' '}
+            Mood
+          </CardTitle>
           <CardDescription>
             {moodFilteredTasks.length} tasks matched your current state
           </CardDescription>
@@ -225,16 +268,16 @@ export function MoodAdaptiveTaskViews({ className, tasks = [] }: MoodAdaptiveTas
         <CardContent>
           <div className="flex gap-2 mb-4">
             <Button
-              variant={viewMode === "list" ? "default" : "outline"}
+              variant={viewMode === 'list' ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setViewMode("list")}
+              onClick={() => setViewMode('list')}
             >
               List View
             </Button>
             <Button
-              variant={viewMode === "grid" ? "default" : "outline"}
+              variant={viewMode === 'grid' ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setViewMode("grid")}
+              onClick={() => setViewMode('grid')}
             >
               Grid View
             </Button>
@@ -242,16 +285,20 @@ export function MoodAdaptiveTaskViews({ className, tasks = [] }: MoodAdaptiveTas
 
           {moodFilteredTasks.length > 0 ? (
             <div>
-              {viewMode === "list" ? (
+              {viewMode === 'list' ? (
                 <div className="space-y-3">
-                  {moodFilteredTasks.slice(0, 10).map((task) => (
+                  {moodFilteredTasks.slice(0, 10).map(task => (
                     <TaskItem key={task.id} task={task} mood={activeMoodView} />
                   ))}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {moodFilteredTasks.slice(0, 10).map((task) => (
-                    <TaskGridItem key={task.id} task={task} mood={activeMoodView} />
+                  {moodFilteredTasks.slice(0, 10).map(task => (
+                    <TaskGridItem
+                      key={task.id}
+                      task={task}
+                      mood={activeMoodView}
+                    />
                   ))}
                 </div>
               )}
@@ -260,7 +307,8 @@ export function MoodAdaptiveTaskViews({ className, tasks = [] }: MoodAdaptiveTas
             <div className="text-center py-8">
               <Lightbulb className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <p className="text-muted-foreground">
-                No tasks match this mood view. Try adjusting your mood filter or add new tasks.
+                No tasks match this mood view. Try adjusting your mood filter or
+                add new tasks.
               </p>
             </div>
           )}
@@ -278,24 +326,24 @@ interface TaskItemProps {
 function TaskItem({ task, mood }: TaskItemProps) {
   const getTaskMoodMatch = (task: Task, mood: MoodType): string => {
     const tags = task.tags || [];
-    const tagString = tags.join(" ").toLowerCase();
+    const tagString = tags.join(' ').toLowerCase();
 
-    if (mood === "energized" && tagString.includes("urgent")) return "perfect";
-    if (mood === "balanced" && tagString.includes("daily")) return "perfect";
-    if (mood === "tired") {
+    if (mood === 'energized' && tagString.includes('urgent')) return 'perfect';
+    if (mood === 'balanced' && tagString.includes('daily')) return 'perfect';
+    if (mood === 'tired') {
       const estimate = task.estimate;
       if (estimate) {
         const match = estimate.match(/(\d+)\s*min/i);
         if (match) {
           const mins = parseInt(match[1], 10);
-          if (mins <= 15) return "perfect";
+          if (mins <= 15) return 'perfect';
         }
       }
     }
-    if (mood === "inspired" && tagString.includes("creative")) return "perfect";
-    if (mood === "stressed" && task.priority === "critical") return "perfect";
+    if (mood === 'inspired' && tagString.includes('creative')) return 'perfect';
+    if (mood === 'stressed' && task.priority === 'critical') return 'perfect';
 
-    return "recommended";
+    return 'recommended';
   };
 
   return (
@@ -314,11 +362,17 @@ function TaskItem({ task, mood }: TaskItemProps) {
         )}
         <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
           {task.deadline && <Clock className="h-3 w-3" />}
-          <span>{task.deadline ? new Date(task.deadline).toLocaleDateString() : "No due date"}</span>
+          <span>
+            {task.deadline
+              ? new Date(task.deadline).toLocaleDateString()
+              : 'No due date'}
+          </span>
           {task.priority && (
             <>
               <div className="w-1 h-1 bg-gray-300 rounded-full" />
-              <Badge variant="outline" className="text-xs">{task.priority}</Badge>
+              <Badge variant="outline" className="text-xs">
+                {task.priority}
+              </Badge>
             </>
           )}
         </div>
@@ -351,7 +405,11 @@ function TaskGridItem({ task, mood }: TaskGridItemProps) {
       )}
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         {task.deadline && <Clock className="h-3 w-3" />}
-        <span>{task.deadline ? new Date(task.deadline).toLocaleDateString() : "No due date"}</span>
+        <span>
+          {task.deadline
+            ? new Date(task.deadline).toLocaleDateString()
+            : 'No due date'}
+        </span>
       </div>
     </div>
   );
