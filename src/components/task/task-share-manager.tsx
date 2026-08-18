@@ -1,15 +1,21 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Share2, Plus, X, Copy, Check } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
-import { toast } from "sonner";
-import type { TaskShare } from "@/types";
+import { useState } from 'react';
+import { Share2, Plus, X, Copy, Check } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
+import { toast } from 'sonner';
+import type { TaskShare } from '@/types';
 
 interface TaskShareManagerProps {
   taskId: number;
@@ -18,9 +24,14 @@ interface TaskShareManagerProps {
   onShareRemoved: (shareId: number) => void;
 }
 
-export function TaskShareManager({ taskId, shares, onShareAdded, onShareRemoved }: TaskShareManagerProps) {
-  const [email, setEmail] = useState("");
-  const [permission, setPermission] = useState<"view" | "edit">("view");
+export function TaskShareManager({
+  taskId,
+  shares,
+  onShareAdded,
+  onShareRemoved,
+}: TaskShareManagerProps) {
+  const [email, setEmail] = useState('');
+  const [permission, setPermission] = useState<'view' | 'edit'>('view');
   const [isPublic, setIsPublic] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
@@ -30,9 +41,9 @@ export function TaskShareManager({ taskId, shares, onShareAdded, onShareRemoved 
 
     setIsSharing(true);
     try {
-      const response = await fetch("/api/shares", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/shares', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ taskId, userEmail: email, permission }),
       });
 
@@ -42,10 +53,12 @@ export function TaskShareManager({ taskId, shares, onShareAdded, onShareRemoved 
 
       const data = await response.json();
       onShareAdded(data.share);
-      setEmail("");
+      setEmail('');
       toast.success(`Shared with ${email}`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to share task");
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to share task'
+      );
     } finally {
       setIsSharing(false);
     }
@@ -54,26 +67,28 @@ export function TaskShareManager({ taskId, shares, onShareAdded, onShareRemoved 
   const handleRemoveShare = async (shareId: number) => {
     try {
       const response = await fetch(`/api/shares?shareId=${shareId}`, {
-        method: "DELETE",
+        method: 'DELETE',
       });
 
       if (!response.ok) {
-        throw new Error("Failed to remove share");
+        throw new Error('Failed to remove share');
       }
 
       onShareRemoved(shareId);
-      toast.success("Share removed");
+      toast.success('Share removed');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to remove share");
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to remove share'
+      );
     }
   };
 
   const handleCreatePublicShare = async () => {
     setIsSharing(true);
     try {
-      const response = await fetch("/api/shares", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/shares', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ taskId, permission, isPublic: true }),
       });
 
@@ -83,9 +98,11 @@ export function TaskShareManager({ taskId, shares, onShareAdded, onShareRemoved 
 
       const data = await response.json();
       onShareAdded(data.share);
-      toast.success("Public share link created");
+      toast.success('Public share link created');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to create public share");
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to create public share'
+      );
     } finally {
       setIsSharing(false);
     }
@@ -108,10 +125,13 @@ export function TaskShareManager({ taskId, shares, onShareAdded, onShareRemoved 
               type="email"
               placeholder="Enter email address"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={e => setEmail(e.target.value)}
               className="flex-1"
             />
-            <Select value={permission} onValueChange={(v) => setPermission(v as "view" | "edit")}>
+            <Select
+              value={permission}
+              onValueChange={v => setPermission(v as 'view' | 'edit')}
+            >
               <SelectTrigger className="w-20">
                 <SelectValue />
               </SelectTrigger>
@@ -149,11 +169,11 @@ export function TaskShareManager({ taskId, shares, onShareAdded, onShareRemoved 
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="font-medium text-sm">
-                      {share.user?.email || "Public share"}
+                      {share.user?.email || 'Public share'}
                     </div>
                     <div className="text-xs text-muted-foreground">
                       {share.permission.toUpperCase()} access
-                      {share.share_token && " • Public link"}
+                      {share.share_token && ' • Public link'}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
