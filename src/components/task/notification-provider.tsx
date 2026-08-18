@@ -1,8 +1,15 @@
-"use client";
+'use client';
 
-import { useEffect, useState, useRef, createContext, useContext, useCallback } from "react";
-import { toast } from "sonner";
-import type { Reminder } from "@/types";
+import {
+  useEffect,
+  useState,
+  useRef,
+  createContext,
+  useContext,
+  useCallback,
+} from 'react';
+import { toast } from 'sonner';
+import type { Reminder } from '@/types';
 
 interface NotificationProviderProps {
   children: React.ReactNode;
@@ -23,27 +30,32 @@ const NotificationContext = createContext<{
 } | null>(null);
 
 export function NotificationProvider({ children }: NotificationProviderProps) {
-  const [permission, setPermission] = useState<NotificationPermission>("default");
+  const [permission, setPermission] =
+    useState<NotificationPermission>('default');
   const [showPrompt, setShowPrompt] = useState(true);
   const [isEnabled, setIsEnabled] = useState(false);
   const lastCheckRef = useRef<number>(0);
 
   // Check permission on mount
   useEffect(() => {
-    if (typeof window !== "undefined" && "Notification" in window) {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
       setPermission(Notification.permission);
     }
   }, []);
 
-  const showBrowserNotification = (title: string, body: string, tag: string) => {
-    if (!("Notification" in window)) return;
+  const showBrowserNotification = (
+    title: string,
+    body: string,
+    tag: string
+  ) => {
+    if (!('Notification' in window)) return;
 
-    if (Notification.permission === "granted") {
+    if (Notification.permission === 'granted') {
       try {
-        new Notification("TaskFlow", {
+        new Notification('TaskFlow', {
           body,
           tag,
-          icon: "/favicon.ico",
+          icon: '/favicon.ico',
         } as NotificationOptions);
       } catch {
         // Fallback to toast
@@ -54,9 +66,9 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
     toast(title, {
       description: body,
       action: {
-        label: "View",
+        label: 'View',
         onClick: () => {
-          window.location.href = `/?highlight=${tag.replace("task-", "")}`;
+          window.location.href = `/?highlight=${tag.replace('task-', '')}`;
         },
       },
       duration: 10000,
@@ -74,7 +86,7 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
     lastCheckRef.current = currentTimestamp;
 
     try {
-      const response = await fetch("/api/reminders/upcoming");
+      const response = await fetch('/api/reminders/upcoming');
       if (!response.ok) return;
 
       const reminders: ReminderWithTask[] = await response.json();
@@ -93,14 +105,14 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
         showBrowserNotification(title, body, `task-${reminder.task_id}`);
       }
     } catch (error) {
-      console.error("Error checking reminders:", error);
+      console.error('Error checking reminders:', error);
     }
     // lastCheckRef is intentionally omitted from deps - we only want to run when button clicked
   }, [showBrowserNotification]);
 
   // Set up periodic reminder checking
   useEffect(() => {
-    if (!isEnabled || permission !== "granted") return;
+    if (!isEnabled || permission !== 'granted') return;
 
     // Check every 5 minutes
     const interval = setInterval(checkReminders, 5 * 60 * 1000);
@@ -110,33 +122,39 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
   }, [isEnabled, permission, checkReminders]);
 
   const enableNotifications = async () => {
-    if (typeof window !== "undefined" && "Notification" in window) {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
       const granted = await Notification.requestPermission();
       setPermission(granted);
       setShowPrompt(false);
-      if (granted === "granted") {
+      if (granted === 'granted') {
         setIsEnabled(true);
-        toast.success("Notifications enabled!");
+        toast.success('Notifications enabled!');
       } else {
-        toast.error("Permission denied. Please enable notifications in browser settings.");
+        toast.error(
+          'Permission denied. Please enable notifications in browser settings.'
+        );
       }
     }
   };
 
   const testNotification = () => {
     showBrowserNotification(
-      "Test Notification",
-      "This is a test reminder from TaskFlow!",
-      "test"
+      'Test Notification',
+      'This is a test reminder from TaskFlow!',
+      'test'
     );
   };
 
   return (
-    <NotificationContext.Provider value={{ permission, enableNotifications, testNotification }}>
+    <NotificationContext.Provider
+      value={{ permission, enableNotifications, testNotification }}
+    >
       {children}
-      {permission === "default" && showPrompt && (
+      {permission === 'default' && showPrompt && (
         <div className="fixed bottom-6 left-6 z-50 rounded-lg bg-card border p-4 shadow-lg max-w-sm animate-in slide-in-from-bottom-4">
-          <p className="text-sm mb-2">Enable notifications for due date reminders?</p>
+          <p className="text-sm mb-2">
+            Enable notifications for due date reminders?
+          </p>
           <div className="flex gap-2">
             <button
               onClick={enableNotifications}
@@ -160,11 +178,13 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
 export const useNotifications = () => {
   const context = useContext(NotificationContext);
   if (!context) {
-    throw new Error("useNotifications must be used within NotificationProvider");
+    throw new Error(
+      'useNotifications must be used within NotificationProvider'
+    );
   }
   return context;
 };
 
 export function isBrowserNotificationSupported(): boolean {
-  return typeof window !== "undefined" && "Notification" in window;
+  return typeof window !== 'undefined' && 'Notification' in window;
 }
