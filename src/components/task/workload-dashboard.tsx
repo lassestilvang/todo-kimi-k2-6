@@ -1,20 +1,20 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useMemo } from "react";
-import { Users, AlertCircle, CheckCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { useState, useEffect, useMemo } from 'react';
+import { Users, AlertCircle, CheckCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 import {
   calculateWorkloads,
   categorizeWorkload,
   calculateBalanceScore,
   type UserWorkload,
   type WorkloadSuggestion,
-} from "@/lib/ai/workload";
-import type { Task, User } from "@/types";
+} from '@/lib/ai/workload';
+import type { Task, User } from '@/types';
 
 interface WorkloadDashboardProps {
   tasks: Task[];
@@ -27,20 +27,26 @@ interface ExtendedUserWorkload extends UserWorkload {
   balanceScore: number;
   completionRate: number;
   workloadScore: number;
-  balanceCategory: "underloaded" | "balanced" | "overloaded";
+  balanceCategory: 'underloaded' | 'balanced' | 'overloaded';
 }
 
 // Simple bar chart component for workload visualization
-function WorkloadBarChart({ data }: { data: { name: string; score: number; average: number }[] }) {
+function WorkloadBarChart({
+  data,
+}: {
+  data: { name: string; score: number; average: number }[];
+}) {
   const maxScore = Math.max(...data.map(d => Math.max(d.score, d.average)), 1);
 
   return (
     <div className="space-y-3">
-      {data.map((item) => (
+      {data.map(item => (
         <div key={item.name} className="space-y-1">
           <div className="flex items-center justify-between text-sm">
             <span className="truncate">{item.name}</span>
-            <span className="text-muted-foreground">{item.score.toFixed(1)}</span>
+            <span className="text-muted-foreground">
+              {item.score.toFixed(1)}
+            </span>
           </div>
           <div className="relative h-6 w-full rounded bg-muted">
             <div
@@ -59,21 +65,29 @@ function WorkloadBarChart({ data }: { data: { name: string; score: number; avera
 }
 
 // Workload distribution pie chart (simplified as text)
-function WorkloadDistribution({ data }: { data: { category: string; count: number; color: string }[] }) {
+function WorkloadDistribution({
+  data,
+}: {
+  data: { category: string; count: number; color: string }[];
+}) {
   const total = data.reduce((sum, item) => sum + item.count, 0);
 
   return (
     <div className="space-y-2">
-      {data.map((item) => {
+      {data.map(item => {
         const percentage = total > 0 ? (item.count / total) * 100 : 0;
         return (
           <div key={item.category} className="flex items-center gap-2">
-            <div className={cn("w-3 h-3 rounded-full", item.color)} />
+            <div className={cn('w-3 h-3 rounded-full', item.color)} />
             <div className="flex-1 flex items-center gap-2">
               <span className="text-sm">{item.category}</span>
-              <span className="text-xs text-muted-foreground">{item.count}</span>
+              <span className="text-xs text-muted-foreground">
+                {item.count}
+              </span>
             </div>
-            <span className="text-xs font-medium">{percentage.toFixed(0)}%</span>
+            <span className="text-xs font-medium">
+              {percentage.toFixed(0)}%
+            </span>
           </div>
         );
       })}
@@ -81,7 +95,12 @@ function WorkloadDistribution({ data }: { data: { category: string; count: numbe
   );
 }
 
-export function WorkloadDashboard({ tasks, users, suggestions = [], className }: WorkloadDashboardProps) {
+export function WorkloadDashboard({
+  tasks,
+  users,
+  suggestions = [],
+  className,
+}: WorkloadDashboardProps) {
   const [workloads, setWorkloads] = useState<ExtendedUserWorkload[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -97,19 +116,28 @@ export function WorkloadDashboard({ tasks, users, suggestions = [], className }:
 
     tasks.forEach(task => {
       if (task.assignee_id) {
-        userTaskCounts[task.assignee_id] = (userTaskCounts[task.assignee_id] || 0) + 1;
+        userTaskCounts[task.assignee_id] =
+          (userTaskCounts[task.assignee_id] || 0) + 1;
         if (task.completed) {
-          userCompletedCounts[task.assignee_id] = (userCompletedCounts[task.assignee_id] || 0) + 1;
+          userCompletedCounts[task.assignee_id] =
+            (userCompletedCounts[task.assignee_id] || 0) + 1;
         }
-        if (task.deadline && new Date(task.deadline) < new Date() && !task.completed) {
-          userOverdueCounts[task.assignee_id] = (userOverdueCounts[task.assignee_id] || 0) + 1;
+        if (
+          task.deadline &&
+          new Date(task.deadline) < new Date() &&
+          !task.completed
+        ) {
+          userOverdueCounts[task.assignee_id] =
+            (userOverdueCounts[task.assignee_id] || 0) + 1;
         }
         if (task.priority === 'critical' || task.priority === 'high') {
-          userHighPriorityCounts[task.assignee_id] = (userHighPriorityCounts[task.assignee_id] || 0) + 1;
+          userHighPriorityCounts[task.assignee_id] =
+            (userHighPriorityCounts[task.assignee_id] || 0) + 1;
         }
         if (task.estimate) {
           const hours = parseFloat(task.estimate.replace(':', '.')) || 0;
-          userEstimatedTimes[task.assignee_id] = (userEstimatedTimes[task.assignee_id] || 0) + hours;
+          userEstimatedTimes[task.assignee_id] =
+            (userEstimatedTimes[task.assignee_id] || 0) + hours;
         }
       }
     });
@@ -129,14 +157,17 @@ export function WorkloadDashboard({ tasks, users, suggestions = [], className }:
 
     // Calculate scores
     const workloadMap = calculateWorkloads(baseWorkloads);
-    const avgScore = Array.from(workloadMap.values()).reduce((a, b) => a + b, 0) / (workloadMap.size || 1);
+    const avgScore =
+      Array.from(workloadMap.values()).reduce((a, b) => a + b, 0) /
+      (workloadMap.size || 1);
 
     return baseWorkloads.map(w => {
       const score = workloadMap.get(w.userId) || 0;
       return {
         ...w,
         workloadScore: score,
-        completionRate: w.totalTasks > 0 ? (w.completedTasks / w.totalTasks) * 100 : 100,
+        completionRate:
+          w.totalTasks > 0 ? (w.completedTasks / w.totalTasks) * 100 : 100,
         balanceCategory: categorizeWorkload(score, avgScore),
         balanceScore: calculateBalanceScore(w, avgScore),
       };
@@ -152,7 +183,9 @@ export function WorkloadDashboard({ tasks, users, suggestions = [], className }:
     return workloads.map(w => ({
       name: w.userName.split(' ')[0] || w.userName,
       score: w.workloadScore,
-      average: workloads.reduce((sum, w) => sum + w.workloadScore, 0) / (workloads.length || 1),
+      average:
+        workloads.reduce((sum, w) => sum + w.workloadScore, 0) /
+        (workloads.length || 1),
     }));
   }, [workloads]);
 
@@ -164,23 +197,39 @@ export function WorkloadDashboard({ tasks, users, suggestions = [], className }:
     };
 
     return [
-      { category: "Overloaded", count: categories.overloaded.length, color: "bg-red-500" },
-      { category: "Balanced", count: categories.balanced.length, color: "bg-green-500" },
-      { category: "Underloaded", count: categories.underloaded.length, color: "bg-blue-500" },
+      {
+        category: 'Overloaded',
+        count: categories.overloaded.length,
+        color: 'bg-red-500',
+      },
+      {
+        category: 'Balanced',
+        count: categories.balanced.length,
+        color: 'bg-green-500',
+      },
+      {
+        category: 'Underloaded',
+        count: categories.underloaded.length,
+        color: 'bg-blue-500',
+      },
     ];
   }, [workloads]);
 
   const highPriorityTasks = useMemo(() => {
-    return tasks.filter(t => (t.priority === 'critical' || t.priority === 'high') && !t.completed);
+    return tasks.filter(
+      t => (t.priority === 'critical' || t.priority === 'high') && !t.completed
+    );
   }, [tasks]);
 
   const overdueTasks = useMemo(() => {
-    return tasks.filter(t => t.deadline && new Date(t.deadline) < new Date() && !t.completed);
+    return tasks.filter(
+      t => t.deadline && new Date(t.deadline) < new Date() && !t.completed
+    );
   }, [tasks]);
 
   if (isLoading) {
     return (
-      <Card className={cn("w-full", className)}>
+      <Card className={cn('w-full', className)}>
         <CardContent className="pt-6">
           <div className="animate-pulse space-y-4">
             <div className="h-4 bg-muted rounded w-3/4"></div>
@@ -192,7 +241,7 @@ export function WorkloadDashboard({ tasks, users, suggestions = [], className }:
   }
 
   return (
-    <div className={cn("space-y-4", className)}>
+    <div className={cn('space-y-4', className)}>
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card>
@@ -217,7 +266,9 @@ export function WorkloadDashboard({ tasks, users, suggestions = [], className }:
           <CardContent className="pt-4">
             <div className="flex items-center gap-2">
               <AlertCircle className="h-4 w-4 text-orange-500" />
-              <span className="text-2xl font-bold">{highPriorityTasks.length}</span>
+              <span className="text-2xl font-bold">
+                {highPriorityTasks.length}
+              </span>
             </div>
             <p className="text-xs text-muted-foreground">High Priority</p>
           </CardContent>
@@ -263,19 +314,19 @@ export function WorkloadDashboard({ tasks, users, suggestions = [], className }:
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {workloads.map((w) => {
+            {workloads.map(w => {
               const category = w.balanceCategory;
               const categoryStyles = {
-                overloaded: "border-red-200 bg-red-50",
-                balanced: "border-green-200 bg-green-50",
-                underloaded: "border-blue-200 bg-blue-50",
+                overloaded: 'border-red-200 bg-red-50',
+                balanced: 'border-green-200 bg-green-50',
+                underloaded: 'border-blue-200 bg-blue-50',
               };
 
               return (
                 <div
                   key={w.userId}
                   className={cn(
-                    "p-3 rounded-lg border",
+                    'p-3 rounded-lg border',
                     categoryStyles[category]
                   )}
                 >
@@ -284,16 +335,18 @@ export function WorkloadDashboard({ tasks, users, suggestions = [], className }:
                       <span className="font-medium">{w.userName}</span>
                       <Badge
                         className={cn(
-                          category === "overloaded" && "bg-red-500",
-                          category === "balanced" && "bg-green-500",
-                          category === "underloaded" && "bg-blue-500"
+                          category === 'overloaded' && 'bg-red-500',
+                          category === 'balanced' && 'bg-green-500',
+                          category === 'underloaded' && 'bg-blue-500'
                         )}
                       >
                         {category}
                       </Badge>
                     </div>
                     <div className="text-right text-sm">
-                      <span className="font-bold">{w.workloadScore.toFixed(1)}</span>
+                      <span className="font-bold">
+                        {w.workloadScore.toFixed(1)}
+                      </span>
                       <span className="text-muted-foreground"> / 100</span>
                     </div>
                   </div>
@@ -305,14 +358,18 @@ export function WorkloadDashboard({ tasks, users, suggestions = [], className }:
                     </div>
                     <div>
                       <span className="text-muted-foreground">Completion</span>
-                      <p className="font-medium">{w.completionRate.toFixed(0)}%</p>
+                      <p className="font-medium">
+                        {w.completionRate.toFixed(0)}%
+                      </p>
                     </div>
                     <div>
                       <span className="text-muted-foreground">Overdue</span>
-                      <p className={cn(
-                        "font-medium",
-                        w.overdueTasks > 0 && "text-red-500"
-                      )}>
+                      <p
+                        className={cn(
+                          'font-medium',
+                          w.overdueTasks > 0 && 'text-red-500'
+                        )}
+                      >
                         {w.overdueTasks}
                       </p>
                     </div>
@@ -339,7 +396,9 @@ export function WorkloadDashboard({ tasks, users, suggestions = [], className }:
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <p className="font-medium text-sm">{s.taskName}</p>
-                      <p className="text-xs text-muted-foreground mt-1">{s.reason}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {s.reason}
+                      </p>
                     </div>
                     <Badge variant="outline">
                       {Math.round(s.confidence * 100)}% confidence
