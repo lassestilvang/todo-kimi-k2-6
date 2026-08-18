@@ -1,11 +1,16 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { ThumbsUp, ThumbsDown, ChevronUp, ChevronDown } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { toast } from "sonner";
+import { useState, useEffect } from 'react';
+import { ThumbsUp, ThumbsDown, ChevronUp, ChevronDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { toast } from 'sonner';
 
 interface VoteIndicatorProps {
   taskId: number;
@@ -13,7 +18,11 @@ interface VoteIndicatorProps {
   initialCount?: number;
   initialUserVote?: -1 | 1 | 0;
   className?: string;
-  onVote?: (newScore: number, newCount: number, newUserVote: -1 | 1 | 0) => void;
+  onVote?: (
+    newScore: number,
+    newCount: number,
+    newUserVote: -1 | 1 | 0
+  ) => void;
 }
 
 interface VoteResponse {
@@ -50,9 +59,9 @@ export function VoteIndicator({
 
     setIsVoting(true);
     try {
-      const response = await fetch("/api/task-votes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/task-votes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ task_id: taskId, value }),
       });
 
@@ -67,11 +76,11 @@ export function VoteIndicator({
         onVote?.(result.stats.score, result.stats.count, newUserVote);
       } else {
         const error = await response.json();
-        toast.error(error.error || "Failed to vote");
+        toast.error(error.error || 'Failed to vote');
       }
     } catch (error) {
-      toast.error("Network error while voting");
-      console.error("Vote error:", error);
+      toast.error('Network error while voting');
+      console.error('Vote error:', error);
     } finally {
       setIsVoting(false);
     }
@@ -84,7 +93,7 @@ export function VoteIndicator({
     try {
       // DELETE request to remove vote
       const response = await fetch(`/api/task-votes?task_id=${taskId}`, {
-        method: "DELETE",
+        method: 'DELETE',
       });
 
       if (response.ok) {
@@ -98,8 +107,8 @@ export function VoteIndicator({
         onVote?.(result.stats.score, result.stats.count, newUserVote);
       }
     } catch (error) {
-      toast.error("Failed to remove vote");
-      console.error("Vote removal error:", error);
+      toast.error('Failed to remove vote');
+      console.error('Vote removal error:', error);
     } finally {
       setIsVoting(false);
     }
@@ -119,7 +128,7 @@ export function VoteIndicator({
 
   return (
     <TooltipProvider>
-      <div className={cn("flex items-center gap-1", className)}>
+      <div className={cn('flex items-center gap-1', className)}>
         {/* Upvote button */}
         <Tooltip>
           <TooltipTrigger>
@@ -127,9 +136,9 @@ export function VoteIndicator({
               variant="ghost"
               size="sm"
               className={cn(
-                "h-6 w-6 p-0",
-                userVote === 1 && "text-green-600",
-                isVoting && "opacity-50"
+                'h-6 w-6 p-0',
+                userVote === 1 && 'text-green-600',
+                isVoting && 'opacity-50'
               )}
               onClick={() => handleVoteClick(1)}
               disabled={isVoting}
@@ -143,19 +152,19 @@ export function VoteIndicator({
         </Tooltip>
 
         {/* Score display */}
-        <span className={cn(
-          "text-xs font-medium",
-          score > 0 && "text-green-600",
-          score < 0 && "text-red-600",
-          score === 0 && "text-muted-foreground"
-        )}>
+        <span
+          className={cn(
+            'text-xs font-medium',
+            score > 0 && 'text-green-600',
+            score < 0 && 'text-red-600',
+            score === 0 && 'text-muted-foreground'
+          )}
+        >
           {getDisplayScore()}
         </span>
 
         {/* Count display */}
-        <span className="text-xs text-muted-foreground">
-          ({count})
-        </span>
+        <span className="text-xs text-muted-foreground">({count})</span>
 
         {/* Downvote button */}
         <Tooltip>
@@ -164,9 +173,9 @@ export function VoteIndicator({
               variant="ghost"
               size="sm"
               className={cn(
-                "h-6 w-6 p-0",
-                userVote === -1 && "text-red-600",
-                isVoting && "opacity-50"
+                'h-6 w-6 p-0',
+                userVote === -1 && 'text-red-600',
+                isVoting && 'opacity-50'
               )}
               onClick={() => handleVoteClick(-1)}
               disabled={isVoting}
@@ -199,9 +208,9 @@ export function VoteButton({
 }) {
   const handleVote = async (value: -1 | 1) => {
     try {
-      const response = await fetch("/api/task-votes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/task-votes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ task_id: taskId, value }),
       });
 
@@ -209,7 +218,7 @@ export function VoteButton({
         const result: VoteResponse = await response.json();
       }
     } catch (error) {
-      console.error("Vote error:", error);
+      console.error('Vote error:', error);
     }
   };
 
@@ -218,18 +227,18 @@ export function VoteButton({
       <button
         onClick={() => handleVote(1)}
         className={cn(
-          "hover:text-green-600",
-          userVote === 1 ? "text-green-600" : "text-muted-foreground"
+          'hover:text-green-600',
+          userVote === 1 ? 'text-green-600' : 'text-muted-foreground'
         )}
       >
         ▲
       </button>
-      <span>{score > 0 ? score : "-"}</span>
+      <span>{score > 0 ? score : '-'}</span>
       <button
         onClick={() => handleVote(-1)}
         className={cn(
-          "hover:text-red-600",
-          userVote === -1 ? "text-red-600" : "text-muted-foreground"
+          'hover:text-red-600',
+          userVote === -1 ? 'text-red-600' : 'text-muted-foreground'
         )}
       >
         ▼
