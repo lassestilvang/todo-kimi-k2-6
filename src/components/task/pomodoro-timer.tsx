@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useRef } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Play, Pause, StopCircle, RotateCcw } from "lucide-react";
-import type { TaskWithRelations } from "@/types";
+import { useState, useEffect, useRef } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Play, Pause, StopCircle, RotateCcw } from 'lucide-react';
+import type { TaskWithRelations } from '@/types';
 
 interface PomodoroTimerProps {
   task: TaskWithRelations;
@@ -21,11 +21,11 @@ export function PomodoroTimer({ task }: PomodoroTimerProps) {
   useEffect(() => {
     if (isRunning && timeLeft > 0) {
       intervalRef.current = setInterval(() => {
-        setTimeLeft((prev) => prev - 1);
+        setTimeLeft(prev => prev - 1);
       }, 1000);
     } else if (timeLeft === 0) {
       setIsRunning(false);
-      setCompletedPomodoros((prev) => prev + 1);
+      setCompletedPomodoros(prev => prev + 1);
       setTimeLeft(25 * 60);
       // Could play sound or show notification here
     } else {
@@ -44,7 +44,7 @@ export function PomodoroTimer({ task }: PomodoroTimerProps) {
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   const handleStart = () => {
