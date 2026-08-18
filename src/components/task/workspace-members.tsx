@@ -1,33 +1,44 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { Users, User, Shield, ShieldCheck, Crown, UserPlus, X, Mail, Copy, Check } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
+import { useState, useEffect } from 'react';
+import {
+  Users,
+  User,
+  Shield,
+  ShieldCheck,
+  Crown,
+  UserPlus,
+  X,
+  Mail,
+  Copy,
+  Check,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
+} from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
 
 interface WorkspaceMember {
   id: number;
   user_id: number;
-  role: "owner" | "admin" | "member" | "viewer";
+  role: 'owner' | 'admin' | 'member' | 'viewer';
   joined_at: string;
   user?: {
     id: number;
@@ -45,10 +56,10 @@ interface WorkspaceMemberProps {
 }
 
 const roleColors: Record<string, string> = {
-  owner: "bg-purple-500/10 text-purple-700 dark:text-purple-300",
-  admin: "bg-blue-500/10 text-blue-700 dark:text-blue-300",
-  member: "bg-green-500/10 text-green-700 dark:text-green-300",
-  viewer: "bg-gray-500/10 text-gray-700 dark:text-gray-300",
+  owner: 'bg-purple-500/10 text-purple-700 dark:text-purple-300',
+  admin: 'bg-blue-500/10 text-blue-700 dark:text-blue-300',
+  member: 'bg-green-500/10 text-green-700 dark:text-green-300',
+  viewer: 'bg-gray-500/10 text-gray-700 dark:text-gray-300',
 };
 
 const roleIcons: Record<string, React.ReactNode> = {
@@ -59,10 +70,10 @@ const roleIcons: Record<string, React.ReactNode> = {
 };
 
 const roleLabels: Record<string, string> = {
-  owner: "Owner",
-  admin: "Admin",
-  member: "Member",
-  viewer: "Viewer",
+  owner: 'Owner',
+  admin: 'Admin',
+  member: 'Member',
+  viewer: 'Viewer',
 };
 
 export function WorkspaceMembers({
@@ -73,13 +84,16 @@ export function WorkspaceMembers({
 }: WorkspaceMemberProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [showAddDialog, setShowAddDialog] = useState(false);
-  const [newMemberEmail, setNewMemberEmail] = useState("");
-  const [newMemberRole, setNewMemberRole] = useState<"admin" | "member" | "viewer">("member");
+  const [newMemberEmail, setNewMemberEmail] = useState('');
+  const [newMemberRole, setNewMemberRole] = useState<
+    'admin' | 'member' | 'viewer'
+  >('member');
   const [copiedId, setCopiedId] = useState<number | null>(null);
 
-  const isOwner = (member: WorkspaceMember) => member.role === "owner";
-  const currentUser = members.find((m) => m.user_id === currentUserId);
-  const canManageRoles = currentUser?.role === "owner" || currentUser?.role === "admin";
+  const isOwner = (member: WorkspaceMember) => member.role === 'owner';
+  const currentUser = members.find(m => m.user_id === currentUserId);
+  const canManageRoles =
+    currentUser?.role === 'owner' || currentUser?.role === 'admin';
 
   const handleAddMember = async () => {
     if (!newMemberEmail.trim()) return;
@@ -87,8 +101,8 @@ export function WorkspaceMembers({
     setIsLoading(true);
     try {
       const response = await fetch(`/api/workspaces/${workspaceId}/members`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: newMemberEmail,
           role: newMemberRole,
@@ -99,15 +113,15 @@ export function WorkspaceMembers({
         const updatedMember = await response.json();
         const updatedMembers = [...members, updatedMember];
         onMembersChange?.(updatedMembers);
-        toast.success("Member added successfully");
+        toast.success('Member added successfully');
         setShowAddDialog(false);
-        setNewMemberEmail("");
-        setNewMemberRole("member");
+        setNewMemberEmail('');
+        setNewMemberRole('member');
       } else {
-        throw new Error("Failed to add member");
+        throw new Error('Failed to add member');
       }
     } catch (error) {
-      toast.error("Failed to add member");
+      toast.error('Failed to add member');
       console.error(error);
     } finally {
       setIsLoading(false);
@@ -116,19 +130,22 @@ export function WorkspaceMembers({
 
   const handleRemoveMember = async (member: WorkspaceMember) => {
     try {
-      const response = await fetch(`/api/workspaces/${workspaceId}/members/${member.id}`, {
-        method: "DELETE",
-      });
+      const response = await fetch(
+        `/api/workspaces/${workspaceId}/members/${member.id}`,
+        {
+          method: 'DELETE',
+        }
+      );
 
       if (response.ok) {
-        const updatedMembers = members.filter((m) => m.id !== member.id);
+        const updatedMembers = members.filter(m => m.id !== member.id);
         onMembersChange?.(updatedMembers);
-        toast.success("Member removed");
+        toast.success('Member removed');
       } else {
-        throw new Error("Failed to remove member");
+        throw new Error('Failed to remove member');
       }
     } catch (error) {
-      toast.error("Failed to remove member");
+      toast.error('Failed to remove member');
       console.error(error);
     }
   };
@@ -137,24 +154,27 @@ export function WorkspaceMembers({
     if (!canManageRoles) return;
 
     try {
-      const response = await fetch(`/api/workspaces/${workspaceId}/members/${member.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ role: newRole }),
-      });
+      const response = await fetch(
+        `/api/workspaces/${workspaceId}/members/${member.id}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ role: newRole }),
+        }
+      );
 
       if (response.ok) {
         const updatedMember = await response.json();
-        const updatedMembers = members.map((m) =>
+        const updatedMembers = members.map(m =>
           m.id === member.id ? updatedMember : m
         );
         onMembersChange?.(updatedMembers);
-        toast.success("Role updated");
+        toast.success('Role updated');
       } else {
-        throw new Error("Failed to update role");
+        throw new Error('Failed to update role');
       }
     } catch (error) {
-      toast.error("Failed to update role");
+      toast.error('Failed to update role');
       console.error(error);
     }
   };
@@ -164,15 +184,13 @@ export function WorkspaceMembers({
     navigator.clipboard.writeText(link);
     setCopiedId(workspaceId);
     setTimeout(() => setCopiedId(null), 2000);
-    toast.success("Invite link copied to clipboard");
+    toast.success('Invite link copied to clipboard');
   };
 
   const getInitials = (name: string | null) => {
-    if (!name) return "U";
-    const parts = name.split(" ");
-    return parts.length > 1
-      ? parts[0][0] + parts[1][0]
-      : name[0].toUpperCase();
+    if (!name) return 'U';
+    const parts = name.split(' ');
+    return parts.length > 1 ? parts[0][0] + parts[1][0] : name[0].toUpperCase();
   };
 
   return (
@@ -209,14 +227,14 @@ export function WorkspaceMembers({
                       type="email"
                       placeholder="member@example.com"
                       value={newMemberEmail}
-                      onChange={(e) => setNewMemberEmail(e.target.value)}
+                      onChange={e => setNewMemberEmail(e.target.value)}
                     />
                   </div>
                   <div className="space-y-2">
                     <Label>Role</Label>
                     <Select
                       value={newMemberRole}
-                      onValueChange={(value) => setNewMemberRole(value as any)}
+                      onValueChange={value => setNewMemberRole(value as any)}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -232,8 +250,11 @@ export function WorkspaceMembers({
                       </SelectContent>
                     </Select>
                   </div>
-                  <Button onClick={handleAddMember} disabled={isLoading || !newMemberEmail.trim()}>
-                    {isLoading ? "Adding..." : "Add Member"}
+                  <Button
+                    onClick={handleAddMember}
+                    disabled={isLoading || !newMemberEmail.trim()}
+                  >
+                    {isLoading ? 'Adding...' : 'Add Member'}
                   </Button>
                 </div>
               </DialogContent>
@@ -248,7 +269,7 @@ export function WorkspaceMembers({
               No members yet. Invite someone to join!
             </p>
           ) : (
-            members.map((member) => {
+            members.map(member => {
               const isCurrentUser = member.user_id === currentUserId;
               return (
                 <div
@@ -257,14 +278,14 @@ export function WorkspaceMembers({
                 >
                   <div className="flex items-center gap-3">
                     <Avatar>
-                      <AvatarImage src={member.user?.avatar_url || ""} />
+                      <AvatarImage src={member.user?.avatar_url || ''} />
                       <AvatarFallback>
-                        {getInitials(member.user?.name || "")}
+                        {getInitials(member.user?.name || '')}
                       </AvatarFallback>
                     </Avatar>
                     <div>
                       <div className="font-medium">
-                        {member.user?.name || "Unknown User"}
+                        {member.user?.name || 'Unknown User'}
                         {isCurrentUser && (
                           <Badge variant="secondary" className="ml-2">
                             You
@@ -282,7 +303,9 @@ export function WorkspaceMembers({
                       <>
                         <Select
                           value={member.role}
-                          onValueChange={(value) => value && handleRoleChange(member, value)}
+                          onValueChange={value =>
+                            value && handleRoleChange(member, value)
+                          }
                         >
                           <SelectTrigger className="h-7">
                             <SelectValue />
