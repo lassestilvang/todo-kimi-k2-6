@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { Download, X, Bell } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { toast } from "sonner";
+import { useEffect, useState } from 'react';
+import { Download, X, Bell } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { toast } from 'sonner';
 
 interface BeforeInstallPromptEvent extends Event {
   promise: Promise<any>;
   prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
 }
 
 interface PwaInstallPromptProps {
@@ -18,7 +18,12 @@ interface PwaInstallPromptProps {
 
 // Background sync manager
 class BackgroundSyncManager {
-  private queue: Array<{ id: string; url: string; options: RequestInit; timestamp: number }> = [];
+  private queue: Array<{
+    id: string;
+    url: string;
+    options: RequestInit;
+    timestamp: number;
+  }> = [];
   private isProcessing = false;
 
   enqueue(url: string, options: RequestInit) {
@@ -38,11 +43,11 @@ class BackgroundSyncManager {
     for (const item of batch) {
       try {
         await fetch(item.url, item.options);
-        toast.success("Synced successfully");
+        toast.success('Synced successfully');
       } catch (error) {
         // Re-add to queue on failure
         this.queue.unshift(item);
-        console.error("Sync failed:", error);
+        console.error('Sync failed:', error);
       }
     }
 
@@ -57,9 +62,11 @@ class BackgroundSyncManager {
 export const backgroundSyncManager = new BackgroundSyncManager();
 
 export function PwaEnhancements({ onInstalled }: PwaInstallPromptProps) {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [deferredPrompt, setDeferredPrompt] =
+    useState<BeforeInstallPromptEvent | null>(null);
   const [isVisible, setIsVisible] = useState(false);
-  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>("default");
+  const [notificationPermission, setNotificationPermission] =
+    useState<NotificationPermission>('default');
   const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
@@ -75,22 +82,28 @@ export function PwaEnhancements({ onInstalled }: PwaInstallPromptProps) {
       onInstalled?.();
     };
 
-    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt as EventListener);
-    window.addEventListener("appinstalled", handleInstalled);
+    window.addEventListener(
+      'beforeinstallprompt',
+      handleBeforeInstallPrompt as EventListener
+    );
+    window.addEventListener('appinstalled', handleInstalled);
 
     // Check notification permission
-    if ("Notification" in window) {
+    if ('Notification' in window) {
       setNotificationPermission(Notification.permission);
     }
 
     // Check if already installed
-    if (window.matchMedia("(display-mode: standalone)").matches) {
+    if (window.matchMedia('(display-mode: standalone)').matches) {
       setIsInstalled(true);
     }
 
     return () => {
-      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt as EventListener);
-      window.removeEventListener("appinstalled", handleInstalled);
+      window.removeEventListener(
+        'beforeinstallprompt',
+        handleBeforeInstallPrompt as EventListener
+      );
+      window.removeEventListener('appinstalled', handleInstalled);
     };
   }, [onInstalled]);
 
@@ -100,7 +113,7 @@ export function PwaEnhancements({ onInstalled }: PwaInstallPromptProps) {
     deferredPrompt.prompt();
 
     const choiceResult = await deferredPrompt.userChoice;
-    if (choiceResult.outcome === "accepted") {
+    if (choiceResult.outcome === 'accepted') {
       setIsVisible(false);
     }
 
@@ -111,11 +124,11 @@ export function PwaEnhancements({ onInstalled }: PwaInstallPromptProps) {
     setIsVisible(false);
     setDeferredPrompt(null);
     // Don't show again for 7 days
-    localStorage.setItem("pwa-install-dismissed", Date.now().toString());
+    localStorage.setItem('pwa-install-dismissed', Date.now().toString());
   };
 
   const handleNotificationRequest = async () => {
-    if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
       return;
     }
 
@@ -125,16 +138,17 @@ export function PwaEnhancements({ onInstalled }: PwaInstallPromptProps) {
 
   // Check if we should show install prompt
   useEffect(() => {
-    const dismissed = localStorage.getItem("pwa-install-dismissed");
+    const dismissed = localStorage.getItem('pwa-install-dismissed');
     if (dismissed) {
-      const daysSince = (Date.now() - parseInt(dismissed)) / (1000 * 60 * 60 * 24);
+      const daysSince =
+        (Date.now() - parseInt(dismissed)) / (1000 * 60 * 60 * 24);
       if (daysSince < 7) {
         setIsVisible(false);
       }
     }
   }, []);
 
-  if (!isVisible || typeof window === "undefined" || isInstalled) {
+  if (!isVisible || typeof window === 'undefined' || isInstalled) {
     return null;
   }
 
@@ -171,7 +185,7 @@ export function PwaEnhancements({ onInstalled }: PwaInstallPromptProps) {
       </Card>
 
       {/* Notification prompt */}
-      {notificationPermission === "default" && (
+      {notificationPermission === 'default' && (
         <Card className="fixed bottom-20 right-4 z-50 w-64 p-4 shadow-lg border-blue-200 bg-background">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-2">
@@ -187,12 +201,16 @@ export function PwaEnhancements({ onInstalled }: PwaInstallPromptProps) {
               variant="ghost"
               size="icon"
               className="h-6 w-6"
-              onClick={() => setNotificationPermission("denied")}
+              onClick={() => setNotificationPermission('denied')}
             >
               <X className="h-3 w-3" />
             </Button>
           </div>
-          <Button size="sm" className="mt-3 w-full" onClick={handleNotificationRequest}>
+          <Button
+            size="sm"
+            className="mt-3 w-full"
+            onClick={handleNotificationRequest}
+          >
             Enable Notifications
           </Button>
         </Card>
@@ -207,15 +225,15 @@ export function usePwaInstalled() {
 
   useEffect(() => {
     const checkInstalled = () => {
-      if (window.matchMedia("(display-mode: standalone)").matches) {
+      if (window.matchMedia('(display-mode: standalone)').matches) {
         setIsInstalled(true);
       }
     };
 
     checkInstalled();
 
-    window.addEventListener("resize", checkInstalled);
-    return () => window.removeEventListener("resize", checkInstalled);
+    window.addEventListener('resize', checkInstalled);
+    return () => window.removeEventListener('resize', checkInstalled);
   }, []);
 
   return isInstalled;
@@ -238,11 +256,11 @@ export function useBackgroundSync() {
 
 // Offline data manager
 export class OfflineDataManager {
-  private static readonly STORE_NAME = "taskflow-offline";
+  private static readonly STORE_NAME = 'taskflow-offline';
   private static readonly DB_VERSION = 1;
 
   static async init() {
-    if (!("indexedDB" in window)) return null;
+    if (!('indexedDB' in window)) return null;
 
     return new Promise((resolve, reject) => {
       const request = indexedDB.open(this.STORE_NAME, this.DB_VERSION);
@@ -250,12 +268,15 @@ export class OfflineDataManager {
       request.onerror = () => reject(request.error);
       request.onsuccess = () => resolve(request.result);
 
-      request.onupgradeneeded = (event) => {
+      request.onupgradeneeded = event => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const target = event.target as any;
         const db = target.result;
-        db.createObjectStore("tasks", { keyPath: "id" });
-        db.createObjectStore("sync-queue", { keyPath: "id", autoIncrement: true });
+        db.createObjectStore('tasks', { keyPath: 'id' });
+        db.createObjectStore('sync-queue', {
+          keyPath: 'id',
+          autoIncrement: true,
+        });
       };
     });
   }
@@ -265,8 +286,8 @@ export class OfflineDataManager {
     const db = await this.init();
     if (!db) return;
 
-    const transaction = (db as IDBDatabase).transaction(["tasks"], "readwrite");
-    const store = transaction.objectStore("tasks");
+    const transaction = (db as IDBDatabase).transaction(['tasks'], 'readwrite');
+    const store = transaction.objectStore('tasks');
     store.put({ ...task, savedAt: Date.now() });
   }
 
@@ -274,25 +295,26 @@ export class OfflineDataManager {
     const db = await this.init();
     if (!db) return [];
 
-    const transaction = (db as IDBDatabase).transaction(["tasks"], "readonly");
-    const store = transaction.objectStore("tasks");
+    const transaction = (db as IDBDatabase).transaction(['tasks'], 'readonly');
+    const store = transaction.objectStore('tasks');
     return store.getAll();
   }
 }
 
 // Service worker registration hook
 export function useServiceWorker() {
-  const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
+  const [registration, setRegistration] =
+    useState<ServiceWorkerRegistration | null>(null);
 
   useEffect(() => {
-    if (!("serviceWorker" in navigator)) return;
+    if (!('serviceWorker' in navigator)) return;
 
     const register = async () => {
       try {
-        const reg = await navigator.serviceWorker.register("/sw.js");
+        const reg = await navigator.serviceWorker.register('/sw.js');
         setRegistration(reg);
       } catch (error) {
-        console.error("Service worker registration failed:", error);
+        console.error('Service worker registration failed:', error);
       }
     };
 
