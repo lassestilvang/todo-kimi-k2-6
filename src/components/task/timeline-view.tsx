@@ -1,11 +1,18 @@
-"use client";
+'use client';
 
-import { useMemo } from "react";
-import { ChevronRight, Clock, Calendar, FileText } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
-import { format, parseISO, addDays, startOfWeek, endOfWeek, eachDayOfInterval } from "date-fns";
-import type { TaskWithRelations } from "@/types";
+import { useMemo } from 'react';
+import { ChevronRight, Clock, Calendar, FileText } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+import {
+  format,
+  parseISO,
+  addDays,
+  startOfWeek,
+  endOfWeek,
+  eachDayOfInterval,
+} from 'date-fns';
+import type { TaskWithRelations } from '@/types';
 
 interface TimelineViewProps {
   tasks: TaskWithRelations[];
@@ -26,27 +33,32 @@ interface TimelineTask {
 
 export function TimelineView({ tasks, onTaskClick }: TimelineViewProps) {
   const timelineTasks = useMemo(() => {
-    const datedTasks = tasks.filter((t) => t.date || t.deadline);
+    const datedTasks = tasks.filter(t => t.date || t.deadline);
 
-    return datedTasks.map((task) => {
-      const start = task.date ? parseISO(task.date) : new Date();
-      const end = task.deadline ? parseISO(task.deadline) : start;
-      const duration = Math.max(1, Math.ceil(
-        (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
-      ));
+    return datedTasks
+      .map(task => {
+        const start = task.date ? parseISO(task.date) : new Date();
+        const end = task.deadline ? parseISO(task.deadline) : start;
+        const duration = Math.max(
+          1,
+          Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+        );
 
-      return {
-        id: task.id,
-        name: task.name,
-        start,
-        end,
-        duration,
-        priority: task.priority,
-        hasDependencies: (task.blockers?.length || 0) > 0 || (task.blocked_by?.length || 0) > 0,
-        blockers: task.blockers?.length || 0,
-        blockedBy: task.blocked_by?.length || 0,
-      };
-    }).sort((a, b) => a.start.getTime() - b.start.getTime());
+        return {
+          id: task.id,
+          name: task.name,
+          start,
+          end,
+          duration,
+          priority: task.priority,
+          hasDependencies:
+            (task.blockers?.length || 0) > 0 ||
+            (task.blocked_by?.length || 0) > 0,
+          blockers: task.blockers?.length || 0,
+          blockedBy: task.blocked_by?.length || 0,
+        };
+      })
+      .sort((a, b) => a.start.getTime() - b.start.getTime());
   }, [tasks]);
 
   const dateRange = useMemo(() => {
@@ -62,9 +74,13 @@ export function TimelineView({ tasks, onTaskClick }: TimelineViewProps) {
       };
     }
 
-    const dates = timelineTasks.flatMap((t) => [t.start, t.end]);
-    const minDate = startOfWeek(new Date(Math.min(...dates.map((d) => d.getTime()))));
-    const maxDate = endOfWeek(new Date(Math.max(...dates.map((d) => d.getTime()))));
+    const dates = timelineTasks.flatMap(t => [t.start, t.end]);
+    const minDate = startOfWeek(
+      new Date(Math.min(...dates.map(d => d.getTime())))
+    );
+    const maxDate = endOfWeek(
+      new Date(Math.max(...dates.map(d => d.getTime())))
+    );
 
     return {
       start: minDate,
@@ -75,27 +91,40 @@ export function TimelineView({ tasks, onTaskClick }: TimelineViewProps) {
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case "critical": return "border-l-red-500 bg-red-50 dark:bg-red-900/20";
-      case "high": return "border-l-orange-500 bg-orange-50 dark:bg-orange-900/20";
-      case "medium": return "border-l-amber-500 bg-amber-50 dark:bg-amber-900/20";
-      case "low": return "border-l-blue-500 bg-blue-50 dark:bg-blue-900/20";
-      default: return "border-l-gray-500 bg-gray-50 dark:bg-gray-900/20";
+      case 'critical':
+        return 'border-l-red-500 bg-red-50 dark:bg-red-900/20';
+      case 'high':
+        return 'border-l-orange-500 bg-orange-50 dark:bg-orange-900/20';
+      case 'medium':
+        return 'border-l-amber-500 bg-amber-50 dark:bg-amber-900/20';
+      case 'low':
+        return 'border-l-blue-500 bg-blue-50 dark:bg-blue-900/20';
+      default:
+        return 'border-l-gray-500 bg-gray-50 dark:bg-gray-900/20';
     }
   };
 
   const getDependencyIcon = (task: TimelineTask) => {
-    if (task.blockers > 0) return "depends-on";
-    if (task.blockedBy > 0) return "blocking";
+    if (task.blockers > 0) return 'depends-on';
+    if (task.blockedBy > 0) return 'blocking';
     return null;
   };
 
   const timelinePosition = (date: Date) => {
-    const totalDays = (dateRange.end.getTime() - dateRange.start.getTime()) / (1000 * 60 * 60 * 24);
-    return ((date.getTime() - dateRange.start.getTime()) / (1000 * 60 * 60 * 24)) / totalDays;
+    const totalDays =
+      (dateRange.end.getTime() - dateRange.start.getTime()) /
+      (1000 * 60 * 60 * 24);
+    return (
+      (date.getTime() - dateRange.start.getTime()) /
+      (1000 * 60 * 60 * 24) /
+      totalDays
+    );
   };
 
   const timelineWidth = (task: TimelineTask) => {
-    const totalDays = (dateRange.end.getTime() - dateRange.start.getTime()) / (1000 * 60 * 60 * 24);
+    const totalDays =
+      (dateRange.end.getTime() - dateRange.start.getTime()) /
+      (1000 * 60 * 60 * 24);
     return (task.duration / totalDays) * 100;
   };
 
@@ -140,7 +169,7 @@ export function TimelineView({ tasks, onTaskClick }: TimelineViewProps) {
             <div className="flex-1 flex justify-between">
               {dateRange.days.slice(0, 7).map((day, i) => (
                 <span key={i} className="text-center">
-                  {format(day, "EEE\nMM/dd")}
+                  {format(day, 'EEE\nMM/dd')}
                 </span>
               ))}
             </div>
@@ -155,7 +184,7 @@ export function TimelineView({ tasks, onTaskClick }: TimelineViewProps) {
               <p>No tasks with dates to display</p>
             </div>
           ) : (
-            timelineTasks.map((task) => {
+            timelineTasks.map(task => {
               const left = timelinePosition(task.start) * 100;
               const width = timelineWidth(task);
               const depType = getDependencyIcon(task);
@@ -167,7 +196,7 @@ export function TimelineView({ tasks, onTaskClick }: TimelineViewProps) {
                       <span className="text-sm font-medium">{task.name}</span>
                       {depType && (
                         <Badge variant="outline" className="text-xs">
-                          {depType === "depends-on" ? "⤵" : "⤴"}
+                          {depType === 'depends-on' ? '⤵' : '⤴'}
                         </Badge>
                       )}
                     </div>
@@ -180,39 +209,51 @@ export function TimelineView({ tasks, onTaskClick }: TimelineViewProps) {
 
                   <div className="flex-1 relative">
                     {/* Timeline track */}
-                    <div className="h-6 rounded overflow-hidden border-l-2 transition-all hover:shadow-md cursor-pointer"
+                    <div
+                      className="h-6 rounded overflow-hidden border-l-2 transition-all hover:shadow-md cursor-pointer"
                       style={{
-                        borderLeftColor: task.priority === "critical" ? "#ef4444" :
-                          task.priority === "high" ? "#f97316" :
-                          task.priority === "medium" ? "#eab308" :
-                          task.priority === "low" ? "#3b82f6" : "#9ca3af",
+                        borderLeftColor:
+                          task.priority === 'critical'
+                            ? '#ef4444'
+                            : task.priority === 'high'
+                              ? '#f97316'
+                              : task.priority === 'medium'
+                                ? '#eab308'
+                                : task.priority === 'low'
+                                  ? '#3b82f6'
+                                  : '#9ca3af',
                       }}
-                      onClick={() => onTaskClick({
-                        ...tasks.find(t => t.id === task.id)!,
-                        id: task.id,
-                        name: task.name,
-                        description: tasks.find(t => t.id === task.id)?.description ?? null,
-                        list_id: tasks.find(t => t.id === task.id)?.list_id ?? null,
-                        date: task.start.toISOString().split("T")[0],
-                        deadline: task.end.toISOString().split("T")[0],
-                        priority: task.priority as any,
-                        recurring: "none",
-                        completed: false,
-                        created_at: "",
-                        updated_at: "",
-                        sort_order: 0,
-                        archived: false,
-                        labels: [],
-                        subtasks: [],
-                        reminders: [],
-                        logs: [],
-                        comments: [],
-                        attachments: [],
-                        blockers: [],
-                        blocked_by: [],
-                        time_entries: [],
-                        recurring_exceptions: [],
-                      })}
+                      onClick={() =>
+                        onTaskClick({
+                          ...tasks.find(t => t.id === task.id)!,
+                          id: task.id,
+                          name: task.name,
+                          description:
+                            tasks.find(t => t.id === task.id)?.description ??
+                            null,
+                          list_id:
+                            tasks.find(t => t.id === task.id)?.list_id ?? null,
+                          date: task.start.toISOString().split('T')[0],
+                          deadline: task.end.toISOString().split('T')[0],
+                          priority: task.priority as any,
+                          recurring: 'none',
+                          completed: false,
+                          created_at: '',
+                          updated_at: '',
+                          sort_order: 0,
+                          archived: false,
+                          labels: [],
+                          subtasks: [],
+                          reminders: [],
+                          logs: [],
+                          comments: [],
+                          attachments: [],
+                          blockers: [],
+                          blocked_by: [],
+                          time_entries: [],
+                          recurring_exceptions: [],
+                        })
+                      }
                     >
                       <div
                         className="h-full bg-card border-r border-border/50 relative"
@@ -231,10 +272,12 @@ export function TimelineView({ tasks, onTaskClick }: TimelineViewProps) {
                         style={{ left: `${left + width - 20}px` }}
                       >
                         <span className="hidden sm:inline">
-                          {format(task.start, "MMM d")} - {format(task.end, "MMM d")}
+                          {format(task.start, 'MMM d')} -{' '}
+                          {format(task.end, 'MMM d')}
                         </span>
                         <span className="sm:hidden">
-                          {format(task.start, "MM/dd")} - {format(task.end, "MM/dd")}
+                          {format(task.start, 'MM/dd')} -{' '}
+                          {format(task.end, 'MM/dd')}
                         </span>
                       </div>
                     </div>
@@ -242,7 +285,7 @@ export function TimelineView({ tasks, onTaskClick }: TimelineViewProps) {
                     {/* Dependency arrows */}
                     {(task.blockers > 0 || task.blockedBy > 0) && (
                       <div className="absolute -top-2 -right-2 bg-primary text-xs text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center">
-                        {task.blockers > 0 ? "↓" : "↑"}
+                        {task.blockers > 0 ? '↓' : '↑'}
                       </div>
                     )}
                   </div>
@@ -257,13 +300,23 @@ export function TimelineView({ tasks, onTaskClick }: TimelineViewProps) {
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-4">
               <span>{timelineTasks.length} tasks on timeline</span>
-              <span>Critical: {timelineTasks.filter(t => t.priority === "critical").length}</span>
-              <span>With dependencies: {timelineTasks.filter(t => t.hasDependencies).length}</span>
+              <span>
+                Critical:{' '}
+                {timelineTasks.filter(t => t.priority === 'critical').length}
+              </span>
+              <span>
+                With dependencies:{' '}
+                {timelineTasks.filter(t => t.hasDependencies).length}
+              </span>
             </div>
             <div>
-              Duration:{" "}
+              Duration:{' '}
               <Badge variant="secondary">
-                {Math.round((dateRange.end.getTime() - dateRange.start.getTime()) / (1000 * 60 * 60 * 24))} days
+                {Math.round(
+                  (dateRange.end.getTime() - dateRange.start.getTime()) /
+                    (1000 * 60 * 60 * 24)
+                )}{' '}
+                days
               </Badge>
             </div>
           </div>
