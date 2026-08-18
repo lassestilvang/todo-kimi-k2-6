@@ -1,14 +1,43 @@
-"use client";
+'use client';
 
-import { useMemo, useState } from "react";
-import { TrendingUp, Target, BarChart3, PieChart, Activity, Lightbulb, Brain, AlertTriangle, CheckCircle2 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Pie, Cell, LineChart, Line, ScatterChart, Scatter, CartesianGrid, ReferenceLine } from "recharts";
-import { format, parseISO, startOfWeek, endOfWeek } from "date-fns";
-import type { TaskWithRelations } from "@/types";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useMemo, useState } from 'react';
+import {
+  TrendingUp,
+  Target,
+  BarChart3,
+  PieChart,
+  Activity,
+  Lightbulb,
+  Brain,
+  AlertTriangle,
+  CheckCircle2,
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Pie,
+  Cell,
+  LineChart,
+  Line,
+  ScatterChart,
+  Scatter,
+  CartesianGrid,
+  ReferenceLine,
+} from 'recharts';
+import { format, parseISO, startOfWeek, endOfWeek } from 'date-fns';
+import type { TaskWithRelations } from '@/types';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 
 interface TaskInvestmentPortfolioProps {
   tasks: TaskWithRelations[];
@@ -24,7 +53,7 @@ interface TaskInvestmentScore {
   urgency: number; // time sensitivity (0-100)
   risk: number; // chance of complications (0-100)
   dependencies: number; // blocking impact (0-100)
-  category: "high_investment" | "medium_investment" | "low_investment";
+  category: 'high_investment' | 'medium_investment' | 'low_investment';
 }
 
 interface PortfolioStats {
@@ -35,7 +64,10 @@ interface PortfolioStats {
   totalInvestmentValue: number;
 }
 
-export function TaskInvestmentPortfolio({ tasks, completedTasks = [] }: TaskInvestmentPortfolioProps) {
+export function TaskInvestmentPortfolio({
+  tasks,
+  completedTasks = [],
+}: TaskInvestmentPortfolioProps) {
   const portfolio = useMemo(() => calculatePortfolio(tasks), [tasks]);
 
   // Calculate completion patterns for the chart
@@ -47,34 +79,47 @@ export function TaskInvestmentPortfolio({ tasks, completedTasks = [] }: TaskInve
     return Array.from({ length: 7 }, (_, i) => {
       const day = new Date(weekStart);
       day.setDate(day.getDate() + i);
-      const dayStr = format(day, "yyyy-MM-dd");
+      const dayStr = format(day, 'yyyy-MM-dd');
 
       const dayTasks = tasks.filter(t => t.date === dayStr);
-      const dayCompleted = completedTasks.filter(t =>
-        t.completed_at && format(new Date(t.completed_at), "yyyy-MM-dd") === dayStr
+      const dayCompleted = completedTasks.filter(
+        t =>
+          t.completed_at &&
+          format(new Date(t.completed_at), 'yyyy-MM-dd') === dayStr
       );
 
       return {
-        day: format(day, "EEE"),
+        day: format(day, 'EEE'),
         tasks: dayTasks.length,
         completed: dayCompleted.length,
-        rate: dayTasks.length > 0 ? Math.round((dayCompleted.length / dayTasks.length) * 100) : 0,
+        rate:
+          dayTasks.length > 0
+            ? Math.round((dayCompleted.length / dayTasks.length) * 100)
+            : 0,
       };
     });
   }, [tasks, completedTasks]);
 
   // ROI distribution data
-  const roiDistribution = useMemo(() => [
-    { name: "High ROI", value: portfolio.highROI.length, color: "#22c55e" },
-    { name: "Medium ROI", value: portfolio.mediumROI.length, color: "#f59e0b" },
-    { name: "Low ROI", value: portfolio.lowROI.length, color: "#6b7280" },
-  ], [portfolio]);
+  const roiDistribution = useMemo(
+    () => [
+      { name: 'High ROI', value: portfolio.highROI.length, color: '#22c55e' },
+      {
+        name: 'Medium ROI',
+        value: portfolio.mediumROI.length,
+        color: '#f59e0b',
+      },
+      { name: 'Low ROI', value: portfolio.lowROI.length, color: '#6b7280' },
+    ],
+    [portfolio]
+  );
 
   // Top investment opportunities
   const topInvestments = portfolio.highROI.slice(0, 5);
 
   // Investment efficiency score
-  const investmentEfficiency = portfolio.totalInvestmentValue / Math.max(tasks.length, 1);
+  const investmentEfficiency =
+    portfolio.totalInvestmentValue / Math.max(tasks.length, 1);
 
   // Risk-Return scatter data for visualization
   const scatterData = useMemo(() => {
@@ -94,9 +139,9 @@ export function TaskInvestmentPortfolio({ tasks, completedTasks = [] }: TaskInve
 
   // Category colors for scatter plot
   const categoryColors: Record<string, string> = {
-    high_investment: "#22c55e",
-    medium_investment: "#f59e0b",
-    low_investment: "#6b7280",
+    high_investment: '#22c55e',
+    medium_investment: '#f59e0b',
+    low_investment: '#6b7280',
   };
 
   // Portfolio health analysis
@@ -107,15 +152,16 @@ export function TaskInvestmentPortfolio({ tasks, completedTasks = [] }: TaskInve
     ).length;
     const highROICount = portfolio.highROI.length;
 
-    const completionRate = highROICount > 0
-      ? Math.round((completedHighROI / highROICount) * 100)
-      : 0;
+    const completionRate =
+      highROICount > 0
+        ? Math.round((completedHighROI / highROICount) * 100)
+        : 0;
 
-    let healthStatus: "excellent" | "good" | "needs_attention" | "critical";
-    if (completionRate >= 80) healthStatus = "excellent";
-    else if (completionRate >= 50) healthStatus = "good";
-    else if (completionRate >= 25) healthStatus = "needs_attention";
-    else healthStatus = "critical";
+    let healthStatus: 'excellent' | 'good' | 'needs_attention' | 'critical';
+    if (completionRate >= 80) healthStatus = 'excellent';
+    else if (completionRate >= 50) healthStatus = 'good';
+    else if (completionRate >= 25) healthStatus = 'needs_attention';
+    else healthStatus = 'critical';
 
     return { completionRate, healthStatus, completedHighROI, highROICount };
   }, [tasks, completedTasks, portfolio.highROI]);
@@ -144,7 +190,9 @@ export function TaskInvestmentPortfolio({ tasks, completedTasks = [] }: TaskInve
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-medium text-muted-foreground">Total Tasks</CardTitle>
+            <CardTitle className="text-xs font-medium text-muted-foreground">
+              Total Tasks
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">{tasks.length}</p>
@@ -159,7 +207,9 @@ export function TaskInvestmentPortfolio({ tasks, completedTasks = [] }: TaskInve
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-green-600">{portfolio.highROI.length}</p>
+            <p className="text-2xl font-bold text-green-600">
+              {portfolio.highROI.length}
+            </p>
           </CardContent>
         </Card>
 
@@ -171,16 +221,22 @@ export function TaskInvestmentPortfolio({ tasks, completedTasks = [] }: TaskInve
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">{Math.round(portfolio.totalInvestmentValue)}</p>
+            <p className="text-2xl font-bold">
+              {Math.round(portfolio.totalInvestmentValue)}
+            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-medium text-muted-foreground">Diversification</CardTitle>
+            <CardTitle className="text-xs font-medium text-muted-foreground">
+              Diversification
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">{Math.round(portfolio.diversificationScore)}%</p>
+            <p className="text-2xl font-bold">
+              {Math.round(portfolio.diversificationScore)}%
+            </p>
           </CardContent>
         </Card>
 
@@ -197,10 +253,12 @@ export function TaskInvestmentPortfolio({ tasks, completedTasks = [] }: TaskInve
               {portfolioHealth.completionRate}%
             </div>
             <p className="text-xs text-muted-foreground">
-              {portfolioHealth.healthStatus === "excellent" && "Excellent progress!"}
-              {portfolioHealth.healthStatus === "good" && "Good progress!"}
-              {portfolioHealth.healthStatus === "needs_attention" && "Needs attention"}
-              {portfolioHealth.healthStatus === "critical" && "Action needed"}
+              {portfolioHealth.healthStatus === 'excellent' &&
+                'Excellent progress!'}
+              {portfolioHealth.healthStatus === 'good' && 'Good progress!'}
+              {portfolioHealth.healthStatus === 'needs_attention' &&
+                'Needs attention'}
+              {portfolioHealth.healthStatus === 'critical' && 'Action needed'}
             </p>
           </CardContent>
         </Card>
@@ -273,7 +331,7 @@ export function TaskInvestmentPortfolio({ tasks, completedTasks = [] }: TaskInve
               size="sm"
               onClick={() => setShowScatterChart(!showScatterChart)}
             >
-              {showScatterChart ? "Hide" : "Show"} Details
+              {showScatterChart ? 'Hide' : 'Show'} Details
             </Button>
           </CardTitle>
         </CardHeader>
@@ -283,26 +341,31 @@ export function TaskInvestmentPortfolio({ tasks, completedTasks = [] }: TaskInve
               <p className="text-sm text-muted-foreground mb-4">
                 Click to view detailed risk-return analysis
               </p>
-              <Button variant="outline" onClick={() => setShowScatterChart(true)}>
+              <Button
+                variant="outline"
+                onClick={() => setShowScatterChart(true)}
+              >
                 Show Risk-Return Chart
               </Button>
             </div>
           ) : (
             <ResponsiveContainer width="100%" height={300}>
-              <ScatterChart margin={{ top: 20, right: 30, bottom: 40, left: 40 }}>
+              <ScatterChart
+                margin={{ top: 20, right: 30, bottom: 40, left: 40 }}
+              >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
                   type="number"
                   dataKey="x"
                   name="Risk"
-                  label={{ value: "Risk", angle: -90, position: "insideLeft" }}
+                  label={{ value: 'Risk', angle: -90, position: 'insideLeft' }}
                   domain={[0, 100]}
                 />
                 <YAxis
                   type="number"
                   dataKey="y"
                   name="ROI"
-                  label={{ value: "ROI", angle: 0, position: "insideTop" }}
+                  label={{ value: 'ROI', angle: 0, position: 'insideTop' }}
                   domain={[0, 100]}
                 />
                 <Tooltip
@@ -310,9 +373,12 @@ export function TaskInvestmentPortfolio({ tasks, completedTasks = [] }: TaskInve
                     <div className="bg-background border rounded p-2">
                       {props.payload && (
                         <>
-                          <div className="font-medium">{props.payload.name}</div>
+                          <div className="font-medium">
+                            {props.payload.name}
+                          </div>
                           <div className="text-sm text-muted-foreground">
-                            Risk: {String(props.payload.x)} | ROI: {String(props.payload.y)}
+                            Risk: {String(props.payload.x)} | ROI:{' '}
+                            {String(props.payload.y)}
                           </div>
                         </>
                       )}
@@ -349,8 +415,11 @@ export function TaskInvestmentPortfolio({ tasks, completedTasks = [] }: TaskInve
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {topInvestments.map((investment) => (
-                <div key={investment.taskId} className="p-3 bg-muted/30 rounded-lg">
+              {topInvestments.map(investment => (
+                <div
+                  key={investment.taskId}
+                  className="p-3 bg-muted/30 rounded-lg"
+                >
                   <div className="flex items-start justify-between mb-2">
                     <h4 className="font-medium text-sm">{investment.name}</h4>
                     <Badge className="text-xs bg-green-100 text-green-700">
@@ -396,10 +465,12 @@ export function TaskInvestmentPortfolio({ tasks, completedTasks = [] }: TaskInve
             {portfolio.highROI.length > 0 && (
               <div className="p-3 bg-green-50 dark:bg-green-950/20 rounded-lg">
                 <p className="text-sm text-green-700 dark:text-green-300 font-medium">
-                  ✅ {portfolio.highROI.length} high ROI task{portfolio.highROI.length > 1 ? 's' : ''} ready for investment
+                  ✅ {portfolio.highROI.length} high ROI task
+                  {portfolio.highROI.length > 1 ? 's' : ''} ready for investment
                 </p>
                 <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                  Focus on these first - they offer the best return on effort invested.
+                  Focus on these first - they offer the best return on effort
+                  invested.
                 </p>
               </div>
             )}
@@ -408,7 +479,8 @@ export function TaskInvestmentPortfolio({ tasks, completedTasks = [] }: TaskInve
             {portfolio.mediumROI.length > 0 && (
               <div className="p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
                 <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">
-                  ⚖️ {portfolio.mediumROI.length} medium ROI tasks - balance your workload
+                  ⚖️ {portfolio.mediumROI.length} medium ROI tasks - balance
+                  your workload
                 </p>
                 <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
                   Good candidates for days when you have moderate capacity.
@@ -420,7 +492,9 @@ export function TaskInvestmentPortfolio({ tasks, completedTasks = [] }: TaskInve
             {portfolio.lowROI.length > tasks.length * 0.3 && (
               <div className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg">
                 <p className="text-sm text-amber-700 dark:text-amber-300 font-medium">
-                  ⚠️ {portfolio.lowROI.length} low ROI tasks ({(portfolio.lowROI.length / tasks.length * 100).toFixed(0)}% of total)
+                  ⚠️ {portfolio.lowROI.length} low ROI tasks (
+                  {((portfolio.lowROI.length / tasks.length) * 100).toFixed(0)}%
+                  of total)
                 </p>
                 <p className="text-xs text-amber-600 dark:text-amber-300 mt-1">
                   Consider delegating, batching, or archiving these tasks.
@@ -429,18 +503,19 @@ export function TaskInvestmentPortfolio({ tasks, completedTasks = [] }: TaskInve
             )}
 
             {/* Portfolio Health Insights */}
-            {portfolioHealth.healthStatus === "excellent" && (
+            {portfolioHealth.healthStatus === 'excellent' && (
               <div className="p-3 bg-emerald-50 dark:bg-emerald-950/20 rounded-lg">
                 <p className="text-sm text-emerald-700 dark:text-emerald-300 font-medium">
                   📈 Portfolio Health: Excellent!
                 </p>
                 <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">
-                  You've completed {portfolioHealth.completedHighROI} of {portfolioHealth.highROICount} high ROI tasks.
+                  You've completed {portfolioHealth.completedHighROI} of{' '}
+                  {portfolioHealth.highROICount} high ROI tasks.
                 </p>
               </div>
             )}
 
-            {portfolioHealth.healthStatus === "good" && (
+            {portfolioHealth.healthStatus === 'good' && (
               <div className="p-3 bg-emerald-50 dark:bg-emerald-950/20 rounded-lg">
                 <p className="text-sm text-emerald-700 dark:text-emerald-300 font-medium">
                   📈 Portfolio Health: Good
@@ -451,25 +526,27 @@ export function TaskInvestmentPortfolio({ tasks, completedTasks = [] }: TaskInve
               </div>
             )}
 
-            {portfolioHealth.healthStatus === "needs_attention" && (
+            {portfolioHealth.healthStatus === 'needs_attention' && (
               <div className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg">
                 <p className="text-sm text-amber-700 dark:text-amber-300 font-medium">
                   📊 Portfolio Health: Needs Attention
                 </p>
                 <p className="text-xs text-amber-600 dark:text-amber-300 mt-1">
-                  Only {portfolioHealth.completionRate}% of high ROI tasks completed. Focus on finishing these first.
+                  Only {portfolioHealth.completionRate}% of high ROI tasks
+                  completed. Focus on finishing these first.
                 </p>
               </div>
             )}
 
-            {portfolioHealth.healthStatus === "critical" && (
+            {portfolioHealth.healthStatus === 'critical' && (
               <div className="p-3 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-800">
                 <p className="text-sm text-red-700 dark:text-red-300 font-medium flex items-center gap-1.5">
                   <AlertTriangle className="h-4 w-4" />
                   Portfolio Health: Critical
                 </p>
                 <p className="text-xs text-red-600 dark:text-red-400 mt-1">
-                  Action needed: Prioritize high ROI tasks to improve portfolio health.
+                  Action needed: Prioritize high ROI tasks to improve portfolio
+                  health.
                 </p>
               </div>
             )}
@@ -481,7 +558,8 @@ export function TaskInvestmentPortfolio({ tasks, completedTasks = [] }: TaskInve
                   🎯 Diversification Opportunity
                 </p>
                 <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                  Your portfolio is concentrated. Mix high-impact strategic work with routine tasks.
+                  Your portfolio is concentrated. Mix high-impact strategic work
+                  with routine tasks.
                 </p>
               </div>
             )}
@@ -489,7 +567,8 @@ export function TaskInvestmentPortfolio({ tasks, completedTasks = [] }: TaskInve
             {/* No High ROI Tasks */}
             {portfolio.highROI.length === 0 && (
               <p className="text-sm text-muted-foreground">
-                No high ROI tasks identified. Consider adding more strategic tasks.
+                No high ROI tasks identified. Consider adding more strategic
+                tasks.
               </p>
             )}
           </div>
@@ -501,7 +580,7 @@ export function TaskInvestmentPortfolio({ tasks, completedTasks = [] }: TaskInve
 
 // Calculate investment scores for all tasks
 function calculatePortfolio(tasks: TaskWithRelations[]): PortfolioStats {
-  const investments: TaskInvestmentScore[] = tasks.map((task) => {
+  const investments: TaskInvestmentScore[] = tasks.map(task => {
     // Impact score based on priority and deadline
     const priorityImpact = {
       critical: 100,
@@ -515,9 +594,18 @@ function calculatePortfolio(tasks: TaskWithRelations[]): PortfolioStats {
     // Effort estimate based on time tracking or default
     let effort = 50; // default medium
     if (task.time_entries && task.time_entries.length > 0) {
-      const avgDuration = task.time_entries.reduce((sum, e) => sum + (e.duration_seconds || 0), 0) / task.time_entries.length / 60;
+      const avgDuration =
+        task.time_entries.reduce(
+          (sum, e) => sum + (e.duration_seconds || 0),
+          0
+        ) /
+        task.time_entries.length /
+        60;
       // Normalize: 0 minutes = 100 effort, 120+ minutes = 20 effort
-      effort = Math.max(20, Math.round(100 - Math.min(avgDuration, 120) * 0.67));
+      effort = Math.max(
+        20,
+        Math.round(100 - Math.min(avgDuration, 120) * 0.67)
+      );
     } else if (task.estimate) {
       const estimateMinutes = parseInt(task.estimate) || 30;
       effort = Math.max(20, Math.round(100 - estimateMinutes * 0.5));
@@ -527,7 +615,12 @@ function calculatePortfolio(tasks: TaskWithRelations[]): PortfolioStats {
     let urgency = 50;
     if (task.deadline) {
       const deadlineDate = parseISO(task.deadline);
-      const daysUntil = Math.max(0, Math.round((deadlineDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
+      const daysUntil = Math.max(
+        0,
+        Math.round(
+          (deadlineDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+        )
+      );
       if (daysUntil === 0) urgency = 100;
       else if (daysUntil <= 1) urgency = 85;
       else if (daysUntil <= 3) urgency = 70;
@@ -547,14 +640,16 @@ function calculatePortfolio(tasks: TaskWithRelations[]): PortfolioStats {
     const dependencies = (task.blockers?.length || 0) * 25;
 
     // Calculate ROI: (Impact + Urgency) / (Effort + Risk) * dependencies bonus
-    let roi = Math.round(((impact + urgency) / Math.max(20, effort + risk + 10)) * 50);
+    let roi = Math.round(
+      ((impact + urgency) / Math.max(20, effort + risk + 10)) * 50
+    );
     if (dependencies > 0) roi = Math.min(100, roi + dependencies);
 
     // Categorize
-    let category: "high_investment" | "medium_investment" | "low_investment";
-    if (roi >= 65) category = "high_investment";
-    else if (roi >= 40) category = "medium_investment";
-    else category = "low_investment";
+    let category: 'high_investment' | 'medium_investment' | 'low_investment';
+    if (roi >= 65) category = 'high_investment';
+    else if (roi >= 40) category = 'medium_investment';
+    else category = 'low_investment';
 
     return {
       taskId: task.id,
@@ -572,15 +667,18 @@ function calculatePortfolio(tasks: TaskWithRelations[]): PortfolioStats {
   // Sort by ROI descending
   investments.sort((a, b) => b.roi - a.roi);
 
-  const highROI = investments.filter(i => i.category === "high_investment");
-  const mediumROI = investments.filter(i => i.category === "medium_investment");
-  const lowROI = investments.filter(i => i.category === "low_investment");
+  const highROI = investments.filter(i => i.category === 'high_investment');
+  const mediumROI = investments.filter(i => i.category === 'medium_investment');
+  const lowROI = investments.filter(i => i.category === 'low_investment');
 
   // Calculate diversification score (spread across categories)
   const total = investments.length;
-  const diversificationScore = total > 0
-    ? 100 - Math.abs(highROI.length - mediumROI.length - lowROI.length) / total * 100
-    : 100;
+  const diversificationScore =
+    total > 0
+      ? 100 -
+        (Math.abs(highROI.length - mediumROI.length - lowROI.length) / total) *
+          100
+      : 100;
 
   // Total investment value
   const totalInvestmentValue = investments.reduce((sum, i) => sum + i.roi, 0);
