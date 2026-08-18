@@ -1,10 +1,18 @@
-"use client";
+'use client';
 
-import { useMemo } from "react";
-import { CheckCircle2, Clock, TrendingUp, Calendar, AlertCircle, BarChart3, Target } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import type { TaskWithRelations, List } from "@/types";
+import { useMemo } from 'react';
+import {
+  CheckCircle2,
+  Clock,
+  TrendingUp,
+  Calendar,
+  AlertCircle,
+  BarChart3,
+  Target,
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import type { TaskWithRelations, List } from '@/types';
 
 interface TaskStatsProps {
   tasks: TaskWithRelations[];
@@ -16,49 +24,66 @@ interface TaskStatsProps {
 export function TaskStats({ tasks, lists, completedTasks }: TaskStatsProps) {
   const stats = useMemo(() => {
     const total = tasks.length + (completedTasks?.length || 0);
-    const completed = tasks.filter((t) => t.completed).length;
+    const completed = tasks.filter(t => t.completed).length;
     const pending = total - completed;
-    const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+    const completionRate =
+      total > 0 ? Math.round((completed / total) * 100) : 0;
 
     // Tasks by priority (pending only)
-    const criticalPriority = tasks.filter((t) => t.priority === "critical" && !t.completed).length;
-    const highPriority = tasks.filter((t) => t.priority === "high" && !t.completed).length;
-    const mediumPriority = tasks.filter((t) => t.priority === "medium" && !t.completed).length;
-    const lowPriority = tasks.filter((t) => t.priority === "low" && !t.completed).length;
+    const criticalPriority = tasks.filter(
+      t => t.priority === 'critical' && !t.completed
+    ).length;
+    const highPriority = tasks.filter(
+      t => t.priority === 'high' && !t.completed
+    ).length;
+    const mediumPriority = tasks.filter(
+      t => t.priority === 'medium' && !t.completed
+    ).length;
+    const lowPriority = tasks.filter(
+      t => t.priority === 'low' && !t.completed
+    ).length;
 
     // Tasks by list (pending)
-    const tasksByList = lists.map((list) => ({
+    const tasksByList = lists.map(list => ({
       ...list,
-      count: tasks.filter((t) => t.list_id === list.id && !t.completed).length,
+      count: tasks.filter(t => t.list_id === list.id && !t.completed).length,
     }));
 
     // Overdue tasks
     const overdue = tasks.filter(
-      (t) => !t.completed && t.date && new Date(t.date) < new Date() && new Date(t.date) < new Date(new Date().setHours(23, 59, 59, 999))
+      t =>
+        !t.completed &&
+        t.date &&
+        new Date(t.date) < new Date() &&
+        new Date(t.date) < new Date(new Date().setHours(23, 59, 59, 999))
     ).length;
 
     // Due today
-    const today = new Date().toISOString().split("T")[0];
-    const dueToday = tasks.filter((t) => !t.completed && t.date === today).length;
+    const today = new Date().toISOString().split('T')[0];
+    const dueToday = tasks.filter(t => !t.completed && t.date === today).length;
 
     // Time tracking stats
     const totalTimeTracked = tasks.reduce((sum, t) => {
       if (!t.time_entries) return sum;
-      return sum + t.time_entries.reduce((s, e) => s + (e.duration_seconds || 0), 0);
+      return (
+        sum + t.time_entries.reduce((s, e) => s + (e.duration_seconds || 0), 0)
+      );
     }, 0);
 
     // Average time per completed task
-    const avgTimePerTask = completed > 0 ? Math.round(totalTimeTracked / completed / 60) : 0;
+    const avgTimePerTask =
+      completed > 0 ? Math.round(totalTimeTracked / completed / 60) : 0;
 
     // Week-over-week completion change
     const thisWeek = new Date();
     thisWeek.setHours(0, 0, 0, 0);
     const lastWeek = new Date(thisWeek.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const completedThisWeek = completedTasks?.filter(t => {
-      if (!t.completed_at) return false;
-      const d = new Date(t.completed_at);
-      return d >= lastWeek && d < thisWeek;
-    }).length || 0;
+    const completedThisWeek =
+      completedTasks?.filter(t => {
+        if (!t.completed_at) return false;
+        const d = new Date(t.completed_at);
+        return d >= lastWeek && d < thisWeek;
+      }).length || 0;
 
     return {
       total,
@@ -85,10 +110,12 @@ export function TaskStats({ tasks, lists, completedTasks }: TaskStatsProps) {
     const month = today.getMonth();
     const day = today.getDate();
 
-    return completedTasks.filter((task) => {
+    return completedTasks.filter(task => {
       if (!task.completed_at) return false;
       const completedDate = new Date(task.completed_at);
-      return completedDate.getMonth() === month && completedDate.getDate() === day;
+      return (
+        completedDate.getMonth() === month && completedDate.getDate() === day
+      );
     });
   }, [completedTasks]);
 
@@ -102,7 +129,9 @@ export function TaskStats({ tasks, lists, completedTasks }: TaskStatsProps) {
         {/* Completion Rate */}
         <Card className="border-0 shadow-none bg-background">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
-            <CardTitle className="text-xs font-medium">Completion Rate</CardTitle>
+            <CardTitle className="text-xs font-medium">
+              Completion Rate
+            </CardTitle>
             <Target className="h-3 w-3 text-muted-foreground" />
           </CardHeader>
           <CardContent className="pb-1">
@@ -133,7 +162,9 @@ export function TaskStats({ tasks, lists, completedTasks }: TaskStatsProps) {
             <AlertCircle className="h-3 w-3 text-red-600" />
           </CardHeader>
           <CardContent className="pb-1">
-            <div className="text-lg font-bold text-red-600">{stats.criticalPriority}</div>
+            <div className="text-lg font-bold text-red-600">
+              {stats.criticalPriority}
+            </div>
           </CardContent>
         </Card>
 
@@ -144,7 +175,9 @@ export function TaskStats({ tasks, lists, completedTasks }: TaskStatsProps) {
             <AlertCircle className="h-3 w-3 text-red-500" />
           </CardHeader>
           <CardContent className="pb-1">
-            <div className="text-lg font-bold text-red-500">{stats.highPriority}</div>
+            <div className="text-lg font-bold text-red-500">
+              {stats.highPriority}
+            </div>
           </CardContent>
         </Card>
 
@@ -166,9 +199,13 @@ export function TaskStats({ tasks, lists, completedTasks }: TaskStatsProps) {
             <BarChart3 className="h-3 w-3 text-muted-foreground" />
           </CardHeader>
           <CardContent className="pb-1">
-            <div className="text-lg font-bold">{Math.round(stats.totalTimeTracked / 60)}m</div>
+            <div className="text-lg font-bold">
+              {Math.round(stats.totalTimeTracked / 60)}m
+            </div>
             <p className="text-[10px] text-muted-foreground">
-              {stats.avgTimePerTask > 0 ? `${stats.avgTimePerTask}m avg/task` : 'no time tracked'}
+              {stats.avgTimePerTask > 0
+                ? `${stats.avgTimePerTask}m avg/task`
+                : 'no time tracked'}
             </p>
           </CardContent>
         </Card>
@@ -193,13 +230,15 @@ export function TaskStats({ tasks, lists, completedTasks }: TaskStatsProps) {
             On this day in history
           </p>
           <div className="flex gap-2 overflow-x-auto pb-1">
-            {onThisDayTasks.map((task) => (
+            {onThisDayTasks.map(task => (
               <span
                 key={task.id}
                 className="text-xs bg-muted px-2 py-1 rounded whitespace-nowrap"
                 title={task.name}
               >
-                {task.name.length > 20 ? task.name.substring(0, 20) + "..." : task.name}
+                {task.name.length > 20
+                  ? task.name.substring(0, 20) + '...'
+                  : task.name}
               </span>
             ))}
           </div>
