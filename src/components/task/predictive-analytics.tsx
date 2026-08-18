@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useMemo } from "react";
+import { useMemo } from 'react';
 import {
   Brain,
   Clock,
@@ -11,10 +11,16 @@ import {
   PieChart,
   Target,
   Lightbulb,
-} from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+} from 'lucide-react';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import {
   ResponsiveContainer,
   LineChart,
@@ -30,15 +36,15 @@ import {
   Legend,
   RadialBarChart,
   RadialBar,
-} from "recharts";
-import { format, addDays, startOfWeek, parseISO, subDays } from "date-fns";
-import type { TaskWithRelations } from "@/types";
+} from 'recharts';
+import { format, addDays, startOfWeek, parseISO, subDays } from 'date-fns';
+import type { TaskWithRelations } from '@/types';
 
 interface PredictiveAnalyticsProps {
   tasks: TaskWithRelations[];
 }
 
-const PREDICTION_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444"];
+const PREDICTION_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
 
 export function PredictiveAnalytics({ tasks }: PredictiveAnalyticsProps) {
   // Calculate completion predictions using historical data
@@ -50,53 +56,59 @@ export function PredictiveAnalytics({ tasks }: PredictiveAnalyticsProps) {
       const today = new Date();
       let confidence = 0.5;
       let predictedCompletion: Date | null = null;
-      let reasoning = "";
+      let reasoning = '';
 
       if (task.deadline) {
         const daysUntil = Math.ceil(
-          (new Date(task.deadline).getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+          (new Date(task.deadline).getTime() - today.getTime()) /
+            (1000 * 60 * 60 * 24)
         );
 
         if (daysUntil <= 0) {
           confidence = 0.9;
           predictedCompletion = new Date(task.deadline);
-          reasoning = "Overdue - high confidence of immediate action";
+          reasoning = 'Overdue - high confidence of immediate action';
         } else if (daysUntil <= 3) {
-          confidence = 0.8 - (daysUntil * 0.05);
+          confidence = 0.8 - daysUntil * 0.05;
           predictedCompletion = new Date(task.deadline);
           reasoning = `Due in ${daysUntil} ${daysUntil === 1 ? 'day' : 'days'} - confident completion`;
         } else if (daysUntil <= 7) {
-          confidence = 0.7 - (daysUntil * 0.02);
+          confidence = 0.7 - daysUntil * 0.02;
           predictedCompletion = addDays(today, Math.floor(daysUntil * 0.7));
-          reasoning = "Due this week - moderate confidence";
+          reasoning = 'Due this week - moderate confidence';
         } else {
           confidence = 0.5 + (daysUntil / 20) * 0.4;
           predictedCompletion = addDays(today, Math.floor(daysUntil / 2));
-          reasoning = "Long-term deadline - estimated completion";
+          reasoning = 'Long-term deadline - estimated completion';
         }
       } else if (task.date) {
         const taskDate = parseISO(task.date);
-        const daysUntil = Math.ceil((taskDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        const daysUntil = Math.ceil(
+          (taskDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+        );
 
         if (daysUntil >= -2 && daysUntil <= 7) {
           confidence = 0.6 + (7 - Math.abs(daysUntil)) * 0.03;
           predictedCompletion = taskDate;
-          reasoning = "Task scheduled soon";
+          reasoning = 'Task scheduled soon';
         } else {
           confidence = 0.4;
           predictedCompletion = addDays(today, 3);
-          reasoning = "Task scheduled in future";
+          reasoning = 'Task scheduled in future';
         }
       } else {
         confidence = 0.3;
         predictedCompletion = addDays(today, 7);
-        reasoning = "No deadline - estimated completion";
+        reasoning = 'No deadline - estimated completion';
       }
 
       // Adjust for priority
-      if (task.priority === "critical") confidence = Math.min(confidence + 0.15, 0.95);
-      else if (task.priority === "high") confidence = Math.min(confidence + 0.1, 0.9);
-      else if (task.priority === "low") confidence = Math.max(confidence - 0.15, 0.2);
+      if (task.priority === 'critical')
+        confidence = Math.min(confidence + 0.15, 0.95);
+      else if (task.priority === 'high')
+        confidence = Math.min(confidence + 0.1, 0.9);
+      else if (task.priority === 'low')
+        confidence = Math.max(confidence - 0.15, 0.2);
 
       return {
         task: task.name,
@@ -119,7 +131,9 @@ export function PredictiveAnalytics({ tasks }: PredictiveAnalyticsProps) {
       const deadline = t.deadline ? new Date(t.deadline) : null;
       const taskDate = date || deadline;
 
-      return taskDate && taskDate >= weekStart && taskDate <= addDays(weekStart, 7);
+      return (
+        taskDate && taskDate >= weekStart && taskDate <= addDays(weekStart, 7)
+      );
     });
 
     // Estimate hours per task (simple model)
@@ -134,7 +148,10 @@ export function PredictiveAnalytics({ tasks }: PredictiveAnalyticsProps) {
       return baseHours[task.priority] || 1;
     };
 
-    const totalEstimatedHours = tasksThisWeek.reduce((sum, t) => sum + estimateHours(t), 0);
+    const totalEstimatedHours = tasksThisWeek.reduce(
+      (sum, t) => sum + estimateHours(t),
+      0
+    );
     const availableHours = 40; // Standard work week
 
     return {
@@ -147,22 +164,21 @@ export function PredictiveAnalytics({ tasks }: PredictiveAnalyticsProps) {
 
   // Risk assessment
   const riskAssessment = useMemo(() => {
-    const overdue = tasks.filter(t =>
-      t.deadline &&
-      new Date(t.deadline) < new Date() &&
-      !t.completed
+    const overdue = tasks.filter(
+      t => t.deadline && new Date(t.deadline) < new Date() && !t.completed
     );
 
     const upcomingDeadlines = tasks.filter(t => {
       if (t.completed || t.deadline) return false;
       const daysUntil = Math.ceil(
-        (new Date(t.deadline!).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+        (new Date(t.deadline!).getTime() - new Date().getTime()) /
+          (1000 * 60 * 60 * 24)
       );
       return daysUntil > 0 && daysUntil <= 3;
     });
 
     const highPriorityIncomplete = tasks.filter(
-      t => !t.completed && (t.priority === "critical" || t.priority === "high")
+      t => !t.completed && (t.priority === 'critical' || t.priority === 'high')
     );
 
     return {
@@ -171,10 +187,10 @@ export function PredictiveAnalytics({ tasks }: PredictiveAnalyticsProps) {
       highPriorityCount: highPriorityIncomplete.length,
       riskLevel:
         overdue.length > 3
-          ? "high"
+          ? 'high'
           : overdue.length > 0 || highPriorityIncomplete.length > 5
-          ? "medium"
-          : "low",
+            ? 'medium'
+            : 'low',
     };
   }, [tasks]);
 
@@ -182,15 +198,15 @@ export function PredictiveAnalytics({ tasks }: PredictiveAnalyticsProps) {
   const completionTrends = useMemo(() => {
     const days = Array.from({ length: 7 }, (_, i) => {
       const date = subDays(new Date(), 6 - i);
-      const dateStr = format(date, "yyyy-MM-dd");
+      const dateStr = format(date, 'yyyy-MM-dd');
       const dayTasks = tasks.filter(
         t =>
           t.completed &&
           t.completed_at &&
-          format(parseISO(t.completed_at), "yyyy-MM-dd") === dateStr
+          format(parseISO(t.completed_at), 'yyyy-MM-dd') === dateStr
       );
       return {
-        day: format(date, "EEE"),
+        day: format(date, 'EEE'),
         count: dayTasks.length,
       };
     });
@@ -210,28 +226,50 @@ export function PredictiveAnalytics({ tasks }: PredictiveAnalyticsProps) {
     );
 
     return [
-      { name: "Critical", value: distribution.critical || 0, color: PREDICTION_COLORS[3] },
-      { name: "High", value: distribution.high || 0, color: PREDICTION_COLORS[0] },
-      { name: "Medium", value: distribution.medium || 0, color: PREDICTION_COLORS[1] },
-      { name: "Low", value: distribution.low || 0, color: PREDICTION_COLORS[2] },
+      {
+        name: 'Critical',
+        value: distribution.critical || 0,
+        color: PREDICTION_COLORS[3],
+      },
+      {
+        name: 'High',
+        value: distribution.high || 0,
+        color: PREDICTION_COLORS[0],
+      },
+      {
+        name: 'Medium',
+        value: distribution.medium || 0,
+        color: PREDICTION_COLORS[1],
+      },
+      {
+        name: 'Low',
+        value: distribution.low || 0,
+        color: PREDICTION_COLORS[2],
+      },
     ].filter(d => d.value > 0);
   }, [tasks]);
 
   // Get risk color
   const getRiskColor = (level: string) => {
     switch (level) {
-      case "high": return "text-red-600";
-      case "medium": return "text-yellow-600";
-      default: return "text-green-600";
+      case 'high':
+        return 'text-red-600';
+      case 'medium':
+        return 'text-yellow-600';
+      default:
+        return 'text-green-600';
     }
   };
 
   // Get risk background
   const getRiskBg = (level: string) => {
     switch (level) {
-      case "high": return "bg-red-500/10";
-      case "medium": return "bg-yellow-500/10";
-      default: return "bg-green-500/10";
+      case 'high':
+        return 'bg-red-500/10';
+      case 'medium':
+        return 'bg-yellow-500/10';
+      default:
+        return 'bg-green-500/10';
     }
   };
 
@@ -268,7 +306,9 @@ export function PredictiveAnalytics({ tasks }: PredictiveAnalyticsProps) {
             </div>
 
             <div className="text-center p-4 bg-muted/30 rounded-lg">
-              <div className={`flex items-center justify-center gap-2 mb-2 ${getRiskColor(riskAssessment.riskLevel)}`}>
+              <div
+                className={`flex items-center justify-center gap-2 mb-2 ${getRiskColor(riskAssessment.riskLevel)}`}
+              >
                 <TrendingUp className="h-5 w-5" />
                 <span className="text-2xl font-bold capitalize">
                   {riskAssessment.riskLevel}
@@ -305,17 +345,14 @@ export function PredictiveAnalytics({ tasks }: PredictiveAnalyticsProps) {
               </div>
             </div>
 
-            <Progress
-              value={capacityUtilization.utilization}
-              className="h-2"
-            />
+            <Progress value={capacityUtilization.utilization} className="h-2" />
 
             <div className="text-xs text-muted-foreground">
               {capacityUtilization.utilization > 100
-                ? "⚠️ Over allocated - consider deferring tasks"
+                ? '⚠️ Over allocated - consider deferring tasks'
                 : capacityUtilization.utilization < 50
-                ? "💡 Under allocated - time for new initiatives"
-                : "✅ Optimal workload"}
+                  ? '💡 Under allocated - time for new initiatives'
+                  : '✅ Optimal workload'}
             </div>
           </div>
         </CardContent>
@@ -336,19 +373,31 @@ export function PredictiveAnalytics({ tasks }: PredictiveAnalyticsProps) {
           {predictions.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <CheckCircle2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p className="text-sm">All tasks complete! No predictions needed.</p>
+              <p className="text-sm">
+                All tasks complete! No predictions needed.
+              </p>
             </div>
           ) : (
             <div className="space-y-3">
               {predictions
-                .sort((a, b) => (a.predictedCompletion ? new Date(a.predictedCompletion).getTime() : Infinity) -
-                  (b.predictedCompletion ? new Date(b.predictedCompletion).getTime() : Infinity))
+                .sort(
+                  (a, b) =>
+                    (a.predictedCompletion
+                      ? new Date(a.predictedCompletion).getTime()
+                      : Infinity) -
+                    (b.predictedCompletion
+                      ? new Date(b.predictedCompletion).getTime()
+                      : Infinity)
+                )
                 .map((pred, idx) => {
                   const task = tasks.find(t => t.name === pred.task);
                   if (!task) return null;
 
                   return (
-                    <div key={idx} className="border rounded-lg p-3 hover:shadow-sm">
+                    <div
+                      key={idx}
+                      className="border rounded-lg p-3 hover:shadow-sm"
+                    >
                       <div className="flex items-start justify-between mb-2">
                         <div>
                           <h4 className="font-medium">{pred.task}</h4>
@@ -358,15 +407,20 @@ export function PredictiveAnalytics({ tasks }: PredictiveAnalyticsProps) {
                         </div>
                         <div className="flex items-center gap-2">
                           <Badge
-                            variant={pred.priority === "critical" ? "default" :
-                              pred.priority === "high" ? "secondary" : "outline"}
+                            variant={
+                              pred.priority === 'critical'
+                                ? 'default'
+                                : pred.priority === 'high'
+                                  ? 'secondary'
+                                  : 'outline'
+                            }
                             className="text-xs"
                           >
                             {pred.priority}
                           </Badge>
                           <Badge
                             variant="outline"
-                            className={`text-xs ${getRiskColor(pred.priority === "critical" || pred.priority === "high" ? "text-red-600" : "text-blue-600")}`}
+                            className={`text-xs ${getRiskColor(pred.priority === 'critical' || pred.priority === 'high' ? 'text-red-600' : 'text-blue-600')}`}
                           >
                             Confidence: {Math.round(pred.confidence * 100)}%
                           </Badge>
@@ -375,7 +429,11 @@ export function PredictiveAnalytics({ tasks }: PredictiveAnalyticsProps) {
 
                       {pred.predictedCompletion && (
                         <div className="text-xs text-muted-foreground">
-                          Predicted: {format(new Date(pred.predictedCompletion), "MMM d, yyyy")}
+                          Predicted:{' '}
+                          {format(
+                            new Date(pred.predictedCompletion),
+                            'MMM d, yyyy'
+                          )}
                         </div>
                       )}
                     </div>
@@ -402,7 +460,11 @@ export function PredictiveAnalytics({ tasks }: PredictiveAnalyticsProps) {
                 <XAxis dataKey="day" />
                 <YAxis hide />
                 <Tooltip />
-                <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 4, 4]} />
+                <Bar
+                  dataKey="count"
+                  fill="hsl(var(--primary))"
+                  radius={[4, 4, 4, 4]}
+                />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -429,7 +491,9 @@ export function PredictiveAnalytics({ tasks }: PredictiveAnalyticsProps) {
                     innerRadius={40}
                     outerRadius={80}
                     labelLine={false}
-                    label={({ name, percent }) => `${name} ${percent ? (percent * 100).toFixed(0) : 0}%`}
+                    label={({ name, percent }) =>
+                      `${name} ${percent ? (percent * 100).toFixed(0) : 0}%`
+                    }
                   >
                     {priorityDistribution.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
@@ -460,8 +524,9 @@ export function PredictiveAnalytics({ tasks }: PredictiveAnalyticsProps) {
             {riskAssessment.overdueCount > 0 && (
               <div className="p-3 bg-red-500/10 rounded-lg">
                 <p className="text-sm text-red-800">
-                  <strong>Action needed:</strong> {riskAssessment.overdueCount} task(s) are overdue.
-                  Consider rescheduling or prioritizing these items.
+                  <strong>Action needed:</strong> {riskAssessment.overdueCount}{' '}
+                  task(s) are overdue. Consider rescheduling or prioritizing
+                  these items.
                 </p>
               </div>
             )}
@@ -470,8 +535,8 @@ export function PredictiveAnalytics({ tasks }: PredictiveAnalyticsProps) {
               <div className="p-3 bg-yellow-500/10 rounded-lg">
                 <p className="text-sm text-yellow-800">
                   <strong>Warning:</strong> Your workload is over-allocated by{' '}
-                  {Math.round(capacityUtilization.utilization - 100)}%.
-                  Consider deferring some tasks to next week.
+                  {Math.round(capacityUtilization.utilization - 100)}%. Consider
+                  deferring some tasks to next week.
                 </p>
               </div>
             )}
@@ -479,8 +544,9 @@ export function PredictiveAnalytics({ tasks }: PredictiveAnalyticsProps) {
             {riskAssessment.upcomingCount > 0 && (
               <div className="p-3 bg-blue-500/10 rounded-lg">
                 <p className="text-sm text-blue-800">
-                  <strong>Heads up:</strong> {riskAssessment.upcomingCount} task(s) have deadlines within 3 days.
-                  Plan your time accordingly.
+                  <strong>Heads up:</strong> {riskAssessment.upcomingCount}{' '}
+                  task(s) have deadlines within 3 days. Plan your time
+                  accordingly.
                 </p>
               </div>
             )}
