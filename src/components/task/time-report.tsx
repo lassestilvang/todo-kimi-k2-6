@@ -1,33 +1,53 @@
-"use client";
+'use client';
 
-import { useMemo } from "react";
-import { BarChart3, Clock, TrendingUp, CalendarDays, Tag } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import type { TaskWithRelations, TimeEntry } from "@/types";
-import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
+import { useMemo } from 'react';
+import { BarChart3, Clock, TrendingUp, CalendarDays, Tag } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+} from 'recharts';
+import type { TaskWithRelations, TimeEntry } from '@/types';
+import {
+  format,
+  startOfWeek,
+  endOfWeek,
+  startOfMonth,
+  endOfMonth,
+} from 'date-fns';
 
 interface TimeReportProps {
   tasks: TaskWithRelations[];
   timeEntries: TimeEntry[];
-  period?: "week" | "month" | "all";
+  period?: 'week' | 'month' | 'all';
 }
 
-export function TimeReport({ tasks, timeEntries, period = "week" }: TimeReportProps) {
+export function TimeReport({
+  tasks,
+  timeEntries,
+  period = 'week',
+}: TimeReportProps) {
   const filteredEntries = useMemo(() => {
     const now = new Date();
-    if (period === "week") {
+    if (period === 'week') {
       const start = startOfWeek(now);
       const end = endOfWeek(now);
       return timeEntries.filter(
-        (e) => new Date(e.start_time) >= start && new Date(e.start_time) <= end
+        e => new Date(e.start_time) >= start && new Date(e.start_time) <= end
       );
     }
-    if (period === "month") {
+    if (period === 'month') {
       const start = startOfMonth(now);
       const end = endOfMonth(now);
       return timeEntries.filter(
-        (e) => new Date(e.start_time) >= start && new Date(e.start_time) <= end
+        e => new Date(e.start_time) >= start && new Date(e.start_time) <= end
       );
     }
     return timeEntries;
@@ -37,10 +57,13 @@ export function TimeReport({ tasks, timeEntries, period = "week" }: TimeReportPr
   const timeByTask = useMemo(() => {
     const taskMap = new Map<number, { name: string; totalSeconds: number }>();
 
-    filteredEntries.forEach((entry) => {
-      const task = tasks.find((t) => t.id === entry.task_id);
+    filteredEntries.forEach(entry => {
+      const task = tasks.find(t => t.id === entry.task_id);
       if (task) {
-        const existing = taskMap.get(entry.task_id) || { name: task.name, totalSeconds: 0 };
+        const existing = taskMap.get(entry.task_id) || {
+          name: task.name,
+          totalSeconds: 0,
+        };
         existing.totalSeconds += entry.duration_seconds || 0;
         taskMap.set(entry.task_id, existing);
       }
@@ -57,31 +80,38 @@ export function TimeReport({ tasks, timeEntries, period = "week" }: TimeReportPr
   const timeByPriority = useMemo(() => {
     const priorityMap = new Map<string, number>();
 
-    filteredEntries.forEach((entry) => {
-      const task = tasks.find((t) => t.id === entry.task_id);
+    filteredEntries.forEach(entry => {
+      const task = tasks.find(t => t.id === entry.task_id);
       if (task) {
-        priorityMap.set(task.priority, (priorityMap.get(task.priority) || 0) + (entry.duration_seconds || 0));
+        priorityMap.set(
+          task.priority,
+          (priorityMap.get(task.priority) || 0) + (entry.duration_seconds || 0)
+        );
       }
     });
 
     return Array.from(priorityMap.entries()).map(([priority, seconds]) => ({
       name: priority.charAt(0).toUpperCase() + priority.slice(1),
       value: Math.round(seconds / 60),
-      color: {
-        critical: "#ef4444",
-        high: "#f97316",
-        medium: "#eab308",
-        low: "#3b82f6",
-        none: "#6b7280",
-      }[priority] || "#6b7280",
+      color:
+        {
+          critical: '#ef4444',
+          high: '#f97316',
+          medium: '#eab308',
+          low: '#3b82f6',
+          none: '#6b7280',
+        }[priority] || '#6b7280',
     }));
   }, [filteredEntries, tasks]);
 
   // Calculate totals
   const totals = useMemo(() => {
-    const totalMinutes = filteredEntries.reduce((sum, e) => sum + (e.duration_seconds || 0) / 60, 0);
+    const totalMinutes = filteredEntries.reduce(
+      (sum, e) => sum + (e.duration_seconds || 0) / 60,
+      0
+    );
     const totalEntries = filteredEntries.length;
-    const uniqueTasks = new Set(filteredEntries.map((e) => e.task_id)).size;
+    const uniqueTasks = new Set(filteredEntries.map(e => e.task_id)).size;
 
     return {
       totalMinutes: Math.round(totalMinutes),
@@ -91,9 +121,9 @@ export function TimeReport({ tasks, timeEntries, period = "week" }: TimeReportPr
   }, [filteredEntries]);
 
   const periodLabels = {
-    week: "This Week",
-    month: "This Month",
-    all: "All Time",
+    week: 'This Week',
+    month: 'This Month',
+    all: 'All Time',
   };
 
   return (
@@ -138,7 +168,8 @@ export function TimeReport({ tasks, timeEntries, period = "week" }: TimeReportPr
           <CardContent>
             <p className="text-sm font-medium">{periodLabels[period]}</p>
             <p className="text-xs text-muted-foreground">
-              {format(new Date(), "MMM d")} - {format(new Date(), "MMM d, yyyy")}
+              {format(new Date(), 'MMM d')} -{' '}
+              {format(new Date(), 'MMM d, yyyy')}
             </p>
           </CardContent>
         </Card>
@@ -158,8 +189,12 @@ export function TimeReport({ tasks, timeEntries, period = "week" }: TimeReportPr
               <BarChart data={timeByTask.slice(0, 5)} layout="vertical">
                 <XAxis type="number" hide />
                 <YAxis dataKey="name" type="category" hide />
-                <Tooltip formatter={(value) => `${value}m`} />
-                <Bar dataKey="value" fill="hsl(var(--primary))" radius={[4, 4, 4, 4]} />
+                <Tooltip formatter={value => `${value}m`} />
+                <Bar
+                  dataKey="value"
+                  fill="hsl(var(--primary))"
+                  radius={[4, 4, 4, 4]}
+                />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -191,7 +226,7 @@ export function TimeReport({ tasks, timeEntries, period = "week" }: TimeReportPr
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value) => `${value}m`} />
+                <Tooltip formatter={value => `${value}m`} />
               </PieChart>
             </ResponsiveContainer>
           </CardContent>
@@ -202,12 +237,17 @@ export function TimeReport({ tasks, timeEntries, period = "week" }: TimeReportPr
       {timeByTask.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm font-medium">Top Tasks by Time</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Top Tasks by Time
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {timeByTask.slice(0, 5).map((task) => (
-                <div key={task.id} className="flex items-center justify-between text-sm">
+              {timeByTask.slice(0, 5).map(task => (
+                <div
+                  key={task.id}
+                  className="flex items-center justify-between text-sm"
+                >
                   <span className="truncate">{task.name}</span>
                   <span className="font-medium">{task.value}m</span>
                 </div>
