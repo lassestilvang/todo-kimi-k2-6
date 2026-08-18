@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { useState } from 'react';
+import { motion } from 'framer-motion';
 import {
   Brain,
   Clock,
@@ -11,19 +11,24 @@ import {
   Activity,
   BarChart3,
   CheckCircle,
-} from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
+} from '@/components/ui/select';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 
 interface TaskDNA {
   taskId: number;
@@ -50,25 +55,25 @@ interface TaskDNAViewProps {
 
 export function TaskDNAView({ task, dna, isLoading }: TaskDNAViewProps) {
   const getColorForLevel = (level: number) => {
-    if (level >= 0.8) return "text-green-600";
-    if (level >= 0.5) return "text-amber-600";
-    return "text-red-600";
+    if (level >= 0.8) return 'text-green-600';
+    if (level >= 0.5) return 'text-amber-600';
+    return 'text-red-600';
   };
 
   const getTagColor = (tag: string) => {
     const colors: Record<string, string> = {
-      complex: "bg-purple-100 text-purple-800",
-      simple: "bg-blue-100 text-blue-800",
-      high_cognitive: "bg-red-100 text-red-800",
-      low_cognitive: "bg-green-100 text-green-800",
-      long_session: "bg-orange-100 text-orange-800",
-      short_session: "bg-cyan-100 text-cyan-800",
-      urgent: "bg-red-100 text-red-800",
-      not_urgent: "bg-gray-100 text-gray-800",
-      has_dependencies: "bg-yellow-100 text-yellow-800",
-      independent: "bg-green-100 text-green-800"
+      complex: 'bg-purple-100 text-purple-800',
+      simple: 'bg-blue-100 text-blue-800',
+      high_cognitive: 'bg-red-100 text-red-800',
+      low_cognitive: 'bg-green-100 text-green-800',
+      long_session: 'bg-orange-100 text-orange-800',
+      short_session: 'bg-cyan-100 text-cyan-800',
+      urgent: 'bg-red-100 text-red-800',
+      not_urgent: 'bg-gray-100 text-gray-800',
+      has_dependencies: 'bg-yellow-100 text-yellow-800',
+      independent: 'bg-green-100 text-green-800',
     };
-    return colors[tag] || "bg-gray-100 text-gray-800";
+    return colors[tag] || 'bg-gray-100 text-gray-800';
   };
 
   if (isLoading) {
@@ -116,9 +121,15 @@ export function TaskDNAView({ task, dna, isLoading }: TaskDNAViewProps) {
             <div className="flex items-center justify-between">
               <h3 className="font-medium">{task.name}</h3>
               <Badge
-                variant={task.priority === "critical" ? "destructive" :
-                  task.priority === "high" ? "default" :
-                  task.priority === "medium" ? "secondary" : "outline"}
+                variant={
+                  task.priority === 'critical'
+                    ? 'destructive'
+                    : task.priority === 'high'
+                      ? 'default'
+                      : task.priority === 'medium'
+                        ? 'secondary'
+                        : 'outline'
+                }
               >
                 {task.priority}
               </Badge>
@@ -132,7 +143,9 @@ export function TaskDNAView({ task, dna, isLoading }: TaskDNAViewProps) {
                   <TooltipTrigger>
                     <div className="space-y-1">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-muted-foreground">Complexity</span>
+                        <span className="text-xs text-muted-foreground">
+                          Complexity
+                        </span>
                         <span className={getColorForLevel(dna.complexity)}>
                           {(dna.complexity * 100).toFixed(0)}%
                         </span>
@@ -141,7 +154,9 @@ export function TaskDNAView({ task, dna, isLoading }: TaskDNAViewProps) {
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Based on dependencies, description length, and features</p>
+                    <p>
+                      Based on dependencies, description length, and features
+                    </p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -152,12 +167,17 @@ export function TaskDNAView({ task, dna, isLoading }: TaskDNAViewProps) {
                   <TooltipTrigger>
                     <div className="space-y-1">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-muted-foreground">Cognitive Load</span>
+                        <span className="text-xs text-muted-foreground">
+                          Cognitive Load
+                        </span>
                         <span className={getColorForLevel(dna.cognitiveLoad)}>
                           {(dna.cognitiveLoad * 100).toFixed(0)}%
                         </span>
                       </div>
-                      <Progress value={dna.cognitiveLoad * 100} className="h-2" />
+                      <Progress
+                        value={dna.cognitiveLoad * 100}
+                        className="h-2"
+                      />
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -172,15 +192,20 @@ export function TaskDNAView({ task, dna, isLoading }: TaskDNAViewProps) {
                   <TooltipTrigger>
                     <div className="space-y-1">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-muted-foreground">Est. Time</span>
+                        <span className="text-xs text-muted-foreground">
+                          Est. Time
+                        </span>
                         <span className="font-medium">
-                          {Math.round(dna.estimatedTime / 60)}h {dna.estimatedTime % 60}m
+                          {Math.round(dna.estimatedTime / 60)}h{' '}
+                          {dna.estimatedTime % 60}m
                         </span>
                       </div>
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Estimated duration based on task complexity and history</p>
+                    <p>
+                      Estimated duration based on task complexity and history
+                    </p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -191,11 +216,18 @@ export function TaskDNAView({ task, dna, isLoading }: TaskDNAViewProps) {
                   <TooltipTrigger>
                     <div className="space-y-1">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-muted-foreground">Persona Match</span>
-                        <span className={cn(
-                          dna.personaMatch >= 80 ? "text-green-600" :
-                          dna.personaMatch >= 60 ? "text-amber-600" : "text-red-600"
-                        )}>
+                        <span className="text-xs text-muted-foreground">
+                          Persona Match
+                        </span>
+                        <span
+                          className={cn(
+                            dna.personaMatch >= 80
+                              ? 'text-green-600'
+                              : dna.personaMatch >= 60
+                                ? 'text-amber-600'
+                                : 'text-red-600'
+                          )}
+                        >
                           {dna.personaMatch}%
                         </span>
                       </div>
@@ -211,11 +243,13 @@ export function TaskDNAView({ task, dna, isLoading }: TaskDNAViewProps) {
 
             {/* Tags */}
             <div>
-              <span className="text-xs text-muted-foreground mb-2 block">DNA Tags</span>
+              <span className="text-xs text-muted-foreground mb-2 block">
+                DNA Tags
+              </span>
               <div className="flex flex-wrap gap-2">
-                {dna.dnaTags.map((tag) => (
+                {dna.dnaTags.map(tag => (
                   <Badge key={tag} className={getTagColor(tag)}>
-                    {tag.replace("_", " ")}
+                    {tag.replace('_', ' ')}
                   </Badge>
                 ))}
               </div>
@@ -248,15 +282,17 @@ interface PersonaMatchDashboardProps {
 }
 
 export function PersonaMatchDashboard({ tasks }: PersonaMatchDashboardProps) {
-  const [sortBy, setSortBy] = useState<"match" | "complexity" | "time">("match");
+  const [sortBy, setSortBy] = useState<'match' | 'complexity' | 'time'>(
+    'match'
+  );
 
   const sortedTasks = [...tasks].sort((a, b) => {
     switch (sortBy) {
-      case "complexity":
+      case 'complexity':
         return b.dna.complexity - a.dna.complexity;
-      case "time":
+      case 'time':
         return a.dna.estimatedTime - b.dna.estimatedTime;
-      case "match":
+      case 'match':
       default:
         return b.dna.personaMatch - a.dna.personaMatch;
     }
@@ -295,7 +331,9 @@ export function PersonaMatchDashboard({ tasks }: PersonaMatchDashboardProps) {
               <div className="space-y-1">
                 <div className="font-medium">{task.name}</div>
                 <div className="text-xs text-muted-foreground flex gap-3">
-                  <span>Complexity: {(task.dna.complexity * 100).toFixed(0)}%</span>
+                  <span>
+                    Complexity: {(task.dna.complexity * 100).toFixed(0)}%
+                  </span>
                   <span>Time: ~{Math.round(task.dna.estimatedTime / 60)}h</span>
                 </div>
               </div>
