@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useState, useRef, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   CheckCircle2,
   Clock,
@@ -19,27 +19,38 @@ import {
   ArchiveRestore,
   ThumbsUp,
   ThumbsDown,
-} from "lucide-react";
-import { AIStatusIndicator } from "@/components/task/ai-status-indicator";
-import { format, parseISO } from "date-fns";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Switch } from "@/components/ui/switch";
-import { Label as UiLabel } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { TaskPreview } from "@/components/task/task-preview";
-import { BulkActionsMenu } from "@/components/task/bulk-actions-menu";
-import { useVirtualizer } from "@tanstack/react-virtual";
-import { useTaskMutations } from "@/hooks/use-task-mutations";
-import type { TaskWithRelations, List, SortField, SortDirection, Label, Priority } from "@/types";
-import { updateTask, deleteTask } from "@/lib/actions";
-import { toast } from "sonner";
-import { calculateTaskHealth } from "@/lib/task-health";
-import { useTaskVotes } from "@/hooks/use-task-votes";
-import { VoteIndicator } from "@/components/task/vote-indicator";
+} from 'lucide-react';
+import { AIStatusIndicator } from '@/components/task/ai-status-indicator';
+import { format, parseISO } from 'date-fns';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
+import { Label as UiLabel } from '@/components/ui/label';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { TaskPreview } from '@/components/task/task-preview';
+import { BulkActionsMenu } from '@/components/task/bulk-actions-menu';
+import { useVirtualizer } from '@tanstack/react-virtual';
+import { useTaskMutations } from '@/hooks/use-task-mutations';
+import type {
+  TaskWithRelations,
+  List,
+  SortField,
+  SortDirection,
+  Label,
+  Priority,
+} from '@/types';
+import { updateTask, deleteTask } from '@/lib/actions';
+import { toast } from 'sonner';
+import { calculateTaskHealth } from '@/lib/task-health';
+import { useTaskVotes } from '@/hooks/use-task-votes';
+import { VoteIndicator } from '@/components/task/vote-indicator';
 
 interface TaskListProps {
   tasks: TaskWithRelations[];
@@ -61,11 +72,11 @@ interface TaskListProps {
 }
 
 const priorityConfig = {
-  critical: { color: "text-red-600", bg: "bg-red-600/10", label: "Critical" },
-  high: { color: "text-red-500", bg: "bg-red-500/10", label: "High" },
-  medium: { color: "text-amber-500", bg: "bg-amber-500/10", label: "Medium" },
-  low: { color: "text-blue-500", bg: "bg-blue-500/10", label: "Low" },
-  none: { color: "text-muted-foreground", bg: "bg-muted", label: "" },
+  critical: { color: 'text-red-600', bg: 'bg-red-600/10', label: 'Critical' },
+  high: { color: 'text-red-500', bg: 'bg-red-500/10', label: 'High' },
+  medium: { color: 'text-amber-500', bg: 'bg-amber-500/10', label: 'Medium' },
+  low: { color: 'text-blue-500', bg: 'bg-blue-500/10', label: 'Low' },
+  none: { color: 'text-muted-foreground', bg: 'bg-muted', label: '' },
 };
 
 export function TaskList({
@@ -75,8 +86,8 @@ export function TaskList({
   viewTitle,
   onRefresh,
   onEditTask,
-  sortBy = "date",
-  sortDirection = "asc",
+  sortBy = 'date',
+  sortDirection = 'asc',
   onSort,
   filterListId,
   filterLabelIds = [],
@@ -88,7 +99,9 @@ export function TaskList({
 }: TaskListProps) {
   const [showCompleted, setShowCompleted] = useState(false);
   const [expandedTasks, setExpandedTasks] = useState<Set<number>>(new Set());
-  const [previewTask, setPreviewTask] = useState<TaskWithRelations | null>(null);
+  const [previewTask, setPreviewTask] = useState<TaskWithRelations | null>(
+    null
+  );
   const [previewPosition, setPreviewPosition] = useState({ x: 0, y: 0 });
   const [selectedTasks, setSelectedTasks] = useState<Set<number>>(new Set());
   const [isSelectMode, setIsSelectMode] = useState(false);
@@ -100,9 +113,7 @@ export function TaskList({
 
   // Virtual scrolling for large task lists
   const parentRef = useRef<HTMLDivElement>(null);
-  const visibleTasks = showCompleted
-    ? tasks
-    : tasks.filter((t) => !t.completed);
+  const visibleTasks = showCompleted ? tasks : tasks.filter(t => !t.completed);
 
   const rowVirtualizer = useVirtualizer({
     count: visibleTasks.length,
@@ -112,10 +123,13 @@ export function TaskList({
   });
 
   const getSortIndicator = (field: SortField) => {
-    if (sortBy !== field) return <ArrowUpDown className="h-3.5 w-3.5 opacity-30" />;
-    return sortDirection === "asc"
-      ? <ChevronDown className="h-3.5 w-3.5" />
-      : <ChevronDown className="h-3.5 w-3.5 rotate-180" />;
+    if (sortBy !== field)
+      return <ArrowUpDown className="h-3.5 w-3.5 opacity-30" />;
+    return sortDirection === 'asc' ? (
+      <ChevronDown className="h-3.5 w-3.5" />
+    ) : (
+      <ChevronDown className="h-3.5 w-3.5 rotate-180" />
+    );
   };
 
   const renderSortButton = (field: SortField, label: string) => (
@@ -130,7 +144,7 @@ export function TaskList({
   );
 
   const toggleExpanded = (taskId: number) => {
-    setExpandedTasks((prev) => {
+    setExpandedTasks(prev => {
       const next = new Set(prev);
       if (next.has(taskId)) {
         next.delete(taskId);
@@ -141,143 +155,183 @@ export function TaskList({
     });
   };
 
-  const handleToggleComplete = useCallback(async (task: TaskWithRelations) => {
-    await updateTask(task.id, { completed: !task.completed });
-    onRefresh();
-  }, [onRefresh]);
-
-  const handleArchive = useCallback(async (task: TaskWithRelations) => {
-    await archiveTask(task.id);
-    onRefresh();
-  }, [archiveTask, onRefresh]);
-
-  const handleUnarchive = useCallback(async (task: TaskWithRelations) => {
-    await unarchiveTask(task.id);
-    onRefresh();
-  }, [unarchiveTask, onRefresh]);
-
-  const handleDelete = useCallback(async (task: TaskWithRelations) => {
-    // Store task for potential undo
-    const taskToDelete = { ...task };
-
-    // Actually delete first
-    try {
-      await deleteTask(task.id);
+  const handleToggleComplete = useCallback(
+    async (task: TaskWithRelations) => {
+      await updateTask(task.id, { completed: !task.completed });
       onRefresh();
-    } catch {
-      toast.error("Failed to delete task");
-      return;
-    }
+    },
+    [onRefresh]
+  );
 
-    // Show toast with undo
-    toast.success("Task deleted", {
-      action: {
-        label: "Undo",
-        onClick: async () => {
-          try {
-            const restoreData = {
-              name: taskToDelete.name,
-              priority: taskToDelete.priority,
-              ...(taskToDelete.description && { description: taskToDelete.description }),
-              ...(taskToDelete.notes && { notes: taskToDelete.notes }),
-              ...(taskToDelete.list_id && { list_id: taskToDelete.list_id }),
-              ...(taskToDelete.date && { date: taskToDelete.date }),
-              ...(taskToDelete.deadline && { deadline: taskToDelete.deadline }),
-              ...(taskToDelete.recurring_config && { recurring_config: taskToDelete.recurring_config }),
-              ...(taskToDelete.recurring && { recurring: taskToDelete.recurring }),
-            };
+  const handleArchive = useCallback(
+    async (task: TaskWithRelations) => {
+      await archiveTask(task.id);
+      onRefresh();
+    },
+    [archiveTask, onRefresh]
+  );
 
-            await (await import("@/lib/actions")).createTask(restoreData);
-            onRefresh();
-            toast.success("Task restored");
-          } catch {
-            toast.error("Failed to restore task");
-          }
+  const handleUnarchive = useCallback(
+    async (task: TaskWithRelations) => {
+      await unarchiveTask(task.id);
+      onRefresh();
+    },
+    [unarchiveTask, onRefresh]
+  );
+
+  const handleDelete = useCallback(
+    async (task: TaskWithRelations) => {
+      // Store task for potential undo
+      const taskToDelete = { ...task };
+
+      // Actually delete first
+      try {
+        await deleteTask(task.id);
+        onRefresh();
+      } catch {
+        toast.error('Failed to delete task');
+        return;
+      }
+
+      // Show toast with undo
+      toast.success('Task deleted', {
+        action: {
+          label: 'Undo',
+          onClick: async () => {
+            try {
+              const restoreData = {
+                name: taskToDelete.name,
+                priority: taskToDelete.priority,
+                ...(taskToDelete.description && {
+                  description: taskToDelete.description,
+                }),
+                ...(taskToDelete.notes && { notes: taskToDelete.notes }),
+                ...(taskToDelete.list_id && { list_id: taskToDelete.list_id }),
+                ...(taskToDelete.date && { date: taskToDelete.date }),
+                ...(taskToDelete.deadline && {
+                  deadline: taskToDelete.deadline,
+                }),
+                ...(taskToDelete.recurring_config && {
+                  recurring_config: taskToDelete.recurring_config,
+                }),
+                ...(taskToDelete.recurring && {
+                  recurring: taskToDelete.recurring,
+                }),
+              };
+
+              await (await import('@/lib/actions')).createTask(restoreData);
+              onRefresh();
+              toast.success('Task restored');
+            } catch {
+              toast.error('Failed to restore task');
+            }
+          },
         },
-      },
-    });
-  }, [onRefresh]);
+      });
+    },
+    [onRefresh]
+  );
 
   const getListColor = (listId: number | null) => {
-    const list = lists.find((l) => l.id === listId);
-    return list?.color || "#6366f1";
+    const list = lists.find(l => l.id === listId);
+    return list?.color || '#6366f1';
   };
 
   const getListName = (listId: number | null) => {
-    const list = lists.find((l) => l.id === listId);
-    return list?.name || "Inbox";
+    const list = lists.find(l => l.id === listId);
+    return list?.name || 'Inbox';
   };
 
   const getListEmoji = (listId: number | null) => {
-    const list = lists.find((l) => l.id === listId);
-    return list?.emoji || "📥";
+    const list = lists.find(l => l.id === listId);
+    return list?.emoji || '📥';
   };
 
   // Keyboard navigation
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (isSelectMode || !containerRef.current) return;
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (isSelectMode || !containerRef.current) return;
 
-    const taskElements = containerRef.current.querySelectorAll("[data-task-id]");
-    const taskArray = Array.from(taskElements);
+      const taskElements =
+        containerRef.current.querySelectorAll('[data-task-id]');
+      const taskArray = Array.from(taskElements);
 
-    switch (e.key) {
-      case "ArrowDown":
-        e.preventDefault();
-        setFocusedIndex((prev) => {
-          const next = prev === null ? 0 : Math.min(prev + 1, taskArray.length - 1);
-          return next;
-        });
-        break;
-      case "ArrowUp":
-        e.preventDefault();
-        setFocusedIndex((prev) => {
-          const next = prev === null ? taskArray.length - 1 : Math.max(prev - 1, 0);
-          return next;
-        });
-        break;
-      case "Enter":
-      case " ":
-        if (focusedIndex !== null && focusedIndex < taskArray.length) {
+      switch (e.key) {
+        case 'ArrowDown':
           e.preventDefault();
-          const taskId = Number(taskArray[focusedIndex].getAttribute("data-task-id"));
-          const task = visibleTasks.find((t) => t.id === taskId);
-          if (task) onEditTask(task);
-        }
-        break;
-      case "a":
-      case "A":
-        if (e.ctrlKey || e.metaKey) {
+          setFocusedIndex(prev => {
+            const next =
+              prev === null ? 0 : Math.min(prev + 1, taskArray.length - 1);
+            return next;
+          });
+          break;
+        case 'ArrowUp':
           e.preventDefault();
-          // Archive focused task
+          setFocusedIndex(prev => {
+            const next =
+              prev === null ? taskArray.length - 1 : Math.max(prev - 1, 0);
+            return next;
+          });
+          break;
+        case 'Enter':
+        case ' ':
           if (focusedIndex !== null && focusedIndex < taskArray.length) {
-            const taskId = Number(taskArray[focusedIndex].getAttribute("data-task-id"));
-            const task = visibleTasks.find((t) => t.id === taskId);
-            if (task && !task.archived) {
-              handleArchive(task);
-            } else if (task && task.archived) {
-              handleUnarchive(task);
+            e.preventDefault();
+            const taskId = Number(
+              taskArray[focusedIndex].getAttribute('data-task-id')
+            );
+            const task = visibleTasks.find(t => t.id === taskId);
+            if (task) onEditTask(task);
+          }
+          break;
+        case 'a':
+        case 'A':
+          if (e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+            // Archive focused task
+            if (focusedIndex !== null && focusedIndex < taskArray.length) {
+              const taskId = Number(
+                taskArray[focusedIndex].getAttribute('data-task-id')
+              );
+              const task = visibleTasks.find(t => t.id === taskId);
+              if (task && !task.archived) {
+                handleArchive(task);
+              } else if (task && task.archived) {
+                handleUnarchive(task);
+              }
             }
           }
-        }
-        break;
-      case "Delete":
-      case "Backspace":
-        if (focusedIndex !== null && focusedIndex < taskArray.length) {
-          e.preventDefault();
-          const taskId = Number(taskArray[focusedIndex].getAttribute("data-task-id"));
-          const task = visibleTasks.find((t) => t.id === taskId);
-          if (task) handleDelete(task);
-        }
-        break;
-    }
-  }, [focusedIndex, visibleTasks, isSelectMode, onEditTask, handleArchive, handleUnarchive, handleDelete]);
+          break;
+        case 'Delete':
+        case 'Backspace':
+          if (focusedIndex !== null && focusedIndex < taskArray.length) {
+            e.preventDefault();
+            const taskId = Number(
+              taskArray[focusedIndex].getAttribute('data-task-id')
+            );
+            const task = visibleTasks.find(t => t.id === taskId);
+            if (task) handleDelete(task);
+          }
+          break;
+      }
+    },
+    [
+      focusedIndex,
+      visibleTasks,
+      isSelectMode,
+      onEditTask,
+      handleArchive,
+      handleUnarchive,
+      handleDelete,
+    ]
+  );
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    container.addEventListener("keydown", handleKeyDown);
-    return () => container.removeEventListener("keydown", handleKeyDown);
+    container.addEventListener('keydown', handleKeyDown);
+    return () => container.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown]);
 
   return (
@@ -299,7 +353,7 @@ export function TaskList({
                 size="sm"
                 className="h-7"
                 onClick={() => {
-                  const allIds = new Set(visibleTasks.map((t) => t.id));
+                  const allIds = new Set(visibleTasks.map(t => t.id));
                   setSelectedTasks(allIds);
                 }}
               >
@@ -312,22 +366,22 @@ export function TaskList({
             </>
           )}
           <div className="flex items-center gap-1">
-            {renderSortButton("date", "Date")}
-            {renderSortButton("priority", "Priority")}
-            {renderSortButton("name", "Name")}
+            {renderSortButton('date', 'Date')}
+            {renderSortButton('priority', 'Priority')}
+            {renderSortButton('name', 'Name')}
           </div>
           {/* Filter Popover */}
           <Popover open={isFilterOpen} onOpenChange={setIsFilterOpen}>
             <PopoverTrigger>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7"
-              >
+              <Button variant="outline" size="sm" className="h-7">
                 <Filter className="h-3.5 w-3.5 mr-1" />
                 Filter
-                <kbd className="ml-1 hidden sm:inline text-xs text-muted-foreground/60">⌘+f</kbd>
-                {(filterListId || filterLabelIds.length > 0 || filterPriority) && (
+                <kbd className="ml-1 hidden sm:inline text-xs text-muted-foreground/60">
+                  ⌘+f
+                </kbd>
+                {(filterListId ||
+                  filterLabelIds.length > 0 ||
+                  filterPriority) && (
                   <span className="ml-1 h-2 w-2 bg-primary rounded-full" />
                 )}
               </Button>
@@ -339,8 +393,8 @@ export function TaskList({
                   <div className="mt-1 space-y-1 max-h-40 overflow-y-auto">
                     <button
                       className={cn(
-                        "text-sm w-full text-left px-2 py-1 rounded hover:bg-muted",
-                        !filterListId && "bg-muted"
+                        'text-sm w-full text-left px-2 py-1 rounded hover:bg-muted',
+                        !filterListId && 'bg-muted'
                       )}
                       onClick={() => {
                         onFilterList?.(undefined);
@@ -348,12 +402,12 @@ export function TaskList({
                     >
                       All Lists
                     </button>
-                    {lists.map((list) => (
+                    {lists.map(list => (
                       <button
                         key={list.id}
                         className={cn(
-                          "text-sm w-full text-left px-2 py-1 rounded hover:bg-muted flex items-center gap-2",
-                          filterListId === list.id && "bg-muted"
+                          'text-sm w-full text-left px-2 py-1 rounded hover:bg-muted flex items-center gap-2',
+                          filterListId === list.id && 'bg-muted'
                         )}
                         onClick={() => {
                           onFilterList?.(list.id);
@@ -369,14 +423,14 @@ export function TaskList({
                   <div>
                     <UiLabel className="text-sm font-medium">Labels</UiLabel>
                     <div className="mt-1 flex flex-wrap gap-1 max-h-40 overflow-y-auto">
-                      {labels.map((label) => {
+                      {labels.map(label => {
                         const isSelected = filterLabelIds.includes(label.id);
                         return (
                           <button
                             key={label.id}
                             className={cn(
-                              "text-xs px-2 py-1 rounded border flex items-center gap-1",
-                              isSelected ? "ring-2 ring-primary" : "opacity-60"
+                              'text-xs px-2 py-1 rounded border flex items-center gap-1',
+                              isSelected ? 'ring-2 ring-primary' : 'opacity-60'
                             )}
                             onClick={() => onFilterLabel?.(label.id)}
                           >
@@ -393,19 +447,19 @@ export function TaskList({
                   <div className="mt-1 space-y-1">
                     <button
                       className={cn(
-                        "text-sm w-full text-left px-2 py-1 rounded hover:bg-muted",
-                        !filterPriority && "bg-muted"
+                        'text-sm w-full text-left px-2 py-1 rounded hover:bg-muted',
+                        !filterPriority && 'bg-muted'
                       )}
                       onClick={() => onFilterPriority?.(undefined)}
                     >
                       All Priorities
                     </button>
-                    {(["critical", "high", "medium", "low"] as const).map((p) => (
+                    {(['critical', 'high', 'medium', 'low'] as const).map(p => (
                       <button
                         key={p}
                         className={cn(
-                          "text-sm w-full text-left px-2 py-1 rounded hover:bg-muted",
-                          filterPriority === p && "bg-muted"
+                          'text-sm w-full text-left px-2 py-1 rounded hover:bg-muted',
+                          filterPriority === p && 'bg-muted'
                         )}
                         onClick={() => onFilterPriority?.(p)}
                       >
@@ -414,7 +468,9 @@ export function TaskList({
                     ))}
                   </div>
                 </div>
-                {(filterListId || filterLabelIds.length > 0 || filterPriority) && (
+                {(filterListId ||
+                  filterLabelIds.length > 0 ||
+                  filterPriority) && (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -432,7 +488,7 @@ export function TaskList({
           </Popover>
           <div className="flex items-center gap-2">
             <Button
-              variant={isSelectMode ? "default" : "ghost"}
+              variant={isSelectMode ? 'default' : 'ghost'}
               size="sm"
               className="h-7"
               onClick={() => setIsSelectMode(!isSelectMode)}
@@ -443,7 +499,9 @@ export function TaskList({
                 <Square className="h-3.5 w-3.5 mr-1" />
               )}
               Select
-              <kbd className="ml-1 text-xs text-muted-foreground/60 hidden sm:inline">S</kbd>
+              <kbd className="ml-1 text-xs text-muted-foreground/60 hidden sm:inline">
+                S
+              </kbd>
             </Button>
             <Switch
               id="show-completed"
@@ -452,7 +510,9 @@ export function TaskList({
             />
             <UiLabel htmlFor="show-completed" className="text-sm">
               Show completed
-              <kbd className="ml-1 text-xs text-muted-foreground/60 hidden sm:inline">C</kbd>
+              <kbd className="ml-1 text-xs text-muted-foreground/60 hidden sm:inline">
+                C
+              </kbd>
             </UiLabel>
           </div>
         </div>
@@ -470,7 +530,8 @@ export function TaskList({
               className="mb-4 rounded-lg bg-primary/10 border p-3 flex items-center justify-between"
             >
               <span className="text-sm font-medium">
-                {selectedTasks.size} task{selectedTasks.size > 1 ? "s" : ""} selected
+                {selectedTasks.size} task{selectedTasks.size > 1 ? 's' : ''}{' '}
+                selected
               </span>
               <div className="flex gap-2">
                 <BulkActionsMenu
@@ -494,12 +555,12 @@ export function TaskList({
             className="space-y-2"
             style={{
               height: rowVirtualizer.getTotalSize(),
-              width: "100%",
-              overflow: "hidden",
+              width: '100%',
+              overflow: 'hidden',
             }}
           >
             <AnimatePresence mode="popLayout">
-              {rowVirtualizer.getVirtualItems().map((virtualItem) => {
+              {rowVirtualizer.getVirtualItems().map(virtualItem => {
                 const task = visibleTasks[virtualItem.index];
                 const isExpanded = expandedTasks.has(task.id);
                 const isSelected = selectedTasks.has(task.id);
@@ -513,23 +574,24 @@ export function TaskList({
                     exit={{ opacity: 0, scale: 0.95 }}
                     transition={{ duration: 0.2 }}
                     className={cn(
-                      "group rounded-lg border bg-card transition-all hover:shadow-sm cursor-pointer",
-                      task.completed && "opacity-60",
-                      isSelected && "ring-2 ring-primary",
-                      task.archived && "opacity-40",
-                      focusedIndex === virtualItem.index && "ring-2 ring-primary ring-offset-2"
+                      'group rounded-lg border bg-card transition-all hover:shadow-sm cursor-pointer',
+                      task.completed && 'opacity-60',
+                      isSelected && 'ring-2 ring-primary',
+                      task.archived && 'opacity-40',
+                      focusedIndex === virtualItem.index &&
+                        'ring-2 ring-primary ring-offset-2'
                     )}
                     data-task-id={task.id}
                     style={{
-                      position: "absolute",
+                      position: 'absolute',
                       top: 0,
                       left: 0,
-                      width: "100%",
+                      width: '100%',
                       transform: `translateY(${virtualItem.start}px)`,
                     }}
                     onClick={() => {
                       if (isSelectMode) {
-                        setSelectedTasks((prev) => {
+                        setSelectedTasks(prev => {
                           const next = new Set(prev);
                           if (next.has(task.id)) {
                             next.delete(task.id);
@@ -542,7 +604,7 @@ export function TaskList({
                         onEditTask(task);
                       }
                     }}
-                    onMouseEnter={(e) => {
+                    onMouseEnter={e => {
                       if (!isSelectMode) {
                         const rect = e.currentTarget.getBoundingClientRect();
                         setPreviewTask(task);
@@ -560,29 +622,29 @@ export function TaskList({
                         {isSelectMode ? (
                           <Checkbox
                             checked={isSelected}
-                            onCheckedChange={(checked) => {
+                            onCheckedChange={checked => {
                               if (checked) {
-                                setSelectedTasks((prev) => {
+                                setSelectedTasks(prev => {
                                   const next = new Set(prev);
                                   next.add(task.id);
                                   return next;
                                 });
                               } else {
-                                setSelectedTasks((prev) => {
+                                setSelectedTasks(prev => {
                                   const next = new Set(prev);
                                   next.delete(task.id);
                                   return next;
                                 });
                               }
                             }}
-                            onClick={(e) => e.stopPropagation()}
+                            onClick={e => e.stopPropagation()}
                           />
                         ) : (
                           <Checkbox
                             checked={task.completed}
                             onCheckedChange={() => handleToggleComplete(task)}
                             aria-label={`Mark "${task.name}" as ${task.completed ? 'incomplete' : 'complete'}`}
-                            onClick={(e) => e.stopPropagation()}
+                            onClick={e => e.stopPropagation()}
                           />
                         )}
                       </div>
@@ -591,8 +653,9 @@ export function TaskList({
                         <div className="flex items-center gap-2">
                           <span
                             className={cn(
-                              "font-medium",
-                              task.completed && "line-through text-muted-foreground"
+                              'font-medium',
+                              task.completed &&
+                                'line-through text-muted-foreground'
                             )}
                           >
                             {task.name}
@@ -602,12 +665,15 @@ export function TaskList({
                           {!task.completed && (
                             <div
                               className={cn(
-                                "inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[10px]",
+                                'inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[10px]',
                                 (() => {
-                                  const { totalScore } = calculateTaskHealth(task);
-                                  if (totalScore >= 70) return "bg-green-100 text-green-700";
-                                  if (totalScore >= 40) return "bg-amber-100 text-amber-700";
-                                  return "bg-red-100 text-red-700";
+                                  const { totalScore } =
+                                    calculateTaskHealth(task);
+                                  if (totalScore >= 70)
+                                    return 'bg-green-100 text-green-700';
+                                  if (totalScore >= 40)
+                                    return 'bg-amber-100 text-amber-700';
+                                  return 'bg-red-100 text-red-700';
                                 })()
                               )}
                               title={`Health Score: ${calculateTaskHealth(task).totalScore}%`}
@@ -616,11 +682,13 @@ export function TaskList({
                             </div>
                           )}
 
-                          {task.priority !== "none" && (
+                          {task.priority !== 'none' && (
                             <Badge
                               variant="outline"
                               className="text-[10px] h-5"
-                              style={{ color: priorityConfig[task.priority].color }}
+                              style={{
+                                color: priorityConfig[task.priority].color,
+                              }}
                             >
                               {priorityConfig[task.priority].label}
                             </Badge>
@@ -656,7 +724,7 @@ export function TaskList({
                             variant="outline"
                             className="text-[10px] h-5 gap-1"
                             style={{
-                              borderColor: getListColor(task.list_id) + "40",
+                              borderColor: getListColor(task.list_id) + '40',
                             }}
                           >
                             <span>{getListEmoji(task.list_id)}</span>
@@ -666,25 +734,25 @@ export function TaskList({
                           {task.date && (
                             <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground">
                               <Calendar className="h-2.5 w-2.5" />
-                              {format(parseISO(task.date), "MMM d")}
+                              {format(parseISO(task.date), 'MMM d')}
                             </span>
                           )}
 
                           {task.deadline && (
                             <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground">
                               <Clock className="h-2.5 w-2.5" />
-                              {format(parseISO(task.deadline), "HH:mm")}
+                              {format(parseISO(task.deadline), 'HH:mm')}
                             </span>
                           )}
 
-                          {task.recurring !== "none" && (
+                          {task.recurring !== 'none' && (
                             <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground">
                               <Repeat className="h-2.5 w-2.5" />
                               {task.recurring}
                             </span>
                           )}
 
-                          {task.labels.map((label) => (
+                          {task.labels.map(label => (
                             <span
                               key={label.id}
                               className="inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[10px] text-white"
@@ -697,7 +765,10 @@ export function TaskList({
                           ))}
 
                           {task.attachments && task.attachments.length > 0 && (
-                            <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground" aria-label={`${task.attachments.length} attachment(s)`}>
+                            <span
+                              className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground"
+                              aria-label={`${task.attachments.length} attachment(s)`}
+                            >
                               <Paperclip className="h-2.5 w-2.5" />
                               {task.attachments.length}
                             </span>
@@ -705,7 +776,7 @@ export function TaskList({
 
                           {task.subtasks.length > 0 && (
                             <button
-                              onClick={(e) => {
+                              onClick={e => {
                                 e.stopPropagation();
                                 toggleExpanded(task.id);
                               }}
@@ -716,7 +787,7 @@ export function TaskList({
                               ) : (
                                 <ChevronRight className="h-3 w-3" />
                               )}
-                              {task.subtasks.filter((s) => s.completed).length}/
+                              {task.subtasks.filter(s => s.completed).length}/
                               {task.subtasks.length}
                             </button>
                           )}
@@ -729,7 +800,7 @@ export function TaskList({
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={(e) => {
+                            onClick={e => {
                               e.stopPropagation();
                               handleArchive(task);
                             }}
@@ -744,7 +815,7 @@ export function TaskList({
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={(e) => {
+                            onClick={e => {
                               e.stopPropagation();
                               handleUnarchive(task);
                             }}
@@ -758,7 +829,7 @@ export function TaskList({
                           variant="ghost"
                           size="icon"
                           className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={(e) => {
+                          onClick={e => {
                             e.stopPropagation();
                             handleDelete(task);
                           }}
