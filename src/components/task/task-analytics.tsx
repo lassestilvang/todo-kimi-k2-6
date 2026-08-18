@@ -1,14 +1,47 @@
-"use client";
+'use client';
 
-import { useMemo, useState, useEffect } from "react";
-import { format, subDays, startOfDay, endOfDay, isWithinInterval, parseISO } from "date-fns";
-import { BarChart3, TrendingUp, Clock, Target, PieChart, Activity, Award, Calendar, List, Tag, Flame, Lightbulb, RefreshCw } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Pie, Cell, LineChart, Line } from "recharts";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import type { TaskWithRelations } from "@/types";
+import { useMemo, useState, useEffect } from 'react';
+import {
+  format,
+  subDays,
+  startOfDay,
+  endOfDay,
+  isWithinInterval,
+  parseISO,
+} from 'date-fns';
+import {
+  BarChart3,
+  TrendingUp,
+  Clock,
+  Target,
+  PieChart,
+  Activity,
+  Award,
+  Calendar,
+  List,
+  Tag,
+  Flame,
+  Lightbulb,
+  RefreshCw,
+} from 'lucide-react';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Pie,
+  Cell,
+  LineChart,
+  Line,
+} from 'recharts';
+import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import type { TaskWithRelations } from '@/types';
 
 interface TaskAnalyticsProps {
   tasks: TaskWithRelations[];
@@ -16,23 +49,29 @@ interface TaskAnalyticsProps {
 }
 
 export function TaskAnalytics({ tasks, completedTasks }: TaskAnalyticsProps) {
-  const { insights: aiInsights, isFetching: isFetchingInsights, refetch: refetchInsights } = useAIInsights(tasks, completedTasks || []);
+  const {
+    insights: aiInsights,
+    isFetching: isFetchingInsights,
+    refetch: refetchInsights,
+  } = useAIInsights(tasks, completedTasks || []);
   const chartData = useMemo(() => {
     const now = new Date();
     const last7Days = Array.from({ length: 7 }, (_, i) => {
       const date = subDays(now, 6 - i);
       return {
-        date: format(date, "EEE"),
-        fullDate: format(date, "MMM d"),
+        date: format(date, 'EEE'),
+        fullDate: format(date, 'MMM d'),
         count: 0,
       };
     });
 
     // Count completions per day
-    completedTasks?.forEach((task) => {
+    completedTasks?.forEach(task => {
       if (!task.completed_at) return;
       const completedDate = new Date(task.completed_at);
-      const dayIndex = last7Days.findIndex((d) => d.fullDate === format(completedDate, "MMM d"));
+      const dayIndex = last7Days.findIndex(
+        d => d.fullDate === format(completedDate, 'MMM d')
+      );
       if (dayIndex >= 0 && dayIndex < last7Days.length) {
         last7Days[dayIndex].count++;
       }
@@ -43,61 +82,95 @@ export function TaskAnalytics({ tasks, completedTasks }: TaskAnalyticsProps) {
 
   const priorityData = useMemo(() => {
     return [
-      { name: "Critical", value: tasks.filter(t => t.priority === "critical" && !t.completed).length, color: "#dc2626" },
-      { name: "High", value: tasks.filter(t => t.priority === "high" && !t.completed).length, color: "#ea580c" },
-      { name: "Medium", value: tasks.filter(t => t.priority === "medium" && !t.completed).length, color: "#ca8a04" },
-      { name: "Low", value: tasks.filter(t => t.priority === "low" && !t.completed).length, color: "#2563eb" },
+      {
+        name: 'Critical',
+        value: tasks.filter(t => t.priority === 'critical' && !t.completed)
+          .length,
+        color: '#dc2626',
+      },
+      {
+        name: 'High',
+        value: tasks.filter(t => t.priority === 'high' && !t.completed).length,
+        color: '#ea580c',
+      },
+      {
+        name: 'Medium',
+        value: tasks.filter(t => t.priority === 'medium' && !t.completed)
+          .length,
+        color: '#ca8a04',
+      },
+      {
+        name: 'Low',
+        value: tasks.filter(t => t.priority === 'low' && !t.completed).length,
+        color: '#2563eb',
+      },
     ];
   }, [tasks]);
 
   const totalTimeTracked = tasks.reduce((sum, t) => {
     if (!t.time_entries) return sum;
-    return sum + t.time_entries.reduce((s, e) => s + (e.duration_seconds || 0), 0);
+    return (
+      sum + t.time_entries.reduce((s, e) => s + (e.duration_seconds || 0), 0)
+    );
   }, 0);
 
   const totalTasks = tasks.length + (completedTasks?.length ?? 0);
-  const completionRate = totalTasks > 0 ? ((completedTasks?.length ?? 0) / totalTasks) * 100 : 0;
+  const completionRate =
+    totalTasks > 0 ? ((completedTasks?.length ?? 0) / totalTasks) * 100 : 0;
 
   // Calculate productivity score (0-100)
   const productivityScore = useMemo(() => {
     const completionScore = completionRate;
-    const priorityScore = 100 - (tasks.filter(t => t.priority === "critical" && !t.completed).length * 10);
+    const priorityScore =
+      100 -
+      tasks.filter(t => t.priority === 'critical' && !t.completed).length * 10;
     const timeScore = Math.min(totalTimeTracked / 3600, 1) * 100; // Normalize to 1 hour
-    return Math.round((completionScore + Math.max(0, priorityScore) + timeScore) / 3);
+    return Math.round(
+      (completionScore + Math.max(0, priorityScore) + timeScore) / 3
+    );
   }, [completionRate, tasks, totalTimeTracked]);
 
   // List distribution
   const listDistribution = useMemo(() => {
-    const byList = tasks.reduce((acc, t) => {
-      const listId = t.list_id || 0;
-      acc[listId] = (acc[listId] || 0) + 1;
-      return acc;
-    }, {} as Record<number, number>);
-    return Object.entries(byList).map(([id, count]) => ({ id: Number(id), count }));
+    const byList = tasks.reduce(
+      (acc, t) => {
+        const listId = t.list_id || 0;
+        acc[listId] = (acc[listId] || 0) + 1;
+        return acc;
+      },
+      {} as Record<number, number>
+    );
+    return Object.entries(byList).map(([id, count]) => ({
+      id: Number(id),
+      count,
+    }));
   }, [tasks]);
 
   // Label usage
   const labelUsage = useMemo(() => {
-    const labelCounts = tasks.reduce((acc, t) => {
-      t.labels?.forEach(l => {
-        acc[l.name] = (acc[l.name] || 0) + 1;
-      });
-      return acc;
-    }, {} as Record<string, number>);
+    const labelCounts = tasks.reduce(
+      (acc, t) => {
+        t.labels?.forEach(l => {
+          acc[l.name] = (acc[l.name] || 0) + 1;
+        });
+        return acc;
+      },
+      {} as Record<string, number>
+    );
     return Object.entries(labelCounts)
       .map(([name, count]) => ({ name, count }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
   }, [tasks]);
 
-  const COLORS = ["#dc2626", "#ea580c", "#ca8a04", "#2563eb"];
+  const COLORS = ['#dc2626', '#ea580c', '#ca8a04', '#2563eb'];
 
   // Calculate streak (consecutive days with completed tasks)
   const streak = useMemo(() => {
     const completedByDay: Record<string, number> = {};
-    completedTasks?.forEach((task) => {
+    completedTasks?.forEach(task => {
       if (task.completed_at) {
-        const day = format(new Date(task.completed_at), "yyyy-MM-dd");
+        const day = format(new Date(task.completed_at), 'yyyy-MM-dd');
         completedByDay[day] = (completedByDay[day] || 0) + 1;
       }
     });
@@ -105,7 +178,7 @@ export function TaskAnalytics({ tasks, completedTasks }: TaskAnalyticsProps) {
     let currentStreak = 0;
     const today = new Date();
     for (let i = 0; i < 30; i++) {
-      const day = format(subDays(today, i), "yyyy-MM-dd");
+      const day = format(subDays(today, i), 'yyyy-MM-dd');
       if (completedByDay[day] > 0) {
         currentStreak++;
       } else {
@@ -125,16 +198,22 @@ export function TaskAnalytics({ tasks, completedTasks }: TaskAnalyticsProps) {
 
       const weekTasks = tasks.filter(t => {
         const taskDate = t.date ? new Date(t.date) : null;
-        return taskDate && isWithinInterval(taskDate, { start: weekStart, end: weekEnd });
+        return (
+          taskDate &&
+          isWithinInterval(taskDate, { start: weekStart, end: weekEnd })
+        );
       });
 
       const completed = weekTasks.filter(t => t.completed).length;
 
       return {
-        name: format(week, "MMM d"),
+        name: format(week, 'MMM d'),
         completed: completed,
         total: weekTasks.length,
-        rate: weekTasks.length > 0 ? Math.round((completed / weekTasks.length) * 100) : 0,
+        rate:
+          weekTasks.length > 0
+            ? Math.round((completed / weekTasks.length) * 100)
+            : 0,
       };
     });
   }, [tasks]);
@@ -144,16 +223,24 @@ export function TaskAnalytics({ tasks, completedTasks }: TaskAnalyticsProps) {
     const tips: string[] = [];
 
     if (completionRate < 50) {
-      tips.push("Focus on completing high-priority tasks first to improve your completion rate.");
+      tips.push(
+        'Focus on completing high-priority tasks first to improve your completion rate.'
+      );
     }
 
-    const criticalCount = tasks.filter(t => t.priority === "critical" && !t.completed).length;
+    const criticalCount = tasks.filter(
+      t => t.priority === 'critical' && !t.completed
+    ).length;
     if (criticalCount > 3) {
-      tips.push(`You have ${criticalCount} critical tasks pending. Consider breaking them into smaller steps.`);
+      tips.push(
+        `You have ${criticalCount} critical tasks pending. Consider breaking them into smaller steps.`
+      );
     }
 
     if (totalTimeTracked < 3600 && tasks.length > 10) {
-      tips.push("Start tracking time on your tasks to improve productivity awareness.");
+      tips.push(
+        'Start tracking time on your tasks to improve productivity awareness.'
+      );
     }
 
     return tips;
@@ -178,15 +265,21 @@ export function TaskAnalytics({ tasks, completedTasks }: TaskAnalyticsProps) {
           <p className="text-xs text-muted-foreground">Active Tasks</p>
         </Card>
         <Card className="p-3 text-center">
-          <div className="text-2xl font-bold">{completedTasks?.length ?? 0}</div>
+          <div className="text-2xl font-bold">
+            {completedTasks?.length ?? 0}
+          </div>
           <p className="text-xs text-muted-foreground">Completed</p>
         </Card>
         <Card className="p-3 text-center">
-          <div className="text-2xl font-bold">{Math.round(totalTimeTracked / 60)}m</div>
+          <div className="text-2xl font-bold">
+            {Math.round(totalTimeTracked / 60)}m
+          </div>
           <p className="text-xs text-muted-foreground">Time Tracked</p>
         </Card>
         <Card className="p-3 text-center">
-          <div className="text-2xl font-bold">{tasks.filter(t => !t.completed && t.deadline).length}</div>
+          <div className="text-2xl font-bold">
+            {tasks.filter(t => !t.completed && t.deadline).length}
+          </div>
           <p className="text-xs text-muted-foreground">With Deadlines</p>
         </Card>
         <Card className="p-3 text-center">
@@ -215,7 +308,11 @@ export function TaskAnalytics({ tasks, completedTasks }: TaskAnalyticsProps) {
               <XAxis dataKey="date" tickSize={8} />
               <YAxis allowDecimals={false} />
               <Tooltip />
-              <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+              <Bar
+                dataKey="count"
+                fill="hsl(var(--primary))"
+                radius={[4, 4, 0, 0]}
+              />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -237,7 +334,10 @@ export function TaskAnalytics({ tasks, completedTasks }: TaskAnalyticsProps) {
                 dataKey="value"
               >
                 {priorityData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={COLORS[index % COLORS.length]}
+                  />
                 ))}
               </Pie>
               <Tooltip />
@@ -253,9 +353,12 @@ export function TaskAnalytics({ tasks, completedTasks }: TaskAnalyticsProps) {
           </h4>
           <div className="bg-muted/30 rounded-lg p-4 text-center h-[150px] flex flex-col justify-center">
             <div className="text-3xl font-bold">
-              {Math.round(totalTimeTracked / 60)}<span className="text-sm font-normal">m</span>
+              {Math.round(totalTimeTracked / 60)}
+              <span className="text-sm font-normal">m</span>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Total time tracked</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Total time tracked
+            </p>
           </div>
         </div>
 
@@ -270,7 +373,7 @@ export function TaskAnalytics({ tasks, completedTasks }: TaskAnalyticsProps) {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
               <YAxis domain={[0, 100]} />
-              <Tooltip formatter={(value) => `${value}%`} />
+              <Tooltip formatter={value => `${value}%`} />
               <Line
                 type="monotone"
                 dataKey="rate"
@@ -292,8 +395,13 @@ export function TaskAnalytics({ tasks, completedTasks }: TaskAnalyticsProps) {
           </h4>
           <div className="space-y-2">
             {productivityTips.map((tip, i) => (
-              <div key={i} className="p-2 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
-                <p className="text-sm text-blue-700 dark:text-blue-300">{tip}</p>
+              <div
+                key={i}
+                className="p-2 bg-blue-50 dark:bg-blue-950/20 rounded-lg"
+              >
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  {tip}
+                </p>
               </div>
             ))}
           </div>
@@ -307,7 +415,9 @@ export function TaskAnalytics({ tasks, completedTasks }: TaskAnalyticsProps) {
             <Target className="h-4 w-4" />
             <span className="text-sm font-medium">Overall Completion</span>
           </div>
-          <span className="text-2xl font-bold">{Math.round(completionRate)}%</span>
+          <span className="text-2xl font-bold">
+            {Math.round(completionRate)}%
+          </span>
         </div>
         <div className="h-2 w-full bg-muted rounded-full overflow-hidden mt-2">
           <div
@@ -327,9 +437,9 @@ export function TaskAnalytics({ tasks, completedTasks }: TaskAnalyticsProps) {
               Tasks by List
             </h4>
             <div className="space-y-1">
-              {listDistribution.map((item) => (
+              {listDistribution.map(item => (
                 <div key={item.id} className="flex justify-between text-sm">
-                  <span>{item.id ? "List " + item.id : "Unassigned"}</span>
+                  <span>{item.id ? 'List ' + item.id : 'Unassigned'}</span>
                   <span className="font-medium">{item.count}</span>
                 </div>
               ))}
@@ -345,7 +455,7 @@ export function TaskAnalytics({ tasks, completedTasks }: TaskAnalyticsProps) {
               Popular Labels
             </h4>
             <div className="space-y-1">
-              {labelUsage.map((item) => (
+              {labelUsage.map(item => (
                 <div key={item.name} className="flex justify-between text-sm">
                   <span>{item.name}</span>
                   <Badge variant="secondary">{item.count}</Badge>
@@ -364,18 +474,22 @@ export function TaskAnalytics({ tasks, completedTasks }: TaskAnalyticsProps) {
           <div className="space-y-1">
             {tasks
               .filter(t => !t.completed && t.deadline)
-              .sort((a, b) => (a.deadline || "").localeCompare(b.deadline || ""))
+              .sort((a, b) =>
+                (a.deadline || '').localeCompare(b.deadline || '')
+              )
               .slice(0, 3)
-              .map((task) => (
+              .map(task => (
                 <div key={task.id} className="text-sm">
                   <span className="font-medium">{task.name}</span>
                   <div className="text-xs text-muted-foreground">
-                    {task.deadline && format(parseISO(task.deadline), "MMM d")}
+                    {task.deadline && format(parseISO(task.deadline), 'MMM d')}
                   </div>
                 </div>
               ))}
             {!tasks.some(t => !t.completed && t.deadline) && (
-              <p className="text-xs text-muted-foreground">No upcoming deadlines</p>
+              <p className="text-xs text-muted-foreground">
+                No upcoming deadlines
+              </p>
             )}
           </div>
         </div>
@@ -392,18 +506,26 @@ export function TaskAnalytics({ tasks, completedTasks }: TaskAnalyticsProps) {
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <span className="text-muted-foreground">Total Time</span>
-                <div className="font-bold">{Math.round(totalTimeTracked / 60)}m</div>
+                <div className="font-bold">
+                  {Math.round(totalTimeTracked / 60)}m
+                </div>
               </div>
               <div>
                 <span className="text-muted-foreground">Avg/Task</span>
                 <div className="font-bold">
-                  {tasks.length > 0 ? Math.round(totalTimeTracked / tasks.length / 60) : 0}m
+                  {tasks.length > 0
+                    ? Math.round(totalTimeTracked / tasks.length / 60)
+                    : 0}
+                  m
                 </div>
               </div>
               <div>
                 <span className="text-muted-foreground">Best Day</span>
                 <div className="font-bold">
-                  {chartData.reduce((max, d) => d.count > max.count ? d : max, { date: "", count: 0 }).date || "N/A"}
+                  {chartData.reduce(
+                    (max, d) => (d.count > max.count ? d : max),
+                    { date: '', count: 0 }
+                  ).date || 'N/A'}
                 </div>
               </div>
               <div>
@@ -423,15 +545,17 @@ export function TaskAnalytics({ tasks, completedTasks }: TaskAnalyticsProps) {
           <div className="bg-muted/30 rounded-lg p-4 text-center">
             <div className="text-4xl font-bold text-orange-500">{streak}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              {streak > 0 ? `${streak} day${streak > 1 ? "s" : ""} streak!` : "Start your streak today"}
+              {streak > 0
+                ? `${streak} day${streak > 1 ? 's' : ''} streak!`
+                : 'Start your streak today'}
             </p>
             <div className="flex justify-center gap-1 mt-2">
               {Array.from({ length: 7 }).map((_, i) => (
                 <div
                   key={i}
                   className={cn(
-                    "w-2 h-2 rounded-full",
-                    i < streak ? "bg-orange-500" : "bg-muted"
+                    'w-2 h-2 rounded-full',
+                    i < streak ? 'bg-orange-500' : 'bg-muted'
                   )}
                 />
               ))}
@@ -442,7 +566,10 @@ export function TaskAnalytics({ tasks, completedTasks }: TaskAnalyticsProps) {
 
       {/* Productivity Heatmap */}
       <div className="mt-4 pt-4 border-t">
-        <ProductivityHeatmap tasks={tasks} completedTasks={completedTasks || []} />
+        <ProductivityHeatmap
+          tasks={tasks}
+          completedTasks={completedTasks || []}
+        />
       </div>
 
       {/* AI-Powered Insights */}
@@ -458,18 +585,31 @@ export function TaskAnalytics({ tasks, completedTasks }: TaskAnalyticsProps) {
             onClick={() => refetchInsights && refetchInsights()}
             disabled={isFetchingInsights}
           >
-            <RefreshCw className={cn("h-3.5 w-3.5", isFetchingInsights && "animate-spin")} />
+            <RefreshCw
+              className={cn(
+                'h-3.5 w-3.5',
+                isFetchingInsights && 'animate-spin'
+              )}
+            />
           </Button>
         </div>
         <div className="space-y-2">
           {aiInsights.tips.map((tip, i) => (
-            <div key={`tip-${i}`} className="p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
+            <div
+              key={`tip-${i}`}
+              className="p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg"
+            >
               <p className="text-sm text-blue-700 dark:text-blue-300">{tip}</p>
             </div>
           ))}
           {aiInsights.suggestions.map((suggestion, i) => (
-            <div key={`sug-${i}`} className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg">
-              <p className="text-sm text-amber-700 dark:text-amber-300">{suggestion}</p>
+            <div
+              key={`sug-${i}`}
+              className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg"
+            >
+              <p className="text-sm text-amber-700 dark:text-amber-300">
+                {suggestion}
+              </p>
             </div>
           ))}
           {aiInsights.trends.map((trend, i) => (
@@ -484,7 +624,10 @@ export function TaskAnalytics({ tasks, completedTasks }: TaskAnalyticsProps) {
 }
 
 // AI Insights hook
-function useAIInsights(tasks: TaskWithRelations[], _completedTasks: TaskWithRelations[]) {
+function useAIInsights(
+  tasks: TaskWithRelations[],
+  _completedTasks: TaskWithRelations[]
+) {
   const [insights, setInsights] = useState<{
     tips: string[];
     suggestions: string[];
@@ -495,11 +638,11 @@ function useAIInsights(tasks: TaskWithRelations[], _completedTasks: TaskWithRela
   const fetchInsights = async () => {
     setIsFetching(true);
     try {
-      const result = await fetch("/api/ai", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const result = await fetch('/api/ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          type: "insights",
+          type: 'insights',
           input: {
             tasks: tasks.map(t => ({
               name: t.name,
@@ -518,7 +661,7 @@ function useAIInsights(tasks: TaskWithRelations[], _completedTasks: TaskWithRela
         trends: data.trends || [],
       });
     } catch (error) {
-      console.error("Failed to fetch insights:", error);
+      console.error('Failed to fetch insights:', error);
     } finally {
       setIsFetching(false);
     }
@@ -534,17 +677,23 @@ function useAIInsights(tasks: TaskWithRelations[], _completedTasks: TaskWithRela
 }
 
 // Productivity Heatmap Component
-function ProductivityHeatmap({ tasks, completedTasks }: { tasks: TaskWithRelations[], completedTasks: TaskWithRelations[] }) {
+function ProductivityHeatmap({
+  tasks,
+  completedTasks,
+}: {
+  tasks: TaskWithRelations[];
+  completedTasks: TaskWithRelations[];
+}) {
   const heatmapData = useMemo(() => {
     const last30Days = Array.from({ length: 30 }, (_, i) => {
       const date = subDays(new Date(), 29 - i);
-      return format(date, "yyyy-MM-dd");
+      return format(date, 'yyyy-MM-dd');
     });
 
     const completionByDay: Record<string, number> = {};
     completedTasks.forEach(task => {
       if (task.completed_at) {
-        const day = format(new Date(task.completed_at), "yyyy-MM-dd");
+        const day = format(new Date(task.completed_at), 'yyyy-MM-dd');
         completionByDay[day] = (completionByDay[day] || 0) + 1;
       }
     });
@@ -556,20 +705,22 @@ function ProductivityHeatmap({ tasks, completedTasks }: { tasks: TaskWithRelatio
   }, [tasks, completedTasks]);
 
   const getColor = (count: number) => {
-    if (count === 0) return "bg-muted/30";
-    if (count === 1) return "bg-green-200";
-    if (count <= 3) return "bg-green-400";
-    return "bg-green-600";
+    if (count === 0) return 'bg-muted/30';
+    if (count === 1) return 'bg-green-200';
+    if (count <= 3) return 'bg-green-400';
+    return 'bg-green-600';
   };
 
   return (
     <div className="space-y-2">
-      <h4 className="text-sm font-medium">Productivity Heatmap (Last 30 Days)</h4>
+      <h4 className="text-sm font-medium">
+        Productivity Heatmap (Last 30 Days)
+      </h4>
       <div className="grid grid-cols-10 gap-1">
-        {heatmapData.map((day) => (
+        {heatmapData.map(day => (
           <div
             key={day.date}
-            className={cn("h-6 rounded-sm", getColor(day.count))}
+            className={cn('h-6 rounded-sm', getColor(day.count))}
             title={`${day.date}: ${day.count} completed`}
           />
         ))}
