@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { Calendar, Clock } from "lucide-react";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+import { Calendar, Clock } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 
 interface TaskScheduleProps {
   task: {
@@ -15,9 +15,9 @@ interface TaskScheduleProps {
 }
 
 export function TaskSchedule({ task }: TaskScheduleProps) {
-  const date = task.date || "";
-  const deadline = task.deadline || "";
-  const estimate = task.estimate || "";
+  const date = task.date || '';
+  const deadline = task.deadline || '';
+  const estimate = task.estimate || '';
 
   return (
     <div className="space-y-4">
@@ -27,37 +27,25 @@ export function TaskSchedule({ task }: TaskScheduleProps) {
             <Calendar className="h-3.5 w-3.5" />
             Date
           </Label>
-          <Input
-            type="date"
-            value={date}
-          />
+          <Input type="date" value={date} />
         </div>
         <div className="space-y-2">
           <Label className="flex items-center gap-1.5">
             <Clock className="h-3.5 w-3.5" />
             Deadline
           </Label>
-          <Input
-            type="datetime-local"
-            value={deadline}
-          />
+          <Input type="datetime-local" value={deadline} />
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Estimate (HH:mm)</Label>
-          <Input
-            type="time"
-            value={estimate}
-          />
+          <Input type="time" value={estimate} />
         </div>
         <div className="space-y-2">
           <Label>Actual Time (HH:mm)</Label>
-          <Input
-            type="time"
-            value=""
-          />
+          <Input type="time" value="" />
         </div>
       </div>
     </div>
