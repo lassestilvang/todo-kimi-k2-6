@@ -1,11 +1,17 @@
-"use client";
+'use client';
 
-import { useState, useMemo } from "react";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isToday as dateFnsIsToday } from "date-fns";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import type { TaskWithRelations } from "@/types";
+import { useState, useMemo } from 'react';
+import {
+  format,
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+  isToday as dateFnsIsToday,
+} from 'date-fns';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import type { TaskWithRelations } from '@/types';
 
 interface TaskCalendarProps {
   tasks: TaskWithRelations[];
@@ -24,7 +30,7 @@ export function TaskCalendar({ tasks, onTaskClick }: TaskCalendarProps) {
 
   const tasksByDate = useMemo(() => {
     const map = new Map<string, TaskWithRelations[]>();
-    tasks.forEach((task) => {
+    tasks.forEach(task => {
       if (task.date) {
         const existing = map.get(task.date) || [];
         map.set(task.date, [...existing, task]);
@@ -34,11 +40,15 @@ export function TaskCalendar({ tasks, onTaskClick }: TaskCalendarProps) {
   }, [tasks]);
 
   const handlePreviousMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
+    setCurrentMonth(
+      new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1)
+    );
   };
 
   const handleNextMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
+    setCurrentMonth(
+      new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1)
+    );
   };
 
   const handleToday = () => {
@@ -48,16 +58,16 @@ export function TaskCalendar({ tasks, onTaskClick }: TaskCalendarProps) {
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case "critical":
-        return "bg-red-500";
-      case "high":
-        return "bg-orange-500";
-      case "medium":
-        return "bg-yellow-500";
-      case "low":
-        return "bg-blue-500";
+      case 'critical':
+        return 'bg-red-500';
+      case 'high':
+        return 'bg-orange-500';
+      case 'medium':
+        return 'bg-yellow-500';
+      case 'low':
+        return 'bg-blue-500';
       default:
-        return "bg-gray-400";
+        return 'bg-gray-400';
     }
   };
 
@@ -78,8 +88,11 @@ export function TaskCalendar({ tasks, onTaskClick }: TaskCalendarProps) {
       </div>
 
       <div className="grid grid-cols-7 gap-2 mb-2">
-        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-          <div key={day} className="text-center text-sm font-medium text-muted-foreground py-2">
+        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+          <div
+            key={day}
+            className="text-center text-sm font-medium text-muted-foreground py-2"
+          >
             {day}
           </div>
         ))}
@@ -93,8 +106,8 @@ export function TaskCalendar({ tasks, onTaskClick }: TaskCalendarProps) {
           ))}
 
         {/* Actual days */}
-        {days.map((day) => {
-          const dateKey = format(day, "yyyy-MM-dd");
+        {days.map(day => {
+          const dateKey = format(day, 'yyyy-MM-dd');
           const dayTasks = tasksByDate.get(dateKey) || [];
           const isTodayDate = dateFnsIsToday(day);
 
@@ -102,15 +115,15 @@ export function TaskCalendar({ tasks, onTaskClick }: TaskCalendarProps) {
             <div
               key={dateKey}
               className={`min-h-24 rounded-lg border p-2 transition-colors hover:bg-muted/50 cursor-pointer ${
-                isTodayDate ? "border-primary bg-primary/10" : "border-border"
+                isTodayDate ? 'border-primary bg-primary/10' : 'border-border'
               }`}
               onClick={() => setSelectedDate(day)}
             >
               <div className="flex items-center justify-between mb-1">
                 <span
-                  className={`text-sm font-medium ${isTodayDate ? "text-primary" : "text-foreground"}`}
+                  className={`text-sm font-medium ${isTodayDate ? 'text-primary' : 'text-foreground'}`}
                 >
-                  {format(day, "d")}
+                  {format(day, 'd')}
                 </span>
                 {dayTasks.length > 0 && (
                   <Badge variant="secondary" className="text-[10px] h-5">
@@ -119,11 +132,11 @@ export function TaskCalendar({ tasks, onTaskClick }: TaskCalendarProps) {
                 )}
               </div>
               <div className="space-y-1">
-                {dayTasks.slice(0, 3).map((task) => (
+                {dayTasks.slice(0, 3).map(task => (
                   <div
                     key={task.id}
                     className={`text-xs rounded px-1 py-0.5 text-white truncate ${getPriorityColor(task.priority)}`}
-                    onClick={(e) => {
+                    onClick={e => {
                       e.stopPropagation();
                       onTaskClick(task);
                     }}
