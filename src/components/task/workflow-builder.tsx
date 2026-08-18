@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect } from 'react';
 import {
   Workflow,
   Play,
@@ -16,14 +16,33 @@ import {
   X,
   Settings,
   History,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,9 +50,9 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+} from '@/components/ui/dropdown-menu';
+import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface Workflow {
   id: number;
@@ -64,41 +83,85 @@ interface WorkflowBuilderProps {
 }
 
 const TRIGGER_TYPES = [
-  { value: "manual", label: "Manual Trigger", description: "Execute on demand" },
-  { value: "task_created", label: "Task Created", description: "When a new task is created" },
-  { value: "task_completed", label: "Task Completed", description: "When a task is marked complete" },
-  { value: "due_date", label: "Due Date", description: "When tasks are due" },
-  { value: "schedule", label: "Schedule", description: "At specific times or intervals" },
-  { value: "cron", label: "Cron Schedule", description: "Using cron expressions" },
+  {
+    value: 'manual',
+    label: 'Manual Trigger',
+    description: 'Execute on demand',
+  },
+  {
+    value: 'task_created',
+    label: 'Task Created',
+    description: 'When a new task is created',
+  },
+  {
+    value: 'task_completed',
+    label: 'Task Completed',
+    description: 'When a task is marked complete',
+  },
+  { value: 'due_date', label: 'Due Date', description: 'When tasks are due' },
+  {
+    value: 'schedule',
+    label: 'Schedule',
+    description: 'At specific times or intervals',
+  },
+  {
+    value: 'cron',
+    label: 'Cron Schedule',
+    description: 'Using cron expressions',
+  },
 ];
 
 const ACTION_TYPES = [
-  { value: "create_task", label: "Create Task", description: "Generate a new task" },
-  { value: "update_task", label: "Update Task", description: "Modify existing task" },
-  { value: "send_notification", label: "Send Notification", description: "Send email or alert" },
-  { value: "log_message", label: "Log Message", description: "Record to activity log" },
-  { value: "webhook", label: "Call Webhook", description: "Trigger external service" },
+  {
+    value: 'create_task',
+    label: 'Create Task',
+    description: 'Generate a new task',
+  },
+  {
+    value: 'update_task',
+    label: 'Update Task',
+    description: 'Modify existing task',
+  },
+  {
+    value: 'send_notification',
+    label: 'Send Notification',
+    description: 'Send email or alert',
+  },
+  {
+    value: 'log_message',
+    label: 'Log Message',
+    description: 'Record to activity log',
+  },
+  {
+    value: 'webhook',
+    label: 'Call Webhook',
+    description: 'Trigger external service',
+  },
 ];
 
 export function WorkflowBuilder({ className }: WorkflowBuilderProps) {
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
-  const [executions, setExecutions] = useState<Record<number, WorkflowExecution[]>>({});
+  const [executions, setExecutions] = useState<
+    Record<number, WorkflowExecution[]>
+  >({});
   const [loading, setLoading] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
   const [editingWorkflow, setEditingWorkflow] = useState<Workflow | null>(null);
-  const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(null);
+  const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(
+    null
+  );
 
   // Form state
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [triggerType, setTriggerType] = useState("manual");
-  const [actionType, setActionType] = useState("create_task");
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [triggerType, setTriggerType] = useState('manual');
+  const [actionType, setActionType] = useState('create_task');
   const [enabled, setEnabled] = useState(true);
 
   // Action config
-  const [taskName, setTaskName] = useState("");
-  const [taskDescription, setTaskDescription] = useState("");
-  const [taskPriority, setTaskPriority] = useState("medium");
+  const [taskName, setTaskName] = useState('');
+  const [taskDescription, setTaskDescription] = useState('');
+  const [taskPriority, setTaskPriority] = useState('medium');
 
   // Execution modal
   const [showExecutions, setShowExecutions] = useState(false);
@@ -110,13 +173,13 @@ export function WorkflowBuilder({ className }: WorkflowBuilderProps) {
   const fetchWorkflows = async () => {
     setLoading(true);
     try {
-      const response = await fetch("/api/workflows");
+      const response = await fetch('/api/workflows');
       if (response.ok) {
         const data = await response.json();
         setWorkflows(data.workflows || []);
       }
     } catch (error) {
-      toast.error("Failed to load workflows");
+      toast.error('Failed to load workflows');
     } finally {
       setLoading(false);
     }
@@ -126,23 +189,23 @@ export function WorkflowBuilder({ className }: WorkflowBuilderProps) {
     if (workflow) {
       setEditingWorkflow(workflow);
       setName(workflow.name);
-      setDescription(workflow.description || "");
+      setDescription(workflow.description || '');
       setTriggerType(workflow.trigger_type);
       setActionType(workflow.action_type);
       setEnabled(workflow.enabled);
-      setTaskName(workflow.action_config?.task_name || "");
-      setTaskDescription(workflow.action_config?.description || "");
-      setTaskPriority(workflow.action_config?.priority || "medium");
+      setTaskName(workflow.action_config?.task_name || '');
+      setTaskDescription(workflow.action_config?.description || '');
+      setTaskPriority(workflow.action_config?.priority || 'medium');
     } else {
       setEditingWorkflow(null);
-      setName("");
-      setDescription("");
-      setTriggerType("manual");
-      setActionType("create_task");
+      setName('');
+      setDescription('');
+      setTriggerType('manual');
+      setActionType('create_task');
       setEnabled(true);
-      setTaskName("");
-      setTaskDescription("");
-      setTaskPriority("medium");
+      setTaskName('');
+      setTaskDescription('');
+      setTaskPriority('medium');
     }
     setShowDialog(true);
   };
@@ -165,77 +228,79 @@ export function WorkflowBuilder({ className }: WorkflowBuilderProps) {
 
       if (editingWorkflow) {
         await fetch(`/api/workflows?id=${editingWorkflow.id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(workflowData),
         });
-        toast.success("Workflow updated");
+        toast.success('Workflow updated');
       } else {
-        await fetch("/api/workflows", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+        await fetch('/api/workflows', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(workflowData),
         });
-        toast.success("Workflow created");
+        toast.success('Workflow created');
       }
 
       fetchWorkflows();
       setShowDialog(false);
     } catch (error) {
-      toast.error("Failed to save workflow");
+      toast.error('Failed to save workflow');
     }
   };
 
   const handleDelete = async (id: number) => {
     try {
       await fetch(`/api/workflows?id=${id}`, {
-        method: "DELETE",
+        method: 'DELETE',
       });
-      toast.success("Workflow deleted");
+      toast.success('Workflow deleted');
       fetchWorkflows();
     } catch (error) {
-      toast.error("Failed to delete workflow");
+      toast.error('Failed to delete workflow');
     }
   };
 
   const handleToggle = async (workflow: Workflow) => {
     try {
       await fetch(`/api/workflows?id=${workflow.id}`, {
-        method: "PATCH",
+        method: 'PATCH',
       });
-      toast.success(`Workflow ${workflow.enabled ? "paused" : "enabled"}`);
+      toast.success(`Workflow ${workflow.enabled ? 'paused' : 'enabled'}`);
       fetchWorkflows();
     } catch (error) {
-      toast.error("Failed to toggle workflow");
+      toast.error('Failed to toggle workflow');
     }
   };
 
   const handleExecute = async (workflow: Workflow) => {
     try {
-      const response = await fetch("/api/workflows", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/workflows', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: "execute",
+          action: 'execute',
           workflow_id: workflow.id,
           input_data: {},
         }),
       });
 
       if (response.ok) {
-        toast.success("Workflow executed");
+        toast.success('Workflow executed');
         fetchWorkflows();
       } else {
-        throw new Error("Execution failed");
+        throw new Error('Execution failed');
       }
     } catch (error) {
-      toast.error("Failed to execute workflow");
+      toast.error('Failed to execute workflow');
     }
   };
 
   const fetchExecutions = async (workflowId: number) => {
     try {
-      const response = await fetch(`/api/workflows?id=${workflowId}&include_executions=true&limit=50`);
+      const response = await fetch(
+        `/api/workflows?id=${workflowId}&include_executions=true&limit=50`
+      );
       if (response.ok) {
         const data = await response.json();
         setExecutions(prev => ({
@@ -244,7 +309,7 @@ export function WorkflowBuilder({ className }: WorkflowBuilderProps) {
         }));
       }
     } catch (error) {
-      toast.error("Failed to load executions");
+      toast.error('Failed to load executions');
     }
   };
 
@@ -260,16 +325,21 @@ export function WorkflowBuilder({ className }: WorkflowBuilderProps) {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "completed": return "bg-green-500/10 text-green-700";
-      case "running": return "bg-blue-500/10 text-blue-700";
-      case "failed": return "bg-red-500/10 text-red-700";
-      case "skipped": return "bg-gray-500/10 text-gray-700";
-      default: return "bg-gray-500/10 text-gray-700";
+      case 'completed':
+        return 'bg-green-500/10 text-green-700';
+      case 'running':
+        return 'bg-blue-500/10 text-blue-700';
+      case 'failed':
+        return 'bg-red-500/10 text-red-700';
+      case 'skipped':
+        return 'bg-gray-500/10 text-gray-700';
+      default:
+        return 'bg-gray-500/10 text-gray-700';
     }
   };
 
   return (
-    <div className={cn("space-y-6", className)}>
+    <div className={cn('space-y-6', className)}>
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -292,7 +362,10 @@ export function WorkflowBuilder({ className }: WorkflowBuilderProps) {
           {loading ? (
             <div className="space-y-4">
               {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-20 bg-muted/30 rounded animate-pulse" />
+                <div
+                  key={i}
+                  className="h-20 bg-muted/30 rounded animate-pulse"
+                />
               ))}
             </div>
           ) : workflows.length === 0 ? (
@@ -317,7 +390,9 @@ export function WorkflowBuilder({ className }: WorkflowBuilderProps) {
                         <div className="flex items-center gap-2">
                           <h4 className="font-medium">{wf.name}</h4>
                           {wf.enabled ? (
-                            <Badge className="bg-green-500/10 text-green-700">Active</Badge>
+                            <Badge className="bg-green-500/10 text-green-700">
+                              Active
+                            </Badge>
                           ) : (
                             <Badge variant="secondary">Paused</Badge>
                           )}
@@ -327,11 +402,11 @@ export function WorkflowBuilder({ className }: WorkflowBuilderProps) {
                         </div>
                         <div className="flex items-center gap-4 text-xs text-muted-foreground">
                           <span>Action: {getActionLabel(wf.action_type)}</span>
-                          {wf.run_count > 0 && (
-                            <span>{wf.run_count} runs</span>
-                          )}
+                          {wf.run_count > 0 && <span>{wf.run_count} runs</span>}
                           {wf.last_run_at && (
-                            <span>Last: {new Date(wf.last_run_at).toLocaleString()}</span>
+                            <span>
+                              Last: {new Date(wf.last_run_at).toLocaleString()}
+                            </span>
                           )}
                         </div>
                       </div>
@@ -350,7 +425,11 @@ export function WorkflowBuilder({ className }: WorkflowBuilderProps) {
                           size="sm"
                           onClick={() => handleToggle(wf)}
                         >
-                          {wf.enabled ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                          {wf.enabled ? (
+                            <Pause className="h-4 w-4" />
+                          ) : (
+                            <Play className="h-4 w-4" />
+                          )}
                         </Button>
 
                         <DropdownMenu>
@@ -365,12 +444,19 @@ export function WorkflowBuilder({ className }: WorkflowBuilderProps) {
                               Edit
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => { setSelectedWorkflow(wf); setShowExecutions(true); }}>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setSelectedWorkflow(wf);
+                                setShowExecutions(true);
+                              }}
+                            >
                               <History className="h-4 w-4 mr-2" />
                               View Executions
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => handleDelete(wf.id)}>
+                            <DropdownMenuItem
+                              onClick={() => handleDelete(wf.id)}
+                            >
                               <Trash2 className="h-4 w-4 mr-2" />
                               Delete
                             </DropdownMenuItem>
@@ -391,10 +477,12 @@ export function WorkflowBuilder({ className }: WorkflowBuilderProps) {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              {editingWorkflow ? "Edit Workflow" : "New Workflow"}
+              {editingWorkflow ? 'Edit Workflow' : 'New Workflow'}
             </DialogTitle>
             <DialogDescription>
-              {editingWorkflow ? "Update your automation" : "Create a new no-code workflow"}
+              {editingWorkflow
+                ? 'Update your automation'
+                : 'Create a new no-code workflow'}
             </DialogDescription>
           </DialogHeader>
 
@@ -418,8 +506,13 @@ export function WorkflowBuilder({ className }: WorkflowBuilderProps) {
 
             <div className="space-y-3">
               <div>
-                <label className="text-sm font-medium mb-2 block">Trigger</label>
-                <Select value={triggerType} onValueChange={(v) => setTriggerType(v || triggerType)}>
+                <label className="text-sm font-medium mb-2 block">
+                  Trigger
+                </label>
+                <Select
+                  value={triggerType}
+                  onValueChange={v => setTriggerType(v || triggerType)}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select trigger" />
                   </SelectTrigger>
@@ -428,7 +521,9 @@ export function WorkflowBuilder({ className }: WorkflowBuilderProps) {
                       <SelectItem key={t.value} value={t.value}>
                         <div>
                           <div className="font-medium">{t.label}</div>
-                          <div className="text-xs text-muted-foreground">{t.description}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {t.description}
+                          </div>
                         </div>
                       </SelectItem>
                     ))}
@@ -438,7 +533,10 @@ export function WorkflowBuilder({ className }: WorkflowBuilderProps) {
 
               <div>
                 <label className="text-sm font-medium mb-2 block">Action</label>
-                <Select value={actionType} onValueChange={(v) => setActionType(v || actionType)}>
+                <Select
+                  value={actionType}
+                  onValueChange={v => setActionType(v || actionType)}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select action" />
                   </SelectTrigger>
@@ -447,7 +545,9 @@ export function WorkflowBuilder({ className }: WorkflowBuilderProps) {
                       <SelectItem key={a.value} value={a.value}>
                         <div>
                           <div className="font-medium">{a.label}</div>
-                          <div className="text-xs text-muted-foreground">{a.description}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {a.description}
+                          </div>
                         </div>
                       </SelectItem>
                     ))}
@@ -473,8 +573,13 @@ export function WorkflowBuilder({ className }: WorkflowBuilderProps) {
               />
 
               <div>
-                <label className="text-sm font-medium mb-2 block">Priority</label>
-                <Select value={taskPriority} onValueChange={(v) => setTaskPriority(v || taskPriority)}>
+                <label className="text-sm font-medium mb-2 block">
+                  Priority
+                </label>
+                <Select
+                  value={taskPriority}
+                  onValueChange={v => setTaskPriority(v || taskPriority)}
+                >
                   <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="Select priority" />
                   </SelectTrigger>
@@ -495,7 +600,7 @@ export function WorkflowBuilder({ className }: WorkflowBuilderProps) {
             </Button>
             <Button onClick={handleSubmit}>
               <Save className="h-4 w-4 mr-2" />
-              {editingWorkflow ? "Update" : "Create"}
+              {editingWorkflow ? 'Update' : 'Create'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -506,15 +611,15 @@ export function WorkflowBuilder({ className }: WorkflowBuilderProps) {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Workflow Executions</DialogTitle>
-            <DialogDescription>
-              Recent execution history
-            </DialogDescription>
+            <DialogDescription>Recent execution history</DialogDescription>
           </DialogHeader>
 
           {selectedWorkflow ? (
             <div className="space-y-3">
               {executions[selectedWorkflow.id]?.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No executions yet</p>
+                <p className="text-sm text-muted-foreground">
+                  No executions yet
+                </p>
               ) : (
                 executions[selectedWorkflow.id]?.map(exec => (
                   <div key={exec.id} className="border rounded-lg p-3">
@@ -522,12 +627,16 @@ export function WorkflowBuilder({ className }: WorkflowBuilderProps) {
                       <span className="font-medium text-sm">
                         {new Date(exec.triggered_at).toLocaleString()}
                       </span>
-                      <Badge className={cn("text-xs", getStatusColor(exec.status))}>
+                      <Badge
+                        className={cn('text-xs', getStatusColor(exec.status))}
+                      >
                         {exec.status}
                       </Badge>
                     </div>
                     {exec.error_message && (
-                      <p className="text-sm text-red-600">{exec.error_message}</p>
+                      <p className="text-sm text-red-600">
+                        {exec.error_message}
+                      </p>
                     )}
                     {exec.duration_ms && (
                       <p className="text-xs text-muted-foreground">
