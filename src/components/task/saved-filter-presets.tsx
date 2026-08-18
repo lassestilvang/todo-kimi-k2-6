@@ -1,16 +1,16 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Bookmark, Trash2, Save } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { useState } from 'react';
+import { Bookmark, Trash2, Save } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from '@/components/ui/dropdown-menu';
 import {
   Dialog,
   DialogContent,
@@ -19,8 +19,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import type { FilterPreset } from "@/types";
+} from '@/components/ui/dialog';
+import type { FilterPreset } from '@/types';
 
 interface SavedFilterPresetsProps {
   currentFilterPreset?: FilterPreset;
@@ -44,7 +44,7 @@ export function SavedFilterPresets({
   savedPresets,
 }: SavedFilterPresetsProps) {
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
-  const [presetName, setPresetName] = useState("");
+  const [presetName, setPresetName] = useState('');
 
   const currentPresetKey = JSON.stringify({
     filterPreset: currentFilterPreset,
@@ -55,8 +55,8 @@ export function SavedFilterPresets({
 
   const handleSave = () => {
     if (!presetName.trim()) return;
-    onSavePreset(presetName.trim(), currentFilterPreset || "needs_attention");
-    setPresetName("");
+    onSavePreset(presetName.trim(), currentFilterPreset || 'needs_attention');
+    setPresetName('');
     setIsSaveDialogOpen(false);
   };
 
@@ -71,17 +71,19 @@ export function SavedFilterPresets({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
-            {savedPresets.map((preset) => (
+            {savedPresets.map(preset => (
               <DropdownMenuItem
                 key={preset.id}
-                onClick={() => onApplyPreset(preset.filter_type as FilterPreset)}
+                onClick={() =>
+                  onApplyPreset(preset.filter_type as FilterPreset)
+                }
               >
                 {preset.name}
                 <Button
                   variant="ghost"
                   size="sm"
                   className="ml-auto h-6 w-6 p-0"
-                  onClick={(e) => {
+                  onClick={e => {
                     e.stopPropagation();
                     onDeletePreset(preset.id);
                   }}
@@ -113,14 +115,17 @@ export function SavedFilterPresets({
               <label className="text-sm font-medium">Preset Name</label>
               <Input
                 value={presetName}
-                onChange={(e) => setPresetName(e.target.value)}
+                onChange={e => setPresetName(e.target.value)}
                 placeholder="e.g., My Work Tasks"
                 className="mt-2"
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsSaveDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsSaveDialogOpen(false)}
+            >
               Cancel
             </Button>
             <Button onClick={handleSave} disabled={!presetName.trim()}>
