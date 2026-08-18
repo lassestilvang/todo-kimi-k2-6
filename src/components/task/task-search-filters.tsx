@@ -1,17 +1,22 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Filter, X, Save, Bookmark } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { useState } from 'react';
+import { Filter, X, Save, Bookmark } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import type { List, Label as LabelType, Priority, SavedFilterPreset } from "@/types";
+} from '@/components/ui/popover';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import type {
+  List,
+  Label as LabelType,
+  Priority,
+  SavedFilterPreset,
+} from '@/types';
 
 interface TaskSearchFiltersProps {
   lists: List[];
@@ -28,12 +33,16 @@ interface TaskSearchFiltersProps {
   onSavePreset?: (name: string, filterType?: string) => void;
 }
 
-const priorityOptions: { value: Priority | "none"; label: string; color: string }[] = [
-  { value: "none", label: "All Priorities", color: "" },
-  { value: "critical", label: "Critical", color: "bg-red-600" },
-  { value: "high", label: "High", color: "bg-red-500" },
-  { value: "medium", label: "Medium", color: "bg-amber-500" },
-  { value: "low", label: "Low", color: "bg-blue-500" },
+const priorityOptions: {
+  value: Priority | 'none';
+  label: string;
+  color: string;
+}[] = [
+  { value: 'none', label: 'All Priorities', color: '' },
+  { value: 'critical', label: 'Critical', color: 'bg-red-600' },
+  { value: 'high', label: 'High', color: 'bg-red-500' },
+  { value: 'medium', label: 'Medium', color: 'bg-amber-500' },
+  { value: 'low', label: 'Low', color: 'bg-blue-500' },
 ];
 
 export function TaskSearchFilters({
@@ -55,18 +64,14 @@ export function TaskSearchFilters({
   const activeFilterCount = [
     selectedListId !== undefined ? 1 : 0,
     selectedLabelIds.length,
-    selectedPriority !== undefined && selectedPriority !== "none" ? 1 : 0,
+    selectedPriority !== undefined && selectedPriority !== 'none' ? 1 : 0,
   ].reduce((a, b) => a + b, 0);
 
   return (
     <div className="flex items-center gap-2">
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8"
-          >
+          <Button variant="outline" size="sm" className="h-8">
             <Filter className="h-3.5 w-3.5 mr-1.5" />
             Filters
             {activeFilterCount > 0 && (
@@ -100,14 +105,14 @@ export function TaskSearchFilters({
                 <Label className="text-xs">List</Label>
                 <select
                   className="w-full h-8 text-sm rounded-md border bg-background px-2"
-                  value={selectedListId || "all"}
-                  onChange={(e) => {
+                  value={selectedListId || 'all'}
+                  onChange={e => {
                     const value = e.target.value;
-                    onListChange(value === "all" ? undefined : Number(value));
+                    onListChange(value === 'all' ? undefined : Number(value));
                   }}
                 >
                   <option value="all">All Lists</option>
-                  {lists.map((list) => (
+                  {lists.map(list => (
                     <option key={list.id} value={String(list.id)}>
                       {list.emoji} {list.name}
                     </option>
@@ -120,13 +125,15 @@ export function TaskSearchFilters({
                 <Label className="text-xs">Priority</Label>
                 <select
                   className="w-full h-8 text-sm rounded-md border bg-background px-2"
-                  value={selectedPriority || "none"}
-                  onChange={(e) => {
+                  value={selectedPriority || 'none'}
+                  onChange={e => {
                     const value = e.target.value;
-                    onPriorityChange(value === "none" ? undefined : value as Priority);
+                    onPriorityChange(
+                      value === 'none' ? undefined : (value as Priority)
+                    );
                   }}
                 >
-                  {priorityOptions.map((opt) => (
+                  {priorityOptions.map(opt => (
                     <option key={opt.value} value={opt.value}>
                       {opt.label}
                     </option>
@@ -139,16 +146,18 @@ export function TaskSearchFilters({
                 <Label className="text-xs">Labels</Label>
                 <div className="max-h-48 overflow-y-auto">
                   {labels.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">No labels yet</p>
+                    <p className="text-xs text-muted-foreground">
+                      No labels yet
+                    </p>
                   ) : (
                     <div className="space-y-1">
-                      {labels.map((label) => {
+                      {labels.map(label => {
                         const isSelected = selectedLabelIds.includes(label.id);
                         return (
                           <button
                             key={label.id}
                             className={`w-full flex items-center gap-2 text-xs rounded px-2 py-1.5 transition-colors ${
-                              isSelected ? "bg-accent" : "hover:bg-muted"
+                              isSelected ? 'bg-accent' : 'hover:bg-muted'
                             }`}
                             onClick={() => onLabelChange(label.id)}
                           >
@@ -181,11 +190,11 @@ export function TaskSearchFilters({
         <div className="flex items-center gap-1.5">
           {selectedListId && (
             <Badge variant="secondary" className="text-xs h-5">
-              List: {lists.find((l) => l.id === selectedListId)?.name}
+              List: {lists.find(l => l.id === selectedListId)?.name}
             </Badge>
           )}
-          {selectedLabelIds.map((id) => {
-            const label = labels.find((l) => l.id === id);
+          {selectedLabelIds.map(id => {
+            const label = labels.find(l => l.id === id);
             return label ? (
               <Badge
                 key={id}
@@ -197,7 +206,7 @@ export function TaskSearchFilters({
               </Badge>
             ) : null;
           })}
-          {selectedPriority && selectedPriority !== "none" && (
+          {selectedPriority && selectedPriority !== 'none' && (
             <Badge variant="secondary" className="text-xs h-5">
               {selectedPriority}
             </Badge>
@@ -213,7 +222,7 @@ export function TaskSearchFilters({
             <span>Saved filters</span>
           </div>
           <div className="flex flex-wrap gap-1.5">
-            {savedPresets.map((preset) => (
+            {savedPresets.map(preset => (
               <Button
                 key={preset.id}
                 variant="ghost"
@@ -236,10 +245,10 @@ export function TaskSearchFilters({
             <Input
               placeholder="Save filter as..."
               className="flex-1 h-7 text-xs"
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && e.currentTarget.value.trim()) {
+              onKeyDown={e => {
+                if (e.key === 'Enter' && e.currentTarget.value.trim()) {
                   onSavePreset(e.currentTarget.value.trim());
-                  e.currentTarget.value = "";
+                  e.currentTarget.value = '';
                 }
               }}
             />
@@ -253,7 +262,7 @@ export function TaskSearchFilters({
                 ) as HTMLInputElement;
                 if (input?.value.trim()) {
                   onSavePreset(input.value.trim());
-                  input.value = "";
+                  input.value = '';
                 }
               }}
             >
