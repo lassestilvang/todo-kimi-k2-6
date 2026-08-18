@@ -1,15 +1,21 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { LayoutDashboard, Plus, MoreHorizontal, Trash2, Edit } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useState } from 'react';
+import {
+  LayoutDashboard,
+  Plus,
+  MoreHorizontal,
+  Trash2,
+  Edit,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from '@/components/ui/dropdown-menu';
 import {
   Dialog,
   DialogContent,
@@ -17,14 +23,20 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import type { CustomView, ViewType } from "@/types";
+} from '@/components/ui/dialog';
+import type { CustomView, ViewType } from '@/types';
 
 interface SavedViewsProps {
   views: CustomView[];
   currentView: ViewType;
   onViewSelect: (view: CustomView) => void;
-  onCreateView: (view: { name: string; view_type: ViewType; list_id?: number; label_ids?: number[]; priority?: string }) => void;
+  onCreateView: (view: {
+    name: string;
+    view_type: ViewType;
+    list_id?: number;
+    label_ids?: number[];
+    priority?: string;
+  }) => void;
   onDeleteView: (viewId: number) => void;
 }
 
@@ -40,7 +52,9 @@ export function SavedViews({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-muted-foreground">Saved Views</span>
+        <span className="text-xs font-medium text-muted-foreground">
+          Saved Views
+        </span>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger>
             <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
@@ -55,7 +69,7 @@ export function SavedViews({
               </DialogDescription>
             </DialogHeader>
             <CreateViewForm
-              onSubmit={(data) => {
+              onSubmit={data => {
                 onCreateView(data);
                 setIsCreateDialogOpen(false);
               }}
@@ -71,12 +85,12 @@ export function SavedViews({
             No saved views yet
           </p>
         ) : (
-          views.map((view) => (
+          views.map(view => (
             <div
               key={view.id}
               className={cn(
-                "flex items-center gap-2 p-2 rounded-lg border cursor-pointer hover:bg-muted/50 transition-colors",
-                currentView === view.view_type && "bg-muted"
+                'flex items-center gap-2 p-2 rounded-lg border cursor-pointer hover:bg-muted/50 transition-colors',
+                currentView === view.view_type && 'bg-muted'
               )}
               onClick={() => onViewSelect(view)}
             >
@@ -104,13 +118,19 @@ export function SavedViews({
 }
 
 interface CreateViewFormProps {
-  onSubmit: (data: { name: string; view_type: ViewType; list_id?: number; label_ids?: number[]; priority?: string }) => void;
+  onSubmit: (data: {
+    name: string;
+    view_type: ViewType;
+    list_id?: number;
+    label_ids?: number[];
+    priority?: string;
+  }) => void;
   onCancel: () => void;
 }
 
 function CreateViewForm({ onSubmit, onCancel }: CreateViewFormProps) {
-  const [name, setName] = useState("");
-  const [viewType, setViewType] = useState<ViewType>("today");
+  const [name, setName] = useState('');
+  const [viewType, setViewType] = useState<ViewType>('today');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -123,14 +143,17 @@ function CreateViewForm({ onSubmit, onCancel }: CreateViewFormProps) {
         <label className="text-sm font-medium">View Name</label>
         <Input
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={e => setName(e.target.value)}
           placeholder="e.g., Work Tasks"
           required
         />
       </div>
       <div>
         <label className="text-sm font-medium">View Type</label>
-        <Select value={viewType} onValueChange={(v) => setViewType(v as ViewType)}>
+        <Select
+          value={viewType}
+          onValueChange={v => setViewType(v as ViewType)}
+        >
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
@@ -153,7 +176,13 @@ function CreateViewForm({ onSubmit, onCancel }: CreateViewFormProps) {
   );
 }
 
-import { cn } from "@/lib/utils";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DialogFooter } from "@/components/ui/dialog";
+import { cn } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { DialogFooter } from '@/components/ui/dialog';
