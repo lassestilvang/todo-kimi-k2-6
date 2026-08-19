@@ -1,10 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook } from "@testing-library/react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import React from "react";
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { renderHook } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import React from 'react';
 
 // Mock the toast module
-vi.mock("sonner", () => ({
+vi.mock('sonner', () => ({
   toast: {
     success: vi.fn(),
     error: vi.fn(),
@@ -12,7 +12,7 @@ vi.mock("sonner", () => ({
 }));
 
 // Mock the task actions
-vi.mock("@/lib/actions/tasks", () => ({
+vi.mock('@/lib/actions/tasks', () => ({
   createTask: vi.fn(),
   updateTask: vi.fn(),
   deleteTask: vi.fn(),
@@ -32,14 +32,14 @@ const createWrapper = () => {
     React.createElement(QueryClientProvider, { client: queryClient }, children);
 };
 
-describe("useTaskMutations - Hook Structure Tests", () => {
+describe('useTaskMutations - Hook Structure Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  describe("Hook initialization", () => {
-    it("should expose all mutation functions and isLoading", async () => {
-      const { useTaskMutations } = await import("../use-task-mutations");
+  describe('Hook initialization', () => {
+    it('should expose all mutation functions and isLoading', async () => {
+      const { useTaskMutations } = await import('../use-task-mutations');
       const wrapper = createWrapper();
       const { result } = renderHook(() => useTaskMutations(), { wrapper });
 
@@ -49,24 +49,24 @@ describe("useTaskMutations - Hook Structure Tests", () => {
       expect(result.current.toggleComplete).toBeDefined();
       expect(result.current.archiveTask).toBeDefined();
       expect(result.current.unarchiveTask).toBeDefined();
-      expect(typeof result.current.isLoading).toBe("boolean");
+      expect(typeof result.current.isLoading).toBe('boolean');
     });
 
-    it("should have all mutation functions as callable", async () => {
-      const { useTaskMutations } = await import("../use-task-mutations");
+    it('should have all mutation functions as callable', async () => {
+      const { useTaskMutations } = await import('../use-task-mutations');
       const wrapper = createWrapper();
       const { result } = renderHook(() => useTaskMutations(), { wrapper });
 
-      expect(typeof result.current.createTask).toBe("function");
-      expect(typeof result.current.updateTask).toBe("function");
-      expect(typeof result.current.deleteTask).toBe("function");
-      expect(typeof result.current.toggleComplete).toBe("function");
-      expect(typeof result.current.archiveTask).toBe("function");
-      expect(typeof result.current.unarchiveTask).toBe("function");
+      expect(typeof result.current.createTask).toBe('function');
+      expect(typeof result.current.updateTask).toBe('function');
+      expect(typeof result.current.deleteTask).toBe('function');
+      expect(typeof result.current.toggleComplete).toBe('function');
+      expect(typeof result.current.archiveTask).toBe('function');
+      expect(typeof result.current.unarchiveTask).toBe('function');
     });
 
-    it("should return isLoading as false initially", async () => {
-      const { useTaskMutations } = await import("../use-task-mutations");
+    it('should return isLoading as false initially', async () => {
+      const { useTaskMutations } = await import('../use-task-mutations');
       const wrapper = createWrapper();
       const { result } = renderHook(() => useTaskMutations(), { wrapper });
 
@@ -74,26 +74,26 @@ describe("useTaskMutations - Hook Structure Tests", () => {
     });
   });
 
-  describe("Module structure", () => {
-    it("should be importable as a module", async () => {
-      const { useTaskMutations } = await import("../use-task-mutations");
+  describe('Module structure', () => {
+    it('should be importable as a module', async () => {
+      const { useTaskMutations } = await import('../use-task-mutations');
       expect(useTaskMutations).toBeDefined();
     });
 
-    it("should be a function", async () => {
-      const { useTaskMutations } = await import("../use-task-mutations");
-      expect(typeof useTaskMutations).toBe("function");
+    it('should be a function', async () => {
+      const { useTaskMutations } = await import('../use-task-mutations');
+      expect(typeof useTaskMutations).toBe('function');
     });
   });
 });
 
-describe("useTaskMutations - Mutation Logic Tests", () => {
-  it("should handle optimistic task creation pattern", () => {
+describe('useTaskMutations - Mutation Logic Tests', () => {
+  it('should handle optimistic task creation pattern', () => {
     // Test the optimistic update logic exists
     const optimisticTask = {
       id: Date.now(),
       user_id: null,
-      name: "New Task",
+      name: 'New Task',
       description: null,
       notes: null,
       list_id: null,
@@ -101,8 +101,8 @@ describe("useTaskMutations - Mutation Logic Tests", () => {
       deadline: null,
       estimate: null,
       actual_time: null,
-      priority: "none",
-      recurring: "none",
+      priority: 'none',
+      recurring: 'none',
       recurring_config: null,
       completed: false,
       completed_at: null,
@@ -124,47 +124,55 @@ describe("useTaskMutations - Mutation Logic Tests", () => {
 
     // Verify the structure matches what the hook creates
     expect(optimisticTask.completed).toBe(false);
-    expect(optimisticTask.priority).toBe("none");
+    expect(optimisticTask.priority).toBe('none');
     expect(optimisticTask.labels).toEqual([]);
     expect(optimisticTask.subtasks).toEqual([]);
-    expect(typeof optimisticTask.created_at).toBe("string");
+    expect(typeof optimisticTask.created_at).toBe('string');
   });
 
-  it("should handle optimistic task update pattern", () => {
-    const existingTask = { id: 1, name: "Old" };
-    const updateInput = { name: "New" };
-    const updatedTask = { ...existingTask, ...updateInput, updated_at: new Date().toISOString() };
+  it('should handle optimistic task update pattern', () => {
+    const existingTask = { id: 1, name: 'Old' };
+    const updateInput = { name: 'New' };
+    const updatedTask = {
+      ...existingTask,
+      ...updateInput,
+      updated_at: new Date().toISOString(),
+    };
 
-    expect(updatedTask.name).toBe("New");
+    expect(updatedTask.name).toBe('New');
     expect(updatedTask.id).toBe(1);
-    expect(typeof updatedTask.updated_at).toBe("string");
+    expect(typeof updatedTask.updated_at).toBe('string');
   });
 
-  it("should handle optimistic task deletion pattern", () => {
+  it('should handle optimistic task deletion pattern', () => {
     const tasks = [{ id: 1 }, { id: 2 }, { id: 3 }];
     const deleteId = 2;
-    const remaining = tasks.filter((t) => t.id !== deleteId);
+    const remaining = tasks.filter(t => t.id !== deleteId);
 
     expect(remaining.length).toBe(2);
-    expect(remaining.find((t) => t.id === 2)).toBeUndefined();
+    expect(remaining.find(t => t.id === 2)).toBeUndefined();
   });
 
-  it("should handle optimistic toggle complete pattern", () => {
+  it('should handle optimistic toggle complete pattern', () => {
     const task = { id: 1, completed: false, completed_at: null };
-    const completedTask = { ...task, completed: true, completed_at: new Date().toISOString() };
+    const completedTask = {
+      ...task,
+      completed: true,
+      completed_at: new Date().toISOString(),
+    };
 
     expect(completedTask.completed).toBe(true);
     expect(completedTask.completed_at).not.toBeNull();
   });
 
-  it("should handle optimistic archive pattern", () => {
+  it('should handle optimistic archive pattern', () => {
     const task = { id: 1, archived: false };
     const archivedTask = { ...task, archived: true };
 
     expect(archivedTask.archived).toBe(true);
   });
 
-  it("should handle optimistic unarchive pattern", () => {
+  it('should handle optimistic unarchive pattern', () => {
     const task = { id: 1, archived: true };
     const unarchivedTask = { ...task, archived: false };
 
@@ -172,31 +180,33 @@ describe("useTaskMutations - Mutation Logic Tests", () => {
   });
 });
 
-describe("useTaskMutations - Function Signature Tests", () => {
-  it("should call createTask with task data", async () => {
-    const { createTask } = await import("@/lib/actions/tasks");
-    const { useTaskMutations } = await import("../use-task-mutations");
+describe('useTaskMutations - Function Signature Tests', () => {
+  it('should call createTask with task data', async () => {
+    const { createTask } = await import('@/lib/actions/tasks');
+    const { useTaskMutations } = await import('../use-task-mutations');
     const wrapper = createWrapper();
 
     const { result } = renderHook(() => useTaskMutations(), { wrapper });
 
     // Calling the function should not throw
-    expect(() => result.current.createTask({ name: "Test Task" })).not.toThrow();
+    expect(() =>
+      result.current.createTask({ name: 'Test Task' })
+    ).not.toThrow();
   });
 
-  it("should call updateTask with id and input", async () => {
-    const { useTaskMutations } = await import("../use-task-mutations");
+  it('should call updateTask with id and input', async () => {
+    const { useTaskMutations } = await import('../use-task-mutations');
     const wrapper = createWrapper();
 
     const { result } = renderHook(() => useTaskMutations(), { wrapper });
 
     expect(() =>
-      result.current.updateTask({ id: 1, input: { name: "Updated" } })
+      result.current.updateTask({ id: 1, input: { name: 'Updated' } })
     ).not.toThrow();
   });
 
-  it("should call deleteTask with id", async () => {
-    const { useTaskMutations } = await import("../use-task-mutations");
+  it('should call deleteTask with id', async () => {
+    const { useTaskMutations } = await import('../use-task-mutations');
     const wrapper = createWrapper();
 
     const { result } = renderHook(() => useTaskMutations(), { wrapper });
@@ -204,8 +214,8 @@ describe("useTaskMutations - Function Signature Tests", () => {
     expect(() => result.current.deleteTask(1)).not.toThrow();
   });
 
-  it("should call toggleComplete with id and completed", async () => {
-    const { useTaskMutations } = await import("../use-task-mutations");
+  it('should call toggleComplete with id and completed', async () => {
+    const { useTaskMutations } = await import('../use-task-mutations');
     const wrapper = createWrapper();
 
     const { result } = renderHook(() => useTaskMutations(), { wrapper });
@@ -215,8 +225,8 @@ describe("useTaskMutations - Function Signature Tests", () => {
     ).not.toThrow();
   });
 
-  it("should call archiveTask with id", async () => {
-    const { useTaskMutations } = await import("../use-task-mutations");
+  it('should call archiveTask with id', async () => {
+    const { useTaskMutations } = await import('../use-task-mutations');
     const wrapper = createWrapper();
 
     const { result } = renderHook(() => useTaskMutations(), { wrapper });
@@ -224,8 +234,8 @@ describe("useTaskMutations - Function Signature Tests", () => {
     expect(() => result.current.archiveTask(1)).not.toThrow();
   });
 
-  it("should call unarchiveTask with id", async () => {
-    const { useTaskMutations } = await import("../use-task-mutations");
+  it('should call unarchiveTask with id', async () => {
+    const { useTaskMutations } = await import('../use-task-mutations');
     const wrapper = createWrapper();
 
     const { result } = renderHook(() => useTaskMutations(), { wrapper });
