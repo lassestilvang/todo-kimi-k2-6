@@ -1,17 +1,20 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { renderHook, cleanup, act } from "@testing-library/react";
-import { useKeyboardNavigation, useTaskKeyboardNavigation } from "../use-keyboard-navigation";
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { renderHook, cleanup, act } from '@testing-library/react';
+import {
+  useKeyboardNavigation,
+  useTaskKeyboardNavigation,
+} from '../use-keyboard-navigation';
 
-describe("useKeyboardNavigation", () => {
+describe('useKeyboardNavigation', () => {
   afterEach(() => {
     cleanup();
   });
 
-  it("should be defined", () => {
-    expect(typeof useKeyboardNavigation).toBe("function");
+  it('should be defined', () => {
+    expect(typeof useKeyboardNavigation).toBe('function');
   });
 
-  it("should return initial state", () => {
+  it('should return initial state', () => {
     const items = [
       { id: 1, completed: false },
       { id: 2, completed: true },
@@ -21,14 +24,14 @@ describe("useKeyboardNavigation", () => {
     expect(result.current.isFocused).toBe(false);
   });
 
-  describe("navigation functions", () => {
+  describe('navigation functions', () => {
     const items = [
       { id: 1, completed: false },
       { id: 2, completed: false },
       { id: 3, completed: false },
     ];
 
-    it("goToNext should increment selectedIndex", () => {
+    it('goToNext should increment selectedIndex', () => {
       const { result } = renderHook(() => useKeyboardNavigation({ items }));
 
       act(() => {
@@ -38,7 +41,7 @@ describe("useKeyboardNavigation", () => {
       expect(result.current.selectedIndex).toBe(1);
     });
 
-    it("goToNext should not exceed items.length - 1", () => {
+    it('goToNext should not exceed items.length - 1', () => {
       const { result } = renderHook(() => useKeyboardNavigation({ items }));
 
       act(() => {
@@ -50,7 +53,7 @@ describe("useKeyboardNavigation", () => {
       expect(result.current.selectedIndex).toBe(2);
     });
 
-    it("goToPrevious should decrement selectedIndex", () => {
+    it('goToPrevious should decrement selectedIndex', () => {
       const { result } = renderHook(() => useKeyboardNavigation({ items }));
 
       act(() => {
@@ -61,7 +64,7 @@ describe("useKeyboardNavigation", () => {
       expect(result.current.selectedIndex).toBe(0);
     });
 
-    it("goToPrevious should not go below 0", () => {
+    it('goToPrevious should not go below 0', () => {
       const { result } = renderHook(() => useKeyboardNavigation({ items }));
 
       act(() => {
@@ -71,7 +74,7 @@ describe("useKeyboardNavigation", () => {
       expect(result.current.selectedIndex).toBe(0);
     });
 
-    it("goToFirst should set selectedIndex to 0", () => {
+    it('goToFirst should set selectedIndex to 0', () => {
       const { result } = renderHook(() => useKeyboardNavigation({ items }));
 
       act(() => {
@@ -83,7 +86,7 @@ describe("useKeyboardNavigation", () => {
       expect(result.current.selectedIndex).toBe(0);
     });
 
-    it("goToLast should set selectedIndex to last item", () => {
+    it('goToLast should set selectedIndex to last item', () => {
       const { result } = renderHook(() => useKeyboardNavigation({ items }));
 
       act(() => {
@@ -94,8 +97,8 @@ describe("useKeyboardNavigation", () => {
     });
   });
 
-  describe("action callbacks", () => {
-    it("selectCurrent should call onSelect with current item id", () => {
+  describe('action callbacks', () => {
+    it('selectCurrent should call onSelect with current item id', () => {
       const items = [
         { id: 10, completed: false },
         { id: 20, completed: false },
@@ -112,7 +115,7 @@ describe("useKeyboardNavigation", () => {
       expect(onSelect).toHaveBeenCalledWith(10);
     });
 
-    it("editCurrent should call onEdit with current item id", () => {
+    it('editCurrent should call onEdit with current item id', () => {
       const items = [{ id: 5, completed: false }];
       const onEdit = vi.fn();
       const { result } = renderHook(() =>
@@ -126,7 +129,7 @@ describe("useKeyboardNavigation", () => {
       expect(onEdit).toHaveBeenCalledWith(5);
     });
 
-    it("deleteCurrent should call onDelete with current item id", () => {
+    it('deleteCurrent should call onDelete with current item id', () => {
       const items = [{ id: 7, completed: false }];
       const onDelete = vi.fn();
       const { result } = renderHook(() =>
@@ -140,7 +143,7 @@ describe("useKeyboardNavigation", () => {
       expect(onDelete).toHaveBeenCalledWith(7);
     });
 
-    it("toggleComplete should call onComplete with toggled completed state", () => {
+    it('toggleComplete should call onComplete with toggled completed state', () => {
       const items = [{ id: 1, completed: false }];
       const onComplete = vi.fn();
       const { result } = renderHook(() =>
@@ -155,21 +158,17 @@ describe("useKeyboardNavigation", () => {
     });
   });
 
-  describe("edge cases", () => {
-    it("should handle empty items array", () => {
-      const { result } = renderHook(() =>
-        useKeyboardNavigation({ items: [] })
-      );
+  describe('edge cases', () => {
+    it('should handle empty items array', () => {
+      const { result } = renderHook(() => useKeyboardNavigation({ items: [] }));
       expect(result.current.selectedIndex).toBe(0);
       expect(result.current.goToNext).not.toThrow();
       expect(result.current.goToPrevious).not.toThrow();
     });
 
-    it("should handle items with undefined callbacks", () => {
+    it('should handle items with undefined callbacks', () => {
       const items = [{ id: 1, completed: false }];
-      const { result } = renderHook(() =>
-        useKeyboardNavigation({ items })
-      );
+      const { result } = renderHook(() => useKeyboardNavigation({ items }));
 
       expect(() => {
         act(() => {
@@ -181,7 +180,7 @@ describe("useKeyboardNavigation", () => {
       }).not.toThrow();
     });
 
-    it("should adjust selectedIndex when items shrink", () => {
+    it('should adjust selectedIndex when items shrink', () => {
       const { result, rerender } = renderHook(
         ({ items }) => useKeyboardNavigation({ items }),
         { initialProps: { items: [{ id: 1 }, { id: 2 }, { id: 3 }] } }
@@ -197,10 +196,8 @@ describe("useKeyboardNavigation", () => {
       expect(result.current.selectedIndex).toBe(1);
     });
 
-    it("should handle empty items with goToLast", () => {
-      const { result } = renderHook(() =>
-        useKeyboardNavigation({ items: [] })
-      );
+    it('should handle empty items with goToLast', () => {
+      const { result } = renderHook(() => useKeyboardNavigation({ items: [] }));
 
       expect(() => {
         act(() => {
@@ -211,23 +208,23 @@ describe("useKeyboardNavigation", () => {
   });
 });
 
-describe("useTaskKeyboardNavigation", () => {
+describe('useTaskKeyboardNavigation', () => {
   afterEach(() => {
     cleanup();
   });
 
-  it("should be defined", () => {
-    expect(typeof useTaskKeyboardNavigation).toBe("function");
+  it('should be defined', () => {
+    expect(typeof useTaskKeyboardNavigation).toBe('function');
   });
 
-  it("should return initial state", () => {
+  it('should return initial state', () => {
     const items = [{ id: 1 }, { id: 2 }];
     const { result } = renderHook(() => useTaskKeyboardNavigation(items));
     expect(result.current.selectedIndex).toBe(0);
     expect(result.current.isSelectMode).toBe(false);
   });
 
-  it("should navigate through items", () => {
+  it('should navigate through items', () => {
     const items = [{ id: 1 }, { id: 2 }, { id: 3 }];
     const { result } = renderHook(() => useTaskKeyboardNavigation(items));
 
@@ -239,7 +236,7 @@ describe("useTaskKeyboardNavigation", () => {
     expect(result.current.selectedIndex).toBe(2);
   });
 
-  it("should handle select mode", () => {
+  it('should handle select mode', () => {
     const items = [{ id: 1 }, { id: 2 }];
     const { result } = renderHook(() => useTaskKeyboardNavigation(items));
 
@@ -250,12 +247,12 @@ describe("useTaskKeyboardNavigation", () => {
     expect(result.current.isSelectMode).toBe(true);
   });
 
-  it("should handle empty items", () => {
+  it('should handle empty items', () => {
     const { result } = renderHook(() => useTaskKeyboardNavigation([]));
     expect(result.current.selectedIndex).toBe(0);
   });
 
-  it("should handle goToLast with empty items", () => {
+  it('should handle goToLast with empty items', () => {
     const { result } = renderHook(() => useTaskKeyboardNavigation([]));
 
     expect(() => {
@@ -265,7 +262,7 @@ describe("useTaskKeyboardNavigation", () => {
     }).not.toThrow();
   });
 
-  it("should set selectedIndex to -1 when goToLast is called with empty items", () => {
+  it('should set selectedIndex to -1 when goToLast is called with empty items', () => {
     const { result } = renderHook(() => useTaskKeyboardNavigation([]));
 
     act(() => {
@@ -275,7 +272,7 @@ describe("useTaskKeyboardNavigation", () => {
     expect(result.current.selectedIndex).toBe(-1);
   });
 
-  it("should handle select mode toggle", () => {
+  it('should handle select mode toggle', () => {
     const items = [{ id: 1 }, { id: 2 }];
     const { result } = renderHook(() => useTaskKeyboardNavigation(items));
 
