@@ -1,10 +1,19 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useRef, useCallback } from "react";
-import type { TaskWithRelations } from "@/types";
+import { useState, useEffect, useRef, useCallback } from 'react';
+import type { TaskWithRelations } from '@/types';
 
 interface CollaborationEvent {
-  type: "task_updated" | "task_created" | "task_deleted" | "comment_added" | "user_joined" | "user_left" | "cursor_position" | "typing_start" | "typing_stop";
+  type:
+    | 'task_updated'
+    | 'task_created'
+    | 'task_deleted'
+    | 'comment_added'
+    | 'user_joined'
+    | 'user_left'
+    | 'cursor_position'
+    | 'typing_start'
+    | 'typing_stop';
   taskId?: number;
   task?: Partial<TaskWithRelations>;
   userId?: number;
@@ -35,7 +44,9 @@ export function useCollaboration({
   const [connected, setConnected] = useState(false);
   const [presenceUsers, setPresenceUsers] = useState<PresenceUser[]>([]);
   const [typingUsers, setTypingUsers] = useState<Set<number>>(new Set());
-  const [cursorPositions, setCursorPositions] = useState<Record<number, { line: number; column: number }>>({});
+  const [cursorPositions, setCursorPositions] = useState<
+    Record<number, { line: number; column: number }>
+  >({});
 
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -45,32 +56,34 @@ export function useCollaboration({
       return;
     }
 
-    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:3001";
+    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3001';
 
     const connect = () => {
       try {
         wsRef.current = new WebSocket(wsUrl);
 
         wsRef.current.onopen = () => {
-          console.log("WebSocket connected");
+          console.log('WebSocket connected');
           setConnected(true);
 
           // Notify server we've joined
-          wsRef.current?.send(JSON.stringify({
-            type: "user_joined",
-            userId,
-            userName: userName ?? `User ${userId}`,
-            taskId,
-          }));
+          wsRef.current?.send(
+            JSON.stringify({
+              type: 'user_joined',
+              userId,
+              userName: userName ?? `User ${userId}`,
+              taskId,
+            })
+          );
         };
 
-        wsRef.current.onmessage = (event) => {
+        wsRef.current.onmessage = event => {
           const data: CollaborationEvent = JSON.parse(event.data);
           handleMessage(data);
         };
 
         wsRef.current.onclose = () => {
-          console.log("WebSocket disconnected");
+          console.log('WebSocket disconnected');
           setConnected(false);
 
           // Attempt to reconnect
@@ -80,11 +93,11 @@ export function useCollaboration({
           reconnectTimeoutRef.current = setTimeout(connect, 5000);
         };
 
-        wsRef.current.onerror = (error) => {
-          console.error("WebSocket error:", error);
+        wsRef.current.onerror = error => {
+          console.error('WebSocket error:', error);
         };
       } catch (error) {
-        console.error("Failed to connect WebSocket:", error);
+        console.error('Failed to connect WebSocket:', error);
       }
     };
 
@@ -100,85 +113,103 @@ export function useCollaboration({
     };
   }, [enabled, userId, userName, taskId]);
 
-  const handleMessage = useCallback((data: CollaborationEvent) => {
-    switch (data.type) {
-      case "user_joined":
-        if (data.userId !== undefined && data.userName) {
-          setPresenceUsers(prev => [
-            ...prev,
-            { userId: data.userId!, userName: data.userName!, joinedAt: new Date() }
-          ]);
-        }
-        break;
+  const handleMessage = useCallback(
+    (data: CollaborationEvent) => {
+      switch (data.type) {
+        case 'user_joined':
+          if (data.userId !== undefined && data.userName) {
+            setPresenceUsers(prev => [
+              ...prev,
+              {
+                userId: data.userId!,
+                userName: data.userName!,
+                joinedAt: new Date(),
+              },
+            ]);
+          }
+          break;
 
-      case "user_left":
-        const leftUserId = data.userId;
-        if (leftUserId !== undefined) {
-          setPresenceUsers(prev => prev.filter(u => u.userId !== leftUserId));
-          setCursorPositions(prev => {
-            const result: Record<number, { line: number; column: number }> = {};
-            for (const key in prev) {
-              const userId = Number(key);
-              if (userId !== leftUserId && prev[key]) {
-                result[userId] = prev[key]!;
+        case 'user_left':
+          const leftUserId = data.userId;
+          if (leftUserId !== undefined) {
+            setPresenceUsers(prev => prev.filter(u => u.userId !== leftUserId));
+            setCursorPositions(prev => {
+              const result: Record<number, { line: number; column: number }> =
+                {};
+              for (const key in prev) {
+                const userId = Number(key);
+                if (userId !== leftUserId && prev[key]) {
+                  result[userId] = prev[key]!;
+                }
               }
-            }
-            return result;
-          });
-        }
-        break;
+              return result;
+            });
+          }
+          break;
 
-      case "cursor_position":
-        const cursorUserId = data.userId;
-        if (cursorUserId !== undefined && data.cursor && taskId) {
-          const cursor = data.cursor;
-          setCursorPositions(prev => ({
-            ...prev,
-            [cursorUserId]: { line: cursor.line, column: cursor.column }
-          }));
-        }
-        break;
+        case 'cursor_position':
+          const cursorUserId = data.userId;
+          if (cursorUserId !== undefined && data.cursor && taskId) {
+            const cursor = data.cursor;
+            setCursorPositions(prev => ({
+              ...prev,
+              [cursorUserId]: { line: cursor.line, column: cursor.column },
+            }));
+          }
+          break;
 
-      case "typing_start":
-        const startUserId = data.userId;
-        if (startUserId !== undefined) {
-          setTypingUsers(prev => new Set([...Array.from(prev), startUserId]));
-        }
-        break;
+        case 'typing_start':
+          const startUserId = data.userId;
+          if (startUserId !== undefined) {
+            setTypingUsers(prev => new Set([...Array.from(prev), startUserId]));
+          }
+          break;
 
-      case "typing_stop":
-        const stopUserId = data.userId;
-        if (stopUserId !== undefined) {
-          setTypingUsers(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(stopUserId);
-            return newSet;
-          });
-        }
-        break;
-    }
-  }, [taskId]);
+        case 'typing_stop':
+          const stopUserId = data.userId;
+          if (stopUserId !== undefined) {
+            setTypingUsers(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(stopUserId);
+              return newSet;
+            });
+          }
+          break;
+      }
+    },
+    [taskId]
+  );
 
-  const sendCursorPosition = useCallback((cursor: { line: number; column: number }) => {
-    if (!connected || !taskId || !userId) return;
+  const sendCursorPosition = useCallback(
+    (cursor: { line: number; column: number }) => {
+      if (!connected || !taskId || !userId) return;
 
-    wsRef.current?.send(JSON.stringify({
-      type: "cursor_position",
-      taskId,
-      userId,
-      cursor,
-    }));
-  }, [connected, taskId, userId]);
+      wsRef.current?.send(
+        JSON.stringify({
+          type: 'cursor_position',
+          taskId,
+          userId,
+          cursor,
+        })
+      );
+    },
+    [connected, taskId, userId]
+  );
 
-  const sendTypingStatus = useCallback((isTyping: boolean) => {
-    if (!connected || !taskId) return;
+  const sendTypingStatus = useCallback(
+    (isTyping: boolean) => {
+      if (!connected || !taskId) return;
 
-    wsRef.current?.send(JSON.stringify({
-      type: isTyping ? "typing_start" : "typing_stop",
-      taskId,
-      userId,
-    }));
-  }, [connected, taskId, userId]);
+      wsRef.current?.send(
+        JSON.stringify({
+          type: isTyping ? 'typing_start' : 'typing_stop',
+          taskId,
+          userId,
+        })
+      );
+    },
+    [connected, taskId, userId]
+  );
 
   return {
     connected,
@@ -191,20 +222,23 @@ export function useCollaboration({
 }
 
 // Hook for subscribing to task updates
-export function useTaskUpdates(taskId: number, onUpdate: (task: TaskWithRelations) => void) {
+export function useTaskUpdates(
+  taskId: number,
+  onUpdate: (task: TaskWithRelations) => void
+) {
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       const data = JSON.parse(event.data);
-      if (data.taskId === taskId && data.type === "task_updated") {
+      if (data.taskId === taskId && data.type === 'task_updated') {
         onUpdate(data.task);
       }
     };
 
     // In a real app, this would use the WebSocket connection
-    window.addEventListener("message", handleMessage);
+    window.addEventListener('message', handleMessage);
 
     return () => {
-      window.removeEventListener("message", handleMessage);
+      window.removeEventListener('message', handleMessage);
     };
   }, [taskId, onUpdate]);
 }
