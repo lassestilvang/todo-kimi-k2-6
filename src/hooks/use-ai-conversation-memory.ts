@@ -1,12 +1,12 @@
 // AI Conversation Memory Hook
 // Stores and retrieves conversation context for natural language task management
 
-import { useState, useEffect, useCallback } from "react";
-import type { TaskWithRelations } from "@/types";
+import { useState, useEffect, useCallback } from 'react';
+import type { TaskWithRelations } from '@/types';
 
 interface ConversationMessage {
   id: string;
-  role: "user" | "assistant";
+  role: 'user' | 'assistant';
   content: string;
   timestamp: number;
   taskId?: number;
@@ -15,7 +15,12 @@ interface ConversationMessage {
 
 interface ConversationContext {
   messages: ConversationMessage[];
-  recentTasks: Array<{ id: number; name: string; date?: string | null; priority?: string }>;
+  recentTasks: Array<{
+    id: number;
+    name: string;
+    date?: string | null;
+    priority?: string;
+  }>;
   userPreferences?: {
     workHours?: { start: number; end: number };
     preferredTimes?: string[];
@@ -27,18 +32,21 @@ const MAX_CONTEXT_MESSAGES = 10;
 const CONTEXT_EXPIRY_MS = 30 * 60 * 1000; // 30 minutes
 
 export function useAIConversationMemory(userId?: number) {
-  const [context, setContext] = useState<ConversationContext>({ messages: [], recentTasks: [] });
+  const [context, setContext] = useState<ConversationContext>({
+    messages: [],
+    recentTasks: [],
+  });
 
   // Load context from localStorage on mount
   useEffect(() => {
-    const stored = localStorage.getItem("ai-conversation-context");
+    const stored = localStorage.getItem('ai-conversation-context');
     if (stored) {
       try {
         const parsed = JSON.parse(stored) as ConversationContext;
         // Filter out expired messages
         const now = Date.now();
         const freshMessages = parsed.messages.filter(
-          (m) => now - m.timestamp < CONTEXT_EXPIRY_MS
+          m => now - m.timestamp < CONTEXT_EXPIRY_MS
         );
         setContext({ ...parsed, messages: freshMessages });
       } catch {
@@ -51,12 +59,17 @@ export function useAIConversationMemory(userId?: number) {
   // Save context to localStorage
   const saveContext = useCallback((newContext: ConversationContext) => {
     setContext(newContext);
-    localStorage.setItem("ai-conversation-context", JSON.stringify(newContext));
+    localStorage.setItem('ai-conversation-context', JSON.stringify(newContext));
   }, []);
 
   // Add a message to context
   const addMessage = useCallback(
-    (role: "user" | "assistant", content: string, taskId?: number, action?: string) => {
+    (
+      role: 'user' | 'assistant',
+      content: string,
+      taskId?: number,
+      action?: string
+    ) => {
       const newContext = {
         ...context,
         messages: [
@@ -81,9 +94,9 @@ export function useAIConversationMemory(userId?: number) {
     (currentQuery: string): string => {
       const relevantMessages = context.messages
         .slice(-5)
-        .filter((m) => m.role === "user" || m.role === "assistant")
-        .map((m) => `${m.role}: ${m.content}`)
-        .join("\n");
+        .filter(m => m.role === 'user' || m.role === 'assistant')
+        .map(m => `${m.role}: ${m.content}`)
+        .join('\n');
 
       return relevantMessages;
     },
@@ -105,21 +118,23 @@ export function useAIConversationMemory(userId?: number) {
           const taskNameMatch = msg.content.match(/"([^"]+)"/g);
           if (taskNameMatch) {
             for (const match of taskNameMatch) {
-              const taskName = match.replace(/"/g, "");
+              const taskName = match.replace(/"/g, '');
               const found = tasks.find(
-                (t) => t.name.toLowerCase().includes(taskName.toLowerCase()) || taskName.toLowerCase().includes(t.name.toLowerCase())
+                t =>
+                  t.name.toLowerCase().includes(taskName.toLowerCase()) ||
+                  taskName.toLowerCase().includes(t.name.toLowerCase())
               );
               if (found) return found;
             }
           }
 
           // Check for pronoun references
-          if (query.includes("that task") || query.includes("this task")) {
+          if (query.includes('that task') || query.includes('this task')) {
             // Look for task in recent assistant messages
             for (let j = i; j >= 0; j--) {
               const prevMsg = context.messages[j];
               if (prevMsg.taskId) {
-                const found = tasks.find((t) => t.id === prevMsg.taskId);
+                const found = tasks.find(t => t.id === prevMsg.taskId);
                 if (found) return found;
               }
             }
@@ -127,11 +142,11 @@ export function useAIConversationMemory(userId?: number) {
         }
 
         // Check for "the one we discussed" pattern
-        if (query.includes("we discussed") || query.includes("talked about")) {
+        if (query.includes('we discussed') || query.includes('talked about')) {
           for (let i = context.messages.length - 1; i >= 0; i--) {
             const msg = context.messages[i];
-            if (msg.role === "assistant" && msg.taskId) {
-              const found = tasks.find((t) => t.id === msg.taskId);
+            if (msg.role === 'assistant' && msg.taskId) {
+              const found = tasks.find(t => t.id === msg.taskId);
               if (found) return found;
             }
           }
@@ -139,7 +154,7 @@ export function useAIConversationMemory(userId?: number) {
 
         // Check for recent task mentions
         const recentUserMessages = context.messages
-          .filter((m) => m.role === "user")
+          .filter(m => m.role === 'user')
           .slice(-3);
 
         for (const msg of recentUserMessages) {
@@ -159,12 +174,12 @@ export function useAIConversationMemory(userId?: number) {
   // Clear context
   const clearContext = useCallback(() => {
     setContext({ messages: [], recentTasks: [] });
-    localStorage.removeItem("ai-conversation-context");
+    localStorage.removeItem('ai-conversation-context');
   }, []);
 
   // Update user preferences
   const updateUserPreferences = useCallback(
-    (preferences: ConversationContext["userPreferences"]) => {
+    (preferences: ConversationContext['userPreferences']) => {
       const newContext = { ...context, userPreferences: preferences };
       saveContext(newContext);
     },
