@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { toast } from "sonner";
+import { useState } from 'react';
+import { toast } from 'sonner';
 
 /**
  * Hook for undo functionality on destructive actions
@@ -20,7 +20,7 @@ export function useUndo<T>() {
     action: () => void | Promise<void>,
     undoAction: () => void | Promise<void>,
     message: string,
-    undoLabel = "Undo"
+    undoLabel = 'Undo'
   ): void | Promise<void> {
     // Cancel any existing pending undo
     if (pendingAction) {
