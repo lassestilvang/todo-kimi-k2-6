@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect } from 'react';
 
 interface VoteStats {
   total: number;
@@ -40,7 +40,7 @@ export function useTaskVotes(taskIds: number[]) {
 
         setVoteCache(newCache);
       } catch (error) {
-        console.error("Failed to fetch votes:", error);
+        console.error('Failed to fetch votes:', error);
       } finally {
         setIsLoading(false);
       }
@@ -51,15 +51,15 @@ export function useTaskVotes(taskIds: number[]) {
 
   const vote = async (taskId: number, value: -1 | 1) => {
     try {
-      const response = await fetch("/api/task-votes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/task-votes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ task_id: taskId, value }),
       });
 
       if (response.ok) {
         const data = await response.json();
-        setVoteCache((prev) => ({
+        setVoteCache(prev => ({
           ...prev,
           [taskId]: {
             total: data.stats.total,
@@ -70,7 +70,7 @@ export function useTaskVotes(taskIds: number[]) {
         return data;
       }
     } catch (error) {
-      console.error("Failed to vote:", error);
+      console.error('Failed to vote:', error);
     }
     return null;
   };
