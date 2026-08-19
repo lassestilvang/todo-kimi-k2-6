@@ -1,11 +1,11 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { renderHook, cleanup } from "@testing-library/react";
-import { useIsMobile } from "../use-mobile";
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { renderHook, cleanup } from '@testing-library/react';
+import { useIsMobile } from '../use-mobile';
 
 const createMatchMediaMock = (matches: boolean) => {
   return vi.fn().mockImplementation(() => ({
     matches,
-    media: "(max-width: 767px)",
+    media: '(max-width: 767px)',
     onchange: null,
     addListener: vi.fn(),
     removeListener: vi.fn(),
@@ -19,7 +19,7 @@ interface MediaQueryBuilder {
   (query: string): MediaQueryList;
 }
 
-describe("useIsMobile", () => {
+describe('useIsMobile', () => {
   let originalMatchMedia: MediaQueryBuilder;
   let originalInnerWidth: number;
 
@@ -34,11 +34,11 @@ describe("useIsMobile", () => {
     cleanup();
   });
 
-  it("should be defined", () => {
-    expect(typeof useIsMobile).toBe("function");
+  it('should be defined', () => {
+    expect(typeof useIsMobile).toBe('function');
   });
 
-  it("should return false when viewport width is >= 768px", () => {
+  it('should return false when viewport width is >= 768px', () => {
     window.innerWidth = 1024;
     window.matchMedia = createMatchMediaMock(false);
 
@@ -46,7 +46,7 @@ describe("useIsMobile", () => {
     expect(result.current).toBe(false);
   });
 
-  it("should return true when viewport width is < 768px", () => {
+  it('should return true when viewport width is < 768px', () => {
     window.innerWidth = 600;
     window.matchMedia = createMatchMediaMock(true);
 
@@ -54,19 +54,23 @@ describe("useIsMobile", () => {
     expect(result.current).toBe(true);
   });
 
-  it("should handle matchMedia change events", () => {
-    let changeHandler: ((this: MediaQueryList, ev: MediaQueryListEvent) => void) | null = null;
+  it('should handle matchMedia change events', () => {
+    let changeHandler:
+      ((this: MediaQueryList, ev: MediaQueryListEvent) => void) | null = null;
 
     window.innerWidth = 1024;
     window.matchMedia = vi.fn().mockImplementation((query: string) => {
       const mql = {
-        matches: query === "(max-width: 767px)",
+        matches: query === '(max-width: 767px)',
         media: query,
         onchange: null,
         addListener: vi.fn(),
         removeListener: vi.fn(),
-        addEventListener: (type: string, handler: (this: MediaQueryList, ev: MediaQueryListEvent) => void) => {
-          if (type === "change") {
+        addEventListener: (
+          type: string,
+          handler: (this: MediaQueryList, ev: MediaQueryListEvent) => void
+        ) => {
+          if (type === 'change') {
             changeHandler = handler;
           }
         },
@@ -84,19 +88,22 @@ describe("useIsMobile", () => {
     if (changeHandler) {
       const mockEvent = {
         matches: true,
-        media: "(max-width: 767px)",
+        media: '(max-width: 767px)',
       } as MediaQueryListEvent;
-      (changeHandler as any).call({ matches: true, media: "(max-width: 767px)" } as MediaQueryList, mockEvent);
+      (changeHandler as any).call(
+        { matches: true, media: '(max-width: 767px)' } as MediaQueryList,
+        mockEvent
+      );
     }
   });
 
-  it("should cleanup matchMedia listener on unmount", () => {
+  it('should cleanup matchMedia listener on unmount', () => {
     window.innerWidth = 1024;
     let removed = false;
 
     window.matchMedia = vi.fn().mockImplementation(() => ({
       matches: false,
-      media: "(max-width: 767px)",
+      media: '(max-width: 767px)',
       onchange: null,
       addListener: vi.fn(),
       removeListener: vi.fn(),
@@ -112,7 +119,7 @@ describe("useIsMobile", () => {
     expect(removed).toBe(true);
   });
 
-  it("should handle edge case at breakpoint (767px)", () => {
+  it('should handle edge case at breakpoint (767px)', () => {
     window.innerWidth = 767;
     window.matchMedia = createMatchMediaMock(true);
 
@@ -120,7 +127,7 @@ describe("useIsMobile", () => {
     expect(result.current).toBe(true);
   });
 
-  it("should handle edge case at breakpoint (768px)", () => {
+  it('should handle edge case at breakpoint (768px)', () => {
     window.innerWidth = 768;
     window.matchMedia = createMatchMediaMock(false);
 
