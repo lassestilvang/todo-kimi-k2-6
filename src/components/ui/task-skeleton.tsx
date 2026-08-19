@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
+import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 
 interface TaskSkeletonProps {
   className?: string;
@@ -10,7 +10,7 @@ interface TaskSkeletonProps {
 
 export function TaskSkeleton({ className, count = 5 }: TaskSkeletonProps) {
   return (
-    <div className={cn("space-y-3", className)}>
+    <div className={cn('space-y-3', className)}>
       {Array.from({ length: count }).map((_, i) => (
         <div key={i} className="flex items-center gap-3 p-3 border rounded-lg">
           <Skeleton className="h-4 w-4" />
