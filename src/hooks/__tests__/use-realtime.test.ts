@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { renderHook } from "@testing-library/react";
-import { useRealtime } from "../use-realtime";
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { renderHook } from '@testing-library/react';
+import { useRealtime } from '../use-realtime';
 
 // Mock WebSocket constructor
 class MockWebSocket {
@@ -29,7 +29,7 @@ class MockWebSocket {
   }
 }
 
-describe("useRealtime Hook", () => {
+describe('useRealtime Hook', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Mock WebSocket
@@ -40,19 +40,19 @@ describe("useRealtime Hook", () => {
     vi.restoreAllMocks();
   });
 
-  describe("Connection Management", () => {
-    it("should be a function", () => {
+  describe('Connection Management', () => {
+    it('should be a function', () => {
       expect(typeof useRealtime).toBe('function');
     });
 
-    it("should return connection state", () => {
+    it('should return connection state', () => {
       const { result } = renderHook(() => useRealtime());
       expect(result.current).toHaveProperty('connected');
       expect(result.current).toHaveProperty('connect');
       expect(result.current).toHaveProperty('disconnect');
     });
 
-    it("should return subscription methods", () => {
+    it('should return subscription methods', () => {
       const { result } = renderHook(() => useRealtime());
       expect(result.current).toHaveProperty('subscribeToTask');
       expect(result.current).toHaveProperty('unsubscribeFromTask');
