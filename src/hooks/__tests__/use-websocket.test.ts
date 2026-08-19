@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { renderHook, act } from "@testing-library/react";
-import type { WSMessage } from "@/lib/ws";
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { renderHook, act } from '@testing-library/react';
+import type { WSMessage } from '@/lib/ws';
 
 // Mock WebSocket
 class MockWebSocket {
@@ -29,13 +29,13 @@ class MockWebSocket {
 }
 
 // Mock the ws client module
-vi.mock("@/lib/ws", () => ({
+vi.mock('@/lib/ws', () => ({
   wsClient: {
     connect: vi.fn(),
     disconnect: vi.fn(),
     subscribe: vi.fn().mockReturnValue(() => {}),
     send: vi.fn(),
-    ["ws"]: { readyState: 1 }, // OPEN
+    ['ws']: { readyState: 1 }, // OPEN
   },
 }));
 
@@ -43,9 +43,9 @@ vi.mock("@/lib/ws", () => ({
 global.WebSocket = MockWebSocket as any;
 
 // Import after mock setup
-import { useWebSocket } from "../use-websocket";
+import { useWebSocket } from '../use-websocket';
 
-describe("useWebSocket", () => {
+describe('useWebSocket', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -54,53 +54,55 @@ describe("useWebSocket", () => {
     vi.restoreAllMocks();
   });
 
-  describe("hook structure", () => {
-    it("should return expected properties", () => {
+  describe('hook structure', () => {
+    it('should return expected properties', () => {
       const { result } = renderHook(() => useWebSocket());
 
-      expect(result.current).toHaveProperty("isConnected");
-      expect(result.current).toHaveProperty("presence");
-      expect(result.current).toHaveProperty("sendTaskUpdate");
-      expect(result.current).toHaveProperty("sendPresence");
+      expect(result.current).toHaveProperty('isConnected');
+      expect(result.current).toHaveProperty('presence');
+      expect(result.current).toHaveProperty('sendTaskUpdate');
+      expect(result.current).toHaveProperty('sendPresence');
     });
 
-    it("should have initial connected state based on ws readyState", () => {
+    it('should have initial connected state based on ws readyState', () => {
       const { result } = renderHook(() => useWebSocket());
-      expect(typeof result.current.isConnected).toBe("boolean");
+      expect(typeof result.current.isConnected).toBe('boolean');
     });
   });
 
-  describe("sendTaskUpdate", () => {
-    it("should exist and be callable", () => {
+  describe('sendTaskUpdate', () => {
+    it('should exist and be callable', () => {
       const { result } = renderHook(() => useWebSocket());
-      expect(typeof result.current.sendTaskUpdate).toBe("function");
+      expect(typeof result.current.sendTaskUpdate).toBe('function');
 
       act(() => {
-        result.current.sendTaskUpdate(123, { name: "Test" });
+        result.current.sendTaskUpdate(123, { name: 'Test' });
       });
     });
   });
 
-  describe("sendPresence", () => {
-    it("should exist and be callable", () => {
+  describe('sendPresence', () => {
+    it('should exist and be callable', () => {
       const { result } = renderHook(() => useWebSocket());
-      expect(typeof result.current.sendPresence).toBe("function");
+      expect(typeof result.current.sendPresence).toBe('function');
 
       act(() => {
-        result.current.sendPresence(1, "Test User");
+        result.current.sendPresence(1, 'Test User');
       });
     });
   });
 
-  describe("onMessage callback", () => {
-    it("should accept onMessage option", () => {
+  describe('onMessage callback', () => {
+    it('should accept onMessage option', () => {
       const mockCallback = vi.fn();
-      const { result } = renderHook(() => useWebSocket({ onMessage: mockCallback }));
+      const { result } = renderHook(() =>
+        useWebSocket({ onMessage: mockCallback })
+      );
 
       expect(result.current).toBeDefined();
     });
 
-    it("should accept taskId option", () => {
+    it('should accept taskId option', () => {
       const { result } = renderHook(() => useWebSocket({ taskId: 123 }));
 
       expect(result.current).toBeDefined();
