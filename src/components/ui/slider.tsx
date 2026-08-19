@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { cn } from "@/lib/utils";
+import * as React from 'react';
+import { cn } from '@/lib/utils';
 
 interface SliderProps {
   value: number[];
@@ -37,12 +37,12 @@ export function Slider({
       step={step}
       disabled={disabled}
       className={cn(
-        "w-full h-2 rounded-lg bg-gray-200 dark:bg-gray-700 outline-none",
-        "accent-primary disabled:cursor-not-allowed disabled:opacity-50",
+        'w-full h-2 rounded-lg bg-gray-200 dark:bg-gray-700 outline-none',
+        'accent-primary disabled:cursor-not-allowed disabled:opacity-50',
         className
       )}
     />
   );
 }
 
-Slider.displayName = "Slider";
+Slider.displayName = 'Slider';
