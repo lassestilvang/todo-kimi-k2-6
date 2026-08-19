@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect } from 'react';
 
 interface UseKeyboardNavigationOptions {
   items: { id: number; completed?: boolean }[];
@@ -19,15 +19,18 @@ export function useKeyboardNavigation({
   const [isFocused, setIsFocused] = useState(false);
 
   const goToNext = useCallback(() => {
-    setSelectedIndex((prev) => Math.min(prev + 1, items.length - 1));
+    setSelectedIndex(prev => Math.min(prev + 1, items.length - 1));
   }, [items.length]);
 
   const goToPrevious = useCallback(() => {
-    setSelectedIndex((prev) => Math.max(prev - 1, 0));
+    setSelectedIndex(prev => Math.max(prev - 1, 0));
   }, [items.length]);
 
   const goToFirst = useCallback(() => setSelectedIndex(0), []);
-  const goToLast = useCallback(() => setSelectedIndex(items.length - 1), [items.length]);
+  const goToLast = useCallback(
+    () => setSelectedIndex(items.length - 1),
+    [items.length]
+  );
 
   const selectCurrent = useCallback(() => {
     if (items[selectedIndex]) {
@@ -75,20 +78,25 @@ export function useKeyboardNavigation({
   };
 }
 
-export function useTaskKeyboardNavigation(items: { id: number; completed?: boolean }[]) {
+export function useTaskKeyboardNavigation(
+  items: { id: number; completed?: boolean }[]
+) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isSelectMode, setIsSelectMode] = useState(false);
 
   const goToNext = useCallback(() => {
-    setSelectedIndex((prev) => Math.min(prev + 1, items.length - 1));
+    setSelectedIndex(prev => Math.min(prev + 1, items.length - 1));
   }, [items.length]);
 
   const goToPrevious = useCallback(() => {
-    setSelectedIndex((prev) => Math.max(prev - 1, 0));
+    setSelectedIndex(prev => Math.max(prev - 1, 0));
   }, [items.length]);
 
   const goToFirst = useCallback(() => setSelectedIndex(0), []);
-  const goToLast = useCallback(() => setSelectedIndex(items.length - 1), [items.length]);
+  const goToLast = useCallback(
+    () => setSelectedIndex(items.length - 1),
+    [items.length]
+  );
 
   return {
     selectedIndex,
