@@ -1,8 +1,20 @@
-import { useState, useCallback, useRef, useMemo } from "react";
-import type { TaskWithRelations, List, Label, FilterPreset, Priority } from "@/types";
+import { useState, useCallback, useRef, useMemo } from 'react';
+import type {
+  TaskWithRelations,
+  List,
+  Label,
+  FilterPreset,
+  Priority,
+} from '@/types';
 
 // Priority order for sorting - defined outside hook to avoid dependency issues
-const PRIORITY_ORDER: Record<Priority, number> = { critical: 0, high: 1, medium: 2, low: 3, none: 4 };
+const PRIORITY_ORDER: Record<Priority, number> = {
+  critical: 0,
+  high: 1,
+  medium: 2,
+  low: 3,
+  none: 4,
+};
 
 interface UseTasksOptions {
   initialTasks: TaskWithRelations[];
@@ -10,8 +22,9 @@ interface UseTasksOptions {
   initialLabels: Label[];
 }
 
-type SortField = "name" | "date" | "deadline" | "priority" | "created_at" | "updated_at";
-type SortDirection = "asc" | "desc";
+type SortField =
+  'name' | 'date' | 'deadline' | 'priority' | 'created_at' | 'updated_at';
+type SortDirection = 'asc' | 'desc';
 
 interface UseTasksResult {
   tasks: TaskWithRelations[];
@@ -54,12 +67,14 @@ export function useTasks({
   const [tasks, setTasks] = useState<TaskWithRelations[]>(initialTasks);
   const [lists, setLists] = useState<List[]>(initialLists);
   const [labels, setLabels] = useState<Label[]>(initialLabels);
-  const [currentView, setCurrentView] = useState<string>("today");
+  const [currentView, setCurrentView] = useState<string>('today');
   const [currentListId, setCurrentListId] = useState<number | undefined>();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [currentFilterPreset, setCurrentFilterPreset] = useState<FilterPreset | undefined>();
-  const [sortBy, setSortBy] = useState<SortField>("date");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentFilterPreset, setCurrentFilterPreset] = useState<
+    FilterPreset | undefined
+  >();
+  const [sortBy, setSortBy] = useState<SortField>('date');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [filterListId, setFilterListId] = useState<number | undefined>();
   const [filterLabelIds, setFilterLabelIds] = useState<number[]>([]);
   const [filterPriority, setFilterPriority] = useState<Priority | undefined>();
@@ -69,14 +84,14 @@ export function useTasks({
   // Use dynamic import for SSR compatibility
   // Note: We only create the instance once and update its collection separately
   const fuseInstance = useMemo(() => {
-    if (typeof window === "undefined") return null;
+    if (typeof window === 'undefined') return null;
     try {
       // Dynamic import for Fuse.js (SSR-safe)
       // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const FuseModule = require("fuse.js");
+      const FuseModule = require('fuse.js');
       const Fuse = FuseModule.default || FuseModule;
       return new Fuse([], {
-        keys: ["name", "description", "notes"],
+        keys: ['name', 'description', 'notes'],
         threshold: 0.4,
         minMatchCharLength: 2,
         shouldSort: true,
@@ -95,39 +110,43 @@ export function useTasks({
     if (searchQuery && fuseInstance) {
       // Update the fuse instance with current tasks before searching
       fuseInstance.setCollection(tasks);
-      result = fuseInstance.search(searchQuery).map((r: { item: TaskWithRelations }) => r.item);
+      result = fuseInstance
+        .search(searchQuery)
+        .map((r: { item: TaskWithRelations }) => r.item);
     } else if (!currentFilterPreset && !searchQuery) {
       const now = new Date();
-      const today = now.toISOString().split("T")[0];
+      const today = now.toISOString().split('T')[0];
       const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
         .toISOString()
-        .split("T")[0];
+        .split('T')[0];
 
-      if (currentView === "today") {
-        result = tasks.filter((t) => t.date === today);
-      } else if (currentView === "next7") {
-        result = tasks.filter((t) => t.date && t.date >= today && t.date <= nextWeek);
-      } else if (currentView === "upcoming") {
-        result = tasks.filter((t) => t.date && t.date >= today);
-      } else if (currentView === "blocked") {
-        result = tasks.filter((t) => t.blocked_by && t.blocked_by.length > 0);
+      if (currentView === 'today') {
+        result = tasks.filter(t => t.date === today);
+      } else if (currentView === 'next7') {
+        result = tasks.filter(
+          t => t.date && t.date >= today && t.date <= nextWeek
+        );
+      } else if (currentView === 'upcoming') {
+        result = tasks.filter(t => t.date && t.date >= today);
+      } else if (currentView === 'blocked') {
+        result = tasks.filter(t => t.blocked_by && t.blocked_by.length > 0);
       }
     }
 
     // Filter out completed tasks
-    result = result.filter((t) => !t.completed);
+    result = result.filter(t => !t.completed);
 
     // Apply additional filters
     if (filterListId !== undefined) {
-      result = result.filter((t) => t.list_id === filterListId);
+      result = result.filter(t => t.list_id === filterListId);
     }
     if (filterLabelIds.length > 0) {
-      result = result.filter((t) =>
-        filterLabelIds.every((id) => t.labels?.some((l) => l.id === id))
+      result = result.filter(t =>
+        filterLabelIds.every(id => t.labels?.some(l => l.id === id))
       );
     }
-    if (filterPriority !== undefined && filterPriority !== "none") {
-      result = result.filter((t) => t.priority === filterPriority);
+    if (filterPriority !== undefined && filterPriority !== 'none') {
+      result = result.filter(t => t.priority === filterPriority);
     }
 
     // Apply sorting with stable sort
@@ -135,47 +154,58 @@ export function useTasks({
       let aValue: string | number, bValue: string | number;
 
       switch (sortBy) {
-        case "name":
+        case 'name':
           aValue = a.name.toLowerCase();
           bValue = b.name.toLowerCase();
           break;
-        case "date":
-          aValue = a.date || "zzz";
-          bValue = b.date || "zzz";
+        case 'date':
+          aValue = a.date || 'zzz';
+          bValue = b.date || 'zzz';
           break;
-        case "deadline":
-          aValue = a.deadline || "zzz";
-          bValue = b.deadline || "zzz";
+        case 'deadline':
+          aValue = a.deadline || 'zzz';
+          bValue = b.deadline || 'zzz';
           break;
-        case "priority":
+        case 'priority':
           aValue = PRIORITY_ORDER[a.priority];
           bValue = PRIORITY_ORDER[b.priority];
           break;
-        case "created_at":
+        case 'created_at':
           aValue = a.created_at;
           bValue = b.created_at;
           break;
-        case "updated_at":
+        case 'updated_at':
           aValue = a.updated_at;
           bValue = b.updated_at;
           break;
         default:
-          aValue = a.date || "zzz";
-          bValue = b.date || "zzz";
+          aValue = a.date || 'zzz';
+          bValue = b.date || 'zzz';
       }
 
-      if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
-      if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
       return 0;
     });
 
     return sorted;
-  }, [tasks, currentView, currentFilterPreset, searchQuery, sortBy, sortDirection, filterListId, filterLabelIds, filterPriority, fuseInstance]); // priorityOrder is a stable constant (no deps)
+  }, [
+    tasks,
+    currentView,
+    currentFilterPreset,
+    searchQuery,
+    sortBy,
+    sortDirection,
+    filterListId,
+    filterLabelIds,
+    filterPriority,
+    fuseInstance,
+  ]); // priorityOrder is a stable constant (no deps)
 
   // Calculate overdue count
   const overdueCount = useMemo(() => {
     return tasks.filter(
-      (t) =>
+      t =>
         !t.completed &&
         t.date &&
         new Date(t.date) < new Date() &&
@@ -186,30 +216,30 @@ export function useTasks({
   const handleViewChange = useCallback((view: string, listId?: number) => {
     setCurrentView(view);
     setCurrentListId(listId);
-    setSearchQuery("");
+    setSearchQuery('');
     setCurrentFilterPreset(undefined);
   }, []);
 
   const handleSearch = useCallback((query: string) => {
     setSearchQuery(query);
     if (query) {
-      setCurrentView("search");
+      setCurrentView('search');
     } else {
-      setCurrentView("today");
+      setCurrentView('today');
     }
   }, []);
 
   const handleFilterPresetChange = useCallback((preset?: FilterPreset) => {
     setCurrentFilterPreset(preset);
     if (preset) {
-      setCurrentView("all");
+      setCurrentView('all');
     }
   }, []);
 
   const handleSort = useCallback((field: SortField) => {
     setSortBy(field);
     // Toggle direction if clicking the same field, otherwise default to asc
-    setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
   }, []);
 
   const handleFilterList = useCallback((listId: number | undefined) => {
@@ -217,7 +247,7 @@ export function useTasks({
   }, []);
 
   const handleFilterLabel = useCallback((labelId: number) => {
-    setFilterLabelIds((prev) => {
+    setFilterLabelIds(prev => {
       const next = new Set(prev);
       if (next.has(labelId)) {
         next.delete(labelId);
