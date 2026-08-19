@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
-describe("Cache - Redis Integration Tests", () => {
+describe('Cache - Redis Integration Tests', () => {
   const originalRedisUrl = process.env.REDIS_URL;
 
   beforeEach(() => {
@@ -13,33 +13,33 @@ describe("Cache - Redis Integration Tests", () => {
     vi.clearAllMocks();
   });
 
-  describe("Redis fallback behavior", () => {
-    it("should fall back to memory cache when Redis not configured", async () => {
+  describe('Redis fallback behavior', () => {
+    it('should fall back to memory cache when Redis not configured', async () => {
       // Import fresh module without Redis
       vi.resetModules();
 
-      const { set, get } = await import("@/lib/cache");
+      const { set, get } = await import('@/lib/cache');
 
-      await set("test-key", "test-value");
-      const result = await get("test-key");
+      await set('test-key', 'test-value');
+      const result = await get('test-key');
 
-      expect(result).toBe("test-value");
+      expect(result).toBe('test-value');
     });
 
-    it("should handle Redis connection failure", async () => {
-      const { set, get } = await import("@/lib/cache");
+    it('should handle Redis connection failure', async () => {
+      const { set, get } = await import('@/lib/cache');
 
       // Set without Redis
-      await set("fallback-key", "fallback-value");
-      const result = await get("fallback-key");
+      await set('fallback-key', 'fallback-value');
+      const result = await get('fallback-key');
 
-      expect(result).toBe("fallback-value");
+      expect(result).toBe('fallback-value');
     });
   });
 
-  describe("taskCache.invalidate with Redis", () => {
-    it("should handle invalidate without Redis", async () => {
-      const { taskCache } = await import("@/lib/cache");
+  describe('taskCache.invalidate with Redis', () => {
+    it('should handle invalidate without Redis', async () => {
+      const { taskCache } = await import('@/lib/cache');
 
       // Should not throw
       await taskCache.tasks.invalidate();
@@ -47,62 +47,62 @@ describe("Cache - Redis Integration Tests", () => {
     });
   });
 
-  describe("Cache serialization", () => {
-    it("should serialize complex objects", async () => {
-      const { set, get } = await import("@/lib/cache");
+  describe('Cache serialization', () => {
+    it('should serialize complex objects', async () => {
+      const { set, get } = await import('@/lib/cache');
 
       const complex = {
         nested: { a: 1, b: 2 },
         array: [1, 2, 3],
-        string: "test",
+        string: 'test',
       };
 
-      await set("complex", complex);
-      const result = await get<typeof complex>("complex");
+      await set('complex', complex);
+      const result = await get<typeof complex>('complex');
 
       expect(result?.nested).toEqual({ a: 1, b: 2 });
       expect(result?.array).toEqual([1, 2, 3]);
     });
 
-    it("should handle arrays", async () => {
-      const { set, get } = await import("@/lib/cache");
+    it('should handle arrays', async () => {
+      const { set, get } = await import('@/lib/cache');
 
       const arr = [1, 2, 3, 4, 5];
-      await set("array", arr);
+      await set('array', arr);
 
-      const result = await get<number[]>("array");
+      const result = await get<number[]>('array');
       expect(result).toEqual([1, 2, 3, 4, 5]);
     });
 
-    it("should handle empty objects", async () => {
-      const { set, get } = await import("@/lib/cache");
+    it('should handle empty objects', async () => {
+      const { set, get } = await import('@/lib/cache');
 
-      await set("empty-object", {});
-      const result = await get("empty-object");
+      await set('empty-object', {});
+      const result = await get('empty-object');
       expect(result).toEqual({});
     });
   });
 
-  describe("Cache key patterns", () => {
-    it("should handle task cache key patterns", async () => {
-      const { taskCache } = await import("@/lib/cache");
+  describe('Cache key patterns', () => {
+    it('should handle task cache key patterns', async () => {
+      const { taskCache } = await import('@/lib/cache');
 
-      const key = taskCache.tasks.key("filter:urgent,sort:date,desc");
-      expect(key).toBe("tasks:filter:urgent,sort:date,desc");
+      const key = taskCache.tasks.key('filter:urgent,sort:date,desc');
+      expect(key).toBe('tasks:filter:urgent,sort:date,desc');
     });
 
-    it("should handle list cache key", async () => {
-      const { taskCache } = await import("@/lib/cache");
+    it('should handle list cache key', async () => {
+      const { taskCache } = await import('@/lib/cache');
 
       const key = taskCache.lists.key();
-      expect(key).toBe("lists");
+      expect(key).toBe('lists');
     });
 
-    it("should handle label cache key", async () => {
-      const { taskCache } = await import("@/lib/cache");
+    it('should handle label cache key', async () => {
+      const { taskCache } = await import('@/lib/cache');
 
       const key = taskCache.labels.key();
-      expect(key).toBe("labels");
+      expect(key).toBe('labels');
     });
   });
 });
