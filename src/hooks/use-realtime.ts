@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 /**
  * WebSocket connection types
@@ -53,7 +53,7 @@ export function useRealtime(token?: string): UseRealtimeReturn {
         reconnectAttemptsRef.current = 0;
       };
 
-      ws.onmessage = (event) => {
+      ws.onmessage = event => {
         try {
           const data = JSON.parse(event.data) as RealtimeEvent;
           setLastEvent(data);
@@ -73,7 +73,7 @@ export function useRealtime(token?: string): UseRealtimeReturn {
         }
       };
 
-      ws.onerror = (error) => {
+      ws.onerror = error => {
         console.error('WebSocket error:', error);
         setConnected(false);
       };
@@ -90,23 +90,33 @@ export function useRealtime(token?: string): UseRealtimeReturn {
     setConnected(false);
   }, []);
 
-  const subscribeToTask = useCallback((taskId: number) => {
-    if (connected && wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({
-        type: 'subscribe',
-        taskId
-      }));
-    }
-  }, [connected]);
+  const subscribeToTask = useCallback(
+    (taskId: number) => {
+      if (connected && wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(
+          JSON.stringify({
+            type: 'subscribe',
+            taskId,
+          })
+        );
+      }
+    },
+    [connected]
+  );
 
-  const unsubscribeFromTask = useCallback((taskId: number) => {
-    if (connected && wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({
-        type: 'unsubscribe',
-        taskId
-      }));
-    }
-  }, [connected]);
+  const unsubscribeFromTask = useCallback(
+    (taskId: number) => {
+      if (connected && wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(
+          JSON.stringify({
+            type: 'unsubscribe',
+            taskId,
+          })
+        );
+      }
+    },
+    [connected]
+  );
 
   // Auto-connect when token is available
   useEffect(() => {
