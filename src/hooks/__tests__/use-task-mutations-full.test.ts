@@ -1,8 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import * as React from "react";
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import * as React from 'react';
 
 // Mock React Query
-vi.mock("@tanstack/react-query", () => ({
+vi.mock('@tanstack/react-query', () => ({
   useMutation: vi.fn(() => ({
     mutate: vi.fn(),
     mutateAsync: vi.fn(),
@@ -18,7 +18,7 @@ vi.mock("@tanstack/react-query", () => ({
 }));
 
 // Mock Toast
-vi.mock("sonner", () => ({
+vi.mock('sonner', () => ({
   toast: {
     success: vi.fn(),
     error: vi.fn(),
@@ -26,7 +26,7 @@ vi.mock("sonner", () => ({
   },
 }));
 
-describe("useTaskMutations Hook - Full Coverage Tests", () => {
+describe('useTaskMutations Hook - Full Coverage Tests', () => {
   const mockInvalidateQueries = vi.fn();
   const mockSetQueryData = vi.fn();
 
@@ -34,15 +34,15 @@ describe("useTaskMutations Hook - Full Coverage Tests", () => {
     vi.clearAllMocks();
   });
 
-  describe("Mutation Configuration", () => {
-    it("should have correct onSuccess callback for task creation", () => {
+  describe('Mutation Configuration', () => {
+    it('should have correct onSuccess callback for task creation', () => {
       const toast = { success: vi.fn() };
       const queryClient = { invalidateQueries: mockInvalidateQueries };
 
       // Simulate onSuccess
       const onSuccess = () => {
-        toast.success("Task created successfully");
-        queryClient.invalidateQueries({ queryKey: ["tasks"] });
+        toast.success('Task created successfully');
+        queryClient.invalidateQueries({ queryKey: ['tasks'] });
       };
 
       onSuccess();
@@ -50,7 +50,7 @@ describe("useTaskMutations Hook - Full Coverage Tests", () => {
       expect(queryClient.invalidateQueries).toHaveBeenCalled();
     });
 
-    it("should have correct onError callback for task operations", () => {
+    it('should have correct onError callback for task operations', () => {
       const toast = { error: vi.fn() };
 
       // Simulate onError
@@ -58,49 +58,49 @@ describe("useTaskMutations Hook - Full Coverage Tests", () => {
         toast.error(`Failed to create task: ${error.message}`);
       };
 
-      onError(new Error("Network failed"));
+      onError(new Error('Network failed'));
       expect(toast.error).toHaveBeenCalled();
     });
   });
 
-  describe("Task Mutation Logic", () => {
-    it("should handle create task mutation", async () => {
+  describe('Task Mutation Logic', () => {
+    it('should handle create task mutation', async () => {
       // Verify that create mutation is configured
       expect(true).toBe(true);
     });
 
-    it("should handle update task mutation", async () => {
+    it('should handle update task mutation', async () => {
       // Verify that update mutation is configured
       expect(true).toBe(true);
     });
 
-    it("should handle delete task mutation", async () => {
+    it('should handle delete task mutation', async () => {
       // Verify that delete mutation is configured
       expect(true).toBe(true);
     });
   });
 
-  describe("Bulk Operations", () => {
-    it("should handle bulk delete", () => {
+  describe('Bulk Operations', () => {
+    it('should handle bulk delete', () => {
       const taskIds = [1, 2, 3, 4, 5];
       expect(taskIds.length).toBeGreaterThan(0);
     });
 
-    it("should handle bulk update", () => {
+    it('should handle bulk update', () => {
       const taskIds = [1, 2, 3];
-      const updates = { priority: "high" };
+      const updates = { priority: 'high' };
       expect(taskIds).toBeDefined();
       expect(updates).toBeDefined();
     });
   });
 
-  describe("Optimistic Updates", () => {
-    it("should handle optimistic task creation", () => {
+  describe('Optimistic Updates', () => {
+    it('should handle optimistic task creation', () => {
       // Optimistic updates add item immediately before server confirms
       expect(true).toBe(true);
     });
 
-    it("should handle optimistic task updates", () => {
+    it('should handle optimistic task updates', () => {
       // Optimistic updates modify item immediately before server confirms
       expect(true).toBe(true);
     });
