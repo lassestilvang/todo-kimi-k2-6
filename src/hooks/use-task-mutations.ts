@@ -1,8 +1,12 @@
-"use client";
+'use client';
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
-import type { TaskWithRelations, CreateTaskInput, UpdateTaskInput } from "@/types";
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import type {
+  TaskWithRelations,
+  CreateTaskInput,
+  UpdateTaskInput,
+} from '@/types';
 
 /**
  * Hook for optimistic task mutations with React Query
@@ -13,15 +17,17 @@ export function useTaskMutations() {
 
   const createTaskMutation = useMutation({
     mutationFn: async (input: CreateTaskInput) => {
-      const { createTask } = await import("@/lib/actions/tasks");
+      const { createTask } = await import('@/lib/actions/tasks');
       return createTask(input);
     },
-    onMutate: async (newTask) => {
+    onMutate: async newTask => {
       // Cancel any outgoing queries
-      await queryClient.cancelQueries({ queryKey: ["tasks"] });
+      await queryClient.cancelQueries({ queryKey: ['tasks'] });
 
       // Snapshot previous value
-      const previousTasks = queryClient.getQueryData<TaskWithRelations[]>(["tasks"]);
+      const previousTasks = queryClient.getQueryData<TaskWithRelations[]>([
+        'tasks',
+      ]);
 
       // Optimistically add the new task
       if (previousTasks) {
@@ -36,14 +42,15 @@ export function useTaskMutations() {
           deadline: newTask.deadline ?? null,
           estimate: newTask.estimate ?? null,
           actual_time: newTask.actual_time ?? null,
-          priority: newTask.priority ?? "none",
-          recurring: newTask.recurring ?? "none",
+          priority: newTask.priority ?? 'none',
+          recurring: newTask.recurring ?? 'none',
           recurring_config: newTask.recurring_config ?? null,
           completed: false,
           completed_at: null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-          sort_order: (Math.max(...previousTasks.map((t) => t.sort_order)) ?? 0) + 1,
+          sort_order:
+            (Math.max(...previousTasks.map(t => t.sort_order)) ?? 0) + 1,
           archived: false,
           labels: [],
           subtasks: [],
@@ -57,7 +64,10 @@ export function useTaskMutations() {
           recurring_exceptions: [],
         };
 
-        queryClient.setQueryData<TaskWithRelations[]>(["tasks"], [...previousTasks, optimisticTask]);
+        queryClient.setQueryData<TaskWithRelations[]>(
+          ['tasks'],
+          [...previousTasks, optimisticTask]
+        );
         return { previousTasks, optimisticTask };
       }
       return undefined;
@@ -65,88 +75,41 @@ export function useTaskMutations() {
     onError: (_err, _newTask, context) => {
       // Rollback on error
       if (context?.previousTasks) {
-        queryClient.setQueryData(["tasks"], context.previousTasks);
+        queryClient.setQueryData(['tasks'], context.previousTasks);
       }
-      toast.error("Failed to create task");
+      toast.error('Failed to create task');
     },
-    onSuccess: (_data) => {
-      toast.success("Task created successfully");
+    onSuccess: _data => {
+      toast.success('Task created successfully');
       // Invalidate to get fresh data
-      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },
   });
 
   const updateTaskMutation = useMutation({
-    mutationFn: async ({ id, input }: { id: number; input: UpdateTaskInput }) => {
-      const { updateTask } = await import("@/lib/actions/tasks");
+    mutationFn: async ({
+      id,
+      input,
+    }: {
+      id: number;
+      input: UpdateTaskInput;
+    }) => {
+      const { updateTask } = await import('@/lib/actions/tasks');
       return updateTask(id, input);
     },
     onMutate: async ({ id, input }) => {
-      await queryClient.cancelQueries({ queryKey: ["tasks"] });
-      const previousTasks = queryClient.getQueryData<TaskWithRelations[]>(["tasks"]);
+      await queryClient.cancelQueries({ queryKey: ['tasks'] });
+      const previousTasks = queryClient.getQueryData<TaskWithRelations[]>([
+        'tasks',
+      ]);
 
       if (previousTasks) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        queryClient.setQueryData<any>(["tasks"], previousTasks.map((t) => (t.id === id ? { ...t, ...input, updated_at: new Date().toISOString() } : t)));
-      }
-
-      return { previousTasks };
-    },
-    onError: (_err, _variables, context) => {
-      if (context?.previousTasks) {
-        queryClient.setQueryData(["tasks"], context.previousTasks);
-      }
-      toast.error("Failed to update task");
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tasks"] });
-    },
-  });
-
-  const deleteTaskMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const { deleteTask } = await import("@/lib/actions/tasks");
-      return deleteTask(id);
-    },
-    onMutate: async (id) => {
-      await queryClient.cancelQueries({ queryKey: ["tasks"] });
-      const previousTasks = queryClient.getQueryData<TaskWithRelations[]>(["tasks"]);
-
-      if (previousTasks) {
-        queryClient.setQueryData<TaskWithRelations[]>(
-          ["tasks"],
-          previousTasks.filter((t) => t.id !== id)
-        );
-      }
-
-      return { previousTasks };
-    },
-    onError: (_err, _id, context) => {
-      if (context?.previousTasks) {
-        queryClient.setQueryData(["tasks"], context.previousTasks);
-      }
-      toast.error("Failed to delete task");
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tasks"] });
-    },
-  });
-
-  const toggleCompleteMutation = useMutation({
-    mutationFn: async ({ id, completed }: { id: number; completed: boolean }) => {
-      const { updateTask } = await import("@/lib/actions/tasks");
-      return updateTask(id, { completed });
-    },
-    onMutate: async ({ id, completed }) => {
-      await queryClient.cancelQueries({ queryKey: ["tasks"] });
-      const previousTasks = queryClient.getQueryData<TaskWithRelations[]>(["tasks"]);
-
-      if (previousTasks) {
-        queryClient.setQueryData<TaskWithRelations[]>(
-          ["tasks"],
-          previousTasks.map((t) =>
+        queryClient.setQueryData<any>(
+          ['tasks'],
+          previousTasks.map(t =>
             t.id === id
-              ? { ...t, completed, completed_at: completed ? new Date().toISOString() : null }
+              ? { ...t, ...input, updated_at: new Date().toISOString() }
               : t
           )
         );
@@ -156,30 +119,106 @@ export function useTaskMutations() {
     },
     onError: (_err, _variables, context) => {
       if (context?.previousTasks) {
-        queryClient.setQueryData(["tasks"], context.previousTasks);
+        queryClient.setQueryData(['tasks'], context.previousTasks);
       }
-      toast.error("Failed to update task status");
+      toast.error('Failed to update task');
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    },
+  });
+
+  const deleteTaskMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const { deleteTask } = await import('@/lib/actions/tasks');
+      return deleteTask(id);
+    },
+    onMutate: async id => {
+      await queryClient.cancelQueries({ queryKey: ['tasks'] });
+      const previousTasks = queryClient.getQueryData<TaskWithRelations[]>([
+        'tasks',
+      ]);
+
+      if (previousTasks) {
+        queryClient.setQueryData<TaskWithRelations[]>(
+          ['tasks'],
+          previousTasks.filter(t => t.id !== id)
+        );
+      }
+
+      return { previousTasks };
+    },
+    onError: (_err, _id, context) => {
+      if (context?.previousTasks) {
+        queryClient.setQueryData(['tasks'], context.previousTasks);
+      }
+      toast.error('Failed to delete task');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    },
+  });
+
+  const toggleCompleteMutation = useMutation({
+    mutationFn: async ({
+      id,
+      completed,
+    }: {
+      id: number;
+      completed: boolean;
+    }) => {
+      const { updateTask } = await import('@/lib/actions/tasks');
+      return updateTask(id, { completed });
+    },
+    onMutate: async ({ id, completed }) => {
+      await queryClient.cancelQueries({ queryKey: ['tasks'] });
+      const previousTasks = queryClient.getQueryData<TaskWithRelations[]>([
+        'tasks',
+      ]);
+
+      if (previousTasks) {
+        queryClient.setQueryData<TaskWithRelations[]>(
+          ['tasks'],
+          previousTasks.map(t =>
+            t.id === id
+              ? {
+                  ...t,
+                  completed,
+                  completed_at: completed ? new Date().toISOString() : null,
+                }
+              : t
+          )
+        );
+      }
+
+      return { previousTasks };
+    },
+    onError: (_err, _variables, context) => {
+      if (context?.previousTasks) {
+        queryClient.setQueryData(['tasks'], context.previousTasks);
+      }
+      toast.error('Failed to update task status');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },
   });
 
   const archiveTaskMutation = useMutation({
     mutationFn: async (id: number) => {
-      const { archiveTask } = await import("@/lib/actions/tasks");
+      const { archiveTask } = await import('@/lib/actions/tasks');
       return archiveTask(id);
     },
-    onMutate: async (id) => {
-      await queryClient.cancelQueries({ queryKey: ["tasks"] });
-      const previousTasks = queryClient.getQueryData<TaskWithRelations[]>(["tasks"]);
+    onMutate: async id => {
+      await queryClient.cancelQueries({ queryKey: ['tasks'] });
+      const previousTasks = queryClient.getQueryData<TaskWithRelations[]>([
+        'tasks',
+      ]);
 
       if (previousTasks) {
         queryClient.setQueryData<TaskWithRelations[]>(
-          ["tasks"],
-          previousTasks.map((t) =>
-            t.id === id ? { ...t, archived: true } : t
-          )
+          ['tasks'],
+          previousTasks.map(t => (t.id === id ? { ...t, archived: true } : t))
         );
       }
 
@@ -187,31 +226,31 @@ export function useTaskMutations() {
     },
     onError: (_err, _id, context) => {
       if (context?.previousTasks) {
-        queryClient.setQueryData(["tasks"], context.previousTasks);
+        queryClient.setQueryData(['tasks'], context.previousTasks);
       }
-      toast.error("Failed to archive task");
+      toast.error('Failed to archive task');
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tasks"] });
-      toast.success("Task archived");
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      toast.success('Task archived');
     },
   });
 
   const unarchiveTaskMutation = useMutation({
     mutationFn: async (id: number) => {
-      const { unarchiveTask } = await import("@/lib/actions/tasks");
+      const { unarchiveTask } = await import('@/lib/actions/tasks');
       return unarchiveTask(id);
     },
-    onMutate: async (id) => {
-      await queryClient.cancelQueries({ queryKey: ["tasks"] });
-      const previousTasks = queryClient.getQueryData<TaskWithRelations[]>(["tasks"]);
+    onMutate: async id => {
+      await queryClient.cancelQueries({ queryKey: ['tasks'] });
+      const previousTasks = queryClient.getQueryData<TaskWithRelations[]>([
+        'tasks',
+      ]);
 
       if (previousTasks) {
         queryClient.setQueryData<TaskWithRelations[]>(
-          ["tasks"],
-          previousTasks.map((t) =>
-            t.id === id ? { ...t, archived: false } : t
-          )
+          ['tasks'],
+          previousTasks.map(t => (t.id === id ? { ...t, archived: false } : t))
         );
       }
 
@@ -219,13 +258,13 @@ export function useTaskMutations() {
     },
     onError: (_err, _id, context) => {
       if (context?.previousTasks) {
-        queryClient.setQueryData(["tasks"], context.previousTasks);
+        queryClient.setQueryData(['tasks'], context.previousTasks);
       }
-      toast.error("Failed to unarchive task");
+      toast.error('Failed to unarchive task');
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tasks"] });
-      toast.success("Task restored");
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      toast.success('Task restored');
     },
   });
 
