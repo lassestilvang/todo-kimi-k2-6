@@ -1,6 +1,6 @@
-import { getRequestConfig } from "next-intl/server";
-import { locales, defaultLocale } from "./config";
-import type { Locale } from "./config";
+import { getRequestConfig } from 'next-intl/server';
+import { locales, defaultLocale } from './config';
+import type { Locale } from './config';
 
 export default getRequestConfig(async ({ requestLocale }) => {
   // Get locale from request, cookies, or default
