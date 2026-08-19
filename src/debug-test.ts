@@ -1,6 +1,6 @@
-import { createTestDb } from "./lib/db/test-db";
-import { setDb, resetDb } from "./lib/db";
-import { getLists } from "./lib/actions/lists";
+import { createTestDb } from './lib/db/test-db';
+import { setDb, resetDb } from './lib/db';
+import { getLists } from './lib/actions/lists';
 
 async function debug() {
   resetDb();
