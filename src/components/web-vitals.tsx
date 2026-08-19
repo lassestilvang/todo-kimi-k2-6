@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useEffect } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { useEffect } from 'react';
+import { usePathname, useSearchParams } from 'next/navigation';
 
 interface WebVitalsMetric {
   id: string;
@@ -14,7 +14,7 @@ export function reportWebVitals(metric: WebVitalsMetric) {
   // In production, send to analytics service
   if (process.env.NEXT_PUBLIC_ANALYTICS_ID) {
     // Example: Send to PostHog, Mixpanel, etc.
-    console.log("Web Vital:", metric);
+    console.log('Web Vital:', metric);
   }
 }
 
@@ -22,12 +22,12 @@ export function WebVitalsTracker() {
   // Safe hook usage - only run in client
   useEffect(() => {
     // Route change analytics - skip if not in browser
-    if (typeof window === "undefined") return;
+    if (typeof window === 'undefined') return;
 
     // Track page view on mount
     reportWebVitals({
-      id: "page_view",
-      name: "Page View",
+      id: 'page_view',
+      name: 'Page View',
       value: 1,
     });
   }, []);
