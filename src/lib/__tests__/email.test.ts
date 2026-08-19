@@ -1,8 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock nodemailer before imports
-vi.mock("nodemailer", () => {
-  const mockSendMail = vi.fn().mockResolvedValue({ messageId: "test-message-id" });
+vi.mock('nodemailer', () => {
+  const mockSendMail = vi
+    .fn()
+    .mockResolvedValue({ messageId: 'test-message-id' });
   return {
     default: {
       createTransport: vi.fn().mockReturnValue({ sendMail: mockSendMail }),
@@ -11,74 +13,84 @@ vi.mock("nodemailer", () => {
   };
 });
 
-import { sendTaskReminderEmail, sendDueSoonEmail, sendTaskSharedEmail, sendWeeklyDigest } from "@/lib/email";
+import {
+  sendTaskReminderEmail,
+  sendDueSoonEmail,
+  sendTaskSharedEmail,
+  sendWeeklyDigest,
+} from '@/lib/email';
 
-describe("email (legacy)", () => {
+describe('email (legacy)', () => {
   const originalEnv = { ...process.env };
 
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env.SMTP_HOST = "smtp.test.com";
-    process.env.SMTP_PORT = "587";
-    process.env.SMTP_USER = "test";
-    process.env.SMTP_PASS = "pass";
-    process.env.EMAIL_FROM = "test@test.com";
+    process.env.SMTP_HOST = 'smtp.test.com';
+    process.env.SMTP_PORT = '587';
+    process.env.SMTP_USER = 'test';
+    process.env.SMTP_PASS = 'pass';
+    process.env.EMAIL_FROM = 'test@test.com';
   });
 
   afterEach(() => {
     process.env = { ...originalEnv };
   });
 
-  describe("sendTaskReminderEmail", () => {
-    it("should call transporter.sendMail with correct options", async () => {
+  describe('sendTaskReminderEmail', () => {
+    it('should call transporter.sendMail with correct options', async () => {
       const task = {
         id: 1,
-        name: "Test Task",
-        deadline: "2024-12-31",
+        name: 'Test Task',
+        deadline: '2024-12-31',
         completed: false,
-        description: "Test description",
+        description: 'Test description',
       };
 
-      const result = await sendTaskReminderEmail("user@test.com", task);
+      const result = await sendTaskReminderEmail('user@test.com', task);
       expect(result).toBeDefined();
     });
 
-    it("should handle task without description", async () => {
+    it('should handle task without description', async () => {
       const task = {
         id: 1,
-        name: "Test Task",
+        name: 'Test Task',
         description: null,
         deadline: null,
       };
 
-      const result = await sendTaskReminderEmail("user@test.com", task);
+      const result = await sendTaskReminderEmail('user@test.com', task);
       expect(result).toBeDefined();
     });
   });
 
-  describe("sendDueSoonEmail", () => {
-    it("should send due soon email", async () => {
+  describe('sendDueSoonEmail', () => {
+    it('should send due soon email', async () => {
       const task = {
         id: 1,
-        name: "Urgent Task",
+        name: 'Urgent Task',
         description: null,
-        deadline: "2024-01-15",
+        deadline: '2024-01-15',
       };
 
-      const result = await sendDueSoonEmail("user@test.com", task);
+      const result = await sendDueSoonEmail('user@test.com', task);
       expect(result).toBeDefined();
     });
   });
 
-  describe("sendTaskSharedEmail", () => {
-    it("should send shared email with task and inviter name", async () => {
-      const result = await sendTaskSharedEmail("invitee@test.com", "Shared Task", "John Doe", "view");
+  describe('sendTaskSharedEmail', () => {
+    it('should send shared email with task and inviter name', async () => {
+      const result = await sendTaskSharedEmail(
+        'invitee@test.com',
+        'Shared Task',
+        'John Doe',
+        'view'
+      );
       expect(result).toBeDefined();
     });
   });
 
-  describe("sendWeeklyDigest", () => {
-    it("should send weekly digest email", async () => {
+  describe('sendWeeklyDigest', () => {
+    it('should send weekly digest email', async () => {
       const summary = {
         totalTasks: 50,
         completedTasks: 35,
@@ -86,21 +98,21 @@ describe("email (legacy)", () => {
         criticalTasks: 5,
       };
 
-      const result = await sendWeeklyDigest("user@test.com", summary);
+      const result = await sendWeeklyDigest('user@test.com', summary);
       expect(result).toBeDefined();
     });
   });
 
-  describe("environment variables", () => {
-    it("should use default values when env vars not set", async () => {
+  describe('environment variables', () => {
+    it('should use default values when env vars not set', async () => {
       delete process.env.SMTP_HOST;
       delete process.env.SMTP_PORT;
       delete process.env.SMTP_USER;
       delete process.env.SMTP_PASS;
       delete process.env.EMAIL_FROM;
 
-      const task = { id: 1, name: "Test", description: null, deadline: null };
-      const result = await sendTaskReminderEmail("test@test.com", task);
+      const task = { id: 1, name: 'Test', description: null, deadline: null };
+      const result = await sendTaskReminderEmail('test@test.com', task);
       expect(result).toBeDefined();
     });
   });
