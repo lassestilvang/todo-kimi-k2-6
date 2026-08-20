@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   logCognitiveLoad,
   getCognitiveLoadAnalysis,
@@ -12,10 +12,10 @@ import {
   getDecisionAnalysis,
   logMoodContext,
   getMoodBasedTaskRecommendations,
-} from "../enhanced-productivity";
+} from '../enhanced-productivity';
 
 // Mock the database
-vi.mock("@/lib/db/driver", () => ({
+vi.mock('@/lib/db/driver', () => ({
   createDatabase: () => ({
     prepare: vi.fn().mockReturnThis(),
     get: vi.fn(),
@@ -26,15 +26,15 @@ vi.mock("@/lib/db/driver", () => ({
 }));
 
 // Mock session
-vi.mock("@/lib/session", () => ({
+vi.mock('@/lib/session', () => ({
   getCurrentUser: vi.fn(),
 }));
 
-import { getDb, setDb, resetDb } from "@/lib/db";
-import { createTestDb } from "@/lib/db/test-db";
-import { getCurrentUser } from "@/lib/session";
+import { getDb, setDb, resetDb } from '@/lib/db';
+import { createTestDb } from '@/lib/db/test-db';
+import { getCurrentUser } from '@/lib/session';
 
-describe("Enhanced Productivity Actions", () => {
+describe('Enhanced Productivity Actions', () => {
   let db: ReturnType<typeof createTestDb>;
 
   beforeEach(() => {
@@ -161,10 +161,10 @@ describe("Enhanced Productivity Actions", () => {
     resetDb();
   });
 
-  describe("Cognitive Load", () => {
-    it("should log cognitive load data", async () => {
+  describe('Cognitive Load', () => {
+    it('should log cognitive load data', async () => {
       const result = await logCognitiveLoad({
-        date: "2024-01-15",
+        date: '2024-01-15',
         task_count: 5,
         completed_count: 3,
         focus_blocks: 2,
@@ -175,25 +175,25 @@ describe("Enhanced Productivity Actions", () => {
       expect(result.id).toBeDefined();
     });
 
-    it("should return cognitive load analysis", async () => {
+    it('should return cognitive load analysis', async () => {
       const analysis = await getCognitiveLoadAnalysis(1, 7);
 
-      expect(analysis).toHaveProperty("avgTaskCount");
-      expect(analysis).toHaveProperty("completionRate");
+      expect(analysis).toHaveProperty('avgTaskCount');
+      expect(analysis).toHaveProperty('completionRate');
     });
   });
 
-  describe("Energy Budget", () => {
-    it("should get user energy budget", async () => {
-      const budget = await getEnergyBudget("2024-01-15");
+  describe('Energy Budget', () => {
+    it('should get user energy budget', async () => {
+      const budget = await getEnergyBudget('2024-01-15');
 
-      expect(budget).toHaveProperty("balance");
-      expect(budget).toHaveProperty("dailyLimit");
+      expect(budget).toHaveProperty('balance');
+      expect(budget).toHaveProperty('dailyLimit');
     });
 
-    it("should log energy usage", async () => {
+    it('should log energy usage', async () => {
       const result = await logEnergyBudget({
-        date: "2024-01-15",
+        date: '2024-01-15',
         energy_spent: 5,
         activities: [],
       });
@@ -202,106 +202,134 @@ describe("Enhanced Productivity Actions", () => {
       expect(result.id).toBeDefined();
     });
 
-    it("should update user energy profile", async () => {
+    it('should update user energy profile', async () => {
       // upsertEnergyProfile returns void, just verify it doesn't throw
-      await expect(upsertEnergyProfile({
-        wake_hour: 7,
-        sleep_hour: 23,
-        peak_energy_times: [{ start: "09:00", end: "11:00" }],
-      })).resolves.toBeUndefined();
+      await expect(
+        upsertEnergyProfile({
+          wake_hour: 7,
+          sleep_hour: 23,
+          peak_energy_times: [{ start: '09:00', end: '11:00' }],
+        })
+      ).resolves.toBeUndefined();
     });
   });
 
-  describe("Decision Shadow", () => {
-    it("should create a decision entry", async () => {
+  describe('Decision Shadow', () => {
+    it('should create a decision entry', async () => {
       const decision = await createDecisionShadow({
-        decision_type: "approach",
-        question: "Test decision",
-        chosen_option_text: "Option A",
-        rationale: "Because reasons",
+        decision_type: 'approach',
+        question: 'Test decision',
+        chosen_option_text: 'Option A',
+        rationale: 'Because reasons',
       });
 
-      expect(decision).toHaveProperty("id");
+      expect(decision).toHaveProperty('id');
     });
 
-    it("should get decision analysis", async () => {
+    it('should get decision analysis', async () => {
       const analysis = await getDecisionAnalysis(1, 20);
 
-      expect(analysis).toHaveProperty("totalDecisions");
+      expect(analysis).toHaveProperty('totalDecisions');
     });
   });
 
-  describe("External Tasks", () => {
-    it("should get external tasks", async () => {
-      const tasks = await getExternalTasks("pending");
+  describe('External Tasks', () => {
+    it('should get external tasks', async () => {
+      const tasks = await getExternalTasks('pending');
 
       expect(Array.isArray(tasks)).toBe(true);
     });
 
-    it("should convert external task to local task", async () => {
+    it('should convert external task to local task', async () => {
       // Create test external task with all required columns
       const database = getDb();
-      database.prepare(`
+      database
+        .prepare(
+          `
         INSERT INTO external_tasks
         (user_id, external_id, external_app_type, title, description, due_date, status, priority, confidence, energy_cost_estimate, created_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(
-        1, 'ext-123', 'trello', 'Test External Task', 'Test description', null, 'pending', 'medium', 0.8, 5, '2024-01-15T00:00:00.000Z'
-      );
+      `
+        )
+        .run(
+          1,
+          'ext-123',
+          'trello',
+          'Test External Task',
+          'Test description',
+          null,
+          'pending',
+          'medium',
+          0.8,
+          5,
+          '2024-01-15T00:00:00.000Z'
+        );
 
       // Get the actual ID that was generated
-      const externalTask = database.prepare("SELECT id FROM external_tasks WHERE user_id = ? AND external_id = ?").get(1, 'ext-123') as { id: number };
+      const externalTask = database
+        .prepare(
+          'SELECT id FROM external_tasks WHERE user_id = ? AND external_id = ?'
+        )
+        .get(1, 'ext-123') as { id: number };
 
       const result = await convertExternalTaskToTask(externalTask.id);
-      expect(result).toHaveProperty("taskId");
+      expect(result).toHaveProperty('taskId');
       expect(result.taskId).toBeGreaterThan(0);
     });
   });
 
-  describe("Mood Tracking", () => {
-    it("should log mood context", async () => {
+  describe('Mood Tracking', () => {
+    it('should log mood context', async () => {
       const result = await logMoodContext({
-        date: "2024-01-15",
+        date: '2024-01-15',
         mood: 4,
         energy: 3,
         stress: 2,
         focus: 5,
-        notes: "Feeling productive today",
+        notes: 'Feeling productive today',
       });
 
-      expect(result).toHaveProperty("id");
+      expect(result).toHaveProperty('id');
     });
 
-    it("should throw authentication error when user is not authenticated (line 754)", async () => {
+    it('should throw authentication error when user is not authenticated (line 754)', async () => {
       // This tests line 754: throw new Error("Authentication required")
       (getCurrentUser as any).mockReturnValue(null);
 
-      await expect(logMoodContext({
-        date: "2024-01-15",
-        mood: 4,
-        energy: 3,
-        stress: 2,
-        focus: 5,
-      })).rejects.toThrow("Authentication required");
+      await expect(
+        logMoodContext({
+          date: '2024-01-15',
+          mood: 4,
+          energy: 3,
+          stress: 2,
+          focus: 5,
+        })
+      ).rejects.toThrow('Authentication required');
     });
 
-    it("should get mood-based recommendations", async () => {
-      const recommendations = await getMoodBasedTaskRecommendations(1, "2024-01-15");
+    it('should get mood-based recommendations', async () => {
+      const recommendations = await getMoodBasedTaskRecommendations(
+        1,
+        '2024-01-15'
+      );
 
-      expect(recommendations).toHaveProperty("recommendedTaskIds");
-      expect(recommendations).toHaveProperty("reasoning");
+      expect(recommendations).toHaveProperty('recommendedTaskIds');
+      expect(recommendations).toHaveProperty('reasoning');
     });
 
-    it("should return no recommendations when user is not authenticated", async () => {
+    it('should return no recommendations when user is not authenticated', async () => {
       (getCurrentUser as any).mockImplementation(async () => null);
-      const recommendations = await getMoodBasedTaskRecommendations(999, "2024-01-15");
+      const recommendations = await getMoodBasedTaskRecommendations(
+        999,
+        '2024-01-15'
+      );
 
       expect(recommendations.recommendedTaskIds).toEqual([]);
-      expect(recommendations.reasoning).toBe("No mood data available");
+      expect(recommendations.reasoning).toBe('No mood data available');
       expect(recommendations.energyAdjustment).toBe(0);
     });
 
-    it("should recommend tasks based on high mood and energy", async () => {
+    it('should recommend tasks based on high mood and energy', async () => {
       // Insert mood data for today
       db.exec(`
         INSERT INTO mood_contexts (user_id, date, mood, energy, stress, focus)
@@ -314,13 +342,16 @@ describe("Enhanced Productivity Actions", () => {
         VALUES (1, 'Critical Task', 'critical', '2024-01-15', null, 0, datetime('now'), 0)
       `);
 
-      const recommendations = await getMoodBasedTaskRecommendations(1, "2024-01-15");
+      const recommendations = await getMoodBasedTaskRecommendations(
+        1,
+        '2024-01-15'
+      );
 
       expect(recommendations.recommendedTaskIds.length).toBeGreaterThan(0);
-      expect(recommendations.reasoning).toContain("High energy");
+      expect(recommendations.reasoning).toContain('High energy');
     });
 
-    it("should recommend easy tasks for low mood", async () => {
+    it('should recommend easy tasks for low mood', async () => {
       db.exec(`
         INSERT INTO mood_contexts (user_id, date, mood, energy, stress, focus)
         VALUES (1, '2024-01-15', 1, 2, 3, 2)
@@ -331,12 +362,15 @@ describe("Enhanced Productivity Actions", () => {
         VALUES (1, 'Easy Task', 'low', '2024-01-15', null, 0, datetime('now'), 0)
       `);
 
-      const recommendations = await getMoodBasedTaskRecommendations(1, "2024-01-15");
+      const recommendations = await getMoodBasedTaskRecommendations(
+        1,
+        '2024-01-15'
+      );
 
-      expect(recommendations.reasoning).toContain("Lower energy");
+      expect(recommendations.reasoning).toContain('Lower energy');
     });
 
-    it("should recommend medium priority tasks for medium mood and energy", async () => {
+    it('should recommend medium priority tasks for medium mood and energy', async () => {
       // This tests line 838-843: the else branch for medium energy/mood
       db.exec(`
         INSERT INTO mood_contexts (user_id, date, mood, energy, stress, focus)
@@ -348,13 +382,16 @@ describe("Enhanced Productivity Actions", () => {
         VALUES (1, 'Medium Task', 'medium', '2024-01-15', null, 0, datetime('now'), 0)
       `);
 
-      const recommendations = await getMoodBasedTaskRecommendations(1, "2024-01-15");
+      const recommendations = await getMoodBasedTaskRecommendations(
+        1,
+        '2024-01-15'
+      );
 
-      expect(recommendations.reasoning).toContain("Moderate energy");
+      expect(recommendations.reasoning).toContain('Moderate energy');
       expect(recommendations.recommendedTaskIds.length).toBeGreaterThan(0);
     });
 
-    it("should recommend medium priority tasks for low mood high energy (medium energy branch)", async () => {
+    it('should recommend medium priority tasks for low mood high energy (medium energy branch)', async () => {
       // Tests the else branch: mood=2 (low) but energy=4 (high) => falls into elif or else
       db.exec(`
         INSERT INTO mood_contexts (user_id, date, mood, energy, stress, focus)
@@ -366,13 +403,16 @@ describe("Enhanced Productivity Actions", () => {
         VALUES (1, 'Medium Task', 'medium', '2024-01-15', null, 0, datetime('now'), 0)
       `);
 
-      const recommendations = await getMoodBasedTaskRecommendations(1, "2024-01-15");
+      const recommendations = await getMoodBasedTaskRecommendations(
+        1,
+        '2024-01-15'
+      );
 
       // mood=2 (low) triggers the elif branch for low energy
-      expect(recommendations.reasoning).toContain("Lower energy");
+      expect(recommendations.reasoning).toContain('Lower energy');
     });
 
-    it("should detect high stress and append warning to reasoning (line 847)", async () => {
+    it('should detect high stress and append warning to reasoning (line 847)', async () => {
       // This tests line 847: stress >= 4 triggers high stress warning
       db.exec(`
         INSERT INTO mood_contexts (user_id, date, mood, energy, stress, focus)
@@ -384,12 +424,17 @@ describe("Enhanced Productivity Actions", () => {
         VALUES (1, 'High Stress Task', 'high', '2024-01-15', null, 0, datetime('now'), 0)
       `);
 
-      const recommendations = await getMoodBasedTaskRecommendations(1, "2024-01-15");
+      const recommendations = await getMoodBasedTaskRecommendations(
+        1,
+        '2024-01-15'
+      );
 
-      expect(recommendations.reasoning).toContain("High stress detected - consider taking a break before starting");
+      expect(recommendations.reasoning).toContain(
+        'High stress detected - consider taking a break before starting'
+      );
     });
 
-    it("should append high stress warning for medium energy when stress >= 4", async () => {
+    it('should append high stress warning for medium energy when stress >= 4', async () => {
       // High stress with medium energy/mood
       db.exec(`
         INSERT INTO mood_contexts (user_id, date, mood, energy, stress, focus)
@@ -401,66 +446,69 @@ describe("Enhanced Productivity Actions", () => {
         VALUES (1, 'Medium Task', 'medium', '2024-01-15', null, 0, datetime('now'), 0)
       `);
 
-      const recommendations = await getMoodBasedTaskRecommendations(1, "2024-01-15");
+      const recommendations = await getMoodBasedTaskRecommendations(
+        1,
+        '2024-01-15'
+      );
 
-      expect(recommendations.reasoning).toContain("Moderate energy");
-      expect(recommendations.reasoning).toContain("High stress detected");
+      expect(recommendations.reasoning).toContain('Moderate energy');
+      expect(recommendations.reasoning).toContain('High stress detected');
     });
   });
 
-  describe("estimateEnergyCost", () => {
-    it("should calculate energy cost for critical priority task", async () => {
-      const { estimateEnergyCost } = await import("../enhanced-productivity");
+  describe('estimateEnergyCost', () => {
+    it('should calculate energy cost for critical priority task', async () => {
+      const { estimateEnergyCost } = await import('../enhanced-productivity');
 
       const cost = await estimateEnergyCost({
         id: 1,
         user_id: 1,
-        name: "Critical Task",
-        priority: "critical",
+        name: 'Critical Task',
+        priority: 'critical',
         completed: 0,
       } as any);
 
       expect(cost).toBe(15); // Base cost for critical
     });
 
-    it("should add cost for task with estimate", async () => {
-      const { estimateEnergyCost } = await import("../enhanced-productivity");
+    it('should add cost for task with estimate', async () => {
+      const { estimateEnergyCost } = await import('../enhanced-productivity');
 
       const cost = await estimateEnergyCost({
         id: 1,
         user_id: 1,
-        name: "Task with estimate",
-        priority: "medium",
-        estimate: "2:30", // 2.5 hours
+        name: 'Task with estimate',
+        priority: 'medium',
+        estimate: '2:30', // 2.5 hours
         completed: 0,
       } as any);
 
       expect(cost).toBeGreaterThan(5); // base + estimate cost
     });
 
-    it("should cap energy cost at 30", async () => {
-      const { estimateEnergyCost } = await import("../enhanced-productivity");
+    it('should cap energy cost at 30', async () => {
+      const { estimateEnergyCost } = await import('../enhanced-productivity');
 
       const cost = await estimateEnergyCost({
         id: 1,
         user_id: 1,
-        name: "Very long task",
-        priority: "critical",
-        estimate: "20:00", // 20 hours
+        name: 'Very long task',
+        priority: 'critical',
+        estimate: '20:00', // 20 hours
         completed: 0,
       } as any);
 
       expect(cost).toBeLessThanOrEqual(30);
     });
 
-    it("should add cost for task with blockers", async () => {
-      const { estimateEnergyCost } = await import("../enhanced-productivity");
+    it('should add cost for task with blockers', async () => {
+      const { estimateEnergyCost } = await import('../enhanced-productivity');
 
       const cost = await estimateEnergyCost({
         id: 1,
         user_id: 1,
-        name: "Task with blockers",
-        priority: "high",
+        name: 'Task with blockers',
+        priority: 'high',
         blockers: [{ depends_on_task_id: 1, task_id: 1 }],
         completed: 0,
       } as any);
@@ -468,14 +516,14 @@ describe("Enhanced Productivity Actions", () => {
       expect(cost).toBeGreaterThan(10); // high=10 + 5 for blockers
     });
 
-    it("should add cost for task with subtasks", async () => {
-      const { estimateEnergyCost } = await import("../enhanced-productivity");
+    it('should add cost for task with subtasks', async () => {
+      const { estimateEnergyCost } = await import('../enhanced-productivity');
 
       const cost = await estimateEnergyCost({
         id: 1,
         user_id: 1,
-        name: "Task with subtasks",
-        priority: "medium",
+        name: 'Task with subtasks',
+        priority: 'medium',
         subtasks: [{ id: 1 }, { id: 2 }, { id: 3 }],
         completed: 0,
       } as any);
@@ -483,14 +531,14 @@ describe("Enhanced Productivity Actions", () => {
       expect(cost).toBeGreaterThanOrEqual(11); // medium=5 + 3*2=6
     });
 
-    it("should handle task with no priority", async () => {
-      const { estimateEnergyCost } = await import("../enhanced-productivity");
+    it('should handle task with no priority', async () => {
+      const { estimateEnergyCost } = await import('../enhanced-productivity');
 
       const cost = await estimateEnergyCost({
         id: 1,
         user_id: 1,
-        name: "Task",
-        priority: "unknown" as any,
+        name: 'Task',
+        priority: 'unknown' as any,
         completed: 0,
       } as any);
 
