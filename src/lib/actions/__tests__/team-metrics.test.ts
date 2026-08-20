@@ -44,7 +44,15 @@ describe('team-metrics', () => {
 
     it('calculates velocity trend correctly', async () => {
       mockDb.all.mockReturnValue([
-        { id: 1, name: 'User 1', email: 'user1@test.com', avatar_url: null, task_count: 5, completion_rate: 85.5, last_active: '2024-01-01' },
+        {
+          id: 1,
+          name: 'User 1',
+          email: 'user1@test.com',
+          avatar_url: null,
+          task_count: 5,
+          completion_rate: 85.5,
+          last_active: '2024-01-01',
+        },
       ]);
       mockDb.get.mockReturnValue({ count: 0 });
 
@@ -55,7 +63,15 @@ describe('team-metrics', () => {
 
     it('returns utilization percentage', async () => {
       mockDb.all.mockReturnValue([
-        { id: 1, name: 'User 1', email: 'user1@test.com', avatar_url: null, task_count: 5, completion_rate: 85.5, last_active: '2024-01-01' },
+        {
+          id: 1,
+          name: 'User 1',
+          email: 'user1@test.com',
+          avatar_url: null,
+          task_count: 5,
+          completion_rate: 85.5,
+          last_active: '2024-01-01',
+        },
       ]);
       mockDb.get.mockReturnValue({ count: 0 });
 
@@ -75,7 +91,15 @@ describe('team-metrics', () => {
 
     it('returns team members with required fields', async () => {
       mockDb.all.mockReturnValue([
-        { id: 1, name: 'User 1', email: 'user1@test.com', avatar_url: null, task_count: 5, completion_rate: 85.5, last_active: '2024-01-01' },
+        {
+          id: 1,
+          name: 'User 1',
+          email: 'user1@test.com',
+          avatar_url: null,
+          task_count: 5,
+          completion_rate: 85.5,
+          last_active: '2024-01-01',
+        },
       ]);
 
       const report = await getTeamVelocityReport();
@@ -155,7 +179,15 @@ describe('team-metrics coverage - workspaceId branches', () => {
   describe('getTeamVelocityReport without workspaceId', () => {
     it('returns team velocity report for all users', async () => {
       mockDb.all.mockReturnValue([
-        { id: 1, name: 'User 1', email: 'user1@test.com', avatar_url: null, task_count: 5, completion_rate: 85.5, last_active: '2024-01-01' },
+        {
+          id: 1,
+          name: 'User 1',
+          email: 'user1@test.com',
+          avatar_url: null,
+          task_count: 5,
+          completion_rate: 85.5,
+          last_active: '2024-01-01',
+        },
       ]);
 
       const result = await getTeamVelocityReport();
@@ -168,7 +200,15 @@ describe('team-metrics coverage - workspaceId branches', () => {
   describe('getTeamVelocityReport - different timeframes', () => {
     it('calculates velocity trend for week timeframe', async () => {
       mockDb.all.mockReturnValue([
-        { id: 1, name: 'User 1', email: 'user1@test.com', avatar_url: null, task_count: 5, completion_rate: 85.5, last_active: '2024-01-01' },
+        {
+          id: 1,
+          name: 'User 1',
+          email: 'user1@test.com',
+          avatar_url: null,
+          task_count: 5,
+          completion_rate: 85.5,
+          last_active: '2024-01-01',
+        },
       ]);
 
       const result = await getTeamVelocityReport(undefined, 'week');
@@ -178,7 +218,15 @@ describe('team-metrics coverage - workspaceId branches', () => {
 
     it('calculates velocity trend for quarter timeframe', async () => {
       mockDb.all.mockReturnValue([
-        { id: 1, name: 'User 1', email: 'user1@test.com', avatar_url: null, task_count: 5, completion_rate: 85.5, last_active: '2024-01-01' },
+        {
+          id: 1,
+          name: 'User 1',
+          email: 'user1@test.com',
+          avatar_url: null,
+          task_count: 5,
+          completion_rate: 85.5,
+          last_active: '2024-01-01',
+        },
       ]);
 
       const result = await getTeamVelocityReport(undefined, 'quarter');
@@ -187,7 +235,15 @@ describe('team-metrics coverage - workspaceId branches', () => {
 
     it('calculates velocity trend for year timeframe', async () => {
       mockDb.all.mockReturnValue([
-        { id: 1, name: 'User 1', email: 'user1@test.com', avatar_url: null, task_count: 5, completion_rate: 85.5, last_active: '2024-01-01' },
+        {
+          id: 1,
+          name: 'User 1',
+          email: 'user1@test.com',
+          avatar_url: null,
+          task_count: 5,
+          completion_rate: 85.5,
+          last_active: '2024-01-01',
+        },
       ]);
 
       const result = await getTeamVelocityReport(undefined, 'year');
@@ -198,7 +254,14 @@ describe('team-metrics coverage - workspaceId branches', () => {
   describe('getTeamVelocityReport - sprint history with workspaceId', () => {
     it('returns sprint history for specific workspace', async () => {
       mockDb.all.mockReturnValue([
-        { sprint_id: '1', start_date: '2024-01-01', end_date: '2024-01-07', planned: 10, completed: 8, completion_rate: 80 },
+        {
+          sprint_id: '1',
+          start_date: '2024-01-01',
+          end_date: '2024-01-07',
+          planned: 10,
+          completed: 8,
+          completion_rate: 80,
+        },
       ]);
 
       const result = await getSprintHistory(1, 3);
@@ -210,15 +273,23 @@ describe('team-metrics coverage - workspaceId branches', () => {
     it('calculates trend percentage when there is previous period data', async () => {
       // Test lines 182-183: trend calculation when previousResult.count > 0
       mockDb.all.mockReturnValue([
-        { id: 1, name: 'User 1', email: 'user1@test.com', avatar_url: null, task_count: 5, completion_rate: 85.5, last_active: '2024-01-01' },
+        {
+          id: 1,
+          name: 'User 1',
+          email: 'user1@test.com',
+          avatar_url: null,
+          task_count: 5,
+          completion_rate: 85.5,
+          last_active: '2024-01-01',
+        },
       ]);
 
       // Mock get() to return different values for current vs previous period
       // First call: currentResult (should have some count)
       // Second call: previousResult (should have non-zero count to test trend calculation)
       mockDb.get
-        .mockReturnValueOnce({ count: 10 })  // currentResult.count
-        .mockReturnValueOnce({ count: 5 });   // previousResult.count
+        .mockReturnValueOnce({ count: 10 }) // currentResult.count
+        .mockReturnValueOnce({ count: 5 }); // previousResult.count
 
       const result = await getTeamVelocityReport(1);
 
@@ -228,12 +299,20 @@ describe('team-metrics coverage - workspaceId branches', () => {
 
     it('calculates negative trend when current count is lower than previous', async () => {
       mockDb.all.mockReturnValue([
-        { id: 1, name: 'User 1', email: 'user1@test.com', avatar_url: null, task_count: 5, completion_rate: 85.5, last_active: '2024-01-01' },
+        {
+          id: 1,
+          name: 'User 1',
+          email: 'user1@test.com',
+          avatar_url: null,
+          task_count: 5,
+          completion_rate: 85.5,
+          last_active: '2024-01-01',
+        },
       ]);
 
       mockDb.get
-        .mockReturnValueOnce({ count: 2 })   // currentResult.count
-        .mockReturnValueOnce({ count: 10 });  // previousResult.count
+        .mockReturnValueOnce({ count: 2 }) // currentResult.count
+        .mockReturnValueOnce({ count: 10 }); // previousResult.count
 
       const result = await getTeamVelocityReport(1);
 
@@ -243,13 +322,21 @@ describe('team-metrics coverage - workspaceId branches', () => {
 
     it('caps negative trend at -100%', async () => {
       mockDb.all.mockReturnValue([
-        { id: 1, name: 'User 1', email: 'user1@test.com', avatar_url: null, task_count: 5, completion_rate: 85.5, last_active: '2024-01-01' },
+        {
+          id: 1,
+          name: 'User 1',
+          email: 'user1@test.com',
+          avatar_url: null,
+          task_count: 5,
+          completion_rate: 85.5,
+          last_active: '2024-01-01',
+        },
       ]);
 
       // Very negative trend scenario
       mockDb.get
-        .mockReturnValueOnce({ count: 0 })   // currentResult.count
-        .mockReturnValueOnce({ count: 100 });  // previousResult.count
+        .mockReturnValueOnce({ count: 0 }) // currentResult.count
+        .mockReturnValueOnce({ count: 100 }); // previousResult.count
 
       const result = await getTeamVelocityReport(1);
 
@@ -259,13 +346,21 @@ describe('team-metrics coverage - workspaceId branches', () => {
 
     it('caps positive trend at 100%', async () => {
       mockDb.all.mockReturnValue([
-        { id: 1, name: 'User 1', email: 'user1@test.com', avatar_url: null, task_count: 5, completion_rate: 85.5, last_active: '2024-01-01' },
+        {
+          id: 1,
+          name: 'User 1',
+          email: 'user1@test.com',
+          avatar_url: null,
+          task_count: 5,
+          completion_rate: 85.5,
+          last_active: '2024-01-01',
+        },
       ]);
 
       // Very positive trend scenario
       mockDb.get
-        .mockReturnValueOnce({ count: 1000 })  // currentResult.count
-        .mockReturnValueOnce({ count: 10 });   // previousResult.count
+        .mockReturnValueOnce({ count: 1000 }) // currentResult.count
+        .mockReturnValueOnce({ count: 10 }); // previousResult.count
 
       const result = await getTeamVelocityReport(1);
 
@@ -278,7 +373,15 @@ describe('team-metrics coverage - workspaceId branches', () => {
     it('falls back to email when name is null', async () => {
       // This tests lines 88 and 114-116 - the name || email fallback
       mockDb.all.mockReturnValue([
-        { id: 1, name: null, email: 'usernameless@test.com', avatar_url: null, task_count: 5, completion_rate: 85.5, last_active: '2024-01-01' },
+        {
+          id: 1,
+          name: null,
+          email: 'usernameless@test.com',
+          avatar_url: null,
+          task_count: 5,
+          completion_rate: 85.5,
+          last_active: '2024-01-01',
+        },
       ]);
       mockDb.get.mockReturnValue({ count: 0 });
 
@@ -289,7 +392,14 @@ describe('team-metrics coverage - workspaceId branches', () => {
 
     it('falls back to email when name is undefined', async () => {
       mockDb.all.mockReturnValue([
-        { id: 1, email: 'user@test.com', avatar_url: null, task_count: 5, completion_rate: 85.5, last_active: '2024-01-01' },
+        {
+          id: 1,
+          email: 'user@test.com',
+          avatar_url: null,
+          task_count: 5,
+          completion_rate: 85.5,
+          last_active: '2024-01-01',
+        },
       ]);
       mockDb.get.mockReturnValue({ count: 0 });
 
@@ -300,7 +410,15 @@ describe('team-metrics coverage - workspaceId branches', () => {
 
     it('falls back to email when name is empty string', async () => {
       mockDb.all.mockReturnValue([
-        { id: 1, name: '', email: 'empty-name@test.com', avatar_url: null, task_count: 5, completion_rate: 85.5, last_active: '2024-01-01' },
+        {
+          id: 1,
+          name: '',
+          email: 'empty-name@test.com',
+          avatar_url: null,
+          task_count: 5,
+          completion_rate: 85.5,
+          last_active: '2024-01-01',
+        },
       ]);
       mockDb.get.mockReturnValue({ count: 0 });
 
@@ -312,13 +430,21 @@ describe('team-metrics coverage - workspaceId branches', () => {
 
     it('returns 0 trend when previousResult.count is 0', async () => {
       mockDb.all.mockReturnValue([
-        { id: 1, name: 'User 1', email: 'user1@test.com', avatar_url: null, task_count: 5, completion_rate: 85.5, last_active: '2024-01-01' },
+        {
+          id: 1,
+          name: 'User 1',
+          email: 'user1@test.com',
+          avatar_url: null,
+          task_count: 5,
+          completion_rate: 85.5,
+          last_active: '2024-01-01',
+        },
       ]);
 
       // Mock get() to return currentResult with count > 0, but previousResult with count = 0
       mockDb.get
-        .mockReturnValueOnce({ count: 10 })  // currentResult.count
-        .mockReturnValueOnce({ count: 0 });   // previousResult.count = 0
+        .mockReturnValueOnce({ count: 10 }) // currentResult.count
+        .mockReturnValueOnce({ count: 0 }); // previousResult.count = 0
 
       const result = await getTeamVelocityReport(1);
 
