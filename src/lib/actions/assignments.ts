@@ -1,10 +1,19 @@
-"use server";
+'use server';
 
-import { getDb } from "@/lib/db";
-import { getTasksByIds } from "./tasks";
-import type { TaskWithRelations } from "@/types";
+import { getDb } from '@/lib/db';
+import { getTasksByIds } from './tasks';
+import type { TaskWithRelations } from '@/types';
 
-export async function getTaskAssignments(taskId: number): Promise<Array<{ user_id: number; user_email: string; user_name: string | null; permission: "view" | "edit" }>> {
+export async function getTaskAssignments(
+  taskId: number
+): Promise<
+  Array<{
+    user_id: number;
+    user_email: string;
+    user_name: string | null;
+    permission: 'view' | 'edit';
+  }>
+> {
   const db = getDb();
   return db
     .prepare(
@@ -13,24 +22,44 @@ export async function getTaskAssignments(taskId: number): Promise<Array<{ user_i
        JOIN users u ON ta.user_id = u.id
        WHERE ta.task_id = ?`
     )
-    .all(taskId) as Array<{ user_id: number; user_email: string; user_name: string | null; permission: "view" | "edit" }>;
+    .all(taskId) as Array<{
+    user_id: number;
+    user_email: string;
+    user_name: string | null;
+    permission: 'view' | 'edit';
+  }>;
 }
 
-export async function assignTask(taskId: number, userId: number, permission: "view" | "edit" = "view"): Promise<void> {
+export async function assignTask(
+  taskId: number,
+  userId: number,
+  permission: 'view' | 'edit' = 'view'
+): Promise<void> {
   const db = getDb();
-  db.prepare("INSERT OR IGNORE INTO task_shares (task_id, user_id, permission) VALUES (?, ?, ?)")
-    .run(taskId, userId, permission);
+  db.prepare(
+    'INSERT OR IGNORE INTO task_shares (task_id, user_id, permission) VALUES (?, ?, ?)'
+  ).run(taskId, userId, permission);
 }
 
-export async function unassignTask(taskId: number, userId: number): Promise<void> {
+export async function unassignTask(
+  taskId: number,
+  userId: number
+): Promise<void> {
   const db = getDb();
-  db.prepare("DELETE FROM task_shares WHERE task_id = ? AND user_id = ?").run(taskId, userId);
+  db.prepare('DELETE FROM task_shares WHERE task_id = ? AND user_id = ?').run(
+    taskId,
+    userId
+  );
 }
 
-export async function getTasksAssignedToUser(userId: number): Promise<TaskWithRelations[]> {
+export async function getTasksAssignedToUser(
+  userId: number
+): Promise<TaskWithRelations[]> {
   const db = getDb();
   const taskIds = db
-    .prepare("SELECT task_id FROM task_shares WHERE user_id = ? AND permission = 'edit'")
+    .prepare(
+      "SELECT task_id FROM task_shares WHERE user_id = ? AND permission = 'edit'"
+    )
     .all(userId)
     .map((r: { task_id: number }) => r.task_id);
 
@@ -38,10 +67,14 @@ export async function getTasksAssignedToUser(userId: number): Promise<TaskWithRe
   return getTasksByIds(taskIds);
 }
 
-export async function getPendingAssignments(userId: number): Promise<TaskWithRelations[]> {
+export async function getPendingAssignments(
+  userId: number
+): Promise<TaskWithRelations[]> {
   const db = getDb();
   const taskIds = db
-    .prepare("SELECT task_id FROM task_shares WHERE user_id = ? AND permission = 'edit'")
+    .prepare(
+      "SELECT task_id FROM task_shares WHERE user_id = ? AND permission = 'edit'"
+    )
     .all(userId)
     .map((r: { task_id: number }) => r.task_id);
 
