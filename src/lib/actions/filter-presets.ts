@@ -1,7 +1,7 @@
-"use server";
+'use server';
 
-import { getDb } from "@/lib/db";
-import type { SavedFilterPreset } from "@/types";
+import { getDb } from '@/lib/db';
+import type { SavedFilterPreset } from '@/types';
 
 export interface CreateFilterPresetInput {
   user_id: number;
@@ -9,17 +9,23 @@ export interface CreateFilterPresetInput {
   filter_type?: string;
   list_id?: number | null;
   label_ids?: number[];
-  priority?: "critical" | "high" | "medium" | "low" | "none";
+  priority?: 'critical' | 'high' | 'medium' | 'low' | 'none';
 }
 
-export async function getFilterPresets(userId: number): Promise<SavedFilterPreset[]> {
+export async function getFilterPresets(
+  userId: number
+): Promise<SavedFilterPreset[]> {
   const db = getDb();
   return db
-    .prepare("SELECT * FROM filter_presets WHERE user_id = ? ORDER BY created_at DESC")
+    .prepare(
+      'SELECT * FROM filter_presets WHERE user_id = ? ORDER BY created_at DESC'
+    )
     .all(userId) as SavedFilterPreset[];
 }
 
-export async function createFilterPreset(input: CreateFilterPresetInput): Promise<SavedFilterPreset> {
+export async function createFilterPreset(
+  input: CreateFilterPresetInput
+): Promise<SavedFilterPreset> {
   const db = getDb();
   const result = db
     .prepare(
@@ -49,5 +55,5 @@ export async function createFilterPreset(input: CreateFilterPresetInput): Promis
 
 export async function deleteFilterPreset(id: number): Promise<void> {
   const db = getDb();
-  db.prepare("DELETE FROM filter_presets WHERE id = ?").run(id);
+  db.prepare('DELETE FROM filter_presets WHERE id = ?').run(id);
 }
