@@ -1,7 +1,7 @@
-"use server";
+'use server';
 
-import { getDb } from "@/lib/db";
-import type { User } from "@/types";
+import { getDb } from '@/lib/db';
+import type { User } from '@/types';
 
 /**
  * Get the current authenticated user from the session
@@ -15,9 +15,8 @@ export async function getCurrentUser(): Promise<User | null> {
 
     // Try to get user from session/token (would be set by NextAuth middleware)
     // For now, check if there's any user in the database
-    const user = db.prepare(
-      "SELECT * FROM users LIMIT 1"
-    ).get() as User | undefined;
+    const user = db.prepare('SELECT * FROM users LIMIT 1').get() as
+      User | undefined;
 
     return user || null;
   } catch {
@@ -30,9 +29,9 @@ export async function getCurrentUser(): Promise<User | null> {
  */
 export async function getUserByEmail(email: string): Promise<User | null> {
   const db = getDb();
-  return db.prepare(
-    "SELECT * FROM users WHERE email = ?"
-  ).get(email) as User | null;
+  return db
+    .prepare('SELECT * FROM users WHERE email = ?')
+    .get(email) as User | null;
 }
 
 /**
@@ -40,11 +39,11 @@ export async function getUserByEmail(email: string): Promise<User | null> {
  */
 export async function createUser(email: string, name?: string): Promise<User> {
   const db = getDb();
-  const result = db.prepare(
-    "INSERT INTO users (email, name) VALUES (?, ?)"
-  ).run(email, name || null);
+  const result = db
+    .prepare('INSERT INTO users (email, name) VALUES (?, ?)')
+    .run(email, name || null);
 
-  return db.prepare(
-    "SELECT * FROM users WHERE id = ?"
-  ).get(result.lastInsertRowid) as User;
+  return db
+    .prepare('SELECT * FROM users WHERE id = ?')
+    .get(result.lastInsertRowid) as User;
 }
