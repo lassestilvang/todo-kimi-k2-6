@@ -1,5 +1,19 @@
-import { describe, it, expect, beforeEach, afterEach, vi, beforeAll } from 'vitest';
-import { createTaskConnection, getConnectionStrength, findRelatedTasks, extractInsightsFromTask, updateSkillProficiency } from '../knowledge-graph';
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  vi,
+  beforeAll,
+} from 'vitest';
+import {
+  createTaskConnection,
+  getConnectionStrength,
+  findRelatedTasks,
+  extractInsightsFromTask,
+  updateSkillProficiency,
+} from '../knowledge-graph';
 import { setupTestDb, cleanupTestDb, createTestTasks } from '@/test/test-utils';
 import { setDb } from '@/lib/db';
 import { createMockDatabase } from '@/lib/db/mock-driver';
@@ -49,8 +63,9 @@ describe('Knowledge Graph Actions', () => {
     });
 
     it('throws error for invalid connection type', async () => {
-      await expect(createTaskConnection(1, 2, 'invalid_type' as any, 0.5))
-        .rejects.toThrow();
+      await expect(
+        createTaskConnection(1, 2, 'invalid_type' as any, 0.5)
+      ).rejects.toThrow();
     });
   });
 
@@ -69,7 +84,10 @@ describe('Knowledge Graph Actions', () => {
 
   describe('findRelatedTasks', () => {
     it('finds related tasks with specified connection types', async () => {
-      const relatedTasks = await findRelatedTasks(1, 10, ['related', 'similar']);
+      const relatedTasks = await findRelatedTasks(1, 10, [
+        'related',
+        'similar',
+      ]);
       expect(Array.isArray(relatedTasks)).toBe(true);
     });
 
@@ -98,7 +116,15 @@ describe('Knowledge Graph Actions', () => {
         id: 1,
         name: 'Test Task',
         description: 'A test task with design work',
-        labels: [{ id: 1, name: 'design', icon: '🎨', color: '#ff6b6b', created_at: now }],
+        labels: [
+          {
+            id: 1,
+            name: 'design',
+            icon: '🎨',
+            color: '#ff6b6b',
+            created_at: now,
+          },
+        ],
         completed: true,
         priority: 'high',
         date: '2024-01-15',
