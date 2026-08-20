@@ -1,11 +1,11 @@
-"use server";
+'use server';
 
-import { getDb } from "@/lib/db";
-import { getCurrentUser } from "@/lib/session";
-import type { Task, CreateTaskInput } from "@/types";
-import { createTask } from "./tasks";
-import { z } from "zod";
-import { shouldExcludeEmail, parseEmailToTask } from "./email-parser-helpers";
+import { getDb } from '@/lib/db';
+import { getCurrentUser } from '@/lib/session';
+import type { Task, CreateTaskInput } from '@/types';
+import { createTask } from './tasks';
+import { z } from 'zod';
+import { shouldExcludeEmail, parseEmailToTask } from './email-parser-helpers';
 
 // Schema for incoming email webhook
 const EmailWebhookSchema = z.object({
@@ -42,7 +42,7 @@ export interface EmailToTaskResult {
     title: string;
     description: string;
     due_date?: string;
-    priority?: "low" | "medium" | "high" | "critical";
+    priority?: 'low' | 'medium' | 'high' | 'critical';
     labels?: string[];
     assignee?: string;
   };
@@ -58,7 +58,7 @@ export interface EmailProcessingConfig {
   excludeKeywords: string[];
   aiParser?: {
     enabled: boolean;
-    model: "openai" | "claude" | "keyword-parser";
+    model: 'openai' | 'claude' | 'keyword-parser';
   };
 }
 
@@ -76,7 +76,7 @@ export async function processEmail(
     return {
       success: false,
       skipped: true,
-      reason: "Invalid email data",
+      reason: 'Invalid email data',
       confidence: 0,
     };
   }
@@ -88,7 +88,7 @@ export async function processEmail(
     return {
       success: false,
       skipped: true,
-      reason: "Email contains excluded keywords",
+      reason: 'Email contains excluded keywords',
       confidence: 1,
     };
   }
@@ -100,7 +100,7 @@ export async function processEmail(
     return {
       success: false,
       skipped: true,
-      reason: parsed.reason || "Could not parse email to task",
+      reason: parsed.reason || 'Could not parse email to task',
       confidence: parsed.confidence || 0,
     };
   }
@@ -122,7 +122,7 @@ export async function processEmail(
       return {
         success: false,
         skipped: true,
-        reason: "User not authenticated",
+        reason: 'User not authenticated',
         confidence: 0,
       };
     }
@@ -149,7 +149,7 @@ export async function processEmail(
     return {
       success: false,
       skipped: true,
-      reason: error instanceof Error ? error.message : "Failed to create task",
+      reason: error instanceof Error ? error.message : 'Failed to create task',
       confidence: 0,
     };
   }
@@ -158,22 +158,29 @@ export async function processEmail(
 /**
  * Ensure labels exist in the database, creating them if necessary
  */
-async function ensureLabelsExist(labelNames: string[], userId: number): Promise<number[]> {
+async function ensureLabelsExist(
+  labelNames: string[],
+  userId: number
+): Promise<number[]> {
   const db = getDb();
 
   const labelIds: number[] = [];
   for (const name of labelNames) {
     // Check if label exists
-    const existing = db.prepare("SELECT id FROM labels WHERE name = ? AND user_id = ?").get(name, userId);
+    const existing = db
+      .prepare('SELECT id FROM labels WHERE name = ? AND user_id = ?')
+      .get(name, userId);
     if (existing) {
       labelIds.push(existing.id);
       continue;
     }
 
     // Create new label
-    const result = db.prepare(
-      "INSERT INTO labels (name, icon, color, user_id) VALUES (?, '🏷️', '#8b5cf6', ?)"
-    ).run(name, userId);
+    const result = db
+      .prepare(
+        "INSERT INTO labels (name, icon, color, user_id) VALUES (?, '🏷️', '#8b5cf6', ?)"
+      )
+      .run(name, userId);
 
     labelIds.push(result.lastInsertRowid as number);
   }
@@ -220,7 +227,9 @@ export async function processEmailsBulk(
  * Sync emails from an email service (e.g., Gmail) to tasks
  */
 export async function syncEmailsToTasks(
-  fetchEmailsFn: (since?: Date) => Promise<z.infer<typeof EmailWebhookSchema>[]>,
+  fetchEmailsFn: (
+    since?: Date
+  ) => Promise<z.infer<typeof EmailWebhookSchema>[]>,
   config: EmailProcessingConfig,
   since?: Date
 ): Promise<{
@@ -251,25 +260,31 @@ export async function syncEmailsToTasks(
 /**
  * Get all email integrations for a user
  */
-export async function getEmailIntegrations(): Promise<Array<{
-  id: number;
-  user_id: number;
-  provider: string;
-  config: Record<string, unknown>;
-  enabled: boolean;
-  last_sync_at: string | null;
-  created_at: string;
-}>> {
+export async function getEmailIntegrations(): Promise<
+  Array<{
+    id: number;
+    user_id: number;
+    provider: string;
+    config: Record<string, unknown>;
+    enabled: boolean;
+    last_sync_at: string | null;
+    created_at: string;
+  }>
+> {
   const db = getDb();
   const user = await getCurrentUser();
 
   if (!user?.id) return [];
 
-  return db.prepare(`
+  return db
+    .prepare(
+      `
     SELECT ei.*, 'gmail' as provider
     FROM email_integrations ei
     WHERE ei.user_id = ?
-  `).all(user.id) as Array<{
+  `
+    )
+    .all(user.id) as Array<{
     id: number;
     user_id: number;
     provider: string;
@@ -290,12 +305,16 @@ export async function toggleEmailIntegration(
   const db = getDb();
   const user = await getCurrentUser();
 
-  if (!user?.id) throw new Error("Authentication required");
+  if (!user?.id) throw new Error('Authentication required');
 
-  const result = db.prepare("UPDATE email_integrations SET enabled = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?").run(enabled ? 1 : 0, integrationId, user.id);
+  const result = db
+    .prepare(
+      'UPDATE email_integrations SET enabled = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?'
+    )
+    .run(enabled ? 1 : 0, integrationId, user.id);
 
   if (result.changes === 0) {
-    throw new Error("Integration not found");
+    throw new Error('Integration not found');
   }
 }
 
@@ -312,6 +331,6 @@ export async function triggerEmailSync(): Promise<{
   return {
     processed: 0,
     created: 0,
-    error: "Email sync requires configuration",
+    error: 'Email sync requires configuration',
   };
 }
