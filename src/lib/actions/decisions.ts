@@ -1,10 +1,15 @@
-"use server";
+'use server';
 
-import { getDb } from "@/lib/db";
-import { getCurrentUser } from "@/lib/session";
-import type { DecisionEntry, DecisionOption, DecisionTemplate, Task } from "@/types";
-import type { GeneratedDecisionTemplate } from "@/lib/ai/index";
-import { aiCache } from "@/lib/ai/providers";
+import { getDb } from '@/lib/db';
+import { getCurrentUser } from '@/lib/session';
+import type {
+  DecisionEntry,
+  DecisionOption,
+  DecisionTemplate,
+  Task,
+} from '@/types';
+import type { GeneratedDecisionTemplate } from '@/lib/ai/index';
+import { aiCache } from '@/lib/ai/providers';
 
 /**
  * Create a new decision entry
@@ -16,7 +21,7 @@ export async function createDecisionEntry(
   const user = await getCurrentUser();
 
   if (!user?.id) {
-    throw new Error("Authentication required to create decisions");
+    throw new Error('Authentication required to create decisions');
   }
 
   // Create the decision entry
@@ -34,9 +39,9 @@ export async function createDecisionEntry(
       input.decision_type,
       input.question,
       input.chosen_option_id || null,
-      input.rationale || "",
-      input.outcome || "",
-      input.outcome_notes || "",
+      input.rationale || '',
+      input.outcome || '',
+      input.outcome_notes || '',
       input.outcome_rating || null
     );
 
@@ -74,9 +79,9 @@ export async function createDecisionEntry(
       decision_type: input.decision_type,
       question: input.question,
       chosen_option_id: input.chosen_option_id ?? null,
-      rationale: input.rationale ?? "",
-      outcome: input.outcome ?? "",
-      outcome_notes: input.outcome_notes ?? "",
+      rationale: input.rationale ?? '',
+      outcome: input.outcome ?? '',
+      outcome_notes: input.outcome_notes ?? '',
       outcome_rating: input.outcome_rating ?? null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -101,33 +106,33 @@ export async function getUserDecisionHistory(
 ): Promise<DecisionEntry[]> {
   const db = getDb();
 
-  let query = "SELECT * FROM decision_entries WHERE user_id = ?";
+  let query = 'SELECT * FROM decision_entries WHERE user_id = ?';
   const params: any[] = [userId];
 
   if (options?.taskId) {
-    query += " AND (task_id = ? OR task_id IS NULL)";
+    query += ' AND (task_id = ? OR task_id IS NULL)';
     params.push(options.taskId);
   }
 
   if (options?.decisionType) {
-    query += " AND decision_type = ?";
+    query += ' AND decision_type = ?';
     params.push(options.decisionType);
   }
 
   if (options?.startDate) {
-    query += " AND created_at >= ?";
+    query += ' AND created_at >= ?';
     params.push(options.startDate);
   }
 
   if (options?.endDate) {
-    query += " AND created_at <= ?";
+    query += ' AND created_at <= ?';
     params.push(options.endDate);
   }
 
-  query += " ORDER BY created_at DESC";
+  query += ' ORDER BY created_at DESC';
 
   if (options?.limit) {
-    query += " LIMIT ?";
+    query += ' LIMIT ?';
     params.push(options.limit);
   }
 
@@ -145,7 +150,9 @@ export async function getUserDecisionHistory(
 /**
  * Get decisions for a specific task
  */
-export async function getTaskDecisions(taskId: number): Promise<DecisionEntry[]> {
+export async function getTaskDecisions(
+  taskId: number
+): Promise<DecisionEntry[]> {
   const db = getDb();
   const user = await getCurrentUser();
 
@@ -154,7 +161,9 @@ export async function getTaskDecisions(taskId: number): Promise<DecisionEntry[]>
   }
 
   const entries = db
-    .prepare("SELECT * FROM decision_entries WHERE user_id = ? AND (task_id = ? OR task_id IS NULL) ORDER BY created_at DESC")
+    .prepare(
+      'SELECT * FROM decision_entries WHERE user_id = ? AND (task_id = ? OR task_id IS NULL) ORDER BY created_at DESC'
+    )
     .all(user.id, taskId) as DecisionEntry[];
 
   for (const entry of entries) {
@@ -177,11 +186,11 @@ export async function updateDecisionEntry(
 
   // Check if decision belongs to user
   const existing = db
-    .prepare("SELECT * FROM decision_entries WHERE id = ? AND user_id = ?")
+    .prepare('SELECT * FROM decision_entries WHERE id = ? AND user_id = ?')
     .get(decisionId, userId) as DecisionEntry | undefined;
 
   if (!existing) {
-    throw new Error("Decision entry not found or not accessible");
+    throw new Error('Decision entry not found or not accessible');
   }
 
   // Build update query dynamically
@@ -189,45 +198,45 @@ export async function updateDecisionEntry(
   const values: any[] = [];
 
   if (updates.question !== undefined) {
-    fields.push("question = ?");
+    fields.push('question = ?');
     values.push(updates.question);
   }
 
   if (updates.chosen_option_id !== undefined) {
-    fields.push("chosen_option_id = ?");
+    fields.push('chosen_option_id = ?');
     values.push(updates.chosen_option_id);
   }
 
   if (updates.rationale !== undefined) {
-    fields.push("rationale = ?");
+    fields.push('rationale = ?');
     values.push(updates.rationale);
   }
 
   if (updates.outcome !== undefined) {
-    fields.push("outcome = ?");
+    fields.push('outcome = ?');
     values.push(updates.outcome);
   }
 
   if (updates.outcome_notes !== undefined) {
-    fields.push("outcome_notes = ?");
+    fields.push('outcome_notes = ?');
     values.push(updates.outcome_notes);
   }
 
   if (updates.outcome_rating !== undefined) {
-    fields.push("outcome_rating = ?");
+    fields.push('outcome_rating = ?');
     values.push(updates.outcome_rating);
   }
 
   if (updates.decision_type !== undefined) {
-    fields.push("decision_type = ?");
+    fields.push('decision_type = ?');
     values.push(updates.decision_type);
   }
 
   if (fields.length > 0) {
-    fields.push("updated_at = CURRENT_TIMESTAMP");
+    fields.push('updated_at = CURRENT_TIMESTAMP');
     values.push(decisionId);
 
-    const query = `UPDATE decision_entries SET ${fields.join(", ")} WHERE id = ?`;
+    const query = `UPDATE decision_entries SET ${fields.join(', ')} WHERE id = ?`;
     db.prepare(query).run(...values);
 
     return getDecisionEntryById(decisionId);
@@ -239,24 +248,29 @@ export async function updateDecisionEntry(
 /**
  * Delete a decision entry and its associated options
  */
-export async function deleteDecisionEntry(decisionId: number, userId: number): Promise<boolean> {
+export async function deleteDecisionEntry(
+  decisionId: number,
+  userId: number
+): Promise<boolean> {
   const db = getDb();
 
   // Check if decision belongs to user
   const existing = db
-    .prepare("SELECT id FROM decision_entries WHERE id = ? AND user_id = ?")
+    .prepare('SELECT id FROM decision_entries WHERE id = ? AND user_id = ?')
     .get(decisionId, userId) as { id: number } | undefined;
 
   if (!existing) {
-    throw new Error("Decision entry not found or not accessible");
+    throw new Error('Decision entry not found or not accessible');
   }
 
   // Delete options first (foreign key constraint)
-  db.prepare("DELETE FROM decision_options WHERE decision_entry_id = ?").run(decisionId);
+  db.prepare('DELETE FROM decision_options WHERE decision_entry_id = ?').run(
+    decisionId
+  );
 
   // Delete the entry
   const result = db
-    .prepare("DELETE FROM decision_entries WHERE id = ? AND user_id = ?")
+    .prepare('DELETE FROM decision_entries WHERE id = ? AND user_id = ?')
     .run(decisionId, userId);
 
   return result.changes > 0;
@@ -280,7 +294,10 @@ export async function analyzeDecisionOutcomes(
 
   const decisions = await getUserDecisionHistory(userId, {
     decisionType: options?.decisionType,
-    startDate: options?.timeFrame === '30_days' ? formatDate(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)) : undefined,
+    startDate:
+      options?.timeFrame === '30_days'
+        ? formatDate(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000))
+        : undefined,
   });
 
   const analysis = {
@@ -314,17 +331,21 @@ export async function generateDecisionTemplate(
   const cacheKey = `decision-template:${userId}:${context.decisionType || 'general'}`;
   aiCache.set(cacheKey, result);
 
-  return { ...result, provider: "keyword-parser" };
+  return { ...result, provider: 'keyword-parser' };
 }
 
 /**
  * Get decision templates for a user
  */
-export async function getDecisionTemplates(userId: number): Promise<DecisionTemplate[]> {
+export async function getDecisionTemplates(
+  userId: number
+): Promise<DecisionTemplate[]> {
   const db = getDb();
 
   const templates = db
-    .prepare("SELECT * FROM decision_templates WHERE user_id = ? ORDER BY created_at DESC")
+    .prepare(
+      'SELECT * FROM decision_templates WHERE user_id = ? ORDER BY created_at DESC'
+    )
     .all(userId) as DecisionTemplate[];
 
   return templates;
@@ -341,9 +362,14 @@ export async function createDecisionTemplate(
 
   const result = db
     .prepare(
-      "INSERT INTO decision_templates (user_id, name, prompt_template, option_template, created_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)"
+      'INSERT INTO decision_templates (user_id, name, prompt_template, option_template, created_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)'
     )
-    .run(userId, input.name, input.prompt_template, input.option_template || null);
+    .run(
+      userId,
+      input.name,
+      input.prompt_template,
+      input.option_template || null
+    );
 
   return {
     id: result.lastInsertRowid as number,
@@ -358,11 +384,14 @@ export async function createDecisionTemplate(
 /**
  * Delete a decision template
  */
-export async function deleteDecisionTemplate(templateId: number, userId: number): Promise<boolean> {
+export async function deleteDecisionTemplate(
+  templateId: number,
+  userId: number
+): Promise<boolean> {
   const db = getDb();
 
   const result = db
-    .prepare("DELETE FROM decision_templates WHERE id = ? AND user_id = ?")
+    .prepare('DELETE FROM decision_templates WHERE id = ? AND user_id = ?')
     .run(templateId, userId);
 
   return result.changes > 0;
@@ -371,11 +400,13 @@ export async function deleteDecisionTemplate(templateId: number, userId: number)
 /**
  * Helper function to get decision entry by ID
  */
-async function getDecisionEntryById(decisionId: number): Promise<DecisionEntry | null> {
+async function getDecisionEntryById(
+  decisionId: number
+): Promise<DecisionEntry | null> {
   const db = getDb();
 
   const entry = db
-    .prepare("SELECT * FROM decision_entries WHERE id = ?")
+    .prepare('SELECT * FROM decision_entries WHERE id = ?')
     .get(decisionId) as DecisionEntry | undefined;
 
   if (!entry) return null;
@@ -389,11 +420,15 @@ async function getDecisionEntryById(decisionId: number): Promise<DecisionEntry |
 /**
  * Helper function to get decision options for an entry
  */
-async function getDecisionOptionsForEntry(decisionId: number): Promise<DecisionOption[]> {
+async function getDecisionOptionsForEntry(
+  decisionId: number
+): Promise<DecisionOption[]> {
   const db = getDb();
 
   const options = db
-    .prepare("SELECT * FROM decision_options WHERE decision_entry_id = ? ORDER BY id")
+    .prepare(
+      'SELECT * FROM decision_options WHERE decision_entry_id = ? ORDER BY id'
+    )
     .all(decisionId) as DecisionOption[];
 
   return options;
@@ -406,13 +441,13 @@ async function getTaskForDecision(decisionId: number): Promise<Task | null> {
   const db = getDb();
 
   const entry = db
-    .prepare("SELECT task_id FROM decision_entries WHERE id = ?")
+    .prepare('SELECT task_id FROM decision_entries WHERE id = ?')
     .get(decisionId) as { task_id: number | null } | undefined;
 
   if (!entry?.task_id) return null;
 
   const task = db
-    .prepare("SELECT * FROM tasks WHERE id = ?")
+    .prepare('SELECT * FROM tasks WHERE id = ?')
     .get(entry.task_id) as Task | undefined;
 
   return task || null;
@@ -428,7 +463,9 @@ function formatDate(date: Date): string {
 /**
  * Count decisions by type
  */
-function countDecisionTypes(decisions: DecisionEntry[]): Record<string, number> {
+function countDecisionTypes(
+  decisions: DecisionEntry[]
+): Record<string, number> {
   const counts: Record<string, number> = {};
 
   decisions.forEach(decision => {
@@ -493,12 +530,17 @@ function identifyDecisionPatterns(decisions: DecisionEntry[]): any {
   decisions.forEach(decision => {
     // By decision type
     if (!patterns.by_decision_type[decision.decision_type]) {
-      patterns.by_decision_type[decision.decision_type] = { count: 0, outcome_quality: [] };
+      patterns.by_decision_type[decision.decision_type] = {
+        count: 0,
+        outcome_quality: [],
+      };
     }
 
     patterns.by_decision_type[decision.decision_type].count++;
     if (decision.outcome_rating !== null) {
-      patterns.by_decision_type[decision.decision_type].outcome_quality.push(decision.outcome_rating);
+      patterns.by_decision_type[decision.decision_type].outcome_quality.push(
+        decision.outcome_rating
+      );
     }
 
     // By time of day (extract from created_at)
@@ -512,19 +554,25 @@ function identifyDecisionPatterns(decisions: DecisionEntry[]): any {
 
     patterns.by_time_of_day[hourKey].count++;
     if (decision.outcome_rating !== null) {
-      patterns.by_time_of_day[hourKey].outcome_quality.push(decision.outcome_rating);
+      patterns.by_time_of_day[hourKey].outcome_quality.push(
+        decision.outcome_rating
+      );
     }
   });
 
   // Calculate average outcomes by pattern
   for (const key in patterns.by_decision_type) {
     const type = patterns.by_decision_type[key];
-    type.average_outcome = type.outcome_quality.reduce((sum, r) => sum + r, 0) / (type.outcome_quality.length || 1);
+    type.average_outcome =
+      type.outcome_quality.reduce((sum, r) => sum + r, 0) /
+      (type.outcome_quality.length || 1);
   }
 
   for (const key in patterns.by_time_of_day) {
     const hour = patterns.by_time_of_day[key];
-    hour.average_outcome = hour.outcome_quality.reduce((sum, r) => sum + r, 0) / (hour.outcome_quality.length || 1);
+    hour.average_outcome =
+      hour.outcome_quality.reduce((sum, r) => sum + r, 0) /
+      (hour.outcome_quality.length || 1);
   }
 
   return patterns;
@@ -535,8 +583,15 @@ function identifyDecisionPatterns(decisions: DecisionEntry[]): any {
  */
 function extractLearningInsights(decisions: DecisionEntry[]): any {
   const insights = {
-    good_decision_makers: [] as Array<{ decision_type: string; success_rate: number }>,
-    learning_opportunities: [] as Array<{ decision_type: string; success_rate: number; improvement_areas: string[] }>,
+    good_decision_makers: [] as Array<{
+      decision_type: string;
+      success_rate: number;
+    }>,
+    learning_opportunities: [] as Array<{
+      decision_type: string;
+      success_rate: number;
+      improvement_areas: string[];
+    }>,
     timing_insights: [], // Best times to make certain decisions
     context_insights: [], // When certain contexts lead to better outcomes
   };
@@ -546,9 +601,13 @@ function extractLearningInsights(decisions: DecisionEntry[]): any {
 
   // Analyze success rates by decision type
   for (const decisionType of decisionTypes) {
-    const typedDecisions = decisions.filter(d => d.decision_type === decisionType);
+    const typedDecisions = decisions.filter(
+      d => d.decision_type === decisionType
+    );
 
-    const successful = typedDecisions.filter(d => d.outcome_rating && d.outcome_rating > 0);
+    const successful = typedDecisions.filter(
+      d => d.outcome_rating && d.outcome_rating > 0
+    );
 
     const successRate = successful.length / Math.max(typedDecisions.length, 1);
 
@@ -572,20 +631,27 @@ function extractLearningInsights(decisions: DecisionEntry[]): any {
 /**
  * Generate recommendations based on decision analysis
  */
-function generateDecisionRecommendations(decisions: DecisionEntry[], options?: any): any {
+function generateDecisionRecommendations(
+  decisions: DecisionEntry[],
+  options?: any
+): any {
   const recommendations = [];
 
   const outcomes = decisions.filter(d => d.outcome_rating !== null);
 
   if (outcomes.length === 0) {
     return {
-      immediate_actions: ["Start tracking decision outcomes to get personalized insights"],
-      long_term_goals: ["Build a consistent decision-making framework"],
+      immediate_actions: [
+        'Start tracking decision outcomes to get personalized insights',
+      ],
+      long_term_goals: ['Build a consistent decision-making framework'],
     };
   }
 
   // Generate based on patterns
-  const avgOutcome = outcomes.reduce((sum, d) => sum + (d.outcome_rating as number), 0) / outcomes.length;
+  const avgOutcome =
+    outcomes.reduce((sum, d) => sum + (d.outcome_rating as number), 0) /
+    outcomes.length;
 
   if (avgOutcome < 0) {
     recommendations.push({
@@ -610,8 +676,14 @@ function generateDecisionRecommendations(decisions: DecisionEntry[], options?: a
   }
 
   return {
-    immediate_actions: recommendations.filter(r => r.priority === 'immediate').map(r => r.strategies).flat(),
-    long_term_goals: recommendations.filter(r => r.priority === 'maintain').map(r => r.strategies).flat(),
+    immediate_actions: recommendations
+      .filter(r => r.priority === 'immediate')
+      .map(r => r.strategies)
+      .flat(),
+    long_term_goals: recommendations
+      .filter(r => r.priority === 'maintain')
+      .map(r => r.strategies)
+      .flat(),
     quick_tips: [
       'Document your decision rationale for better learning',
       'Set deadlines for time-sensitive decisions',
@@ -628,8 +700,8 @@ function identifyImprovementAreas(decisions: DecisionEntry[]): string[] {
   const improvements: string[] = [];
 
   // Analyze by outcome rating patterns
-  const highRiskDecisions = decisions.filter(d =>
-    d.outcome_rating && d.outcome_rating <= -0.5
+  const highRiskDecisions = decisions.filter(
+    d => d.outcome_rating && d.outcome_rating <= -0.5
   );
 
   if (highRiskDecisions.length > 0) {
@@ -653,11 +725,13 @@ function identifyImprovementAreas(decisions: DecisionEntry[]): string[] {
     improvements.push('Avoid making important decisions in morning rush');
   }
 
-  return improvements.length > 0 ? improvements : ['General decision process refinement'];
+  return improvements.length > 0
+    ? improvements
+    : ['General decision process refinement'];
 }
 
 // AI Manager helper
 async function getAIManager() {
-  const { getAIManager } = await import("@/lib/ai/providers");
+  const { getAIManager } = await import('@/lib/ai/providers');
   return getAIManager();
 }
