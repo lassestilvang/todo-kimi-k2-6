@@ -1,14 +1,16 @@
-import { describe, it, expect, beforeEach } from "vitest";
-import { setDb, resetDb } from "@/lib/db";
-import { createTestDb } from "@/lib/db/test-db";
-import type { TaskWithRelations } from "@/types";
+import { describe, it, expect, beforeEach } from 'vitest';
+import { setDb, resetDb } from '@/lib/db';
+import { createTestDb } from '@/lib/db/test-db';
+import type { TaskWithRelations } from '@/types';
 
-function createMockTask(overrides: Partial<TaskWithRelations> = {}): TaskWithRelations {
+function createMockTask(
+  overrides: Partial<TaskWithRelations> = {}
+): TaskWithRelations {
   const now = new Date().toISOString();
   return {
     id: 1,
     user_id: null,
-    name: "Test Task",
+    name: 'Test Task',
     description: null,
     notes: null,
     list_id: null,
@@ -16,8 +18,8 @@ function createMockTask(overrides: Partial<TaskWithRelations> = {}): TaskWithRel
     deadline: null,
     estimate: null,
     actual_time: null,
-    priority: "none",
-    recurring: "none",
+    priority: 'none',
+    recurring: 'none',
     recurring_config: null,
     completed: false,
     completed_at: null,
@@ -40,19 +42,26 @@ function createMockTask(overrides: Partial<TaskWithRelations> = {}): TaskWithRel
 }
 
 function createMockList(id: number, name: string, isInbox = false) {
-  return { id, name, emoji: "📦", color: "#000", is_inbox: isInbox, created_at: new Date().toISOString() };
+  return {
+    id,
+    name,
+    emoji: '📦',
+    color: '#000',
+    is_inbox: isInbox,
+    created_at: new Date().toISOString(),
+  };
 }
 
-describe("Export Actions", () => {
+describe('Export Actions', () => {
   beforeEach(() => {
     resetDb();
     const testDb = createTestDb();
     setDb(testDb);
   });
 
-  describe("exportData", () => {
-    it("should export empty state with just inbox", async () => {
-      const { exportData } = await import("../export");
+  describe('exportData', () => {
+    it('should export empty state with just inbox', async () => {
+      const { exportData } = await import('../export');
       const data = await exportData();
       expect(data.lists.length).toBeGreaterThanOrEqual(1);
       expect(data.labels.length).toBe(0);
@@ -61,86 +70,86 @@ describe("Export Actions", () => {
       expect(data.time_entries.length).toBe(0);
     });
 
-    it("should export data successfully with tasks", async () => {
-      const { exportData } = await import("../export");
+    it('should export data successfully with tasks', async () => {
+      const { exportData } = await import('../export');
       const data = await exportData();
-      expect(data).toHaveProperty("lists");
-      expect(data).toHaveProperty("labels");
-      expect(data).toHaveProperty("tasks");
-      expect(data).toHaveProperty("templates");
-      expect(data).toHaveProperty("time_entries");
+      expect(data).toHaveProperty('lists');
+      expect(data).toHaveProperty('labels');
+      expect(data).toHaveProperty('tasks');
+      expect(data).toHaveProperty('templates');
+      expect(data).toHaveProperty('time_entries');
     });
   });
 
-  describe("exportCsv", () => {
-    it("should export empty tasks as CSV", async () => {
-      const { exportCsv } = await import("../export");
+  describe('exportCsv', () => {
+    it('should export empty tasks as CSV', async () => {
+      const { exportCsv } = await import('../export');
       const csv = await exportCsv();
-      expect(csv).toContain("id,name,description");
+      expect(csv).toContain('id,name,description');
     });
 
-    it("should export CSV with header row", async () => {
-      const { exportCsv } = await import("../export");
+    it('should export CSV with header row', async () => {
+      const { exportCsv } = await import('../export');
       const csv = await exportCsv();
-      const lines = csv.split("\n");
-      expect(lines[0]).toContain("id,name");
+      const lines = csv.split('\n');
+      expect(lines[0]).toContain('id,name');
     });
   });
 
-  describe("exportJson", () => {
-    it("should export data as JSON blob", async () => {
-      const { exportJson } = await import("../export");
+  describe('exportJson', () => {
+    it('should export data as JSON blob', async () => {
+      const { exportJson } = await import('../export');
       const blob = await exportJson();
-      expect(blob.type).toContain("application/json");
+      expect(blob.type).toContain('application/json');
     });
 
-    it("should return valid JSON from blob", async () => {
-      const { exportJson } = await import("../export");
+    it('should return valid JSON from blob', async () => {
+      const { exportJson } = await import('../export');
       const blob = await exportJson();
       const text = await blob.text();
       expect(() => JSON.parse(text)).not.toThrow();
     });
   });
 
-  describe("exportIcal", () => {
-    it("should export as iCal blob", async () => {
-      const { exportIcal } = await import("../export");
+  describe('exportIcal', () => {
+    it('should export as iCal blob', async () => {
+      const { exportIcal } = await import('../export');
       const blob = await exportIcal();
-      expect(blob.type).toBe("text/calendar");
+      expect(blob.type).toBe('text/calendar');
     });
 
-    it("should include VCALENDAR wrapper", async () => {
-      const { exportIcal } = await import("../export");
+    it('should include VCALENDAR wrapper', async () => {
+      const { exportIcal } = await import('../export');
       const blob = await exportIcal();
       const text = await blob.text();
-      expect(text).toContain("BEGIN:VCALENDAR");
-      expect(text).toContain("END:VCALENDAR");
+      expect(text).toContain('BEGIN:VCALENDAR');
+      expect(text).toContain('END:VCALENDAR');
     });
   });
 
-  describe("exportPdf", () => {
-    it("should export data as text blob", async () => {
-      const { exportPdf } = await import("../export");
+  describe('exportPdf', () => {
+    it('should export data as text blob', async () => {
+      const { exportPdf } = await import('../export');
       const blob = await exportPdf();
-      expect(blob.type).toBe("text/plain");
+      expect(blob.type).toBe('text/plain');
     });
 
-    it("should include header in PDF export", async () => {
-      const { exportPdf } = await import("../export");
+    it('should include header in PDF export', async () => {
+      const { exportPdf } = await import('../export');
       const blob = await exportPdf();
       const text = await blob.text();
-      expect(text).toContain("TaskFlow Export");
+      expect(text).toContain('TaskFlow Export');
     });
   });
 
-  describe("importData validation", () => {
-    it("should validate that import data is an object", async () => {
-      const { importData } = await import("../export");
-      expect(typeof importData).toBe("function");
+  describe('importData validation', () => {
+    it('should validate that import data is an object', async () => {
+      const { importData } = await import('../export');
+      expect(typeof importData).toBe('function');
     });
 
-    it("should import empty data successfully", async () => {
-      const { importData } = await import("../export");
+    it('should import empty data successfully', async () => {
+      const { importData } = await import('../export');
       const result = await importData({
         lists: [],
         labels: [],
@@ -155,15 +164,45 @@ describe("Export Actions", () => {
       expect(result.time_entries).toBe(0);
     });
 
-    it("should import data with arrays", async () => {
-      const { importData } = await import("../export");
+    it('should import data with arrays', async () => {
+      const { importData } = await import('../export');
       const now = new Date().toISOString();
       const data = {
-        lists: [createMockList(1, "Test List", true)],
-        labels: [{ id: 1, name: "Test Label", icon: "🏷️", color: "#000", created_at: now }],
-        tasks: [createMockTask({ id: 1, name: "Test Task", list_id: 1 })],
-        templates: [{ id: 1, name: "Template", description: null, list_id: null, priority: "none" as const, label_ids: [], subtasks: [], category_id: null, created_at: now }],
-        time_entries: [{ id: 1, task_id: 1, start_time: now, end_time: null, duration_seconds: null, description: null, created_at: now }],
+        lists: [createMockList(1, 'Test List', true)],
+        labels: [
+          {
+            id: 1,
+            name: 'Test Label',
+            icon: '🏷️',
+            color: '#000',
+            created_at: now,
+          },
+        ],
+        tasks: [createMockTask({ id: 1, name: 'Test Task', list_id: 1 })],
+        templates: [
+          {
+            id: 1,
+            name: 'Template',
+            description: null,
+            list_id: null,
+            priority: 'none' as const,
+            label_ids: [],
+            subtasks: [],
+            category_id: null,
+            created_at: now,
+          },
+        ],
+        time_entries: [
+          {
+            id: 1,
+            task_id: 1,
+            start_time: now,
+            end_time: null,
+            duration_seconds: null,
+            description: null,
+            created_at: now,
+          },
+        ],
       };
 
       const result = await importData(data);
@@ -171,15 +210,35 @@ describe("Export Actions", () => {
       expect(result.labels).toBe(1);
     });
 
-    it("should import tasks with labels", async () => {
-      const { importData } = await import("../export");
+    it('should import tasks with labels', async () => {
+      const { importData } = await import('../export');
       const data = {
         lists: [],
-        labels: [{ id: 1, name: "Urgent", icon: "⚡", color: "#ff0000", created_at: new Date().toISOString() }],
-        tasks: [createMockTask({
-          id: 1, name: "Task with labels", priority: "high",
-          labels: [{ id: 1, name: "Urgent", icon: "⚡", color: "#ff0000", created_at: new Date().toISOString() }],
-        })],
+        labels: [
+          {
+            id: 1,
+            name: 'Urgent',
+            icon: '⚡',
+            color: '#ff0000',
+            created_at: new Date().toISOString(),
+          },
+        ],
+        tasks: [
+          createMockTask({
+            id: 1,
+            name: 'Task with labels',
+            priority: 'high',
+            labels: [
+              {
+                id: 1,
+                name: 'Urgent',
+                icon: '⚡',
+                color: '#ff0000',
+                created_at: new Date().toISOString(),
+              },
+            ],
+          }),
+        ],
         templates: [],
         time_entries: [],
       };
@@ -188,19 +247,35 @@ describe("Export Actions", () => {
       expect(result.tasks).toBe(1);
     });
 
-    it("should import tasks with subtasks", async () => {
-      const { importData } = await import("../export");
+    it('should import tasks with subtasks', async () => {
+      const { importData } = await import('../export');
       const now = new Date().toISOString();
       const data = {
         lists: [],
         labels: [],
-        tasks: [createMockTask({
-          id: 1, name: "Task with subtasks", priority: "medium" as const,
-          subtasks: [
-            { id: 1, task_id: 1, name: "Subtask 1", completed: false, created_at: now },
-            { id: 2, task_id: 1, name: "Subtask 2", completed: true, created_at: now },
-          ],
-        })],
+        tasks: [
+          createMockTask({
+            id: 1,
+            name: 'Task with subtasks',
+            priority: 'medium' as const,
+            subtasks: [
+              {
+                id: 1,
+                task_id: 1,
+                name: 'Subtask 1',
+                completed: false,
+                created_at: now,
+              },
+              {
+                id: 2,
+                task_id: 1,
+                name: 'Subtask 2',
+                completed: true,
+                created_at: now,
+              },
+            ],
+          }),
+        ],
         templates: [],
         time_entries: [],
       };
@@ -209,19 +284,34 @@ describe("Export Actions", () => {
       expect(result.tasks).toBe(1);
     });
 
-    it("should import tasks with reminders", async () => {
-      const { importData } = await import("../export");
+    it('should import tasks with reminders', async () => {
+      const { importData } = await import('../export');
       const now = new Date().toISOString();
       const data = {
         lists: [],
         labels: [],
-        tasks: [createMockTask({
-          id: 1, name: "Task with reminders", priority: "low" as const, date: "2024-07-15",
-          reminders: [
-            { id: 1, task_id: 1, remind_at: "2024-07-14T09:00:00Z", created_at: now },
-            { id: 2, task_id: 1, remind_at: "2024-07-15T09:00:00Z", created_at: now },
-          ],
-        })],
+        tasks: [
+          createMockTask({
+            id: 1,
+            name: 'Task with reminders',
+            priority: 'low' as const,
+            date: '2024-07-15',
+            reminders: [
+              {
+                id: 1,
+                task_id: 1,
+                remind_at: '2024-07-14T09:00:00Z',
+                created_at: now,
+              },
+              {
+                id: 2,
+                task_id: 1,
+                remind_at: '2024-07-15T09:00:00Z',
+                created_at: now,
+              },
+            ],
+          }),
+        ],
         templates: [],
         time_entries: [],
       };
@@ -230,16 +320,24 @@ describe("Export Actions", () => {
       expect(result.tasks).toBe(1);
     });
 
-    it("should import time entries with all fields", async () => {
-      const { importData } = await import("../export");
+    it('should import time entries with all fields', async () => {
+      const { importData } = await import('../export');
       const now = new Date().toISOString();
       const data = {
         lists: [],
         labels: [],
-        tasks: [createMockTask({ id: 1, name: "Task with time entry" })],
+        tasks: [createMockTask({ id: 1, name: 'Task with time entry' })],
         templates: [],
         time_entries: [
-          { id: 1, task_id: 1, start_time: "2024-07-15T09:00:00Z", end_time: "2024-07-15T10:00:00Z", duration_seconds: 3600, description: "Work session", created_at: now },
+          {
+            id: 1,
+            task_id: 1,
+            start_time: '2024-07-15T09:00:00Z',
+            end_time: '2024-07-15T10:00:00Z',
+            duration_seconds: 3600,
+            description: 'Work session',
+            created_at: now,
+          },
         ],
       };
 
@@ -248,18 +346,20 @@ describe("Export Actions", () => {
     });
   });
 
-  describe("taskToCsvRow function", () => {
-    it("should format CSV values correctly", () => {
+  describe('taskToCsvRow function', () => {
+    it('should format CSV values correctly', () => {
       const escape = (val: string | number | null | undefined) => {
-        if (val === null || val === undefined) return "";
+        if (val === null || val === undefined) return '';
         const str = String(val);
-        return str.includes(",") || str.includes('"') ? `"${str.replace(/"/g, '""')}"` : str;
+        return str.includes(',') || str.includes('"')
+          ? `"${str.replace(/"/g, '""')}"`
+          : str;
       };
 
-      expect(escape("Task, with comma")).toBe('"Task, with comma"');
-      expect(escape("Task with quotes")).toBe("Task with quotes");
+      expect(escape('Task, with comma')).toBe('"Task, with comma"');
+      expect(escape('Task with quotes')).toBe('Task with quotes');
       expect(escape('Task "quoted"')).toBe('"Task ""quoted"""');
-      expect(escape(null)).toBe("");
+      expect(escape(null)).toBe('');
     });
   });
 });
