@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach } from 'vitest';
 
 // Test the rate limiter logic with a simple mock
-describe("Rate Limiter Logic", () => {
+describe('Rate Limiter Logic', () => {
   // Simple implementation matching the real one
   class TestRateLimiter {
     private store: Map<string, { count: number; resetTime: number }>;
@@ -31,7 +31,11 @@ describe("Rate Limiter Logic", () => {
 
       record.count++;
       this.store.set(key, record);
-      return { allowed: true, remaining: this.max - record.count, resetTime: record.resetTime };
+      return {
+        allowed: true,
+        remaining: this.max - record.count,
+        resetTime: record.resetTime,
+      };
     }
 
     reset(key: string) {
@@ -45,14 +49,14 @@ describe("Rate Limiter Logic", () => {
     limiter = new TestRateLimiter({ windowMs: 1000, max: 5 });
   });
 
-  it("should allow requests under the limit", () => {
-    const result = limiter.isAllowed("test-key");
+  it('should allow requests under the limit', () => {
+    const result = limiter.isAllowed('test-key');
     expect(result.allowed).toBe(true);
     expect(result.remaining).toBe(4);
   });
 
-  it("should block requests over the limit", () => {
-    const key = "test-key-2";
+  it('should block requests over the limit', () => {
+    const key = 'test-key-2';
     // Use up the limit
     for (let i = 0; i < 5; i++) {
       limiter.isAllowed(key);
@@ -63,8 +67,8 @@ describe("Rate Limiter Logic", () => {
     expect(result.remaining).toBe(0);
   });
 
-  it("should reset the counter", () => {
-    const key = "test-key-3";
+  it('should reset the counter', () => {
+    const key = 'test-key-3';
     limiter.isAllowed(key);
     limiter.reset(key);
     const result = limiter.isAllowed(key);
