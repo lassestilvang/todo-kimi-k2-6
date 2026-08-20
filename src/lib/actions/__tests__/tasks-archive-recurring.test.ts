@@ -181,23 +181,42 @@ describe('Task Actions - Archive/Recurring Functions', () => {
   describe('archiveTasks - with userId (line 1106)', () => {
     it('should archive multiple tasks with userId and return count', async () => {
       // Create multiple tasks owned by user 1
-      const task1 = db.prepare('INSERT INTO tasks (user_id, name, list_id, archived) VALUES (?, ?, ?, 0)').run(1, 'Task 1', 1);
-      const task2 = db.prepare('INSERT INTO tasks (user_id, name, list_id, archived) VALUES (?, ?, ?, 0)').run(1, 'Task 2', 1);
+      const task1 = db
+        .prepare(
+          'INSERT INTO tasks (user_id, name, list_id, archived) VALUES (?, ?, ?, 0)'
+        )
+        .run(1, 'Task 1', 1);
+      const task2 = db
+        .prepare(
+          'INSERT INTO tasks (user_id, name, list_id, archived) VALUES (?, ?, ?, 0)'
+        )
+        .run(1, 'Task 2', 1);
 
       // Archive both tasks as user 1
-      const result = await archiveTasks([Number(task1.lastInsertRowid), Number(task2.lastInsertRowid)], 1);
+      const result = await archiveTasks(
+        [Number(task1.lastInsertRowid), Number(task2.lastInsertRowid)],
+        1
+      );
       expect(result).toBe(2);
 
       // Verify both are archived
-      const archived1 = db.prepare('SELECT archived FROM tasks WHERE id = ?').get(Number(task1.lastInsertRowid));
-      const archived2 = db.prepare('SELECT archived FROM tasks WHERE id = ?').get(Number(task2.lastInsertRowid));
+      const archived1 = db
+        .prepare('SELECT archived FROM tasks WHERE id = ?')
+        .get(Number(task1.lastInsertRowid));
+      const archived2 = db
+        .prepare('SELECT archived FROM tasks WHERE id = ?')
+        .get(Number(task2.lastInsertRowid));
       expect(archived1?.archived).toBe(1);
       expect(archived2?.archived).toBe(1);
     });
 
     it('should return 0 when userId is null (line 1108)', async () => {
       // Create a task
-      const task = db.prepare('INSERT INTO tasks (user_id, name, list_id, archived) VALUES (?, ?, ?, 0)').run(1, 'Task', 1);
+      const task = db
+        .prepare(
+          'INSERT INTO tasks (user_id, name, list_id, archived) VALUES (?, ?, ?, 0)'
+        )
+        .run(1, 'Task', 1);
 
       const result = await archiveTasks([Number(task.lastInsertRowid)], null);
       expect(result).toBe(0);
@@ -395,7 +414,7 @@ describe('Task Actions - Archive/Recurring Functions', () => {
         1,
         'custom',
         '2026-07-15',
-        '42'  // JSON.parse of '42' returns number, not object
+        '42' // JSON.parse of '42' returns number, not object
       );
 
       const count = await generateRecurringTasks();
@@ -414,7 +433,7 @@ describe('Task Actions - Archive/Recurring Functions', () => {
         1,
         'custom',
         '2026-07-15',
-        'null'  // JSON.parse of 'null' returns null
+        'null' // JSON.parse of 'null' returns null
       );
 
       const count = await generateRecurringTasks();
@@ -442,7 +461,9 @@ describe('Task Actions - Archive/Recurring Functions', () => {
 
       // Verify the task was created (or would have been created)
       // The exact behavior depends on whether today is a weekday or weekend
-      const tasks = db.prepare('SELECT * FROM tasks WHERE name = ?').all('Weekdays Task');
+      const tasks = db
+        .prepare('SELECT * FROM tasks WHERE name = ?')
+        .all('Weekdays Task');
       expect(tasks.length).toBeGreaterThanOrEqual(1);
     });
 
@@ -452,7 +473,9 @@ describe('Task Actions - Archive/Recurring Functions', () => {
       // Set to a Friday
       const day = Friday.getDay();
       const daysToFriday = (5 - day + 7) % 7;
-      const FridayDate = new Date(Date.now() + daysToFriday * 24 * 60 * 60 * 1000);
+      const FridayDate = new Date(
+        Date.now() + daysToFriday * 24 * 60 * 60 * 1000
+      );
 
       const OriginalDate = global.Date;
       const OriginalNow = Date.now;
@@ -474,7 +497,9 @@ describe('Task Actions - Archive/Recurring Functions', () => {
         expect(count).toBeGreaterThanOrEqual(0);
 
         // Verify task exists
-        const tasks = db.prepare('SELECT * FROM tasks WHERE name = ?').all('Weekdays Friday Task');
+        const tasks = db
+          .prepare('SELECT * FROM tasks WHERE name = ?')
+          .all('Weekdays Friday Task');
         expect(tasks.length).toBeGreaterThanOrEqual(1);
       } finally {
         // Restore original Date
@@ -621,10 +646,13 @@ describe('Task Actions - Archive/Recurring Functions', () => {
         )
         .run(1, 'Task 2', 1, 1);
 
-      await reorderTasks([
-        { id: Number(task2.lastInsertRowid), sort_order: 0 },
-        { id: Number(task1.lastInsertRowid), sort_order: 1 },
-      ], 1);
+      await reorderTasks(
+        [
+          { id: Number(task2.lastInsertRowid), sort_order: 0 },
+          { id: Number(task1.lastInsertRowid), sort_order: 1 },
+        ],
+        1
+      );
 
       // Verify reorder happened
       expect(true).toBe(true);
@@ -640,7 +668,10 @@ describe('Task Actions - Archive/Recurring Functions', () => {
         )
         .run('Task', 1, 0);
 
-      await reorderTasks([{ id: Number(task.lastInsertRowid), sort_order: 5 }], 1);
+      await reorderTasks(
+        [{ id: Number(task.lastInsertRowid), sort_order: 5 }],
+        1
+      );
       expect(true).toBe(true);
     });
 
@@ -652,7 +683,10 @@ describe('Task Actions - Archive/Recurring Functions', () => {
         )
         .run('Admin Task', 1, 0);
 
-      await reorderTasks([{ id: Number(task.lastInsertRowid), sort_order: 5 }], null);
+      await reorderTasks(
+        [{ id: Number(task.lastInsertRowid), sort_order: 5 }],
+        null
+      );
       expect(true).toBe(true);
     });
   });
@@ -883,7 +917,10 @@ describe('Task Actions - Archive/Recurring Functions', () => {
       const result = await performBatchOperation({
         type: 'add-dependencies',
         ids: [Number(task1.lastInsertRowid)],
-        dependsOnIds: [Number(task2.lastInsertRowid), Number(task3.lastInsertRowid)],
+        dependsOnIds: [
+          Number(task2.lastInsertRowid),
+          Number(task3.lastInsertRowid),
+        ],
       });
 
       expect(result.success).toBe(true);
@@ -1176,7 +1213,11 @@ describe('Task Actions - Archive/Recurring Functions', () => {
         .prepare('INSERT INTO tasks (user_id, name, list_id) VALUES (?, ?, ?)')
         .run(1, 'Task to reprioritize', 1);
 
-      const result = await setTaskPriorities([Number(task.lastInsertRowid)], 'high', 1);
+      const result = await setTaskPriorities(
+        [Number(task.lastInsertRowid)],
+        'high',
+        1
+      );
 
       expect(result).toBe(1);
       const updated = db
@@ -1190,7 +1231,11 @@ describe('Task Actions - Archive/Recurring Functions', () => {
         .prepare('INSERT INTO tasks (user_id, name, list_id) VALUES (?, ?, ?)')
         .run(1, 'Admin Priority Task', 1);
 
-      const result = await setTaskPriorities([Number(task.lastInsertRowid)], 'critical', null);
+      const result = await setTaskPriorities(
+        [Number(task.lastInsertRowid)],
+        'critical',
+        null
+      );
 
       expect(result).toBe(1);
       const updated = db
@@ -1204,27 +1249,35 @@ describe('Task Actions - Archive/Recurring Functions', () => {
     it('should complete tasks with userId filter', async () => {
       // Create an incomplete task
       const task = db
-        .prepare('INSERT INTO tasks (user_id, name, list_id, completed) VALUES (?, ?, ?, 0)')
+        .prepare(
+          'INSERT INTO tasks (user_id, name, list_id, completed) VALUES (?, ?, ?, 0)'
+        )
         .run(1, 'Task to complete', 1);
 
       const result = await completeTasks([Number(task.lastInsertRowid)], 1);
 
       expect(result).toBe(1);
-      const updated = db.prepare('SELECT completed FROM tasks WHERE id = ?').get(Number(task.lastInsertRowid));
+      const updated = db
+        .prepare('SELECT completed FROM tasks WHERE id = ?')
+        .get(Number(task.lastInsertRowid));
       expect(updated.completed).toBe(1);
     });
 
     it('should complete tasks without userId filter (admin override) - line 1073', async () => {
       // Create an incomplete task owned by user 2
       const task = db
-        .prepare('INSERT INTO tasks (user_id, name, list_id, completed) VALUES (?, ?, ?, 0)')
+        .prepare(
+          'INSERT INTO tasks (user_id, name, list_id, completed) VALUES (?, ?, ?, 0)'
+        )
         .run(2, 'Admin Task', 1);
 
       // Complete as admin (null userId)
       const result = await completeTasks([Number(task.lastInsertRowid)], null);
 
       expect(result).toBe(1);
-      const updated = db.prepare('SELECT completed FROM tasks WHERE id = ?').get(Number(task.lastInsertRowid));
+      const updated = db
+        .prepare('SELECT completed FROM tasks WHERE id = ?')
+        .get(Number(task.lastInsertRowid));
       expect(updated.completed).toBe(1);
     });
   });
@@ -1244,7 +1297,9 @@ describe('Task Actions - Archive/Recurring Functions', () => {
   describe('unarchiveTasks - without userId', () => {
     it('should return 0 when userId is null (line 1118)', async () => {
       const task = db
-        .prepare('INSERT INTO tasks (user_id, name, list_id, archived) VALUES (?, ?, ?, 1)')
+        .prepare(
+          'INSERT INTO tasks (user_id, name, list_id, archived) VALUES (?, ?, ?, 1)'
+        )
         .run(1, 'Task to unarchive', 1);
 
       const result = await unarchiveTasks([Number(task.lastInsertRowid)], null);
@@ -1257,7 +1312,9 @@ describe('Task Actions - Archive/Recurring Functions', () => {
     it('should uncomplete tasks with userId filter', async () => {
       // Create a completed task
       const task = db
-        .prepare('INSERT INTO tasks (user_id, name, list_id, completed) VALUES (?, ?, ?, 1)')
+        .prepare(
+          'INSERT INTO tasks (user_id, name, list_id, completed) VALUES (?, ?, ?, 1)'
+        )
         .run(1, 'Completed Task', 1);
 
       // Uncomplete as user 1
@@ -1265,22 +1322,31 @@ describe('Task Actions - Archive/Recurring Functions', () => {
       expect(result).toBe(1);
 
       // Verify task is now uncompleted
-      const updated = db.prepare('SELECT completed FROM tasks WHERE id = ?').get(Number(task.lastInsertRowid));
+      const updated = db
+        .prepare('SELECT completed FROM tasks WHERE id = ?')
+        .get(Number(task.lastInsertRowid));
       expect(updated.completed).toBe(0);
     });
 
     it('should uncomplete tasks without userId filter (admin override) (line 1083)', async () => {
       // Create a completed task
       const task = db
-        .prepare('INSERT INTO tasks (user_id, name, list_id, completed) VALUES (?, ?, ?, 1)')
+        .prepare(
+          'INSERT INTO tasks (user_id, name, list_id, completed) VALUES (?, ?, ?, 1)'
+        )
         .run(2, 'Completed Task 2', 1);
 
       // Uncomplete without user filter (admin override)
-      const result = await uncompleteTasks([Number(task.lastInsertRowid)], null);
+      const result = await uncompleteTasks(
+        [Number(task.lastInsertRowid)],
+        null
+      );
       expect(result).toBe(1);
 
       // Verify task is now uncompleted
-      const updated = db.prepare('SELECT completed FROM tasks WHERE id = ?').get(Number(task.lastInsertRowid));
+      const updated = db
+        .prepare('SELECT completed FROM tasks WHERE id = ?')
+        .get(Number(task.lastInsertRowid));
       expect(updated.completed).toBe(0);
     });
   });
@@ -1295,7 +1361,11 @@ describe('Task Actions - Archive/Recurring Functions', () => {
         .prepare('INSERT INTO tasks (user_id, name, list_id) VALUES (?, ?, ?)')
         .run(1, 'Admin Task', 1);
 
-      const result = await addLabelsToTasks([Number(task.lastInsertRowid)], [Number(label.lastInsertRowid)], null);
+      const result = await addLabelsToTasks(
+        [Number(task.lastInsertRowid)],
+        [Number(label.lastInsertRowid)],
+        null
+      );
 
       expect(result).toBe(1);
     });
@@ -1312,9 +1382,17 @@ describe('Task Actions - Archive/Recurring Functions', () => {
         .run(1, 'Admin Task', 1);
 
       // Add label first
-      await addLabelsToTasks([Number(task.lastInsertRowid)], [Number(label.lastInsertRowid)], null);
+      await addLabelsToTasks(
+        [Number(task.lastInsertRowid)],
+        [Number(label.lastInsertRowid)],
+        null
+      );
 
-      const result = await removeLabelsFromTasks([Number(task.lastInsertRowid)], [Number(label.lastInsertRowid)], null);
+      const result = await removeLabelsFromTasks(
+        [Number(task.lastInsertRowid)],
+        [Number(label.lastInsertRowid)],
+        null
+      );
 
       expect(result).toBe(1);
     });
@@ -1344,10 +1422,9 @@ describe('Task Actions - Archive/Recurring Functions', () => {
         .prepare('INSERT INTO labels (name, user_id) VALUES (?, ?)')
         .run('Test Label', 1);
 
-      db.prepare('INSERT INTO task_labels (task_id, label_id) VALUES (?, ?)').run(
-        Number(task.lastInsertRowid),
-        Number(label.lastInsertRowid)
-      );
+      db.prepare(
+        'INSERT INTO task_labels (task_id, label_id) VALUES (?, ?)'
+      ).run(Number(task.lastInsertRowid), Number(label.lastInsertRowid));
 
       // Delete as user 1 (should execute the DELETE query)
       const result = await deleteTasks([Number(task.lastInsertRowid)], 1);
