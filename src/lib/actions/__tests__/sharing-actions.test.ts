@@ -1,18 +1,18 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { setDb, resetDb } from "@/lib/db";
-import { createTestDb } from "@/lib/db/test-db";
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { setDb, resetDb } from '@/lib/db';
+import { createTestDb } from '@/lib/db/test-db';
 
 // Mock email function
-vi.mock("@/lib/email", () => ({
+vi.mock('@/lib/email', () => ({
   sendTaskSharedEmail: vi.fn().mockResolvedValue(undefined),
 }));
 
-describe("Sharing Actions - Comprehensive Tests", () => {
+describe('Sharing Actions - Comprehensive Tests', () => {
   let db: ReturnType<typeof createTestDb>;
-  let shareTaskWithUser: typeof import("../../actions/sharing-actions").shareTaskWithUser;
-  let getUsers: typeof import("../../actions/sharing-actions").getUsers;
-  let canAccessTask: typeof import("../../actions/sharing-actions").canAccessTask;
-  let getSharedTasksForUser: typeof import("../../actions/sharing-actions").getSharedTasksForUser;
+  let shareTaskWithUser: typeof import('../../actions/sharing-actions').shareTaskWithUser;
+  let getUsers: typeof import('../../actions/sharing-actions').getUsers;
+  let canAccessTask: typeof import('../../actions/sharing-actions').canAccessTask;
+  let getSharedTasksForUser: typeof import('../../actions/sharing-actions').getSharedTasksForUser;
 
   beforeEach(async () => {
     resetDb();
@@ -97,11 +97,18 @@ describe("Sharing Actions - Comprehensive Tests", () => {
     `);
 
     // Create test data
-    db.prepare("INSERT INTO users (id, email, name, avatar_url) VALUES (?, ?, ?, ?)").run(1, "sender@example.com", "Sender", null);
-    db.prepare("INSERT INTO users (id, email, name, avatar_url) VALUES (?, ?, ?, ?)").run(2, "recipient@example.com", "Recipient", null);
-    db.prepare("INSERT INTO tasks (id, name) VALUES (?, ?)").run(100, "Shared Task");
+    db.prepare(
+      'INSERT INTO users (id, email, name, avatar_url) VALUES (?, ?, ?, ?)'
+    ).run(1, 'sender@example.com', 'Sender', null);
+    db.prepare(
+      'INSERT INTO users (id, email, name, avatar_url) VALUES (?, ?, ?, ?)'
+    ).run(2, 'recipient@example.com', 'Recipient', null);
+    db.prepare('INSERT INTO tasks (id, name) VALUES (?, ?)').run(
+      100,
+      'Shared Task'
+    );
 
-    const actions = await import("../sharing-actions");
+    const actions = await import('../sharing-actions');
     shareTaskWithUser = actions.shareTaskWithUser;
     getUsers = actions.getUsers;
     canAccessTask = actions.canAccessTask;
@@ -112,116 +119,153 @@ describe("Sharing Actions - Comprehensive Tests", () => {
     db.close();
   });
 
-  describe("shareTaskWithUser", () => {
-    it("should share task with user without sender", async () => {
-      const result = await shareTaskWithUser(100, 2, "view");
+  describe('shareTaskWithUser', () => {
+    it('should share task with user without sender', async () => {
+      const result = await shareTaskWithUser(100, 2, 'view');
       expect(result.success).toBe(true);
       expect(result.emailSent).toBe(false);
     });
 
-    it("should share task with user with sender info", async () => {
-      const result = await shareTaskWithUser(100, 2, "edit", 1);
+    it('should share task with user with sender info', async () => {
+      const result = await shareTaskWithUser(100, 2, 'edit', 1);
       expect(result.success).toBe(true);
     });
 
-    it("should use default view permission", async () => {
+    it('should use default view permission', async () => {
       const result = await shareTaskWithUser(100, 2);
       expect(result.success).toBe(true);
     });
 
-    it("should return emailSent flag", async () => {
+    it('should return emailSent flag', async () => {
       const result = await shareTaskWithUser(100, 2);
-      expect(typeof result.emailSent).toBe("boolean");
+      expect(typeof result.emailSent).toBe('boolean');
     });
   });
 
-  describe("getUsers", () => {
-    it("should return users array", async () => {
+  describe('getUsers', () => {
+    it('should return users array', async () => {
       const result = await getUsers();
       expect(Array.isArray(result)).toBe(true);
     });
 
-    it("should return users with id, email, and name", async () => {
+    it('should return users with id, email, and name', async () => {
       const result = await getUsers();
       expect(Array.isArray(result)).toBe(true);
       if (result.length > 0) {
-        expect(result[0]).toHaveProperty("id");
-        expect(result[0]).toHaveProperty("email");
+        expect(result[0]).toHaveProperty('id');
+        expect(result[0]).toHaveProperty('email');
       }
     });
 
-    it("should order users by name then email", async () => {
-      db.prepare("INSERT INTO users (id, email, name) VALUES (?, ?, ?)").run(10, "z@example.com", "Alice");
-      db.prepare("INSERT INTO users (id, email, name) VALUES (?, ?, ?)").run(11, "a@example.com", "Bob");
+    it('should order users by name then email', async () => {
+      db.prepare('INSERT INTO users (id, email, name) VALUES (?, ?, ?)').run(
+        10,
+        'z@example.com',
+        'Alice'
+      );
+      db.prepare('INSERT INTO users (id, email, name) VALUES (?, ?, ?)').run(
+        11,
+        'a@example.com',
+        'Bob'
+      );
 
       const result = await getUsers();
       expect(Array.isArray(result)).toBe(true);
     });
   });
 
-  describe("canAccessTask", () => {
-    it("should return null when no share exists", async () => {
+  describe('canAccessTask', () => {
+    it('should return null when no share exists', async () => {
       const result = await canAccessTask(100, 2);
       expect(result).toBeNull();
     });
 
-    it("should return view permission when share exists", async () => {
-      db.prepare("INSERT INTO task_shares (task_id, user_id, permission) VALUES (?, ?, ?)").run(100, 2, "view");
+    it('should return view permission when share exists', async () => {
+      db.prepare(
+        'INSERT INTO task_shares (task_id, user_id, permission) VALUES (?, ?, ?)'
+      ).run(100, 2, 'view');
 
       const result = await canAccessTask(100, 2);
-      expect(result).toBe("view");
+      expect(result).toBe('view');
     });
 
-    it("should return edit permission when share exists with edit", async () => {
-      db.prepare("INSERT INTO task_shares (task_id, user_id, permission) VALUES (?, ?, ?)").run(100, 2, "edit");
+    it('should return edit permission when share exists with edit', async () => {
+      db.prepare(
+        'INSERT INTO task_shares (task_id, user_id, permission) VALUES (?, ?, ?)'
+      ).run(100, 2, 'edit');
 
       const result = await canAccessTask(100, 2);
-      expect(result).toBe("edit");
+      expect(result).toBe('edit');
     });
 
-    it("should return null for non-existent task", async () => {
+    it('should return null for non-existent task', async () => {
       const result = await canAccessTask(999, 2);
       expect(result).toBeNull();
     });
   });
 
-  describe("getSharedTasksForUser", () => {
-    it("should return empty array when no tasks shared", async () => {
+  describe('getSharedTasksForUser', () => {
+    it('should return empty array when no tasks shared', async () => {
       const result = await getSharedTasksForUser(2);
       expect(result).toEqual([]);
     });
 
-    it("should return tasks shared with user", async () => {
-      db.prepare("INSERT INTO task_shares (task_id, user_id, permission) VALUES (?, ?, ?)").run(100, 2, "edit");
+    it('should return tasks shared with user', async () => {
+      db.prepare(
+        'INSERT INTO task_shares (task_id, user_id, permission) VALUES (?, ?, ?)'
+      ).run(100, 2, 'edit');
 
       const result = await getSharedTasksForUser(2);
       expect(Array.isArray(result)).toBe(true);
     });
 
-    it("should only return tasks with edit permission", async () => {
-      db.prepare("INSERT INTO task_shares (task_id, user_id, permission) VALUES (?, ?, ?)").run(100, 2, "view");
+    it('should only return tasks with edit permission', async () => {
+      db.prepare(
+        'INSERT INTO task_shares (task_id, user_id, permission) VALUES (?, ?, ?)'
+      ).run(100, 2, 'view');
 
       const result = await getSharedTasksForUser(2);
       // Mock DB behavior - view permission may still return tasks in some cases
       expect(Array.isArray(result)).toBe(true);
     });
 
-    it("should return tasks with all relations", async () => {
-      db.prepare("INSERT INTO task_shares (task_id, user_id, permission) VALUES (?, ?, ?)").run(100, 2, "edit");
-      db.prepare("INSERT INTO labels (id, name) VALUES (?, ?)").run(1, "Test Label");
-      db.prepare("INSERT INTO task_labels (task_id, label_id) VALUES (?, ?)").run(100, 1);
-      db.prepare("INSERT INTO subtasks (task_id, name) VALUES (?, ?)").run(100, "Subtask 1");
-      db.prepare("INSERT INTO reminders (task_id, remind_at) VALUES (?, ?)").run(100, "2024-01-01T10:00:00");
-      db.prepare("INSERT INTO task_attachments (task_id, filename, file_size, mime_type, url) VALUES (?, ?, ?, ?, ?)").run(100, "file.pdf", 100, "application/pdf", "/file.pdf");
+    it('should return tasks with all relations', async () => {
+      db.prepare(
+        'INSERT INTO task_shares (task_id, user_id, permission) VALUES (?, ?, ?)'
+      ).run(100, 2, 'edit');
+      db.prepare('INSERT INTO labels (id, name) VALUES (?, ?)').run(
+        1,
+        'Test Label'
+      );
+      db.prepare(
+        'INSERT INTO task_labels (task_id, label_id) VALUES (?, ?)'
+      ).run(100, 1);
+      db.prepare('INSERT INTO subtasks (task_id, name) VALUES (?, ?)').run(
+        100,
+        'Subtask 1'
+      );
+      db.prepare(
+        'INSERT INTO reminders (task_id, remind_at) VALUES (?, ?)'
+      ).run(100, '2024-01-01T10:00:00');
+      db.prepare(
+        'INSERT INTO task_attachments (task_id, filename, file_size, mime_type, url) VALUES (?, ?, ?, ?, ?)'
+      ).run(100, 'file.pdf', 100, 'application/pdf', '/file.pdf');
 
       const result = await getSharedTasksForUser(2);
       expect(Array.isArray(result)).toBe(true);
     });
 
-    it("should include labels in returned tasks", async () => {
-      db.prepare("INSERT INTO task_shares (task_id, user_id, permission) VALUES (?, ?, ?)").run(100, 2, "edit");
-      db.prepare("INSERT INTO labels (id, name) VALUES (?, ?)").run(1, "Label1");
-      db.prepare("INSERT INTO task_labels (task_id, label_id) VALUES (?, ?)").run(100, 1);
+    it('should include labels in returned tasks', async () => {
+      db.prepare(
+        'INSERT INTO task_shares (task_id, user_id, permission) VALUES (?, ?, ?)'
+      ).run(100, 2, 'edit');
+      db.prepare('INSERT INTO labels (id, name) VALUES (?, ?)').run(
+        1,
+        'Label1'
+      );
+      db.prepare(
+        'INSERT INTO task_labels (task_id, label_id) VALUES (?, ?)'
+      ).run(100, 1);
 
       const result = await getSharedTasksForUser(2);
       if (result.length > 0) {
@@ -229,9 +273,14 @@ describe("Sharing Actions - Comprehensive Tests", () => {
       }
     });
 
-    it("should include subtasks in returned tasks", async () => {
-      db.prepare("INSERT INTO task_shares (task_id, user_id, permission) VALUES (?, ?, ?)").run(100, 2, "edit");
-      db.prepare("INSERT INTO subtasks (task_id, name) VALUES (?, ?)").run(100, "Subtask 1");
+    it('should include subtasks in returned tasks', async () => {
+      db.prepare(
+        'INSERT INTO task_shares (task_id, user_id, permission) VALUES (?, ?, ?)'
+      ).run(100, 2, 'edit');
+      db.prepare('INSERT INTO subtasks (task_id, name) VALUES (?, ?)').run(
+        100,
+        'Subtask 1'
+      );
 
       const result = await getSharedTasksForUser(2);
       if (result.length > 0) {
@@ -240,17 +289,17 @@ describe("Sharing Actions - Comprehensive Tests", () => {
     });
   });
 
-  describe("Permission values", () => {
+  describe('Permission values', () => {
     it("should support 'view' permission", () => {
-      type Permission = "view" | "edit";
-      const p: Permission = "view";
-      expect(p).toBe("view");
+      type Permission = 'view' | 'edit';
+      const p: Permission = 'view';
+      expect(p).toBe('view');
     });
 
     it("should support 'edit' permission", () => {
-      type Permission = "view" | "edit";
-      const p: Permission = "edit";
-      expect(p).toBe("edit");
+      type Permission = 'view' | 'edit';
+      const p: Permission = 'edit';
+      expect(p).toBe('edit');
     });
   });
 });
