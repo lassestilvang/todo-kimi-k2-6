@@ -41,8 +41,16 @@ describe('Decision Journal Actions', () => {
         chosen_option_id: 1,
         rationale: 'High impact project with tight deadline',
         options: [
-          { option_text: 'Do it now', pros: JSON.stringify(['Immediate progress']), cons: JSON.stringify(['High energy required']) } as any,
-          { option_text: 'Schedule it', pros: JSON.stringify(['Better planning']), cons: JSON.stringify(['May delay']) } as any,
+          {
+            option_text: 'Do it now',
+            pros: JSON.stringify(['Immediate progress']),
+            cons: JSON.stringify(['High energy required']),
+          } as any,
+          {
+            option_text: 'Schedule it',
+            pros: JSON.stringify(['Better planning']),
+            cons: JSON.stringify(['May delay']),
+          } as any,
         ],
       });
 
@@ -87,14 +95,17 @@ describe('Decision Journal Actions', () => {
 
       // Need to reimport to pick up the new env var
       vi.resetModules();
-      const { createDecisionEntry: createEntryNoAuth } = await import('../decisions');
+      const { createDecisionEntry: createEntryNoAuth } =
+        await import('../decisions');
 
-      await expect(createEntryNoAuth({
-        task_id: 1,
-        decision_type: 'priority',
-        question: 'Test question',
-        options: []
-      })).rejects.toThrow('Authentication required');
+      await expect(
+        createEntryNoAuth({
+          task_id: 1,
+          decision_type: 'priority',
+          question: 'Test question',
+          options: [],
+        })
+      ).rejects.toThrow('Authentication required');
 
       (process.env as any).NEXTAUTH_SECRET = originalSecret;
     });
@@ -108,7 +119,7 @@ describe('Decision Journal Actions', () => {
 
     it('filters by decision type', async () => {
       const priorityDecisions = await getUserDecisionHistory(1, {
-        decisionType: 'priority'
+        decisionType: 'priority',
       });
       expect(Array.isArray(priorityDecisions)).toBe(true);
     });
@@ -116,7 +127,7 @@ describe('Decision Journal Actions', () => {
     it('filters by date range', async () => {
       const recentDecisions = await getUserDecisionHistory(1, {
         startDate: '2024-01-01',
-        endDate: '2024-12-31'
+        endDate: '2024-12-31',
       });
       expect(Array.isArray(recentDecisions)).toBe(true);
     });
@@ -180,8 +191,9 @@ describe('Decision Journal Actions', () => {
     });
 
     it('throws error for non-existent decision', async () => {
-      await expect(updateDecisionEntry(99999, 1, { question: 'Test' }))
-        .rejects.toThrow('Decision entry not found or not accessible');
+      await expect(
+        updateDecisionEntry(99999, 1, { question: 'Test' })
+      ).rejects.toThrow('Decision entry not found or not accessible');
     });
   });
 
@@ -198,8 +210,9 @@ describe('Decision Journal Actions', () => {
     });
 
     it('throws error for non-existent decision', async () => {
-      await expect(deleteDecisionEntry(99999, 1))
-        .rejects.toThrow('Decision entry not found or not accessible');
+      await expect(deleteDecisionEntry(99999, 1)).rejects.toThrow(
+        'Decision entry not found or not accessible'
+      );
     });
   });
 
@@ -220,8 +233,12 @@ describe('Decision Journal Actions', () => {
       const analysis = await analyzeDecisionOutcomes(1);
 
       expect(analysis.outcome_quality.average_rating).toBeDefined();
-      expect(analysis.outcome_quality.positive_outcomes).toBeGreaterThanOrEqual(0);
-      expect(analysis.outcome_quality.negative_outcomes).toBeGreaterThanOrEqual(0);
+      expect(analysis.outcome_quality.positive_outcomes).toBeGreaterThanOrEqual(
+        0
+      );
+      expect(analysis.outcome_quality.negative_outcomes).toBeGreaterThanOrEqual(
+        0
+      );
     });
 
     it('filters by decision type', async () => {
