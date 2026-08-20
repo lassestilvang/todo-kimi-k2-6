@@ -2,18 +2,24 @@
  * Integration Marketplace Hub
  */
 
-"use server";
+'use server';
 
-import { getDb } from "@/lib/db";
-import { revalidatePath } from "next/cache";
+import { getDb } from '@/lib/db';
+import { revalidatePath } from 'next/cache';
 
 export interface Integration {
   id: number;
   user_id: number;
   name: string;
-  type: "calendar" | "email" | "project_mgmt" | "communication" | "analytics" | "other";
+  type:
+    | 'calendar'
+    | 'email'
+    | 'project_mgmt'
+    | 'communication'
+    | 'analytics'
+    | 'other';
   provider: string;
-  status: "active" | "pending" | "error" | "disconnected";
+  status: 'active' | 'pending' | 'error' | 'disconnected';
   config: string; // JSON string
   last_synced_at?: string;
   sync_enabled: boolean;
@@ -46,7 +52,7 @@ export interface MarketplaceIntegration {
   provider: string;
   featured: boolean;
   auth_methods: string[];
-  status: "available" | "installed" | "incompatible";
+  status: 'available' | 'installed' | 'incompatible';
   ratings?: {
     average: number;
     count: number;
@@ -55,7 +61,7 @@ export interface MarketplaceIntegration {
 }
 
 export interface SyncSchedule {
-  frequency: "realtime" | "hourly" | "daily" | "weekly";
+  frequency: 'realtime' | 'hourly' | 'daily' | 'weekly';
   time?: string; // "09:00" for daily/weekly
   days?: string[]; // ["mon", "tue", "wed"] for weekly
   enabled: boolean;
@@ -64,26 +70,39 @@ export interface SyncSchedule {
 /**
  * Get all integrations for a user
  */
-export async function getUserIntegrations(userId: number): Promise<Integration[]> {
+export async function getUserIntegrations(
+  userId: number
+): Promise<Integration[]> {
   const db = getDb();
 
-  return db.prepare(`
+  return db
+    .prepare(
+      `
     SELECT * FROM integrations
     WHERE user_id = ?
     ORDER BY created_at DESC
-  `).all(userId) as Integration[];
+  `
+    )
+    .all(userId) as Integration[];
 }
 
 /**
  * Get a specific integration
  */
-export async function getIntegration(id: number, userId: number): Promise<Integration | null> {
+export async function getIntegration(
+  id: number,
+  userId: number
+): Promise<Integration | null> {
   const db = getDb();
 
-  return db.prepare(`
+  return db
+    .prepare(
+      `
     SELECT * FROM integrations
     WHERE id = ? AND user_id = ?
-  `).get(id, userId) as Integration | null;
+  `
+    )
+    .get(id, userId) as Integration | null;
 }
 
 /**
@@ -101,20 +120,26 @@ export async function connectIntegration(
 ): Promise<Integration> {
   const db = getDb();
 
-  const result = db.prepare(`
+  const result = db
+    .prepare(
+      `
     INSERT INTO integrations (user_id, name, type, provider, config, sync_enabled, status, created_at, updated_at)
     VALUES (?, ?, ?, ?, ?, ?, 'pending', datetime('now'), datetime('now'))
-  `).run(
-    userId,
-    data.name,
-    data.type,
-    data.provider,
-    JSON.stringify(data.config || {}),
-    data.syncEnabled !== false
-  );
+  `
+    )
+    .run(
+      userId,
+      data.name,
+      data.type,
+      data.provider,
+      JSON.stringify(data.config || {}),
+      data.syncEnabled !== false
+    );
 
   revalidatePath(`/integrations`);
-  return db.prepare("SELECT * FROM integrations WHERE id = ?").get(result.lastInsertRowid) as Integration;
+  return db
+    .prepare('SELECT * FROM integrations WHERE id = ?')
+    .get(result.lastInsertRowid) as Integration;
 }
 
 /**
@@ -128,7 +153,7 @@ export async function updateIntegration(
     type: string;
     config: Record<string, any>;
     sync_enabled: boolean;
-    status: "active" | "pending" | "error" | "disconnected";
+    status: 'active' | 'pending' | 'error' | 'disconnected';
   }>
 ): Promise<Integration | null> {
   const db = getDb();
@@ -137,27 +162,27 @@ export async function updateIntegration(
   const values: any[] = [];
 
   if (updates.name !== undefined) {
-    setClauses.push("name = ?");
+    setClauses.push('name = ?');
     values.push(updates.name);
   }
 
   if (updates.type !== undefined) {
-    setClauses.push("type = ?");
+    setClauses.push('type = ?');
     values.push(updates.type);
   }
 
   if (updates.config !== undefined) {
-    setClauses.push("config = ?");
+    setClauses.push('config = ?');
     values.push(JSON.stringify(updates.config));
   }
 
   if (updates.sync_enabled !== undefined) {
-    setClauses.push("sync_enabled = ?");
+    setClauses.push('sync_enabled = ?');
     values.push(updates.sync_enabled);
   }
 
   if (updates.status !== undefined) {
-    setClauses.push("status = ?");
+    setClauses.push('status = ?');
     values.push(updates.status);
   }
 
@@ -167,11 +192,13 @@ export async function updateIntegration(
 
   values.push(id, userId);
 
-  db.prepare(`
+  db.prepare(
+    `
     UPDATE integrations
-    SET ${setClauses.join(", ")}, last_synced_at = CASE WHEN status = 'active' THEN datetime('now') ELSE last_synced_at END, updated_at = datetime('now')
+    SET ${setClauses.join(', ')}, last_synced_at = CASE WHEN status = 'active' THEN datetime('now') ELSE last_synced_at END, updated_at = datetime('now')
     WHERE id = ? AND user_id = ?
-  `).run(...values);
+  `
+  ).run(...values);
 
   revalidatePath(`/integrations`);
   return getIntegration(id, userId);
@@ -180,13 +207,20 @@ export async function updateIntegration(
 /**
  * Disconnect an integration
  */
-export async function disconnectIntegration(id: number, userId: number): Promise<boolean> {
+export async function disconnectIntegration(
+  id: number,
+  userId: number
+): Promise<boolean> {
   const db = getDb();
 
-  const result = db.prepare(`
+  const result = db
+    .prepare(
+      `
     UPDATE integrations SET status = 'disconnected', updated_at = datetime('now')
     WHERE id = ? AND user_id = ?
-  `).run(id, userId);
+  `
+    )
+    .run(id, userId);
 
   revalidatePath(`/integrations`);
   return result.changes > 0;
@@ -195,10 +229,15 @@ export async function disconnectIntegration(id: number, userId: number): Promise
 /**
  * Delete an integration
  */
-export async function deleteIntegration(id: number, userId: number): Promise<boolean> {
+export async function deleteIntegration(
+  id: number,
+  userId: number
+): Promise<boolean> {
   const db = getDb();
 
-  const result = db.prepare("DELETE FROM integrations WHERE id = ? AND user_id = ?").run(id, userId);
+  const result = db
+    .prepare('DELETE FROM integrations WHERE id = ? AND user_id = ?')
+    .run(id, userId);
 
   revalidatePath(`/integrations`);
   return result.changes > 0;
@@ -216,7 +255,13 @@ export async function triggerSync(
 
   const integration = getIntegration(integrationId, userId);
   if (!integration) {
-    return { success: false, items_synced: 0, errors: ["Integration not found"], duration_ms: 0, next_sync: "" };
+    return {
+      success: false,
+      items_synced: 0,
+      errors: ['Integration not found'],
+      duration_ms: 0,
+      next_sync: '',
+    };
   }
 
   const startTime = Date.now();
@@ -226,28 +271,30 @@ export async function triggerSync(
     // For now, simulate a successful sync
     const itemsSynced = Math.floor(Math.random() * 50) + 10;
 
-    db.prepare(`
+    db.prepare(
+      `
       UPDATE integrations
       SET last_synced_at = datetime('now'), status = 'active'
       WHERE id = ?
-    `).run(integrationId);
+    `
+    ).run(integrationId);
 
-    const nextSync = await calculateNextSync("hourly");
+    const nextSync = await calculateNextSync('hourly');
 
     return {
       success: true,
       items_synced: itemsSynced,
       errors: [],
       duration_ms: Date.now() - startTime,
-      next_sync: nextSync
+      next_sync: nextSync,
     };
   } catch (error) {
     return {
       success: false,
       items_synced: 0,
-      errors: [error instanceof Error ? error.message : "Sync failed"],
+      errors: [error instanceof Error ? error.message : 'Sync failed'],
       duration_ms: Date.now() - startTime,
-      next_sync: ""
+      next_sync: '',
     };
   }
 }
@@ -255,116 +302,125 @@ export async function triggerSync(
 /**
  * Get marketplace integrations (available to install)
  */
-export async function getMarketplaceIntegrations(category?: string, query?: string): Promise<MarketplaceIntegration[]> {
+export async function getMarketplaceIntegrations(
+  category?: string,
+  query?: string
+): Promise<MarketplaceIntegration[]> {
   // In a real implementation, this would come from a remote API
   const allIntegrations: MarketplaceIntegration[] = [
     {
-      id: "google-calendar",
-      name: "Google Calendar",
-      type: "calendar",
-      description: "Sync tasks with Google Calendar, create events automatically from deadlines",
-      icon: "calendar",
-      provider: "google",
+      id: 'google-calendar',
+      name: 'Google Calendar',
+      type: 'calendar',
+      description:
+        'Sync tasks with Google Calendar, create events automatically from deadlines',
+      icon: 'calendar',
+      provider: 'google',
       featured: true,
-      auth_methods: ["oauth2"],
-      status: "available",
+      auth_methods: ['oauth2'],
+      status: 'available',
       ratings: { average: 4.8, count: 1247 },
-      last_updated: "2024-01-15"
+      last_updated: '2024-01-15',
     },
     {
-      id: "outlook-calendar",
-      name: "Outlook Calendar",
-      type: "calendar",
-      description: "Sync with Microsoft Outlook and Office 365 calendars",
-      icon: "calendar",
-      provider: "microsoft",
+      id: 'outlook-calendar',
+      name: 'Outlook Calendar',
+      type: 'calendar',
+      description: 'Sync with Microsoft Outlook and Office 365 calendars',
+      icon: 'calendar',
+      provider: 'microsoft',
       featured: true,
-      auth_methods: ["oauth2"],
-      status: "available",
+      auth_methods: ['oauth2'],
+      status: 'available',
       ratings: { average: 4.5, count: 892 },
-      last_updated: "2024-01-10"
+      last_updated: '2024-01-10',
     },
     {
-      id: "gmail-email",
-      name: "Gmail Email",
-      type: "email",
-      description: "Convert emails to tasks, extract due dates and priorities from email content",
-      icon: "email",
-      provider: "google",
+      id: 'gmail-email',
+      name: 'Gmail Email',
+      type: 'email',
+      description:
+        'Convert emails to tasks, extract due dates and priorities from email content',
+      icon: 'email',
+      provider: 'google',
       featured: true,
-      auth_methods: ["oauth2"],
-      status: "available",
+      auth_methods: ['oauth2'],
+      status: 'available',
       ratings: { average: 4.7, count: 1523 },
-      last_updated: "2024-01-20"
+      last_updated: '2024-01-20',
     },
     {
-      id: "slack-integration",
-      name: "Slack",
-      type: "communication",
-      description: "Create tasks from Slack messages, get notifications in Slack channels",
-      icon: "slack",
-      provider: "slack",
+      id: 'slack-integration',
+      name: 'Slack',
+      type: 'communication',
+      description:
+        'Create tasks from Slack messages, get notifications in Slack channels',
+      icon: 'slack',
+      provider: 'slack',
       featured: true,
-      auth_methods: ["oauth2"],
-      status: "available",
+      auth_methods: ['oauth2'],
+      status: 'available',
       ratings: { average: 4.3, count: 634 },
-      last_updated: "2024-01-12"
+      last_updated: '2024-01-12',
     },
     {
-      id: "github-issues",
-      name: "GitHub Issues",
-      type: "project_mgmt",
-      description: "Sync GitHub issues as tasks, automatically link commits and pull requests",
-      icon: "github",
-      provider: "github",
+      id: 'github-issues',
+      name: 'GitHub Issues',
+      type: 'project_mgmt',
+      description:
+        'Sync GitHub issues as tasks, automatically link commits and pull requests',
+      icon: 'github',
+      provider: 'github',
       featured: false,
-      auth_methods: ["oauth2"],
-      status: "available",
+      auth_methods: ['oauth2'],
+      status: 'available',
       ratings: { average: 4.6, count: 456 },
-      last_updated: "2024-01-18"
+      last_updated: '2024-01-18',
     },
     {
-      id: "notion",
-      name: "Notion",
-      type: "project_mgmt",
-      description: "Sync tasks with Notion databases, create bidirectional links",
-      icon: "notion",
-      provider: "notion",
+      id: 'notion',
+      name: 'Notion',
+      type: 'project_mgmt',
+      description:
+        'Sync tasks with Notion databases, create bidirectional links',
+      icon: 'notion',
+      provider: 'notion',
       featured: false,
-      auth_methods: ["token"],
-      status: "available",
+      auth_methods: ['token'],
+      status: 'available',
       ratings: { average: 4.4, count: 389 },
-      last_updated: "2024-01-14"
+      last_updated: '2024-01-14',
     },
     {
-      id: "asana",
-      name: "Asana",
-      type: "project_mgmt",
-      description: "Sync tasks with Asana projects and tasks",
-      icon: "asana",
-      provider: "asana",
+      id: 'asana',
+      name: 'Asana',
+      type: 'project_mgmt',
+      description: 'Sync tasks with Asana projects and tasks',
+      icon: 'asana',
+      provider: 'asana',
       featured: false,
-      auth_methods: ["oauth2"],
-      status: "available",
+      auth_methods: ['oauth2'],
+      status: 'available',
       ratings: { average: 4.2, count: 234 },
-      last_updated: "2024-01-11"
-    }
+      last_updated: '2024-01-11',
+    },
   ];
 
   let result = allIntegrations;
 
   // Filter by category if provided
   if (category) {
-    result = result.filter(i => i.type === category || i.type === "other");
+    result = result.filter(i => i.type === category || i.type === 'other');
   }
 
   // Filter by search query if provided
   if (query) {
     const q = query.toLowerCase();
-    result = result.filter(i =>
-      i.name.toLowerCase().includes(q) ||
-      i.description.toLowerCase().includes(q) ||
-      i.provider.toLowerCase().includes(q)
+    result = result.filter(
+      i =>
+        i.name.toLowerCase().includes(q) ||
+        i.description.toLowerCase().includes(q) ||
+        i.provider.toLowerCase().includes(q)
     );
   }
 
@@ -374,7 +430,9 @@ export async function getMarketplaceIntegrations(category?: string, query?: stri
 /**
  * Get popular integrations
  */
-export async function getPopularIntegrations(limit = 6): Promise<MarketplaceIntegration[]> {
+export async function getPopularIntegrations(
+  limit = 6
+): Promise<MarketplaceIntegration[]> {
   const all = await getMarketplaceIntegrations();
   return all
     .filter(i => i.featured)
@@ -385,20 +443,24 @@ export async function getPopularIntegrations(limit = 6): Promise<MarketplaceInte
 /**
  * Calculate next sync time
  */
-export async function calculateNextSync(frequency: string, time?: string, days?: string[]): Promise<string> {
+export async function calculateNextSync(
+  frequency: string,
+  time?: string,
+  days?: string[]
+): Promise<string> {
   const now = new Date();
 
   switch (frequency) {
-    case "realtime":
+    case 'realtime':
       return new Date(now.getTime() + 5 * 60 * 1000).toISOString(); // 5 minutes
-    case "hourly":
+    case 'hourly':
       return new Date(now.getTime() + 60 * 60 * 1000).toISOString(); // 1 hour
-    case "daily":
+    case 'daily':
       const nextDay = new Date(now);
       nextDay.setDate(nextDay.getDate() + 1);
       nextDay.setHours(0, 0, 0, 0);
       return nextDay.toISOString();
-    case "weekly":
+    case 'weekly':
       const nextWeek = new Date(now);
       nextWeek.setDate(nextWeek.getDate() + 7);
       nextWeek.setHours(0, 0, 0, 0);
@@ -411,50 +473,52 @@ export async function calculateNextSync(frequency: string, time?: string, days?:
 /**
  * Get integration categories
  */
-export async function getIntegrationCategories(): Promise<IntegrationCategory[]> {
+export async function getIntegrationCategories(): Promise<
+  IntegrationCategory[]
+> {
   return [
     {
-      id: "calendar",
-      name: "Calendar",
-      description: "Sync with your calendar to see deadlines as events",
-      icon: "calendar",
-      integrations: [] // Would be populated from marketplace
+      id: 'calendar',
+      name: 'Calendar',
+      description: 'Sync with your calendar to see deadlines as events',
+      icon: 'calendar',
+      integrations: [], // Would be populated from marketplace
     },
     {
-      id: "email",
-      name: "Email",
-      description: "Convert emails to tasks, extract action items",
-      icon: "mail",
-      integrations: []
+      id: 'email',
+      name: 'Email',
+      description: 'Convert emails to tasks, extract action items',
+      icon: 'mail',
+      integrations: [],
     },
     {
-      id: "project_mgmt",
-      name: "Project Management",
-      description: "Sync with project management tools",
-      icon: "folders",
-      integrations: []
+      id: 'project_mgmt',
+      name: 'Project Management',
+      description: 'Sync with project management tools',
+      icon: 'folders',
+      integrations: [],
     },
     {
-      id: "communication",
-      name: "Communication",
-      description: "Connect with Slack, Discord, and other chat tools",
-      icon: "message-circle",
-      integrations: []
+      id: 'communication',
+      name: 'Communication',
+      description: 'Connect with Slack, Discord, and other chat tools',
+      icon: 'message-circle',
+      integrations: [],
     },
     {
-      id: "analytics",
-      name: "Analytics",
-      description: "Connect with analytics and reporting tools",
-      icon: "bar-chart-3",
-      integrations: []
+      id: 'analytics',
+      name: 'Analytics',
+      description: 'Connect with analytics and reporting tools',
+      icon: 'bar-chart-3',
+      integrations: [],
     },
     {
-      id: "other",
-      name: "Other",
-      description: "Other integrations and utilities",
-      icon: "settings",
-      integrations: []
-    }
+      id: 'other',
+      name: 'Other',
+      description: 'Other integrations and utilities',
+      icon: 'settings',
+      integrations: [],
+    },
   ];
 }
 
@@ -469,17 +533,18 @@ export async function testIntegrationConnection(
 
   const integration = await getIntegration(integrationId, userId);
   if (!integration) {
-    return { success: false, message: "Integration not found" };
+    return { success: false, message: 'Integration not found' };
   }
 
   // Simulate connection test
   return new Promise(resolve => {
     setTimeout(() => {
       resolve({
-        success: integration.status !== "error",
-        message: integration.status === "active"
-          ? "Connection successful"
-          : "Connection test failed"
+        success: integration.status !== 'error',
+        message:
+          integration.status === 'active'
+            ? 'Connection successful'
+            : 'Connection test failed',
       });
     }, 1000);
   });
@@ -497,7 +562,9 @@ export async function getIntegrationSyncStatus(userId: number): Promise<{
 }> {
   const db = getDb();
 
-  const stats = db.prepare(`
+  const stats = db
+    .prepare(
+      `
     SELECT
       COUNT(*) as total,
       SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active,
@@ -506,7 +573,9 @@ export async function getIntegrationSyncStatus(userId: number): Promise<{
       MAX(last_synced_at) as last_sync
     FROM integrations
     WHERE user_id = ?
-  `).get(userId) as {
+  `
+    )
+    .get(userId) as {
     total: number;
     active: number;
     pending: number;
@@ -519,6 +588,6 @@ export async function getIntegrationSyncStatus(userId: number): Promise<{
     active: stats.active,
     pending: stats.pending,
     errors: stats.errors,
-    lastSync: stats.last_sync
+    lastSync: stats.last_sync,
   };
 }
