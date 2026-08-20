@@ -1,16 +1,20 @@
-"use server";
+'use server';
 
-import { getDb } from "@/lib/db";
-import type { HabitStreak, HabitCompletion } from "@/types";
+import { getDb } from '@/lib/db';
+import type { HabitStreak, HabitCompletion } from '@/types';
 
 /**
  * Get habit streak data for a task
  */
-export async function getHabitStreak(taskId: number): Promise<HabitStreak | null> {
+export async function getHabitStreak(
+  taskId: number
+): Promise<HabitStreak | null> {
   const db = getDb();
-  return db.prepare(
-    "SELECT * FROM habit_streaks WHERE task_id = ? ORDER BY date DESC LIMIT 1"
-  ).get(taskId) as HabitStreak | null;
+  return db
+    .prepare(
+      'SELECT * FROM habit_streaks WHERE task_id = ? ORDER BY date DESC LIMIT 1'
+    )
+    .get(taskId) as HabitStreak | null;
 }
 
 /**
@@ -24,7 +28,7 @@ export async function getHabitCompletions(
   const db = getDb();
   return db
     .prepare(
-      "SELECT * FROM habit_completions WHERE task_id = ? AND date >= ? AND date <= ? ORDER BY date ASC"
+      'SELECT * FROM habit_completions WHERE task_id = ? AND date >= ? AND date <= ? ORDER BY date ASC'
     )
     .all(taskId, startDate, endDate) as HabitCompletion[];
 }
@@ -40,19 +44,21 @@ export async function toggleHabitCompletion(
 
   // Check if already completed
   const existing = db
-    .prepare("SELECT id, completed FROM habit_completions WHERE task_id = ? AND date = ?")
+    .prepare(
+      'SELECT id, completed FROM habit_completions WHERE task_id = ? AND date = ?'
+    )
     .get(taskId, date) as HabitCompletion | undefined;
 
   if (existing) {
     // Remove completion
-    db.prepare("DELETE FROM habit_completions WHERE id = ?").run(existing.id);
+    db.prepare('DELETE FROM habit_completions WHERE id = ?').run(existing.id);
     await updateStreak(taskId);
     return { completed: false, streak: await getCurrentStreak(taskId) };
   } else {
     // Add completion
     const now = new Date().toISOString();
     db.prepare(
-      "INSERT INTO habit_completions (task_id, date, completed_at) VALUES (?, ?, ?)"
+      'INSERT INTO habit_completions (task_id, date, completed_at) VALUES (?, ?, ?)'
     ).run(taskId, date, now);
     await updateStreak(taskId);
     return { completed: true, streak: await getCurrentStreak(taskId) };
@@ -75,21 +81,29 @@ async function updateStreak(taskId: number): Promise<void> {
 
   // Get all completions sorted by date
   const completions = db
-    .prepare("SELECT date FROM habit_completions WHERE task_id = ? ORDER BY date DESC")
+    .prepare(
+      'SELECT date FROM habit_completions WHERE task_id = ? ORDER BY date DESC'
+    )
     .all(taskId) as { date: string }[];
 
-  const streakCount = calculateStreak(completions.map((c) => c.date));
+  const streakCount = calculateStreak(completions.map(c => c.date));
 
   // Upsert streak record
-  const existing = db.prepare("SELECT id FROM habit_streaks WHERE task_id = ?").get(taskId) as { id: number } | undefined;
+  const existing = db
+    .prepare('SELECT id FROM habit_streaks WHERE task_id = ?')
+    .get(taskId) as { id: number } | undefined;
 
   if (existing) {
     db.prepare(
-      "UPDATE habit_streaks SET streak_count = ?, last_completed = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?"
-    ).run(streakCount, streakCount > 0 ? completions[0]?.date : null, existing.id);
+      'UPDATE habit_streaks SET streak_count = ?, last_completed = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
+    ).run(
+      streakCount,
+      streakCount > 0 ? completions[0]?.date : null,
+      existing.id
+    );
   } else {
     db.prepare(
-      "INSERT INTO habit_streaks (task_id, streak_count, last_completed) VALUES (?, ?, ?)"
+      'INSERT INTO habit_streaks (task_id, streak_count, last_completed) VALUES (?, ?, ?)'
     ).run(taskId, streakCount, streakCount > 0 ? completions[0]?.date : null);
   }
 }
@@ -99,11 +113,11 @@ function calculateStreak(dates: string[]): number {
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const todayStr = today.toISOString().split("T")[0];
+  const todayStr = today.toISOString().split('T')[0];
 
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayStr = yesterday.toISOString().split("T")[0];
+  const yesterdayStr = yesterday.toISOString().split('T')[0];
 
   // Check if the most recent completion is today or yesterday
   const lastCompleted = dates[0];
@@ -120,7 +134,7 @@ function calculateStreak(dates: string[]): number {
       streak++;
       const prevDate = new Date(expectedDate);
       prevDate.setDate(prevDate.getDate() - 1);
-      expectedDate = prevDate.toISOString().split("T")[0];
+      expectedDate = prevDate.toISOString().split('T')[0];
     } else {
       break;
     }
@@ -134,14 +148,16 @@ function calculateStreak(dates: string[]): number {
  */
 export async function resetHabitStreak(taskId: number): Promise<void> {
   const db = getDb();
-  db.prepare("DELETE FROM habit_completions WHERE task_id = ?").run(taskId);
-  db.prepare("DELETE FROM habit_streaks WHERE task_id = ?").run(taskId);
+  db.prepare('DELETE FROM habit_completions WHERE task_id = ?').run(taskId);
+  db.prepare('DELETE FROM habit_streaks WHERE task_id = ?').run(taskId);
 }
 
 /**
  * Get streak leaderboard (for public habits)
  */
-export async function getStreakLeaderboard(): Promise<Array<{ task_id: number; name: string; streak_count: number }>> {
+export async function getStreakLeaderboard(): Promise<
+  Array<{ task_id: number; name: string; streak_count: number }>
+> {
   const db = getDb();
   return db
     .prepare(
