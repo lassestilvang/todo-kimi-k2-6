@@ -1,10 +1,18 @@
-import { describe, it, expect, beforeEach, afterEach, vi, beforeAll } from "vitest";
-import { setDb, resetDb } from "@/lib/db";
-import { createTestDb } from "@/lib/db/test-db";
-import * as taskHelpers from "@/lib/actions/task-helpers";
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  vi,
+  beforeAll,
+} from 'vitest';
+import { setDb, resetDb } from '@/lib/db';
+import { createTestDb } from '@/lib/db/test-db';
+import * as taskHelpers from '@/lib/actions/task-helpers';
 
 // Mock the logTaskAction to verify it's called
-vi.mock("@/lib/actions/task-helpers", () => ({
+vi.mock('@/lib/actions/task-helpers', () => ({
   logTaskAction: vi.fn(),
 }));
 
@@ -14,11 +22,11 @@ beforeAll(() => {
   (process.env as any).NEXTAUTH_SECRET = 'demo-secret';
 });
 
-describe("Dependencies Actions - Comprehensive Tests", () => {
+describe('Dependencies Actions - Comprehensive Tests', () => {
   let db: ReturnType<typeof createTestDb>;
-  let addTaskDependency: typeof import("../../actions/dependencies").addTaskDependency;
-  let removeTaskDependency: typeof import("../../actions/dependencies").removeTaskDependency;
-  let getBlockedTasks: typeof import("../../actions/dependencies").getBlockedTasks;
+  let addTaskDependency: typeof import('../../actions/dependencies').addTaskDependency;
+  let removeTaskDependency: typeof import('../../actions/dependencies').removeTaskDependency;
+  let getBlockedTasks: typeof import('../../actions/dependencies').getBlockedTasks;
 
   beforeEach(async () => {
     resetDb();
@@ -56,7 +64,7 @@ describe("Dependencies Actions - Comprehensive Tests", () => {
       INSERT INTO tasks (id, user_id, name) VALUES (200, 1, 'Task 200');
     `);
 
-    const actions = await import("../dependencies");
+    const actions = await import('../dependencies');
     addTaskDependency = actions.addTaskDependency;
     removeTaskDependency = actions.removeTaskDependency;
     getBlockedTasks = actions.getBlockedTasks;
@@ -67,8 +75,8 @@ describe("Dependencies Actions - Comprehensive Tests", () => {
     db.close();
   });
 
-  describe("addTaskDependency", () => {
-    it("should add a dependency and return dependency object", async () => {
+  describe('addTaskDependency', () => {
+    it('should add a dependency and return dependency object', async () => {
       const result = await addTaskDependency(2, 1);
 
       expect(result.task_id).toBe(2);
@@ -77,90 +85,112 @@ describe("Dependencies Actions - Comprehensive Tests", () => {
       expect(result.created_at).toBeDefined();
     });
 
-    it("should log task action after adding dependency", async () => {
+    it('should log task action after adding dependency', async () => {
       await addTaskDependency(100, 5);
-      expect(taskHelpers.logTaskAction).toHaveBeenCalledWith(100, "dependency_added", "Task now blocked by task 5");
+      expect(taskHelpers.logTaskAction).toHaveBeenCalledWith(
+        100,
+        'dependency_added',
+        'Task now blocked by task 5'
+      );
     });
 
-    it("should throw error when task_id equals depends_on_task_id (self-dependency)", async () => {
-      await expect(addTaskDependency(1, 1)).rejects.toThrow("circular reference");
+    it('should throw error when task_id equals depends_on_task_id (self-dependency)', async () => {
+      await expect(addTaskDependency(1, 1)).rejects.toThrow(
+        'circular reference'
+      );
     });
 
-    it("should throw error when dependency already exists", async () => {
+    it('should throw error when dependency already exists', async () => {
       await addTaskDependency(100, 200);
-      await expect(addTaskDependency(100, 200)).rejects.toThrow("Dependency already exists");
+      await expect(addTaskDependency(100, 200)).rejects.toThrow(
+        'Dependency already exists'
+      );
     });
 
-    it("should add multiple dependencies to different tasks", async () => {
+    it('should add multiple dependencies to different tasks', async () => {
       await addTaskDependency(1, 2);
       await addTaskDependency(3, 4);
 
-      const deps = db.prepare("SELECT * FROM task_dependencies").all();
+      const deps = db.prepare('SELECT * FROM task_dependencies').all();
       expect(deps.length).toBeGreaterThanOrEqual(2);
     });
   });
 
-  describe("removeTaskDependency", () => {
-    it("should remove an existing dependency", async () => {
+  describe('removeTaskDependency', () => {
+    it('should remove an existing dependency', async () => {
       // Create a dependency first
-      db.prepare("INSERT INTO task_dependencies (task_id, depends_on_task_id) VALUES (?, ?)").run(1, 2);
+      db.prepare(
+        'INSERT INTO task_dependencies (task_id, depends_on_task_id) VALUES (?, ?)'
+      ).run(1, 2);
 
       await removeTaskDependency(1, 2);
 
       // Verify it was removed
-      const deps = db.prepare("SELECT * FROM task_dependencies WHERE task_id = ? AND depends_on_task_id = ?").all(1, 2);
+      const deps = db
+        .prepare(
+          'SELECT * FROM task_dependencies WHERE task_id = ? AND depends_on_task_id = ?'
+        )
+        .all(1, 2);
       expect(deps.length).toBeLessThanOrEqual(1); // May or may not be deleted by mock
     });
 
-    it("should handle non-existent dependency gracefully", async () => {
+    it('should handle non-existent dependency gracefully', async () => {
       // Should not throw error when trying to remove non-existent dependency
       await removeTaskDependency(999, 998);
       expect(true).toBe(true); // Just verify no error thrown
     });
 
-    it("should remove specific dependency without affecting others", async () => {
-      db.prepare("INSERT INTO task_dependencies (task_id, depends_on_task_id) VALUES (?, ?)").run(1, 2);
-      db.prepare("INSERT INTO task_dependencies (task_id, depends_on_task_id) VALUES (?, ?)").run(1, 3);
+    it('should remove specific dependency without affecting others', async () => {
+      db.prepare(
+        'INSERT INTO task_dependencies (task_id, depends_on_task_id) VALUES (?, ?)'
+      ).run(1, 2);
+      db.prepare(
+        'INSERT INTO task_dependencies (task_id, depends_on_task_id) VALUES (?, ?)'
+      ).run(1, 3);
 
       await removeTaskDependency(1, 2);
 
       // The remaining dependency should still exist
-      const deps = db.prepare("SELECT * FROM task_dependencies").all();
+      const deps = db.prepare('SELECT * FROM task_dependencies').all();
       expect(deps.length).toBeGreaterThanOrEqual(0);
     });
   });
 
-  describe("getBlockedTasks", () => {
-    it("should return empty array when no blocked tasks", async () => {
+  describe('getBlockedTasks', () => {
+    it('should return empty array when no blocked tasks', async () => {
       const result = await getBlockedTasks();
       expect(result).toEqual([]);
     });
 
-    it("should return tasks that have dependencies", async () => {
+    it('should return tasks that have dependencies', async () => {
       // Mock getTasks to return our tasks
-      vi.doMock("../tasks", () => ({
+      vi.doMock('../tasks', () => ({
         getTasks: vi.fn().mockResolvedValue([
-          { id: 1, name: "Task 1", completed: 0 },
-          { id: 2, name: "Task 2", completed: 0 },
-          { id: 3, name: "Task 3", completed: 0 },
+          { id: 1, name: 'Task 1', completed: 0 },
+          { id: 2, name: 'Task 2', completed: 0 },
+          { id: 3, name: 'Task 3', completed: 0 },
         ]),
       }));
 
       // Add some dependencies
-      db.prepare("INSERT INTO task_dependencies (task_id, depends_on_task_id) VALUES (?, ?)").run(1, 2);
-      db.prepare("INSERT INTO task_dependencies (task_id, depends_on_task_id) VALUES (?, ?)").run(2, 3);
+      db.prepare(
+        'INSERT INTO task_dependencies (task_id, depends_on_task_id) VALUES (?, ?)'
+      ).run(1, 2);
+      db.prepare(
+        'INSERT INTO task_dependencies (task_id, depends_on_task_id) VALUES (?, ?)'
+      ).run(2, 3);
 
       const result = await getBlockedTasks();
       expect(Array.isArray(result)).toBe(true);
     });
   });
 
-  describe("Circular dependency detection", () => {
-    it("should detect self-referential dependency", async () => {
+  describe('Circular dependency detection', () => {
+    it('should detect self-referential dependency', async () => {
       await expect(addTaskDependency(5, 5)).rejects.toThrow();
     });
 
-    it("should allow normal dependency chain", async () => {
+    it('should allow normal dependency chain', async () => {
       // Task 3 depends on task 2, task 2 depends on task 1 - no circular
       // Note: Mock may not properly handle recursive CTE for circular detection
       // This test verifies the basic functionality works
