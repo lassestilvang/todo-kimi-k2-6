@@ -126,15 +126,35 @@ describe('Smart Inbox Actions', () => {
 
     it('returns inbox sources for authenticated user', async () => {
       // Create sources via prepare.run for reliable test data
-      db.prepare(`
+      db.prepare(
+        `
         INSERT INTO smart_inbox_sources (user_id, source_type, external_id, title, priority, confidence, status)
         VALUES (?, ?, ?, ?, ?, ?, ?)
-      `).run(1, 'email', 'email-client', 'Important email from client', 'high', 90, 'pending');
+      `
+      ).run(
+        1,
+        'email',
+        'email-client',
+        'Important email from client',
+        'high',
+        90,
+        'pending'
+      );
 
-      db.prepare(`
+      db.prepare(
+        `
         INSERT INTO smart_inbox_sources (user_id, source_type, external_id, title, priority, confidence, status)
         VALUES (?, ?, ?, ?, ?, ?, ?)
-      `).run(1, 'calendar', 'cal-team', 'Meeting with team', 'medium', 70, 'pending');
+      `
+      ).run(
+        1,
+        'calendar',
+        'cal-team',
+        'Meeting with team',
+        'medium',
+        70,
+        'pending'
+      );
 
       const result = await getSmartInbox();
 
@@ -249,11 +269,13 @@ describe('Smart Inbox Actions', () => {
     it('throws error when user not authenticated', async () => {
       (getCurrentUser as any).mockImplementation(async () => null);
 
-      await expect(upsertInboxSource({
-        source_type: 'email',
-        external_id: 'test',
-        title: 'Test',
-      })).rejects.toThrow('User not authenticated');
+      await expect(
+        upsertInboxSource({
+          source_type: 'email',
+          external_id: 'test',
+          title: 'Test',
+        })
+      ).rejects.toThrow('User not authenticated');
     });
 
     it('works without user_id by fetching from session', async () => {
@@ -284,7 +306,9 @@ describe('Smart Inbox Actions', () => {
     it('throws error when not authenticated', async () => {
       (getCurrentUser as any).mockImplementation(async () => null);
 
-      await expect(deleteInboxSource(1)).rejects.toThrow('User not authenticated');
+      await expect(deleteInboxSource(1)).rejects.toThrow(
+        'User not authenticated'
+      );
     });
 
     it('deletes source when authenticated', async () => {
@@ -304,7 +328,9 @@ describe('Smart Inbox Actions', () => {
 
   describe('convertSourceToTask', () => {
     it('throws error when source not found', async () => {
-      await expect(convertSourceToTask(999)).rejects.toThrow('Source not found');
+      await expect(convertSourceToTask(999)).rejects.toThrow(
+        'Source not found'
+      );
     });
 
     it('successfully converts source to task', async () => {
@@ -412,7 +438,9 @@ describe('Smart Inbox Actions', () => {
     it('throws error when user not authenticated', async () => {
       (getCurrentUser as any).mockImplementation(async () => null);
 
-      await expect(syncAllSourcesToInbox()).rejects.toThrow('User not authenticated');
+      await expect(syncAllSourcesToInbox()).rejects.toThrow(
+        'User not authenticated'
+      );
     });
 
     it('logs errors when source conversion fails', async () => {
@@ -428,13 +456,19 @@ describe('Smart Inbox Actions', () => {
       const { convertSourceToTask } = await import('../smart-inbox');
 
       // This test verifies the error handling path
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
 
       // Create a source with invalid data that might fail
-      await db.prepare(`
+      await db
+        .prepare(
+          `
         INSERT INTO smart_inbox_sources (user_id, source_type, external_id, title)
         VALUES (1, 'email', 'error-test', 'Error Source')
-      `).run();
+      `
+        )
+        .run();
 
       const result = await syncAllSourcesToInbox();
 
