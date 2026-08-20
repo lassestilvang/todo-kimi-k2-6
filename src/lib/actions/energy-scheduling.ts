@@ -1,9 +1,13 @@
-"use server";
+'use server';
 
-import { getDb } from "@/lib/db";
-import { getCurrentUser } from "@/lib/session";
-import { getEnergyProfile, estimateEnergyCost, type EnergyProfileInput } from "./enhanced-productivity";
-import type { Task, TaskWithRelations } from "@/types";
+import { getDb } from '@/lib/db';
+import { getCurrentUser } from '@/lib/session';
+import {
+  getEnergyProfile,
+  estimateEnergyCost,
+  type EnergyProfileInput,
+} from './enhanced-productivity';
+import type { Task, TaskWithRelations } from '@/types';
 
 /**
  * Energy-Aware Task Scheduling Functions
@@ -30,7 +34,10 @@ export interface ScheduleOptimization {
 /**
  * Get energy level for a specific time of day
  */
-export async function getEnergyAtTime(date: string, time: string): Promise<number> {
+export async function getEnergyAtTime(
+  date: string,
+  time: string
+): Promise<number> {
   const db = getDb();
   const user = await getCurrentUser();
 
@@ -40,13 +47,13 @@ export async function getEnergyAtTime(date: string, time: string): Promise<numbe
   if (!profile) return 5;
 
   // Parse time to minutes since midnight
-  const [hours, minutes] = time.split(":").map(Number);
+  const [hours, minutes] = time.split(':').map(Number);
   const timeInMinutes = hours * 60 + minutes;
 
   // Check peak energy times
   for (const peak of profile.peak_energy_times) {
-    const [startHours, startMins] = peak.start.split(":").map(Number);
-    const [endHours, endMins] = peak.end.split(":").map(Number);
+    const [startHours, startMins] = peak.start.split(':').map(Number);
+    const [endHours, endMins] = peak.end.split(':').map(Number);
     const startMinutes = startHours * 60 + startMins;
     const endMinutes = endHours * 60 + endMins;
 
@@ -56,7 +63,10 @@ export async function getEnergyAtTime(date: string, time: string): Promise<numbe
   }
 
   // Check if falling outside awake hours
-  if (timeInMinutes < profile.work_hours.start * 60 || timeInMinutes > profile.work_hours.end * 60) {
+  if (
+    timeInMinutes < profile.work_hours.start * 60 ||
+    timeInMinutes > profile.work_hours.end * 60
+  ) {
     return 2; // Low energy outside work hours
   }
 
@@ -82,16 +92,28 @@ export async function getEnergyAtTime(date: string, time: string): Promise<numbe
 export async function getOptimalSchedulingWindows(
   date: string,
   userEnergyBudget: number
-): Promise<Array<{ start: string; end: string; energyScore: number; maxEnergySpend: number }>> {
-  const windows: Array<{ start: string; end: string; energyScore: number; maxEnergySpend: number }> = [];
+): Promise<
+  Array<{
+    start: string;
+    end: string;
+    energyScore: number;
+    maxEnergySpend: number;
+  }>
+> {
+  const windows: Array<{
+    start: string;
+    end: string;
+    energyScore: number;
+    maxEnergySpend: number;
+  }> = [];
 
   // Generate 2-hour windows during work hours
   const workStart = 9; // Default
   const workEnd = 17; // Default
 
   for (let hour = workStart; hour < workEnd; hour++) {
-    const startTime = `${hour.toString().padStart(2, "0")}:00`;
-    const endTime = `${(hour + 2).toString().padStart(2, "0")}:00`;
+    const startTime = `${hour.toString().padStart(2, '0')}:00`;
+    const endTime = `${(hour + 2).toString().padStart(2, '0')}:00`;
 
     const energyScore = await getEnergyAtTime(date, startTime);
     const maxEnergySpend = Math.min(userEnergyBudget, energyScore * 10);
@@ -100,7 +122,7 @@ export async function getOptimalSchedulingWindows(
       start: startTime,
       end: endTime,
       energyScore,
-      maxEnergySpend
+      maxEnergySpend,
     });
   }
 
@@ -115,7 +137,7 @@ export async function suggestTaskSchedule(
   date: string,
   energyBudget: number
 ): Promise<ScheduledTask | null> {
-  const energyLevel = await getEnergyAtTime(date, "12:00"); // Default time
+  const energyLevel = await getEnergyAtTime(date, '12:00'); // Default time
   const requiredEnergy = await estimateEnergyCost(task as TaskWithRelations);
 
   // Check if task can fit in available energy budget
@@ -135,12 +157,18 @@ export async function suggestTaskSchedule(
   const workStartHour = 9;
   const workEndHour = 17;
   const priorityMultiplier = priorityWeights[task.priority] ?? 0.5;
-  const suggestedHour = Math.floor(workStartHour + (priorityMultiplier * (workEndHour - workStartHour)));
+  const suggestedHour = Math.floor(
+    workStartHour + priorityMultiplier * (workEndHour - workStartHour)
+  );
 
-  const suggestedStart = `${suggestedHour.toString().padStart(2, "0")}:00`;
-  const suggestedEnd = `${suggestedHour.toString().padStart(2, "0")}:30`;
+  const suggestedStart = `${suggestedHour.toString().padStart(2, '0')}:00`;
+  const suggestedEnd = `${suggestedHour.toString().padStart(2, '0')}:30`;
 
-  const confidence = calculateScheduleConfidence(energyLevel, requiredEnergy, task.priority);
+  const confidence = calculateScheduleConfidence(
+    energyLevel,
+    requiredEnergy,
+    task.priority
+  );
 
   return {
     taskId: task.id,
@@ -164,19 +192,25 @@ export async function optimizeTaskSchedule(
   const user = await getCurrentUser();
 
   if (!user?.id) {
-    throw new Error("Authentication required");
+    throw new Error('Authentication required');
   }
 
   // Get user's energy budget for the day
   const budgetResult = db
-    .prepare("SELECT current_balance FROM energy_budget_logs WHERE user_id = ? AND date = ?")
+    .prepare(
+      'SELECT current_balance FROM energy_budget_logs WHERE user_id = ? AND date = ?'
+    )
     .get(user.id, date) as { current_balance: number } | undefined;
 
   const energyBudget = budgetResult?.current_balance ?? 100;
 
   // Get tasks
   const tasks = db
-    .prepare("SELECT * FROM tasks WHERE id IN (" + taskIds.map(() => "?").join(",") + ")")
+    .prepare(
+      'SELECT * FROM tasks WHERE id IN (' +
+        taskIds.map(() => '?').join(',') +
+        ')'
+    )
     .all(...taskIds) as Task[];
 
   const scheduledTasks: ScheduledTask[] = [];
@@ -198,7 +232,11 @@ export async function optimizeTaskSchedule(
 
   // Schedule each task
   for (const task of sortedTasks) {
-    const suggestion = await suggestTaskSchedule(task, date, energyBudget - totalEnergySpent);
+    const suggestion = await suggestTaskSchedule(
+      task,
+      date,
+      energyBudget - totalEnergySpent
+    );
 
     if (suggestion) {
       scheduledTasks.push(suggestion);
@@ -206,7 +244,7 @@ export async function optimizeTaskSchedule(
     } else {
       skippedDueToEnergy.push({
         taskId: task.id,
-        reason: `Insufficient energy budget (${energyBudget - totalEnergySpent} remaining, high energy cost required)`
+        reason: `Insufficient energy budget (${energyBudget - totalEnergySpent} remaining, high energy cost required)`,
       });
     }
   }
@@ -215,7 +253,7 @@ export async function optimizeTaskSchedule(
     scheduledTasks,
     skippedDueToEnergy,
     totalEnergySpent,
-    energyBalanceRemaining: Math.max(0, energyBudget - totalEnergySpent)
+    energyBalanceRemaining: Math.max(0, energyBudget - totalEnergySpent),
   };
 }
 
@@ -230,34 +268,49 @@ export async function bulkScheduleTasks(
   const user = await getCurrentUser();
 
   if (!user?.id) {
-    throw new Error("Authentication required");
+    throw new Error('Authentication required');
   }
 
   // Get tasks from the list
   const tasks = db
-    .prepare("SELECT * FROM tasks WHERE list_id = ? AND user_id = ? AND completed = 0 ORDER BY sort_order")
+    .prepare(
+      'SELECT * FROM tasks WHERE list_id = ? AND user_id = ? AND completed = 0 ORDER BY sort_order'
+    )
     .all(user.id, listId) as Task[];
 
   if (tasks.length === 0) {
-    return { scheduledCount: 0, messages: ["No incomplete tasks found in this list"] };
+    return {
+      scheduledCount: 0,
+      messages: ['No incomplete tasks found in this list'],
+    };
   }
 
-  const schedule = await optimizeTaskSchedule(tasks.map(t => t.id), targetDate);
+  const schedule = await optimizeTaskSchedule(
+    tasks.map(t => t.id),
+    targetDate
+  );
 
   // Log scheduling activity
   const activityResult = db
-    .prepare(`
+    .prepare(
+      `
       INSERT INTO activity_logs (user_id, action, entity_type, details, created_at)
       VALUES (?, 'tasks_bulk_scheduled', 'task', ?, CURRENT_TIMESTAMP)
-    `)
-    .run(user.id, JSON.stringify({ taskIds: tasks.map(t => t.id), date: targetDate }));
+    `
+    )
+    .run(
+      user.id,
+      JSON.stringify({ taskIds: tasks.map(t => t.id), date: targetDate })
+    );
 
   return {
     scheduledCount: schedule.scheduledTasks.length,
     messages: [
       `${schedule.scheduledTasks.length} tasks scheduled optimally`,
-      ...schedule.skippedDueToEnergy.map(s => `Skipped task ${s.taskId}: ${s.reason}`)
-    ]
+      ...schedule.skippedDueToEnergy.map(
+        s => `Skipped task ${s.taskId}: ${s.reason}`
+      ),
+    ],
   };
 }
 
@@ -275,15 +328,15 @@ export async function getEnergySuggestions(taskId: number): Promise<{
   const user = await getCurrentUser();
 
   if (!user?.id) {
-    throw new Error("Authentication required");
+    throw new Error('Authentication required');
   }
 
   const task = db
-    .prepare("SELECT * FROM tasks WHERE id = ? AND user_id = ?")
+    .prepare('SELECT * FROM tasks WHERE id = ? AND user_id = ?')
     .get(taskId) as Task | undefined;
 
   if (!task) {
-    throw new Error("Task not found");
+    throw new Error('Task not found');
   }
 
   const energyImpact = await estimateEnergyCost(task as TaskWithRelations);
@@ -301,7 +354,7 @@ export async function getEnergySuggestions(taskId: number): Promise<{
         preferredTimeSlots.push(peak.start, peak.end);
       } else {
         // Low impact can be done anytime
-        preferredTimeSlots.push("09:00", "11:00", "13:00", "15:00");
+        preferredTimeSlots.push('09:00', '11:00', '13:00', '15:00');
       }
     }
   }
@@ -314,17 +367,17 @@ export async function getEnergySuggestions(taskId: number): Promise<{
   const suggestedBreakAfter = isHighImpact || energyImpact > 10;
 
   const reason = isHighImpact
-    ? "High-impact task - recommend scheduling during peak energy hours with buffer time"
+    ? 'High-impact task - recommend scheduling during peak energy hours with buffer time'
     : energyImpact > 5
-      ? "Medium-impact task - schedule during good energy periods"
-      : "Low-impact task - can be scheduled flexibly";
+      ? 'Medium-impact task - schedule during good energy periods'
+      : 'Low-impact task - can be scheduled flexibly';
 
   return {
     preferredTimeSlots: [...new Set(preferredTimeSlots)],
     energyImpact,
     suggestedBreakBefore,
     suggestedBreakAfter,
-    reason
+    reason,
   };
 }
 
@@ -344,7 +397,7 @@ function calculateScheduleConfidence(
   }
 
   // Higher confidence for critical tasks scheduled early
-  if (priority === "critical") {
+  if (priority === 'critical') {
     confidence += 0.1;
   }
 
@@ -361,18 +414,18 @@ function calculateScheduleConfidence(
  */
 function getScheduleReason(priority: string, energyLevel: number): string {
   const priorityReasons: Record<string, string> = {
-    critical: "Critical task - scheduled for optimal morning focus",
-    high: "High priority - scheduled during peak energy window",
-    medium: "Medium priority - balanced with other commitments",
-    low: "Low priority - scheduled during recovery period",
-    none: "Routine task - flexible scheduling",
+    critical: 'Critical task - scheduled for optimal morning focus',
+    high: 'High priority - scheduled during peak energy window',
+    medium: 'Medium priority - balanced with other commitments',
+    low: 'Low priority - scheduled during recovery period',
+    none: 'Routine task - flexible scheduling',
   };
 
   if (energyLevel < 4) {
-    return "Note: Current energy is low - may need adjustment";
+    return 'Note: Current energy is low - may need adjustment';
   }
 
-  return priorityReasons[priority] ?? "Scheduled based on energy profile";
+  return priorityReasons[priority] ?? 'Scheduled based on energy profile';
 }
 
 /**
@@ -391,7 +444,9 @@ export async function getDailyEnergyRecommendations(): Promise<{
   if (!user?.id) {
     return {
       energyBalance: 100,
-      recommendations: ["Set up your energy profile to get personalized recommendations"],
+      recommendations: [
+        'Set up your energy profile to get personalized recommendations',
+      ],
       optimalHours: [],
       avoidHours: [],
       energyForecast: [],
@@ -399,11 +454,13 @@ export async function getDailyEnergyRecommendations(): Promise<{
   }
 
   const profile = await getEnergyProfile();
-  const today = new Date().toISOString().split("T")[0];
+  const today = new Date().toISOString().split('T')[0];
 
   // Get budget
   const budgetResult = db
-    .prepare("SELECT current_balance FROM energy_budget_logs WHERE user_id = ? AND date = ?")
+    .prepare(
+      'SELECT current_balance FROM energy_budget_logs WHERE user_id = ? AND date = ?'
+    )
     .get(user.id, today) as { current_balance: number } | undefined;
 
   const energyBalance = budgetResult?.current_balance ?? 100;
@@ -414,11 +471,21 @@ export async function getDailyEnergyRecommendations(): Promise<{
   const energyForecast: Array<{ hour: number; energy: number }> = [];
 
   if (!profile) {
-    return { energyBalance, recommendations, optimalHours, avoidHours, energyForecast };
+    return {
+      energyBalance,
+      recommendations,
+      optimalHours,
+      avoidHours,
+      energyForecast,
+    };
   }
 
   // Generate hourly forecast
-  for (let hour = profile.work_hours.start; hour < profile.work_hours.end; hour++) {
+  for (
+    let hour = profile.work_hours.start;
+    hour < profile.work_hours.end;
+    hour++
+  ) {
     const energy = await getEnergyAtTime(today, `${hour}:00`);
     energyForecast.push({ hour, energy });
 
@@ -431,15 +498,23 @@ export async function getDailyEnergyRecommendations(): Promise<{
 
   // Generate recommendations
   if (energyBalance < 30) {
-    recommendations.push("Low energy budget remaining - avoid scheduling high-impact tasks");
+    recommendations.push(
+      'Low energy budget remaining - avoid scheduling high-impact tasks'
+    );
   }
   if (energyBalance > 80) {
-    recommendations.push("High energy budget available - consider challenging tasks");
+    recommendations.push(
+      'High energy budget available - consider challenging tasks'
+    );
   }
 
-  const avgEnergy = energyForecast.reduce((sum, f) => sum + f.energy, 0) / energyForecast.length;
+  const avgEnergy =
+    energyForecast.reduce((sum, f) => sum + f.energy, 0) /
+    energyForecast.length;
   if (avgEnergy < 4) {
-    recommendations.push("Overall low energy today - prioritize recovery activities");
+    recommendations.push(
+      'Overall low energy today - prioritize recovery activities'
+    );
   }
 
   return {
@@ -447,6 +522,6 @@ export async function getDailyEnergyRecommendations(): Promise<{
     recommendations,
     optimalHours,
     avoidHours,
-    energyForecast
+    energyForecast,
   };
 }
