@@ -6,7 +6,7 @@ import {
   updateIntegrationMapping,
   getUserTaskMappings,
   getIntegrationSyncStatus,
-  disconnectIntegration
+  disconnectIntegration,
 } from '../integrations';
 import { setDb, resetDb, getDb } from '@/lib/db';
 import { createTestDb } from '@/lib/db/test-db';
@@ -20,7 +20,12 @@ vi.mock('@/lib/csrf', () => ({
 vi.mock('@/lib/rate-limiter', () => ({
   rateLimits: { api: { windowMs: 60000, max: 100 } },
   getClientKey: () => 'test-client',
-  checkRateLimit: () => Promise.resolve({ allowed: true, remaining: 99, resetTime: Date.now() + 60000 }),
+  checkRateLimit: () =>
+    Promise.resolve({
+      allowed: true,
+      remaining: 99,
+      resetTime: Date.now() + 60000,
+    }),
 }));
 
 // Mock AI providers
@@ -77,8 +82,9 @@ describe('Integration Actions', () => {
     it('throws error when integration already exists', async () => {
       await connectIntegration({ id: 1 }, 'github', 'GitHub', {});
 
-      await expect(connectIntegration({ id: 1 }, 'github', 'GitHub 2', {}))
-        .rejects.toThrow('Integration github is already connected');
+      await expect(
+        connectIntegration({ id: 1 }, 'github', 'GitHub 2', {})
+      ).rejects.toThrow('Integration github is already connected');
     });
 
     it('creates trello integration', async () => {
@@ -176,8 +182,9 @@ describe('Integration Actions', () => {
     });
 
     it('throws error for non-existent integration', async () => {
-      await expect(syncTasksFromIntegration({ id: 1 }, 9999))
-        .rejects.toThrow('Integration not found or not accessible');
+      await expect(syncTasksFromIntegration({ id: 1 }, 9999)).rejects.toThrow(
+        'Integration not found or not accessible'
+      );
     });
 
     it('syncs from github integration', async () => {
@@ -236,8 +243,9 @@ describe('Integration Actions', () => {
         VALUES (999, 1, 'unsupported_type', 'Unsupported', '{}', 1, 'bidirectional', '2024-01-01T00:00:00.000Z')
       `);
 
-      await expect(syncTasksFromIntegration({ id: 1 }, 999))
-        .rejects.toThrow('Integration type unsupported_type not yet implemented');
+      await expect(syncTasksFromIntegration({ id: 1 }, 999)).rejects.toThrow(
+        'Integration type unsupported_type not yet implemented'
+      );
     });
   });
 
@@ -250,15 +258,20 @@ describe('Integration Actions', () => {
         {}
       );
 
-      const result = await syncTasksToIntegration({ id: 1 }, integration.id, [1]);
+      const result = await syncTasksToIntegration(
+        { id: 1 },
+        integration.id,
+        [1]
+      );
 
       expect(result.success).toBe(true);
       expect(result.tasksExported).toBeGreaterThanOrEqual(0);
     });
 
     it('throws error for non-existent integration', async () => {
-      await expect(syncTasksToIntegration({ id: 1 }, 9999, [1]))
-        .rejects.toThrow('Integration not found or not accessible');
+      await expect(
+        syncTasksToIntegration({ id: 1 }, 9999, [1])
+      ).rejects.toThrow('Integration not found or not accessible');
     });
 
     it('exports to github integration', async () => {
@@ -269,7 +282,11 @@ describe('Integration Actions', () => {
         {}
       );
 
-      const result = await syncTasksToIntegration({ id: 1 }, integration.id, [1]);
+      const result = await syncTasksToIntegration(
+        { id: 1 },
+        integration.id,
+        [1]
+      );
       expect(result.success).toBe(true);
     });
 
@@ -281,7 +298,11 @@ describe('Integration Actions', () => {
         {}
       );
 
-      const result = await syncTasksToIntegration({ id: 1 }, integration.id, [1]);
+      const result = await syncTasksToIntegration(
+        { id: 1 },
+        integration.id,
+        [1]
+      );
       expect(result.success).toBe(true);
     });
 
@@ -302,11 +323,12 @@ describe('Integration Actions', () => {
 
   describe('updateIntegrationMapping', () => {
     it('throws error for non-existent mapping', async () => {
-      await expect(updateIntegrationMapping(
-        { id: 1 },
-        1,
-        { id: 9999, field_mappings: {} } as any
-      )).rejects.toThrow('Task mapping not found or not accessible');
+      await expect(
+        updateIntegrationMapping({ id: 1 }, 1, {
+          id: 9999,
+          field_mappings: {},
+        } as any)
+      ).rejects.toThrow('Task mapping not found or not accessible');
     });
   });
 
@@ -366,7 +388,12 @@ describe('Integration Actions', () => {
 
   describe('disconnectIntegration', () => {
     it('removes integration and mappings', async () => {
-      const integration = await connectIntegration({ id: 1 }, 'github', 'Test', {});
+      const integration = await connectIntegration(
+        { id: 1 },
+        'github',
+        'Test',
+        {}
+      );
 
       // Create a mapping
       const db = getDb();
@@ -376,23 +403,34 @@ describe('Integration Actions', () => {
       `);
 
       // Should not throw
-      await expect(disconnectIntegration({ id: 1 }, integration.id)).resolves.toBeUndefined();
+      await expect(
+        disconnectIntegration({ id: 1 }, integration.id)
+      ).resolves.toBeUndefined();
 
       // Verify integration is deleted
-      const result = db.prepare("SELECT id FROM integrations WHERE id = ?").get(integration.id);
+      const result = db
+        .prepare('SELECT id FROM integrations WHERE id = ?')
+        .get(integration.id);
       expect(result).toBeUndefined();
     });
 
     it('throws error for non-existent integration', async () => {
-      await expect(disconnectIntegration({ id: 1 }, 9999))
-        .rejects.toThrow('Integration not found or not accessible');
+      await expect(disconnectIntegration({ id: 1 }, 9999)).rejects.toThrow(
+        'Integration not found or not accessible'
+      );
     });
 
     it('throws error for integration not owned by user', async () => {
-      const integration = await connectIntegration({ id: 2 }, 'github', 'Test', {});
+      const integration = await connectIntegration(
+        { id: 2 },
+        'github',
+        'Test',
+        {}
+      );
 
-      await expect(disconnectIntegration({ id: 1 }, integration.id))
-        .rejects.toThrow('Integration not found or not accessible');
+      await expect(
+        disconnectIntegration({ id: 1 }, integration.id)
+      ).rejects.toThrow('Integration not found or not accessible');
     });
   });
 });
