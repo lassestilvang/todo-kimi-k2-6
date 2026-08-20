@@ -1,9 +1,12 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi } from 'vitest';
 
-describe("Performance and Timing Edge Cases", () => {
-  describe("Debounce and Throttle", () => {
-    it("should debounce rapid function calls", () => {
-      const debounce = <T extends unknown[]>(fn: (...args: T) => void, delay: number) => {
+describe('Performance and Timing Edge Cases', () => {
+  describe('Debounce and Throttle', () => {
+    it('should debounce rapid function calls', () => {
+      const debounce = <T extends unknown[]>(
+        fn: (...args: T) => void,
+        delay: number
+      ) => {
         let timeout: ReturnType<typeof setTimeout> | null = null;
         return (...args: T) => {
           clearTimeout(timeout!);
@@ -21,7 +24,7 @@ describe("Performance and Timing Edge Cases", () => {
       expect(callCount).toBe(0); // Not called yet
     });
 
-    it("should throttle function calls", () => {
+    it('should throttle function calls', () => {
       const throttle = (fn: () => void, limit: number) => {
         let inThrottle: ReturnType<typeof setTimeout> | null = null;
         return () => {
@@ -35,15 +38,15 @@ describe("Performance and Timing Edge Cases", () => {
       };
 
       const throttledFn = throttle(() => {}, 100);
-      expect(typeof throttledFn).toBe("function");
+      expect(typeof throttledFn).toBe('function');
     });
   });
 
-  describe("Time Calculations", () => {
-    it("should handle timezone transitions", () => {
+  describe('Time Calculations', () => {
+    it('should handle timezone transitions', () => {
       // DST transition edge case
-      const beforeDST = new Date("2024-03-10T01:30:00-05:00");
-      const afterDST = new Date("2024-03-10T03:30:00-04:00");
+      const beforeDST = new Date('2024-03-10T01:30:00-05:00');
+      const afterDST = new Date('2024-03-10T03:30:00-04:00');
 
       const msDiff = Math.abs(afterDST.getTime() - beforeDST.getTime());
       const hoursDiff = msDiff / (1000 * 60 * 60);
@@ -52,25 +55,26 @@ describe("Performance and Timing Edge Cases", () => {
       expect(hoursDiff).toBeLessThan(48); // Not a full day difference
     });
 
-    it("should handle leap year dates", () => {
+    it('should handle leap year dates', () => {
       const leapYear = 2024;
-      const isLeap = (year: number) => (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+      const isLeap = (year: number) =>
+        (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
 
       expect(isLeap(leapYear)).toBe(true);
       expect(isLeap(2023)).toBe(false);
     });
 
-    it("should calculate duration correctly across midnight", () => {
-      const start = new Date("2024-01-01T23:00:00");
-      const end = new Date("2024-01-02T01:00:00");
+    it('should calculate duration correctly across midnight', () => {
+      const start = new Date('2024-01-01T23:00:00');
+      const end = new Date('2024-01-02T01:00:00');
 
       const duration = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
       expect(duration).toBe(2); // 2 hours
     });
   });
 
-  describe("Cache Performance", () => {
-    it("should handle cache hit ratio calculations", () => {
+  describe('Cache Performance', () => {
+    it('should handle cache hit ratio calculations', () => {
       const hits = 95;
       const misses = 5;
       const hitRatio = hits / (hits + misses);
@@ -78,7 +82,7 @@ describe("Performance and Timing Edge Cases", () => {
       expect(hitRatio).toBe(0.95);
     });
 
-    it("should invalidate expired cache entries", () => {
+    it('should invalidate expired cache entries', () => {
       const now = Date.now();
       const cacheExpiry = now - 3600000; // 1 hour ago
       const isExpired = Date.now() > cacheExpiry;
@@ -87,15 +91,15 @@ describe("Performance and Timing Edge Cases", () => {
     });
   });
 
-  describe("Memory Management", () => {
-    it("should handle large array operations efficiently", () => {
+  describe('Memory Management', () => {
+    it('should handle large array operations efficiently', () => {
       const largeArray = Array.from({ length: 10000 }, (_, i) => i);
-      const processed = largeArray.filter((x) => x % 2 === 0);
+      const processed = largeArray.filter(x => x % 2 === 0);
 
       expect(processed.length).toBe(5000);
     });
 
-    it("should limit recursion depth", () => {
+    it('should limit recursion depth', () => {
       const MAX_DEPTH = 1000;
       let depth = 0;
 
@@ -110,8 +114,8 @@ describe("Performance and Timing Edge Cases", () => {
     });
   });
 
-  describe("Rate Limiting Calculations", () => {
-    it("should calculate remaining requests correctly", () => {
+  describe('Rate Limiting Calculations', () => {
+    it('should calculate remaining requests correctly', () => {
       const maxRequests = 100;
       const windowMs = 60000;
       const usedRequests = 25;
@@ -120,7 +124,7 @@ describe("Performance and Timing Edge Cases", () => {
       expect(remaining).toBe(75);
     });
 
-    it("should reset rate limit after window expires", () => {
+    it('should reset rate limit after window expires', () => {
       const windowMs = 60000;
       const windowStart = Date.now() - windowMs - 1000;
       const isExpired = Date.now() - windowStart > windowMs;
@@ -129,8 +133,8 @@ describe("Performance and Timing Edge Cases", () => {
     });
   });
 
-  describe("Concurrency Limits", () => {
-    it("should limit concurrent operations", async () => {
+  describe('Concurrency Limits', () => {
+    it('should limit concurrent operations', async () => {
       const MAX_CONCURRENT = 3;
       let active = 0;
       let maxActive = 0;
@@ -141,7 +145,7 @@ describe("Performance and Timing Edge Cases", () => {
         count: 0,
         inThrottle: null as any,
         async acquire() {
-          return new Promise<void>((resolve) => {
+          return new Promise<void>(resolve => {
             const tryAcquire = () => {
               if (this.count < MAX_CONCURRENT) {
                 this.count++;
@@ -163,7 +167,7 @@ describe("Performance and Timing Edge Cases", () => {
         await semaphore.acquire();
         active++;
         // Simulate async work
-        await new Promise((r) => setTimeout(r, 20));
+        await new Promise(r => setTimeout(r, 20));
         semaphore.release();
         return id;
       };
@@ -185,25 +189,25 @@ describe("Performance and Timing Edge Cases", () => {
     });
   });
 
-  describe("Timeouts and Delays", () => {
-    it("should handle promise timeout", async () => {
+  describe('Timeouts and Delays', () => {
+    it('should handle promise timeout', async () => {
       const timeoutPromise = (ms: number) => {
         return new Promise((resolve, reject) => {
-          setTimeout(() => reject(new Error("Timeout")), ms);
+          setTimeout(() => reject(new Error('Timeout')), ms);
         });
       };
 
-      await expect(timeoutPromise(10)).rejects.toThrow("Timeout");
+      await expect(timeoutPromise(10)).rejects.toThrow('Timeout');
     });
 
-    it("should handle race conditions with early resolution", async () => {
-      const fastPromise = Promise.resolve("fast");
-      const slowPromise = new Promise<string>((resolve) =>
-        setTimeout(() => resolve("slow"), 1000)
+    it('should handle race conditions with early resolution', async () => {
+      const fastPromise = Promise.resolve('fast');
+      const slowPromise = new Promise<string>(resolve =>
+        setTimeout(() => resolve('slow'), 1000)
       );
 
       const result = await Promise.race([fastPromise, slowPromise]);
-      expect(result).toBe("fast");
+      expect(result).toBe('fast');
     });
   });
 });
