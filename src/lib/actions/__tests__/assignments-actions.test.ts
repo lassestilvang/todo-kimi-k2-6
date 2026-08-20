@@ -1,14 +1,14 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { setDb, resetDb } from "@/lib/db";
-import { createTestDb } from "@/lib/db/test-db";
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { setDb, resetDb } from '@/lib/db';
+import { createTestDb } from '@/lib/db/test-db';
 
-describe("Assignments Actions - Comprehensive Tests", () => {
+describe('Assignments Actions - Comprehensive Tests', () => {
   let db: ReturnType<typeof createTestDb>;
-  let getTaskAssignments: typeof import("../../actions/assignments").getTaskAssignments;
-  let assignTask: typeof import("../../actions/assignments").assignTask;
-  let unassignTask: typeof import("../../actions/assignments").unassignTask;
-  let getTasksAssignedToUser: typeof import("../../actions/assignments").getTasksAssignedToUser;
-  let getPendingAssignments: typeof import("../../actions/assignments").getPendingAssignments;
+  let getTaskAssignments: typeof import('../../actions/assignments').getTaskAssignments;
+  let assignTask: typeof import('../../actions/assignments').assignTask;
+  let unassignTask: typeof import('../../actions/assignments').unassignTask;
+  let getTasksAssignedToUser: typeof import('../../actions/assignments').getTasksAssignedToUser;
+  let getPendingAssignments: typeof import('../../actions/assignments').getPendingAssignments;
 
   beforeEach(async () => {
     resetDb();
@@ -55,7 +55,7 @@ describe("Assignments Actions - Comprehensive Tests", () => {
       INSERT INTO users (id, email, name, avatar_url) VALUES (1, 'test@example.com', 'Test User', 'avatar.png');
     `);
 
-    const actions = await import("../assignments");
+    const actions = await import('../assignments');
     getTaskAssignments = actions.getTaskAssignments;
     assignTask = actions.assignTask;
     unassignTask = actions.unassignTask;
@@ -67,65 +67,87 @@ describe("Assignments Actions - Comprehensive Tests", () => {
     db.close();
   });
 
-  describe("getTaskAssignments", () => {
-    it("should return empty array when no assignments exist", async () => {
+  describe('getTaskAssignments', () => {
+    it('should return empty array when no assignments exist', async () => {
       const result = await getTaskAssignments(999);
       expect(result).toEqual([]);
     });
 
-    it("should execute query for existing task", async () => {
+    it('should execute query for existing task', async () => {
       // Create a task and share it - verify the function runs
-      db.prepare("INSERT INTO tasks (id, name) VALUES (?, ?)").run(1, "Test Task");
-      db.prepare("INSERT INTO task_shares (task_id, user_id, permission) VALUES (?, ?, ?)").run(1, 1, "edit");
+      db.prepare('INSERT INTO tasks (id, name) VALUES (?, ?)').run(
+        1,
+        'Test Task'
+      );
+      db.prepare(
+        'INSERT INTO task_shares (task_id, user_id, permission) VALUES (?, ?, ?)'
+      ).run(1, 1, 'edit');
 
       // Function should execute and return an array
       const result = await getTaskAssignments(1);
       expect(Array.isArray(result)).toBe(true);
     });
 
-    it("should handle task with no shares", async () => {
-      db.prepare("INSERT INTO tasks (id, name) VALUES (?, ?)").run(2, "Unshared Task");
+    it('should handle task with no shares', async () => {
+      db.prepare('INSERT INTO tasks (id, name) VALUES (?, ?)').run(
+        2,
+        'Unshared Task'
+      );
 
       const result = await getTaskAssignments(2);
       expect(Array.isArray(result)).toBe(true);
     });
   });
 
-  describe("assignTask", () => {
-    it("should create an assignment with default view permission", async () => {
-      db.prepare("INSERT INTO tasks (id, name) VALUES (?, ?)").run(1, "Test Task");
+  describe('assignTask', () => {
+    it('should create an assignment with default view permission', async () => {
+      db.prepare('INSERT INTO tasks (id, name) VALUES (?, ?)').run(
+        1,
+        'Test Task'
+      );
 
       await assignTask(1, 1);
 
       // Verify via query
-      const assignments = db.prepare("SELECT * FROM task_shares").all();
+      const assignments = db.prepare('SELECT * FROM task_shares').all();
       expect(assignments.length).toBeGreaterThanOrEqual(1);
     });
 
-    it("should create an assignment with edit permission", async () => {
-      db.prepare("INSERT INTO tasks (id, name) VALUES (?, ?)").run(2, "Test Task");
+    it('should create an assignment with edit permission', async () => {
+      db.prepare('INSERT INTO tasks (id, name) VALUES (?, ?)').run(
+        2,
+        'Test Task'
+      );
 
-      await assignTask(2, 1, "edit");
+      await assignTask(2, 1, 'edit');
 
       // Function should complete successfully
       expect(true).toBe(true);
     });
 
-    it("should use OR IGNORE to prevent duplicate error", async () => {
-      db.prepare("INSERT INTO tasks (id, name) VALUES (?, ?)").run(3, "Test Task");
+    it('should use OR IGNORE to prevent duplicate error', async () => {
+      db.prepare('INSERT INTO tasks (id, name) VALUES (?, ?)').run(
+        3,
+        'Test Task'
+      );
 
-      await assignTask(3, 1, "view");
-      await assignTask(3, 1, "edit"); // Should not throw
+      await assignTask(3, 1, 'view');
+      await assignTask(3, 1, 'edit'); // Should not throw
 
       // Function should complete without error
       expect(true).toBe(true);
     });
   });
 
-  describe("unassignTask", () => {
-    it("should remove an assignment", async () => {
-      db.prepare("INSERT INTO tasks (id, name) VALUES (?, ?)").run(4, "Test Task");
-      db.prepare("INSERT INTO task_shares (task_id, user_id, permission) VALUES (?, ?, ?)").run(4, 1, "edit");
+  describe('unassignTask', () => {
+    it('should remove an assignment', async () => {
+      db.prepare('INSERT INTO tasks (id, name) VALUES (?, ?)').run(
+        4,
+        'Test Task'
+      );
+      db.prepare(
+        'INSERT INTO task_shares (task_id, user_id, permission) VALUES (?, ?, ?)'
+      ).run(4, 1, 'edit');
 
       await unassignTask(4, 1);
 
@@ -133,8 +155,11 @@ describe("Assignments Actions - Comprehensive Tests", () => {
       expect(true).toBe(true);
     });
 
-    it("should handle non-existent assignment gracefully", async () => {
-      db.prepare("INSERT INTO tasks (id, name) VALUES (?, ?)").run(5, "Test Task");
+    it('should handle non-existent assignment gracefully', async () => {
+      db.prepare('INSERT INTO tasks (id, name) VALUES (?, ?)').run(
+        5,
+        'Test Task'
+      );
 
       await unassignTask(5, 999);
       // Should not throw
@@ -142,23 +167,29 @@ describe("Assignments Actions - Comprehensive Tests", () => {
     });
   });
 
-  describe("getTasksAssignedToUser", () => {
-    it("should return empty array when no tasks assigned", async () => {
+  describe('getTasksAssignedToUser', () => {
+    it('should return empty array when no tasks assigned', async () => {
       const result = await getTasksAssignedToUser(1);
       expect(Array.isArray(result)).toBe(true);
     });
 
-    it("should execute for user with no permissions", async () => {
-      db.prepare("INSERT INTO tasks (id, name) VALUES (?, ?)").run(6, "Task 1");
+    it('should execute for user with no permissions', async () => {
+      db.prepare('INSERT INTO tasks (id, name) VALUES (?, ?)').run(6, 'Task 1');
 
       const result = await getTasksAssignedToUser(2);
       expect(Array.isArray(result)).toBe(true);
     });
 
-    it("should return tasks for user with edit permission", async () => {
+    it('should return tasks for user with edit permission', async () => {
       // Create a task and assign it to user 1
-      db.prepare("INSERT INTO tasks (id, name, list_id) VALUES (?, ?, ?)").run(10, "Assigned Task", 1);
-      db.prepare("INSERT INTO task_shares (task_id, user_id, permission) VALUES (?, ?, ?)").run(10, 1, "edit");
+      db.prepare('INSERT INTO tasks (id, name, list_id) VALUES (?, ?, ?)').run(
+        10,
+        'Assigned Task',
+        1
+      );
+      db.prepare(
+        'INSERT INTO task_shares (task_id, user_id, permission) VALUES (?, ?, ?)'
+      ).run(10, 1, 'edit');
 
       const result = await getTasksAssignedToUser(1);
       expect(Array.isArray(result)).toBe(true);
@@ -166,32 +197,36 @@ describe("Assignments Actions - Comprehensive Tests", () => {
     });
   });
 
-  describe("getPendingAssignments", () => {
-    it("should return empty array when no assignments exist", async () => {
+  describe('getPendingAssignments', () => {
+    it('should return empty array when no assignments exist', async () => {
       const result = await getPendingAssignments(1);
       expect(Array.isArray(result)).toBe(true);
     });
 
-    it("should return tasks for user with edit permission", async () => {
-      db.prepare("INSERT INTO tasks (id, name, completed) VALUES (?, ?, ?)").run(7, "Pending Task", 0);
-      db.prepare("INSERT INTO task_shares (task_id, user_id, permission) VALUES (?, ?, ?)").run(7, 1, "edit");
+    it('should return tasks for user with edit permission', async () => {
+      db.prepare(
+        'INSERT INTO tasks (id, name, completed) VALUES (?, ?, ?)'
+      ).run(7, 'Pending Task', 0);
+      db.prepare(
+        'INSERT INTO task_shares (task_id, user_id, permission) VALUES (?, ?, ?)'
+      ).run(7, 1, 'edit');
 
       const result = await getPendingAssignments(1);
       expect(Array.isArray(result)).toBe(true);
     });
   });
 
-  describe("Permission types", () => {
+  describe('Permission types', () => {
     it("should validate 'view' permission type", () => {
-      type Permission = "view" | "edit";
-      const p: Permission = "view";
-      expect(p).toBe("view");
+      type Permission = 'view' | 'edit';
+      const p: Permission = 'view';
+      expect(p).toBe('view');
     });
 
     it("should validate 'edit' permission type", () => {
-      type Permission = "view" | "edit";
-      const p: Permission = "edit";
-      expect(p).toBe("edit");
+      type Permission = 'view' | 'edit';
+      const p: Permission = 'edit';
+      expect(p).toBe('edit');
     });
   });
 });
