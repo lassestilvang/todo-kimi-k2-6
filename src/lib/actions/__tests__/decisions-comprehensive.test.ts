@@ -69,8 +69,16 @@ describe('Decisions - Comprehensive Tests', () => {
         outcome_notes: 'It worked well',
         outcome_rating: 1,
         options: [
-          { option_text: 'Approach A', pros: JSON.stringify(['Pros A']), cons: JSON.stringify(['Cons A', 'Cons B']) } as any,
-          { option_text: 'Approach B', pros: JSON.stringify(['Pros B']), cons: JSON.stringify(['Cons B']) } as any,
+          {
+            option_text: 'Approach A',
+            pros: JSON.stringify(['Pros A']),
+            cons: JSON.stringify(['Cons A', 'Cons B']),
+          } as any,
+          {
+            option_text: 'Approach B',
+            pros: JSON.stringify(['Pros B']),
+            cons: JSON.stringify(['Cons B']),
+          } as any,
         ],
       });
 
@@ -126,8 +134,16 @@ describe('Decisions - Comprehensive Tests', () => {
         decision_type: 'priority',
         question: 'Decision with pros/cons',
         options: [
-          { option_text: 'Option A', pros: JSON.stringify(['Good point 1', 'Good point 2']), cons: JSON.stringify(['Bad point 1']) } as any,
-          { option_text: 'Option B', pros: JSON.stringify(['Another pro']), cons: JSON.stringify(['Con 1', 'Con 2']) } as any,
+          {
+            option_text: 'Option A',
+            pros: JSON.stringify(['Good point 1', 'Good point 2']),
+            cons: JSON.stringify(['Bad point 1']),
+          } as any,
+          {
+            option_text: 'Option B',
+            pros: JSON.stringify(['Another pro']),
+            cons: JSON.stringify(['Con 1', 'Con 2']),
+          } as any,
         ],
       });
 
@@ -168,7 +184,9 @@ describe('Decisions - Comprehensive Tests', () => {
         options: [],
       });
 
-      const approachHistory = await getUserDecisionHistory(1, { decisionType: 'approach' });
+      const approachHistory = await getUserDecisionHistory(1, {
+        decisionType: 'approach',
+      });
       expect(approachHistory.length).toBeGreaterThan(0);
     });
 
@@ -231,7 +249,10 @@ describe('Decisions - Comprehensive Tests', () => {
         task_id: 1,
         decision_type: 'priority',
         question: 'Question with options',
-        options: [{ option_text: 'Option 1' } as any, { option_text: 'Option 2' } as any],
+        options: [
+          { option_text: 'Option 1' } as any,
+          { option_text: 'Option 2' } as any,
+        ],
       });
 
       const decisions = await getTaskDecisions(1);
@@ -285,8 +306,9 @@ describe('Decisions - Comprehensive Tests', () => {
     });
 
     it('throws error for non-existent decision', async () => {
-      await expect(updateDecisionEntry(99999, 1, { question: 'Test' }))
-        .rejects.toThrow('Decision entry not found or not accessible');
+      await expect(
+        updateDecisionEntry(99999, 1, { question: 'Test' })
+      ).rejects.toThrow('Decision entry not found or not accessible');
     });
   });
 
@@ -303,8 +325,9 @@ describe('Decisions - Comprehensive Tests', () => {
     });
 
     it('throws error for non-existent decision', async () => {
-      await expect(deleteDecisionEntry(99999, 1))
-        .rejects.toThrow('Decision entry not found or not accessible');
+      await expect(deleteDecisionEntry(99999, 1)).rejects.toThrow(
+        'Decision entry not found or not accessible'
+      );
     });
   });
 
@@ -337,7 +360,9 @@ describe('Decisions - Comprehensive Tests', () => {
     });
 
     it('filters by decision type', async () => {
-      const result = await analyzeDecisionOutcomes(1, { decisionType: 'priority' });
+      const result = await analyzeDecisionOutcomes(1, {
+        decisionType: 'priority',
+      });
       expect(result).toBeDefined();
     });
 
