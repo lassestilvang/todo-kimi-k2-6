@@ -1,31 +1,46 @@
-"use server";
+'use server';
 
-import { getDb } from "@/lib/db";
-import type { TaskAttachment, CreateAttachmentInput } from "@/types";
+import { getDb } from '@/lib/db';
+import type { TaskAttachment, CreateAttachmentInput } from '@/types';
 
-export async function getTaskAttachments(taskId: number, userId?: number): Promise<TaskAttachment[]> {
+export async function getTaskAttachments(
+  taskId: number,
+  userId?: number
+): Promise<TaskAttachment[]> {
   const db = getDb();
 
   // Verify task ownership if userId provided
   if (userId) {
-    const task = db.prepare("SELECT id FROM tasks WHERE id = ? AND user_id = ?").get(taskId, userId);
+    const task = db
+      .prepare('SELECT id FROM tasks WHERE id = ? AND user_id = ?')
+      .get(taskId, userId);
     if (!task) {
-      throw new Error("Task not found or access denied");
+      throw new Error('Task not found or access denied');
     }
   }
 
   return db
-    .prepare("SELECT * FROM task_attachments WHERE task_id = ? ORDER BY created_at DESC")
+    .prepare(
+      'SELECT * FROM task_attachments WHERE task_id = ? ORDER BY created_at DESC'
+    )
     .all(taskId) as TaskAttachment[];
 }
 
-export async function addTaskAttachment(input: CreateAttachmentInput): Promise<TaskAttachment> {
+export async function addTaskAttachment(
+  input: CreateAttachmentInput
+): Promise<TaskAttachment> {
   const db = getDb();
   const result = db
     .prepare(
-      "INSERT INTO task_attachments (task_id, filename, file_size, mime_type, url) VALUES (?, ?, ?, ?, ?)"
+      'INSERT INTO task_attachments (task_id, filename, file_size, mime_type, url) VALUES (?, ?, ?, ?, ?)'
     )
-    .run(input.task_id, input.filename, input.file_size, input.mime_type, input.url);
+    .run(
+      input.task_id,
+      input.filename,
+      input.file_size,
+      input.mime_type,
+      input.url
+    );
   return {
     id: Number(result.lastInsertRowid),
     task_id: input.task_id,
@@ -39,5 +54,5 @@ export async function addTaskAttachment(input: CreateAttachmentInput): Promise<T
 
 export async function deleteTaskAttachment(id: number): Promise<void> {
   const db = getDb();
-  db.prepare("DELETE FROM task_attachments WHERE id = ?").run(id);
+  db.prepare('DELETE FROM task_attachments WHERE id = ?').run(id);
 }
