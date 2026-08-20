@@ -1,14 +1,14 @@
-import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
-import { setDb, resetDb } from "@/lib/db";
-import { createTestDb } from "@/lib/db/test-db";
-import { getTemplates, createTemplate } from "../templates";
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
+import { setDb, resetDb } from '@/lib/db';
+import { createTestDb } from '@/lib/db/test-db';
+import { getTemplates, createTemplate } from '../templates';
 
 // Mock any external dependencies
-vi.mock("@/lib/logger", () => ({
+vi.mock('@/lib/logger', () => ({
   logger: { info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn() },
 }));
 
-describe("Templates Coverage", () => {
+describe('Templates Coverage', () => {
   let db: ReturnType<typeof createTestDb>;
 
   beforeAll(() => {
@@ -52,8 +52,8 @@ describe("Templates Coverage", () => {
     resetDb();
   });
 
-  describe("getTemplates with categories", () => {
-    it("should handle templates with categories", async () => {
+  describe('getTemplates with categories', () => {
+    it('should handle templates with categories', async () => {
       // Insert template with category - note the date format for created_at
       const today = new Date().toISOString();
       db.exec(`
@@ -69,7 +69,7 @@ describe("Templates Coverage", () => {
       expect(Array.isArray(templates)).toBe(true);
     });
 
-    it("should return templates without category", async () => {
+    it('should return templates without category', async () => {
       const today = new Date().toISOString();
       db.exec(`
         INSERT INTO templates (name, description, created_at)
