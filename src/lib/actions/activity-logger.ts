@@ -1,7 +1,7 @@
-"use server";
+'use server';
 
-import { getDb } from "@/lib/db";
-import { getCurrentUser } from "@/lib/session";
+import { getDb } from '@/lib/db';
+import { getCurrentUser } from '@/lib/session';
 import {
   createActivityLog,
   initializeActivityLogsTable,
@@ -12,7 +12,7 @@ import {
   type ActivityLog,
   type CreateActivityInput,
   type EntityType,
-} from "@/lib/activity-logger";
+} from '@/lib/activity-logger';
 
 // Re-export core types and functions
 export { createActivityLog, initializeActivityLogsTable };
@@ -31,14 +31,21 @@ export async function getTaskActivityLogs(
 /**
  * Gets recent activity logs across all entities.
  */
-export async function getRecentActivityLogs(limit = 100): Promise<Array<ActivityLog & { user_name: string | null; user_email: string | null }>> {
+export async function getRecentActivityLogs(
+  limit = 100
+): Promise<
+  Array<ActivityLog & { user_name: string | null; user_email: string | null }>
+> {
   return recentActivityLogs(limit);
 }
 
 /**
  * Gets activity logs for a user.
  */
-export async function getUserActivityLogs(userId: number, limit = 50): Promise<ActivityLog[]> {
+export async function getUserActivityLogs(
+  userId: number,
+  limit = 50
+): Promise<ActivityLog[]> {
   return userActivityLogs(userId, limit);
 }
 
@@ -48,7 +55,9 @@ export async function getUserActivityLogs(userId: number, limit = 50): Promise<A
 export async function getActivityLogsByAction(
   actions: string[],
   limit = 100
-): Promise<Array<ActivityLog & { user_name: string | null; user_email: string | null }>> {
+): Promise<
+  Array<ActivityLog & { user_name: string | null; user_email: string | null }>
+> {
   return activityLogsByAction(actions, limit);
 }
 
@@ -56,7 +65,9 @@ export async function getActivityLogsByAction(
  * Creates an activity log entry with current user context.
  * Called automatically from task operations, or manually for custom events.
  */
-export async function logActivity(input: CreateActivityInput): Promise<ActivityLog> {
+export async function logActivity(
+  input: CreateActivityInput
+): Promise<ActivityLog> {
   const db = getDb();
   // Allow explicit user_id override, otherwise get from current user
   const userId = input.user_id ?? (await getCurrentUser())?.id ?? 0;
@@ -92,11 +103,14 @@ export async function logActivity(input: CreateActivityInput): Promise<ActivityL
 /**
  * Log task creation
  */
-export async function logTaskCreated(taskId: number, taskName: string): Promise<ActivityLog> {
+export async function logTaskCreated(
+  taskId: number,
+  taskName: string
+): Promise<ActivityLog> {
   return logActivity({
     task_id: taskId,
-    action: "task_created",
-    entity_type: "task",
+    action: 'task_created',
+    entity_type: 'task',
     entity_id: taskId,
     details: JSON.stringify({ taskName }),
   });
@@ -108,8 +122,8 @@ export async function logTaskCreated(taskId: number, taskName: string): Promise<
 export async function logTaskCompleted(taskId: number): Promise<ActivityLog> {
   return logActivity({
     task_id: taskId,
-    action: "task_completed",
-    entity_type: "task",
+    action: 'task_completed',
+    entity_type: 'task',
     entity_id: taskId,
   });
 }
@@ -123,8 +137,8 @@ export async function logTaskUpdated(
 ): Promise<ActivityLog> {
   return logActivity({
     task_id: taskId,
-    action: "task_updated",
-    entity_type: "task",
+    action: 'task_updated',
+    entity_type: 'task',
     entity_id: taskId,
     details: JSON.stringify(changes),
   });
@@ -136,8 +150,8 @@ export async function logTaskUpdated(
 export async function logTaskDeleted(taskId: number): Promise<ActivityLog> {
   return logActivity({
     task_id: taskId,
-    action: "task_deleted",
-    entity_type: "task",
+    action: 'task_deleted',
+    entity_type: 'task',
     entity_id: taskId,
   });
 }
@@ -152,8 +166,8 @@ export async function logCommentAdded(
 ): Promise<ActivityLog> {
   return logActivity({
     task_id: taskId,
-    action: "comment_added",
-    entity_type: "comment",
+    action: 'comment_added',
+    entity_type: 'comment',
     entity_id: commentId,
     details: JSON.stringify({ author: authorName }),
   });
@@ -169,8 +183,8 @@ export async function logTaskAssigned(
 ): Promise<ActivityLog> {
   return logActivity({
     task_id: taskId,
-    action: "task_assigned",
-    entity_type: "task",
+    action: 'task_assigned',
+    entity_type: 'task',
     entity_id: taskId,
     details: JSON.stringify({ assigneeId, assigneeName }),
   });
@@ -182,12 +196,12 @@ export async function logTaskAssigned(
 export async function logTaskShared(
   taskId: number,
   sharedWithUserId: number,
-  permission: "view" | "edit"
+  permission: 'view' | 'edit'
 ): Promise<ActivityLog> {
   return logActivity({
     task_id: taskId,
-    action: "task_shared",
-    entity_type: "share",
+    action: 'task_shared',
+    entity_type: 'share',
     entity_id: taskId,
     details: JSON.stringify({ sharedWith: sharedWithUserId, permission }),
   });
@@ -203,8 +217,8 @@ export async function logNotificationSent(
 ): Promise<ActivityLog> {
   return logActivity({
     user_id: userId,
-    action: "notification_sent",
-    entity_type: "notification",
+    action: 'notification_sent',
+    entity_type: 'notification',
     details: JSON.stringify({ type, ...data }),
   });
 }
