@@ -1,5 +1,5 @@
-import { z } from "zod";
-import { sanitizeString } from "@/lib/validation";
+import { z } from 'zod';
+import { sanitizeString } from '@/lib/validation';
 
 // Schema for incoming email webhook
 const EmailWebhookSchema = z.object({
@@ -35,7 +35,7 @@ export interface EmailToTaskResult {
     title: string;
     description: string;
     due_date?: string;
-    priority?: "low" | "medium" | "high" | "critical";
+    priority?: 'low' | 'medium' | 'high' | 'critical';
     labels?: string[];
     assignee?: string;
   };
@@ -48,8 +48,13 @@ export function shouldExcludeEmail(
   email: z.infer<typeof EmailWebhookSchema>,
   excludeKeywords?: string[]
 ): boolean {
-  const text = (email.subject + " " + email.body).toLowerCase();
-  const keywords = excludeKeywords || ["unsubscribe", "bounce", "auto-reply", "out of office"];
+  const text = (email.subject + ' ' + email.body).toLowerCase();
+  const keywords = excludeKeywords || [
+    'unsubscribe',
+    'bounce',
+    'auto-reply',
+    'out of office',
+  ];
 
   return keywords.some(keyword => text.includes(keyword));
 }
@@ -61,8 +66,16 @@ export function parseEmailToTask(
   email: z.infer<typeof EmailWebhookSchema>,
   options?: z.infer<typeof EmailProcessingOptionsSchema>
 ): EmailToTaskResult {
-  const text = email.subject + "\n\n" + email.body;
-  const keywordsToTask = options?.keywords_to_task || ["task:", "todo:", "action:", "please", "help", "need to", "require"];
+  const text = email.subject + '\n\n' + email.body;
+  const keywordsToTask = options?.keywords_to_task || [
+    'task:',
+    'todo:',
+    'action:',
+    'please',
+    'help',
+    'need to',
+    'require',
+  ];
 
   // Check if email contains task-related content
   const hasTaskKeyword = keywordsToTask.some(keyword =>
@@ -74,17 +87,17 @@ export function parseEmailToTask(
       success: false,
       skipped: true,
       confidence: 0.3,
-      reason: "Email does not appear to contain task request",
+      reason: 'Email does not appear to contain task request',
     };
   }
 
   // Extract title from subject
-  let title = email.subject.replace(/^(Re|Fwd):\s*/i, "").trim();
+  let title = email.subject.replace(/^(Re|Fwd):\s*/i, '').trim();
 
   // Try to extract title from task markers in body
   const taskMarkerMatch = email.body.match(/^(task|todo|action):\s*(.+)$/im);
   if (taskMarkerMatch) {
-    title = taskMarkerMatch[2].split("\n")[0].trim();
+    title = taskMarkerMatch[2].split('\n')[0].trim();
   }
 
   // Extract body text
@@ -94,7 +107,7 @@ export function parseEmailToTask(
   const dueDate = extractDueDate(email.body);
 
   // Extract priority
-  const priority = extractPriority(email.subject + " " + email.body);
+  const priority = extractPriority(email.subject + ' ' + email.body);
 
   // Extract labels
   const labels = extractLabels(email);
@@ -107,7 +120,7 @@ export function parseEmailToTask(
     skipped: false,
     confidence: 0.85,
     parsed_fields: {
-      title: sanitizeString(title) || "New task from email",
+      title: sanitizeString(title) || 'New task from email',
       description,
       due_date: dueDate,
       priority,
@@ -121,18 +134,31 @@ export function parseEmailToTask(
  * Extract due date from email content using multiple patterns
  */
 export function extractDueDate(text: string): string | undefined {
-  const patterns: Array<{ pattern: RegExp; transformer: (match: RegExpMatchArray) => string | null }> = [
+  const patterns: Array<{
+    pattern: RegExp;
+    transformer: (match: RegExpMatchArray) => string | null;
+  }> = [
     // "due by Jan 15" or "due: Jan 15"
     {
-      pattern: /\b(due\s+(?:by\s+)?|due:\s*)(\w+\s+\d{1,2}(?:st|nd|rd|th)?(?:,?\s+\d{4})?)/i,
+      pattern:
+        /\b(due\s+(?:by\s+)?|due:\s*)(\w+\s+\d{1,2}(?:st|nd|rd|th)?(?:,?\s+\d{4})?)/i,
       transformer: m => m[2],
     },
     // "by Friday" or "by next Tuesday"
     {
-      pattern: /\bby\s+(next\s+)?(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i,
+      pattern:
+        /\bby\s+(next\s+)?(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i,
       transformer: m => {
         const dayName = m[2].toLowerCase();
-        const days = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+        const days = [
+          'sunday',
+          'monday',
+          'tuesday',
+          'wednesday',
+          'thursday',
+          'friday',
+          'saturday',
+        ];
         const today = new Date();
         const todayDay = today.getDay();
         const targetDay = days.indexOf(dayName);
@@ -141,7 +167,7 @@ export function extractDueDate(text: string): string | undefined {
         if (m[1]) daysUntil += 7; // next week
         const date = new Date(today);
         date.setDate(today.getDate() + daysUntil);
-        return date.toISOString().split("T")[0];
+        return date.toISOString().split('T')[0];
       },
     },
     // "in 3 days" or "in 2 weeks"
@@ -150,9 +176,13 @@ export function extractDueDate(text: string): string | undefined {
       transformer: m => {
         const amount = parseInt(m[1]);
         const unit = m[2].toLowerCase();
-        const days = unit.startsWith("week") ? amount * 7 : unit.startsWith("month") ? amount * 30 : amount;
+        const days = unit.startsWith('week')
+          ? amount * 7
+          : unit.startsWith('month')
+            ? amount * 30
+            : amount;
         const date = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
-        return date.toISOString().split("T")[0];
+        return date.toISOString().split('T')[0];
       },
     },
     // Date pattern like "Jan 15, 2025" or "15 Jan 2025"
@@ -181,17 +211,19 @@ export function extractDueDate(text: string): string | undefined {
 /**
  * Extract priority from email content
  */
-export function extractPriority(text: string): "low" | "medium" | "high" | "critical" | undefined {
+export function extractPriority(
+  text: string
+): 'low' | 'medium' | 'high' | 'critical' | undefined {
   const lower = text.toLowerCase();
 
   if (/urgent|asap|immediate|critical|emergency/i.test(lower)) {
-    return "critical";
+    return 'critical';
   }
   if (/high|important|priority/i.test(lower)) {
-    return "high";
+    return 'high';
   }
   if (/low|deferred|later/i.test(lower)) {
-    return "low";
+    return 'low';
   }
 
   return undefined;
@@ -200,7 +232,9 @@ export function extractPriority(text: string): "low" | "medium" | "high" | "crit
 /**
  * Extract labels from email
  */
-export function extractLabels(email: z.infer<typeof EmailWebhookSchema>): string[] | undefined {
+export function extractLabels(
+  email: z.infer<typeof EmailWebhookSchema>
+): string[] | undefined {
   const labels: string[] = [];
 
   // Extract from Gmail labels
