@@ -2,16 +2,27 @@
 // This file provides a single entry point for all server actions
 
 // Auth
-export { getCurrentUser, getUserByEmail, createUser } from "./auth";
+export { getCurrentUser, getUserByEmail, createUser } from './auth';
 
 // Permissions
-export { isOwner, isEditor, isViewer, canPerformActionByPermission } from "./permissions";
+export {
+  isOwner,
+  isEditor,
+  isViewer,
+  canPerformActionByPermission,
+} from './permissions';
 
 // Lists
-export { getLists, getListById, createList, updateList, deleteList } from "./lists";
+export {
+  getLists,
+  getListById,
+  createList,
+  updateList,
+  deleteList,
+} from './lists';
 
 // Labels
-export { getLabels, getLabelById, createLabel, deleteLabel } from "./labels";
+export { getLabels, getLabelById, createLabel, deleteLabel } from './labels';
 
 // Tasks (main task operations)
 export {
@@ -28,14 +39,14 @@ export {
   bulkUpdateTasks,
   bulkDeleteTasks,
   editTaskWithAI,
-} from "./tasks";
+} from './tasks';
 
 // Task dependencies
 export {
   addTaskDependency,
   removeTaskDependency,
   getBlockedTasks,
-} from "./dependencies";
+} from './dependencies';
 
 // Templates
 export {
@@ -43,7 +54,7 @@ export {
   createTemplate,
   deleteTemplate,
   saveTemplateFromTask,
-} from "./templates";
+} from './templates';
 
 // Template categories
 export {
@@ -52,22 +63,37 @@ export {
   createTemplateCategory,
   deleteTemplateCategory,
   getTemplatesByCategory,
-} from "./template-categories";
+} from './template-categories';
 
 // Task comments
-export { addTaskComment, getTaskComments } from "./comments";
+export { addTaskComment, getTaskComments } from './comments';
 
 // Import/Export
-export { exportData, exportCsv, exportJson, exportIcal, exportPdf, importData } from "./export";
+export {
+  exportData,
+  exportCsv,
+  exportJson,
+  exportIcal,
+  exportPdf,
+  importData,
+} from './export';
 
 // Time tracking
-export { getTimeReport, getWeeklyTimeSummary } from "./time-tracking";
+export { getTimeReport, getWeeklyTimeSummary } from './time-tracking';
 
 // Task attachments
-export { getTaskAttachments, addTaskAttachment, deleteTaskAttachment } from "./attachments";
+export {
+  getTaskAttachments,
+  addTaskAttachment,
+  deleteTaskAttachment,
+} from './attachments';
 
 // Calendar sync
-export { getCalendarSync, saveCalendarSync, deleteCalendarSync } from "./calendar";
+export {
+  getCalendarSync,
+  saveCalendarSync,
+  deleteCalendarSync,
+} from './calendar';
 
 // Task assignment
 export {
@@ -76,7 +102,7 @@ export {
   unassignTask,
   getTasksAssignedToUser,
   getPendingAssignments,
-} from "./assignments";
+} from './assignments';
 
 // Custom views
 export {
@@ -85,7 +111,7 @@ export {
   createCustomView,
   updateCustomView,
   deleteCustomView,
-} from "./views";
+} from './views';
 
 // Reminders
 export {
@@ -97,10 +123,10 @@ export {
   deleteRemindersForTask,
   getDueReminders,
   snoozeReminder,
-} from "./reminders";
+} from './reminders';
 
 // Analytics
-export { getTaskAnalytics, getGoalAnalytics } from "./analytics";
+export { getTaskAnalytics, getGoalAnalytics } from './analytics';
 
 // Goals
 export {
@@ -115,7 +141,7 @@ export {
   completeGoalMilestone,
   skipGoalMilestone,
   getGoalProgress,
-} from "./goals";
+} from './goals';
 
 // Habits
 export {
@@ -124,10 +150,10 @@ export {
   toggleHabitCompletion,
   resetHabitStreak,
   getStreakLeaderboard,
-} from "./habits";
+} from './habits';
 
 // Users
-export { getUsers, searchUsers } from "./users";
+export { getUsers, searchUsers } from './users';
 
 // Workspaces
 export {
@@ -143,10 +169,14 @@ export {
   getUserWorkspaceRole,
   updateUserWorkspaceRole,
   getWorkspacePermissions,
-} from "./workspaces";
+} from './workspaces';
 
 // Filter presets
-export { getFilterPresets, createFilterPreset, deleteFilterPreset } from "./filter-presets";
+export {
+  getFilterPresets,
+  createFilterPreset,
+  deleteFilterPreset,
+} from './filter-presets';
 
 // Sharing
 export {
@@ -157,10 +187,15 @@ export {
   getShareByToken,
   removeShare,
   getOrCreateUser,
-} from "./sharing";
+} from './sharing';
 
 // Sharing actions
-export { shareTaskWithUser, getUsers as getSharedUsers, canAccessTask, getSharedTasksForUser } from "./sharing-actions";
+export {
+  shareTaskWithUser,
+  getUsers as getSharedUsers,
+  canAccessTask,
+  getSharedTasksForUser,
+} from './sharing-actions';
 
 // Task helpers (no-op in browser)
-export { logTaskAction } from "./task-helpers";
+export { logTaskAction } from './task-helpers';
