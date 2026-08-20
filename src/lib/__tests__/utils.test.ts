@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { cn, validateSortField, validateSortDirection, buildSafeOrderBy, buildInClausePlaceholders } from '../utils';
+import {
+  cn,
+  validateSortField,
+  validateSortDirection,
+  buildSafeOrderBy,
+  buildInClausePlaceholders,
+} from '../utils';
 
 describe('Utils', () => {
   describe('cn', () => {
@@ -26,8 +32,12 @@ describe('Utils', () => {
       });
 
       it('throws for invalid sort fields', () => {
-        expect(() => validateSortField('invalid_field')).toThrow('Invalid sort field');
-        expect(() => validateSortField('; DROP TABLE tasks')).toThrow('Invalid sort field');
+        expect(() => validateSortField('invalid_field')).toThrow(
+          'Invalid sort field'
+        );
+        expect(() => validateSortField('; DROP TABLE tasks')).toThrow(
+          'Invalid sort field'
+        );
       });
     });
 
@@ -38,7 +48,9 @@ describe('Utils', () => {
       });
 
       it('throws for invalid directions', () => {
-        expect(() => validateSortDirection('invalid')).toThrow('Invalid sort direction');
+        expect(() => validateSortDirection('invalid')).toThrow(
+          'Invalid sort direction'
+        );
       });
     });
 
@@ -61,8 +73,12 @@ describe('Utils', () => {
       });
 
       it('throws for invalid counts', () => {
-        expect(() => buildInClausePlaceholders(0)).toThrow('Count must be positive');
-        expect(() => buildInClausePlaceholders(-1)).toThrow('Count must be positive');
+        expect(() => buildInClausePlaceholders(0)).toThrow(
+          'Count must be positive'
+        );
+        expect(() => buildInClausePlaceholders(-1)).toThrow(
+          'Count must be positive'
+        );
       });
     });
   });
