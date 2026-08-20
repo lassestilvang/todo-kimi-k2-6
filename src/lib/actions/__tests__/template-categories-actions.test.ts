@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { setDb, resetDb } from "@/lib/db";
-import { createTestDb } from "@/lib/db/test-db";
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { setDb, resetDb } from '@/lib/db';
+import { createTestDb } from '@/lib/db/test-db';
 
-describe("Template Categories Actions", () => {
+describe('Template Categories Actions', () => {
   beforeEach(() => {
     resetDb();
     const testDb = createTestDb();
@@ -30,110 +30,131 @@ describe("Template Categories Actions", () => {
     vi.clearAllMocks();
   });
 
-  describe("getTemplateCategories", () => {
-    it("should be defined as a function", async () => {
-      const { getTemplateCategories } = await import("../template-categories");
-      expect(typeof getTemplateCategories).toBe("function");
+  describe('getTemplateCategories', () => {
+    it('should be defined as a function', async () => {
+      const { getTemplateCategories } = await import('../template-categories');
+      expect(typeof getTemplateCategories).toBe('function');
     });
 
-    it("should return empty array when no categories exist", async () => {
-      const { getTemplateCategories } = await import("../template-categories");
+    it('should return empty array when no categories exist', async () => {
+      const { getTemplateCategories } = await import('../template-categories');
       const categories = await getTemplateCategories();
       expect(categories).toEqual([]);
     });
 
-    it("should return categories when they exist", async () => {
-      const { createTemplateCategory, getTemplateCategories } = await import("../template-categories");
+    it('should return categories when they exist', async () => {
+      const { createTemplateCategory, getTemplateCategories } =
+        await import('../template-categories');
 
-      await createTemplateCategory({ name: "Work", description: "Work templates" });
-      await createTemplateCategory({ name: "Personal", description: "Personal templates" });
+      await createTemplateCategory({
+        name: 'Work',
+        description: 'Work templates',
+      });
+      await createTemplateCategory({
+        name: 'Personal',
+        description: 'Personal templates',
+      });
 
       const categories = await getTemplateCategories();
       expect(categories.length).toBe(2);
-      expect(categories[0].name).toBe("Personal");
-      expect(categories[1].name).toBe("Work");
+      expect(categories[0].name).toBe('Personal');
+      expect(categories[1].name).toBe('Work');
     });
 
-    it("should order categories by name", async () => {
-      const { createTemplateCategory, getTemplateCategories } = await import("../template-categories");
+    it('should order categories by name', async () => {
+      const { createTemplateCategory, getTemplateCategories } =
+        await import('../template-categories');
 
-      await createTemplateCategory({ name: "Work" });
-      await createTemplateCategory({ name: "Personal" });
-      await createTemplateCategory({ name: "Ideas" });
+      await createTemplateCategory({ name: 'Work' });
+      await createTemplateCategory({ name: 'Personal' });
+      await createTemplateCategory({ name: 'Ideas' });
 
       const categories = await getTemplateCategories();
-      expect(categories[0].name).toBe("Ideas");
-      expect(categories[1].name).toBe("Personal");
-      expect(categories[2].name).toBe("Work");
+      expect(categories[0].name).toBe('Ideas');
+      expect(categories[1].name).toBe('Personal');
+      expect(categories[2].name).toBe('Work');
     });
   });
 
-  describe("getTemplateCategoryById", () => {
-    it("should be defined as a function", async () => {
-      const { getTemplateCategoryById } = await import("../template-categories");
-      expect(typeof getTemplateCategoryById).toBe("function");
+  describe('getTemplateCategoryById', () => {
+    it('should be defined as a function', async () => {
+      const { getTemplateCategoryById } =
+        await import('../template-categories');
+      expect(typeof getTemplateCategoryById).toBe('function');
     });
 
-    it("should return undefined for non-existent category", async () => {
-      const { getTemplateCategoryById } = await import("../template-categories");
+    it('should return undefined for non-existent category', async () => {
+      const { getTemplateCategoryById } =
+        await import('../template-categories');
       const category = await getTemplateCategoryById(999);
       expect(category).toBeUndefined();
     });
 
-    it("should return category when it exists", async () => {
-      const { createTemplateCategory, getTemplateCategoryById } = await import("../template-categories");
+    it('should return category when it exists', async () => {
+      const { createTemplateCategory, getTemplateCategoryById } =
+        await import('../template-categories');
 
-      const created = await createTemplateCategory({ name: "Test Category", description: "Test" });
+      const created = await createTemplateCategory({
+        name: 'Test Category',
+        description: 'Test',
+      });
       const category = await getTemplateCategoryById(created.id);
 
       expect(category).toBeDefined();
-      expect(category?.name).toBe("Test Category");
+      expect(category?.name).toBe('Test Category');
     });
   });
 
-  describe("createTemplateCategory", () => {
-    it("should be defined as a function", async () => {
-      const { createTemplateCategory } = await import("../template-categories");
-      expect(typeof createTemplateCategory).toBe("function");
+  describe('createTemplateCategory', () => {
+    it('should be defined as a function', async () => {
+      const { createTemplateCategory } = await import('../template-categories');
+      expect(typeof createTemplateCategory).toBe('function');
     });
 
-    it("should create a category with name only", async () => {
-      const { createTemplateCategory } = await import("../template-categories");
-      const category = await createTemplateCategory({ name: "Work" });
-      expect(category.name).toBe("Work");
+    it('should create a category with name only', async () => {
+      const { createTemplateCategory } = await import('../template-categories');
+      const category = await createTemplateCategory({ name: 'Work' });
+      expect(category.name).toBe('Work');
       expect(category.description).toBeNull();
       expect(category.id).toBeDefined();
       expect(category.created_at).toBeDefined();
     });
 
-    it("should create a category with name and description", async () => {
-      const { createTemplateCategory } = await import("../template-categories");
-      const category = await createTemplateCategory({ name: "Personal", description: "Personal templates" });
-      expect(category.name).toBe("Personal");
-      expect(category.description).toBe("Personal templates");
+    it('should create a category with name and description', async () => {
+      const { createTemplateCategory } = await import('../template-categories');
+      const category = await createTemplateCategory({
+        name: 'Personal',
+        description: 'Personal templates',
+      });
+      expect(category.name).toBe('Personal');
+      expect(category.description).toBe('Personal templates');
     });
 
-    it("should return category with all fields populated", async () => {
-      const { createTemplateCategory } = await import("../template-categories");
-      const category = await createTemplateCategory({ name: "Full Category" });
+    it('should return category with all fields populated', async () => {
+      const { createTemplateCategory } = await import('../template-categories');
+      const category = await createTemplateCategory({ name: 'Full Category' });
 
       expect(category.id).toBeGreaterThan(0);
-      expect(category.name).toBe("Full Category");
+      expect(category.name).toBe('Full Category');
       expect(category.description).toBeNull();
       expect(category.created_at).toBeDefined();
     });
   });
 
-  describe("deleteTemplateCategory", () => {
-    it("should be defined as a function", async () => {
-      const { deleteTemplateCategory } = await import("../template-categories");
-      expect(typeof deleteTemplateCategory).toBe("function");
+  describe('deleteTemplateCategory', () => {
+    it('should be defined as a function', async () => {
+      const { deleteTemplateCategory } = await import('../template-categories');
+      expect(typeof deleteTemplateCategory).toBe('function');
     });
 
-    it("should delete a category", async () => {
-      const { createTemplateCategory, deleteTemplateCategory, getTemplateCategories } = await import("../template-categories");
+    it('should delete a category', async () => {
+      const {
+        createTemplateCategory,
+        deleteTemplateCategory,
+        getTemplateCategories,
+      } = await import('../template-categories');
 
-      await createTemplateCategory({ name: "To Delete" });
+      await createTemplateCategory({ name: 'To Delete' });
       const beforeDelete = await getTemplateCategories();
       expect(beforeDelete.length).toBe(1);
 
@@ -143,61 +164,75 @@ describe("Template Categories Actions", () => {
       expect(afterDelete.length).toBe(0);
     });
 
-    it("should clear category_id from templates when category is deleted", async () => {
-      const { createTemplateCategory, deleteTemplateCategory } = await import("../template-categories");
-      const db = (await import("@/lib/db")).getDb();
+    it('should clear category_id from templates when category is deleted', async () => {
+      const { createTemplateCategory, deleteTemplateCategory } =
+        await import('../template-categories');
+      const db = (await import('@/lib/db')).getDb();
 
-      const category = await createTemplateCategory({ name: "Work" });
+      const category = await createTemplateCategory({ name: 'Work' });
 
       // Create a template directly in DB
-      db.prepare("INSERT INTO templates (name, category_id, created_at) VALUES (?, ?, ?)")
-        .run("Test Template", category.id, new Date().toISOString());
+      db.prepare(
+        'INSERT INTO templates (name, category_id, created_at) VALUES (?, ?, ?)'
+      ).run('Test Template', category.id, new Date().toISOString());
 
       // Verify template has category_id
-      const beforeDelete = db.prepare("SELECT category_id FROM templates WHERE id = (SELECT last_insert_rowid())").get();
+      const beforeDelete = db
+        .prepare(
+          'SELECT category_id FROM templates WHERE id = (SELECT last_insert_rowid())'
+        )
+        .get();
 
       // Delete category
       await deleteTemplateCategory(category.id);
 
       // Verify template's category_id is now NULL
-      const template = db.prepare("SELECT * FROM templates WHERE category_id IS NULL ORDER BY id DESC LIMIT 1").get();
+      const template = db
+        .prepare(
+          'SELECT * FROM templates WHERE category_id IS NULL ORDER BY id DESC LIMIT 1'
+        )
+        .get();
       expect(template).toBeDefined();
     });
 
-    it("should handle deleting non-existent category", async () => {
-      const { deleteTemplateCategory } = await import("../template-categories");
+    it('should handle deleting non-existent category', async () => {
+      const { deleteTemplateCategory } = await import('../template-categories');
 
       // Should not throw
       await expect(deleteTemplateCategory(999)).resolves.not.toThrow();
     });
   });
 
-  describe("getTemplatesByCategory", () => {
-    it("should be defined as a function", async () => {
-      const { getTemplatesByCategory } = await import("../template-categories");
-      expect(typeof getTemplatesByCategory).toBe("function");
+  describe('getTemplatesByCategory', () => {
+    it('should be defined as a function', async () => {
+      const { getTemplatesByCategory } = await import('../template-categories');
+      expect(typeof getTemplatesByCategory).toBe('function');
     });
 
-    it("should return empty array for category with no templates", async () => {
-      const { createTemplateCategory, getTemplatesByCategory } = await import("../template-categories");
+    it('should return empty array for category with no templates', async () => {
+      const { createTemplateCategory, getTemplatesByCategory } =
+        await import('../template-categories');
 
-      const category = await createTemplateCategory({ name: "Empty Category" });
+      const category = await createTemplateCategory({ name: 'Empty Category' });
       const templates = await getTemplatesByCategory(category.id);
 
       expect(Array.isArray(templates)).toBe(true);
     });
 
-    it("should return templates for category", async () => {
-      const { createTemplateCategory, getTemplatesByCategory } = await import("../template-categories");
-      const db = (await import("@/lib/db")).getDb();
+    it('should return templates for category', async () => {
+      const { createTemplateCategory, getTemplatesByCategory } =
+        await import('../template-categories');
+      const db = (await import('@/lib/db')).getDb();
 
-      const category = await createTemplateCategory({ name: "Work" });
+      const category = await createTemplateCategory({ name: 'Work' });
 
       // Create templates directly in DB
-      db.prepare("INSERT INTO templates (name, category_id, created_at) VALUES (?, ?, ?)")
-        .run("Template 1", category.id, new Date().toISOString());
-      db.prepare("INSERT INTO templates (name, category_id, created_at) VALUES (?, ?, ?)")
-        .run("Template 2", category.id, new Date().toISOString());
+      db.prepare(
+        'INSERT INTO templates (name, category_id, created_at) VALUES (?, ?, ?)'
+      ).run('Template 1', category.id, new Date().toISOString());
+      db.prepare(
+        'INSERT INTO templates (name, category_id, created_at) VALUES (?, ?, ?)'
+      ).run('Template 2', category.id, new Date().toISOString());
 
       const templates = await getTemplatesByCategory(category.id);
 
@@ -205,22 +240,25 @@ describe("Template Categories Actions", () => {
     });
   });
 
-  describe("Integration tests", () => {
-    it("should handle full category lifecycle", async () => {
+  describe('Integration tests', () => {
+    it('should handle full category lifecycle', async () => {
       const {
         createTemplateCategory,
         getTemplateCategories,
         getTemplateCategoryById,
         deleteTemplateCategory,
-      } = await import("../template-categories");
+      } = await import('../template-categories');
 
       // Create
-      const category = await createTemplateCategory({ name: "Test", description: "Test category" });
+      const category = await createTemplateCategory({
+        name: 'Test',
+        description: 'Test category',
+      });
       expect(category.id).toBeDefined();
 
       // Read
       const fetched = await getTemplateCategoryById(category.id);
-      expect(fetched?.name).toBe("Test");
+      expect(fetched?.name).toBe('Test');
 
       // List
       const categories = await getTemplateCategories();
@@ -232,12 +270,13 @@ describe("Template Categories Actions", () => {
       expect(afterDelete).toBeUndefined();
     });
 
-    it("should handle multiple categories", async () => {
-      const { createTemplateCategory, getTemplateCategories } = await import("../template-categories");
+    it('should handle multiple categories', async () => {
+      const { createTemplateCategory, getTemplateCategories } =
+        await import('../template-categories');
 
-      await createTemplateCategory({ name: "Category 1" });
-      await createTemplateCategory({ name: "Category 2" });
-      await createTemplateCategory({ name: "Category 3" });
+      await createTemplateCategory({ name: 'Category 1' });
+      await createTemplateCategory({ name: 'Category 2' });
+      await createTemplateCategory({ name: 'Category 3' });
 
       const categories = await getTemplateCategories();
       expect(categories.length).toBe(3);
