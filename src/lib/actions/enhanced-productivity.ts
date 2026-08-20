@@ -1,8 +1,8 @@
-"use server";
+'use server';
 
-import { getDb } from "@/lib/db";
-import { getCurrentUser } from "@/lib/session";
-import type { TaskWithRelations } from "@/types";
+import { getDb } from '@/lib/db';
+import { getCurrentUser } from '@/lib/session';
+import type { TaskWithRelations } from '@/types';
 
 // ============================================================================
 // COGNITIVE LOAD TRACKING
@@ -19,16 +19,19 @@ export interface CognitiveLoadLogInput {
   interruption_count: number;
 }
 
-export async function logCognitiveLoad(input: CognitiveLoadLogInput): Promise<{ id: number }> {
+export async function logCognitiveLoad(
+  input: CognitiveLoadLogInput
+): Promise<{ id: number }> {
   const db = getDb();
   const user = await getCurrentUser();
 
   if (!user?.id) {
-    throw new Error("Authentication required");
+    throw new Error('Authentication required');
   }
 
   const result = db
-    .prepare(`
+    .prepare(
+      `
       INSERT INTO cognitive_load_logs
       (user_id, date, task_count, completed_count, avg_time_to_complete, energy_level, distraction_score, focus_blocks, interruption_count, created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
@@ -41,7 +44,8 @@ export async function logCognitiveLoad(input: CognitiveLoadLogInput): Promise<{ 
         focus_blocks = excluded.focus_blocks,
         interruption_count = excluded.interruption_count,
         updated_at = CURRENT_TIMESTAMP
-    `)
+    `
+    )
     .run(
       user.id,
       input.date,
@@ -57,12 +61,15 @@ export async function logCognitiveLoad(input: CognitiveLoadLogInput): Promise<{ 
   return { id: result.lastInsertRowid as number };
 }
 
-export async function getCognitiveLoadAnalysis(userId: number, days: number = 7): Promise<{
+export async function getCognitiveLoadAnalysis(
+  userId: number,
+  days: number = 7
+): Promise<{
   avgTaskCount: number;
   completionRate: number;
   avgEnergyLevel: number;
   distractionScore: number;
-  loadTrend: "increasing" | "stable" | "decreasing";
+  loadTrend: 'increasing' | 'stable' | 'decreasing';
   recommendations: string[];
 }> {
   const db = getDb();
@@ -71,17 +78,19 @@ export async function getCognitiveLoadAnalysis(userId: number, days: number = 7)
   cutoffDate.setDate(cutoffDate.getDate() - days);
 
   const logs = db
-    .prepare(`
+    .prepare(
+      `
       SELECT * FROM cognitive_load_logs
       WHERE user_id = ? AND date >= ?
       ORDER BY date DESC
-    `)
-    .all(userId, cutoffDate.toISOString().split("T")[0]) as Array<{
-      task_count: number;
-      completed_count: number;
-      energy_level: number | null;
-      distraction_score: number | null;
-    }>;
+    `
+    )
+    .all(userId, cutoffDate.toISOString().split('T')[0]) as Array<{
+    task_count: number;
+    completed_count: number;
+    energy_level: number | null;
+    distraction_score: number | null;
+  }>;
 
   if (logs.length === 0) {
     return {
@@ -89,48 +98,66 @@ export async function getCognitiveLoadAnalysis(userId: number, days: number = 7)
       completionRate: 0,
       avgEnergyLevel: 5,
       distractionScore: 0.5,
-      loadTrend: "stable",
-      recommendations: ["Start tracking your cognitive load to get personalized recommendations"]
+      loadTrend: 'stable',
+      recommendations: [
+        'Start tracking your cognitive load to get personalized recommendations',
+      ],
     };
   }
 
-  const avgTaskCount = logs.reduce((sum, l) => sum + l.task_count, 0) / logs.length;
+  const avgTaskCount =
+    logs.reduce((sum, l) => sum + l.task_count, 0) / logs.length;
   const totalCompleted = logs.reduce((sum, l) => sum + l.completed_count, 0);
   const totalTasks = logs.reduce((sum, l) => sum + l.task_count, 0);
   const completionRate = totalTasks > 0 ? totalCompleted / totalTasks : 0;
 
   const energyLevels = logs.map(l => l.energy_level ?? 5);
-  const avgEnergyLevel = energyLevels.length > 0 ? energyLevels.reduce((sum, e) => sum + e, 0) / energyLevels.length : 5;
+  const avgEnergyLevel =
+    energyLevels.length > 0
+      ? energyLevels.reduce((sum, e) => sum + e, 0) / energyLevels.length
+      : 5;
 
   const distractionScores = logs.map(l => l.distraction_score ?? 0.5);
-  const distractionScore = distractionScores.length > 0
-    ? distractionScores.reduce((sum, d) => sum + d, 0) / distractionScores.length
-    : 0.5;
+  const distractionScore =
+    distractionScores.length > 0
+      ? distractionScores.reduce((sum, d) => sum + d, 0) /
+        distractionScores.length
+      : 0.5;
 
   // Determine load trend
   const firstHalf = logs.slice(0, Math.floor(logs.length / 2));
   const secondHalf = logs.slice(Math.floor(logs.length / 2));
-  const firstAvg = firstHalf.reduce((sum, l) => sum + l.task_count, 0) / firstHalf.length;
-  const secondAvg = secondHalf.reduce((sum, l) => sum + l.task_count, 0) / secondHalf.length;
+  const firstAvg =
+    firstHalf.reduce((sum, l) => sum + l.task_count, 0) / firstHalf.length;
+  const secondAvg =
+    secondHalf.reduce((sum, l) => sum + l.task_count, 0) / secondHalf.length;
 
-  let loadTrend: "increasing" | "stable" | "decreasing" = "stable";
-  if (Math.abs(secondAvg - firstAvg) < 1) loadTrend = "stable";
-  else if (secondAvg > firstAvg) loadTrend = "increasing";
-  else loadTrend = "decreasing";
+  let loadTrend: 'increasing' | 'stable' | 'decreasing' = 'stable';
+  if (Math.abs(secondAvg - firstAvg) < 1) loadTrend = 'stable';
+  else if (secondAvg > firstAvg) loadTrend = 'increasing';
+  else loadTrend = 'decreasing';
 
   // Generate recommendations
   const recommendations: string[] = [];
   if (completionRate < 0.5) {
-    recommendations.push("Consider reducing daily task count to improve completion rate");
+    recommendations.push(
+      'Consider reducing daily task count to improve completion rate'
+    );
   }
   if (distractionScore > 0.7) {
-    recommendations.push("High distraction score detected - try focus blocks or DND mode");
+    recommendations.push(
+      'High distraction score detected - try focus blocks or DND mode'
+    );
   }
   if (avgEnergyLevel < 3) {
-    recommendations.push("Low energy levels - consider scheduling easier tasks");
+    recommendations.push(
+      'Low energy levels - consider scheduling easier tasks'
+    );
   }
   if (recommendations.length === 0) {
-    recommendations.push("Your cognitive load is well-balanced! Keep up the good work.");
+    recommendations.push(
+      'Your cognitive load is well-balanced! Keep up the good work.'
+    );
   }
 
   return {
@@ -139,7 +166,7 @@ export async function getCognitiveLoadAnalysis(userId: number, days: number = 7)
     avgEnergyLevel,
     distractionScore,
     loadTrend,
-    recommendations
+    recommendations,
   };
 }
 
@@ -163,27 +190,37 @@ export interface EnergyBudgetLogInput {
   }>;
 }
 
-export async function logEnergyBudget(input: EnergyBudgetLogInput): Promise<{ id: number; balance: number }> {
+export async function logEnergyBudget(
+  input: EnergyBudgetLogInput
+): Promise<{ id: number; balance: number }> {
   const db = getDb();
   const user = await getCurrentUser();
 
   if (!user?.id) {
-    throw new Error("Authentication required");
+    throw new Error('Authentication required');
   }
 
   // Get current balance
   const existing = db
-    .prepare("SELECT current_balance FROM energy_budget_logs WHERE user_id = ? AND date = ?")
+    .prepare(
+      'SELECT current_balance FROM energy_budget_logs WHERE user_id = ? AND date = ?'
+    )
     .get(user.id, input.date) as { current_balance: number } | undefined;
 
   const currentBalance = existing?.current_balance ?? 100;
   const prevBalance = existing ? (existing as any).energy_spent : 0;
   const energySpent = (input.energy_spent ?? 0) + prevBalance;
-  const energyRecovered = (input.energy_recovered ?? 0) + (existing ? (existing as any).energy_recovered : 0);
-  const newBalance = Math.max(0, Math.min(100, currentBalance - energySpent + energyRecovered));
+  const energyRecovered =
+    (input.energy_recovered ?? 0) +
+    (existing ? (existing as any).energy_recovered : 0);
+  const newBalance = Math.max(
+    0,
+    Math.min(100, currentBalance - energySpent + energyRecovered)
+  );
 
   const result = db
-    .prepare(`
+    .prepare(
+      `
       INSERT INTO energy_budget_logs
       (user_id, date, energy_spent, energy_recovered, current_balance, activities, recovery_activities, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
@@ -194,7 +231,8 @@ export async function logEnergyBudget(input: EnergyBudgetLogInput): Promise<{ id
         activities = excluded.activities,
         recovery_activities = excluded.recovery_activities,
         updated_at = CURRENT_TIMESTAMP
-    `)
+    `
+    )
     .run(
       user.id,
       input.date,
@@ -202,7 +240,9 @@ export async function logEnergyBudget(input: EnergyBudgetLogInput): Promise<{ id
       energyRecovered,
       newBalance,
       input.activities ? JSON.stringify(input.activities) : null,
-      input.recovery_activities ? JSON.stringify(input.recovery_activities) : null
+      input.recovery_activities
+        ? JSON.stringify(input.recovery_activities)
+        : null
     );
 
   return { id: result.lastInsertRowid as number, balance: newBalance };
@@ -219,35 +259,54 @@ export async function getEnergyBudget(date: string): Promise<{
   const user = await getCurrentUser();
 
   if (!user?.id) {
-    return { balance: 100, spent: 0, recovered: 0, dailyLimit: 100, percentageUsed: 0 };
+    return {
+      balance: 100,
+      spent: 0,
+      recovered: 0,
+      dailyLimit: 100,
+      percentageUsed: 0,
+    };
   }
 
   const connection = db
-    .prepare(`
+    .prepare(
+      `
       SELECT e.current_balance, e.energy_spent, e.energy_recovered, u.energy_budget_daily
       FROM energy_budget_logs e
       JOIN user_energy_profiles u ON e.user_id = u.user_id
       WHERE e.user_id = ? AND e.date = ?
-    `)
-    .get(user.id, date) as {
-      current_balance: number;
-      energy_spent: number;
-      energy_recovered: number;
-      energy_budget_daily: number;
-    } | undefined;
+    `
+    )
+    .get(user.id, date) as
+    | {
+        current_balance: number;
+        energy_spent: number;
+        energy_recovered: number;
+        energy_budget_daily: number;
+      }
+    | undefined;
 
   if (!connection) {
-    return { balance: 100, spent: 0, recovered: 0, dailyLimit: 100, percentageUsed: 0 };
+    return {
+      balance: 100,
+      spent: 0,
+      recovered: 0,
+      dailyLimit: 100,
+      percentageUsed: 0,
+    };
   }
 
-  const percentageUsed = ((connection.energy_budget_daily - connection.current_balance) / connection.energy_budget_daily) * 100;
+  const percentageUsed =
+    ((connection.energy_budget_daily - connection.current_balance) /
+      connection.energy_budget_daily) *
+    100;
 
   return {
     balance: connection.current_balance,
     spent: connection.energy_spent ?? 0,
     recovered: connection.energy_recovered ?? 0,
     dailyLimit: connection.energy_budget_daily,
-    percentageUsed: Math.round(percentageUsed)
+    percentageUsed: Math.round(percentageUsed),
   };
 }
 
@@ -283,22 +342,26 @@ export async function getEnergyProfile(): Promise<{
   if (!user?.id) return null;
 
   const profile = db
-    .prepare(`
+    .prepare(
+      `
       SELECT pe.*, e.current_balance, e.date as current_date
       FROM user_energy_profiles pe
       LEFT JOIN energy_budget_logs e ON pe.user_id = e.user_id AND e.date = ?
       WHERE pe.user_id = ?
-    `)
-    .get(new Date().toISOString().split("T")[0], user.id) as {
-      wake_hour: number;
-      sleep_hour: number;
-      work_start_hour: number;
-      work_end_hour: number;
-      peak_energy_times: string;
-      energy_levels: string;
-      energy_budget_daily: number;
-      current_balance: number;
-    } | undefined;
+    `
+    )
+    .get(new Date().toISOString().split('T')[0], user.id) as
+    | {
+        wake_hour: number;
+        sleep_hour: number;
+        work_start_hour: number;
+        work_end_hour: number;
+        peak_energy_times: string;
+        energy_levels: string;
+        energy_budget_daily: number;
+        current_balance: number;
+      }
+    | undefined;
 
   if (!profile) return null;
 
@@ -306,31 +369,33 @@ export async function getEnergyProfile(): Promise<{
     wake_hour: profile.wake_hour,
     sleep_hour: profile.sleep_hour,
     work_hours: { start: profile.work_start_hour, end: profile.work_end_hour },
-    peak_energy_times: JSON.parse(profile.peak_energy_times || "[]"),
-    energy_levels: JSON.parse(profile.energy_levels || "[]"),
+    peak_energy_times: JSON.parse(profile.peak_energy_times || '[]'),
+    energy_levels: JSON.parse(profile.energy_levels || '[]'),
     energy_budget: {
       daily: profile.energy_budget_daily,
-      balance: profile.current_balance ?? profile.energy_budget_daily
-    }
+      balance: profile.current_balance ?? profile.energy_budget_daily,
+    },
   };
 }
 
-export async function upsertEnergyProfile(input: EnergyProfileInput): Promise<void> {
+export async function upsertEnergyProfile(
+  input: EnergyProfileInput
+): Promise<void> {
   const db = getDb();
   const user = await getCurrentUser();
 
   if (!user?.id) {
-    throw new Error("Authentication required");
+    throw new Error('Authentication required');
   }
 
   // Check if profile exists
   const existing = db
-    .prepare("SELECT id FROM user_energy_profiles WHERE user_id = ?")
+    .prepare('SELECT id FROM user_energy_profiles WHERE user_id = ?')
     .get(user.id);
 
   if (existing) {
-    db
-      .prepare(`
+    db.prepare(
+      `
         UPDATE user_energy_profiles SET
           wake_hour = COALESCE(?, wake_hour),
           sleep_hour = COALESCE(?, sleep_hour),
@@ -345,42 +410,46 @@ export async function upsertEnergyProfile(input: EnergyProfileInput): Promise<vo
           recovery_activities = COALESCE(?, recovery_activities),
           updated_at = CURRENT_TIMESTAMP
         WHERE user_id = ?
-      `)
-      .run(
-        input.wake_hour,
-        input.sleep_hour,
-        input.work_start_hour,
-        input.work_end_hour,
-        input.peak_energy_times ? JSON.stringify(input.peak_energy_times) : null,
-        input.energy_levels ? JSON.stringify(input.energy_levels) : null,
-        input.fatigue_sensitivity,
-        input.recovery_time_minutes,
-        input.preferred_break_duration,
-        input.energy_budget_daily,
-        input.recovery_activities ? JSON.stringify(input.recovery_activities) : null,
-        user.id
-      );
+      `
+    ).run(
+      input.wake_hour,
+      input.sleep_hour,
+      input.work_start_hour,
+      input.work_end_hour,
+      input.peak_energy_times ? JSON.stringify(input.peak_energy_times) : null,
+      input.energy_levels ? JSON.stringify(input.energy_levels) : null,
+      input.fatigue_sensitivity,
+      input.recovery_time_minutes,
+      input.preferred_break_duration,
+      input.energy_budget_daily,
+      input.recovery_activities
+        ? JSON.stringify(input.recovery_activities)
+        : null,
+      user.id
+    );
   } else {
-    db
-      .prepare(`
+    db.prepare(
+      `
         INSERT INTO user_energy_profiles
         (user_id, wake_hour, sleep_hour, work_start_hour, work_end_hour, peak_energy_times, energy_levels, fatigue_sensitivity, recovery_time_minutes, preferred_break_duration, energy_budget_daily, recovery_activities, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-      `)
-      .run(
-        user.id,
-        input.wake_hour ?? 7,
-        input.sleep_hour ?? 23,
-        input.work_start_hour ?? 9,
-        input.work_end_hour ?? 17,
-        input.peak_energy_times ? JSON.stringify(input.peak_energy_times) : null,
-        input.energy_levels ? JSON.stringify(input.energy_levels) : null,
-        input.fatigue_sensitivity ?? 5,
-        input.recovery_time_minutes ?? 15,
-        input.preferred_break_duration ?? 5,
-        input.energy_budget_daily ?? 100,
-        input.recovery_activities ? JSON.stringify(input.recovery_activities) : null
-      );
+      `
+    ).run(
+      user.id,
+      input.wake_hour ?? 7,
+      input.sleep_hour ?? 23,
+      input.work_start_hour ?? 9,
+      input.work_end_hour ?? 17,
+      input.peak_energy_times ? JSON.stringify(input.peak_energy_times) : null,
+      input.energy_levels ? JSON.stringify(input.energy_levels) : null,
+      input.fatigue_sensitivity ?? 5,
+      input.recovery_time_minutes ?? 15,
+      input.preferred_break_duration ?? 5,
+      input.energy_budget_daily ?? 100,
+      input.recovery_activities
+        ? JSON.stringify(input.recovery_activities)
+        : null
+    );
   }
 }
 
@@ -391,26 +460,31 @@ export async function upsertEnergyProfile(input: EnergyProfileInput): Promise<vo
 export interface SyncConnectionInput {
   app_type: string;
   app_name: string;
-  sync_direction: "import" | "export" | "bidirectional";
+  sync_direction: 'import' | 'export' | 'bidirectional';
   sync_frequency_minutes?: number;
   field_mappings?: Record<string, string>;
-  conflict_resolution?: "prefer_latest" | "prefer_local" | "prefer_remote" | "prompt_user";
+  conflict_resolution?:
+    'prefer_latest' | 'prefer_local' | 'prefer_remote' | 'prompt_user';
 }
 
-export async function createSyncConnection(input: SyncConnectionInput): Promise<{ id: number }> {
+export async function createSyncConnection(
+  input: SyncConnectionInput
+): Promise<{ id: number }> {
   const db = getDb();
   const user = await getCurrentUser();
 
   if (!user?.id) {
-    throw new Error("Authentication required");
+    throw new Error('Authentication required');
   }
 
   const result = db
-    .prepare(`
+    .prepare(
+      `
       INSERT INTO cross_app_sync_connections
       (user_id, app_type, app_name, sync_direction, sync_frequency_minutes, field_mappings, conflict_resolution_strategy, enabled, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-    `)
+    `
+    )
     .run(
       user.id,
       input.app_type,
@@ -418,24 +492,26 @@ export async function createSyncConnection(input: SyncConnectionInput): Promise<
       input.sync_direction,
       input.sync_frequency_minutes ?? 60,
       input.field_mappings ? JSON.stringify(input.field_mappings) : null,
-      input.conflict_resolution ?? "prefer_latest"
+      input.conflict_resolution ?? 'prefer_latest'
     );
 
   return { id: result.lastInsertRowid as number };
 }
 
-export async function getExternalTasks(status: string = "pending"): Promise<Array<{
-  id: number;
-  external_id: string;
-  external_app_type: string;
-  title: string;
-  description: string | null;
-  due_date: string | null;
-  priority: string;
-  confidence: number;
-  energy_cost_estimate: number;
-  created_at: string;
-}>> {
+export async function getExternalTasks(status: string = 'pending'): Promise<
+  Array<{
+    id: number;
+    external_id: string;
+    external_app_type: string;
+    title: string;
+    description: string | null;
+    due_date: string | null;
+    priority: string;
+    confidence: number;
+    energy_cost_estimate: number;
+    created_at: string;
+  }>
+> {
   const db = getDb();
   const user = await getCurrentUser();
 
@@ -444,57 +520,65 @@ export async function getExternalTasks(status: string = "pending"): Promise<Arra
   }
 
   return db
-    .prepare(`
+    .prepare(
+      `
       SELECT * FROM external_tasks
       WHERE user_id = ? AND status = ?
       ORDER BY priority DESC, due_date ASC
-    `)
+    `
+    )
     .all(user.id, status) as Array<{
-      id: number;
-      external_id: string;
-      external_app_type: string;
-      title: string;
-      description: string | null;
-      due_date: string | null;
-      priority: string;
-      confidence: number;
-      energy_cost_estimate: number;
-      created_at: string;
-    }>;
+    id: number;
+    external_id: string;
+    external_app_type: string;
+    title: string;
+    description: string | null;
+    due_date: string | null;
+    priority: string;
+    confidence: number;
+    energy_cost_estimate: number;
+    created_at: string;
+  }>;
 }
 
-export async function convertExternalTaskToTask(externalTaskId: number): Promise<{ taskId: number; taskName: string }> {
+export async function convertExternalTaskToTask(
+  externalTaskId: number
+): Promise<{ taskId: number; taskName: string }> {
   const db = getDb();
   const user = await getCurrentUser();
 
   if (!user?.id) {
-    throw new Error("Authentication required");
+    throw new Error('Authentication required');
   }
 
   // Get external task
   const externalTask = db
-    .prepare("SELECT * FROM external_tasks WHERE id = ? AND user_id = ?")
-    .get(externalTaskId, user.id) as {
-      id: number;
-      title: string;
-      description: string | null;
-      due_date: string | null;
-      priority: string;
-      energy_cost_estimate: number;
-    } | undefined;
+    .prepare('SELECT * FROM external_tasks WHERE id = ? AND user_id = ?')
+    .get(externalTaskId, user.id) as
+    | {
+        id: number;
+        title: string;
+        description: string | null;
+        due_date: string | null;
+        priority: string;
+        energy_cost_estimate: number;
+      }
+    | undefined;
 
   if (!externalTask) {
-    throw new Error("External task not found");
+    throw new Error('External task not found');
   }
 
   // Import into tasks table
   const result = db
-    .prepare(`
+    .prepare(
+      `
       INSERT INTO tasks
       (user_id, name, description, date, deadline, priority, recurring, completed, created_at, updated_at, sort_order)
       VALUES (?, ?, ?, ?, ?, ?, 'none', 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP,
         (SELECT IFNULL(MAX(sort_order), -1) + 1 FROM tasks WHERE user_id = ?))
-    `)
+    `
+    )
     .run(
       user.id,
       externalTask.title,
@@ -507,13 +591,13 @@ export async function convertExternalTaskToTask(externalTaskId: number): Promise
   const taskId = result.lastInsertRowid as number;
 
   // Update external task
-  db
-    .prepare(`
+  db.prepare(
+    `
       UPDATE external_tasks
       SET status = 'converted', local_task_id = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
-    `)
-    .run(taskId, externalTaskId);
+    `
+  ).run(taskId, externalTaskId);
 
   return { taskId, taskName: externalTask.title };
 }
@@ -524,7 +608,14 @@ export async function convertExternalTaskToTask(externalTaskId: number): Promise
 
 export interface DecisionShadowInput {
   parent_task_id?: number;
-  decision_type: "priority" | "approach" | "tool" | "timeline" | "allocation" | "cancellation" | "feature";
+  decision_type:
+    | 'priority'
+    | 'approach'
+    | 'tool'
+    | 'timeline'
+    | 'allocation'
+    | 'cancellation'
+    | 'feature';
   question: string;
   chosen_option_id?: number;
   chosen_option_text: string;
@@ -543,22 +634,26 @@ export interface DecisionShadowInput {
   context_tags?: string[];
 }
 
-export async function createDecisionShadow(input: DecisionShadowInput): Promise<{ id: number }> {
+export async function createDecisionShadow(
+  input: DecisionShadowInput
+): Promise<{ id: number }> {
   const db = getDb();
   const user = await getCurrentUser();
 
   if (!user?.id) {
-    throw new Error("Authentication required");
+    throw new Error('Authentication required');
   }
 
   // Create decision shadow record
   const result = db
-    .prepare(`
+    .prepare(
+      `
       INSERT INTO decision_shadows
       (user_id, parent_task_id, decision_type, question, chosen_option_id, chosen_option_text, rationale,
        opportunity_cost, outcome, outcome_rating, alternative_options, time_spent_minutes, context_tags, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-    `)
+    `
+    )
     .run(
       user.id,
       input.parent_task_id ?? null,
@@ -570,7 +665,9 @@ export async function createDecisionShadow(input: DecisionShadowInput): Promise<
       input.opportunity_cost ?? null,
       input.outcome ?? null,
       input.outcome_rating ?? null,
-      input.alternative_options ? JSON.stringify(input.alternative_options) : null,
+      input.alternative_options
+        ? JSON.stringify(input.alternative_options)
+        : null,
       input.time_spent_minutes ?? 0,
       input.context_tags ? JSON.stringify(input.context_tags) : null
     );
@@ -584,20 +681,20 @@ export async function createDecisionShadow(input: DecisionShadowInput): Promise<
       const isChosen = option.option_text === input.chosen_option_text;
 
       if (!isChosen) {
-        db
-          .prepare(`
+        db.prepare(
+          `
             INSERT INTO decision_options
             (decision_shadow_id, option_text, pros, cons, estimated_impact, estimated_effort, was_chosen, created_at)
             VALUES (?, ?, ?, ?, ?, ?, 0, CURRENT_TIMESTAMP)
-          `)
-          .run(
-            decisionShadowId,
-            option.option_text,
-            option.pros ? JSON.stringify(option.pros) : null,
-            option.cons ? JSON.stringify(option.cons) : null,
-            option.estimated_impact ?? null,
-            option.estimated_effort ?? null
-          );
+          `
+        ).run(
+          decisionShadowId,
+          option.option_text,
+          option.pros ? JSON.stringify(option.pros) : null,
+          option.cons ? JSON.stringify(option.cons) : null,
+          option.estimated_impact ?? null,
+          option.estimated_effort ?? null
+        );
       }
     }
   }
@@ -605,42 +702,52 @@ export async function createDecisionShadow(input: DecisionShadowInput): Promise<
   return { id: decisionShadowId };
 }
 
-export async function getDecisions(userId: number, limit: number = 50): Promise<Array<{
-  id: number;
-  decision_type: string;
-  question: string;
-  chosen_option_text: string;
-  rationale: string;
-  outcome?: string | null;
-  outcome_rating?: number | null;
-  created_at: string;
-  updated_at?: string | null;
-}>> {
+export async function getDecisions(
+  userId: number,
+  limit: number = 50
+): Promise<
+  Array<{
+    id: number;
+    decision_type: string;
+    question: string;
+    chosen_option_text: string;
+    rationale: string;
+    outcome?: string | null;
+    outcome_rating?: number | null;
+    created_at: string;
+    updated_at?: string | null;
+  }>
+> {
   const db = getDb();
 
   return db
-    .prepare(`
+    .prepare(
+      `
       SELECT id, decision_type, question, chosen_option_text, rationale,
              outcome, outcome_rating, created_at, updated_at
       FROM decision_shadows
       WHERE user_id = ?
       ORDER BY created_at DESC
       LIMIT ?
-    `)
+    `
+    )
     .all(userId, limit) as Array<{
-      id: number;
-      decision_type: string;
-      question: string;
-      chosen_option_text: string;
-      rationale: string;
-      outcome: string | null;
-      outcome_rating: number | null;
-      created_at: string;
-      updated_at: string | null;
-    }>;
+    id: number;
+    decision_type: string;
+    question: string;
+    chosen_option_text: string;
+    rationale: string;
+    outcome: string | null;
+    outcome_rating: number | null;
+    created_at: string;
+    updated_at: string | null;
+  }>;
 }
 
-export async function getDecisionAnalysis(userId: number, limit: number = 20): Promise<{
+export async function getDecisionAnalysis(
+  userId: number,
+  limit: number = 20
+): Promise<{
   totalDecisions: number;
   avgOutcomeRating: number;
   decisionTypes: Array<{ type: string; count: number; avgRating: number }>;
@@ -649,26 +756,34 @@ export async function getDecisionAnalysis(userId: number, limit: number = 20): P
   const db = getDb();
 
   const decisions = db
-    .prepare(`
+    .prepare(
+      `
       SELECT decision_type, outcome_rating FROM decision_shadows
       WHERE user_id = ?
       ORDER BY created_at DESC
       LIMIT ?
-    `)
-    .all(userId, limit) as Array<{ decision_type: string; outcome_rating: number | null }>;
+    `
+    )
+    .all(userId, limit) as Array<{
+    decision_type: string;
+    outcome_rating: number | null;
+  }>;
 
   if (decisions.length === 0) {
     return {
       totalDecisions: 0,
       avgOutcomeRating: 0,
       decisionTypes: [],
-      patternAnalysis: []
+      patternAnalysis: [],
     };
   }
 
   const totalDecisions = decisions.length;
   const ratings = decisions.map(d => d.outcome_rating ?? 0);
-  const avgOutcomeRating = ratings.length > 0 ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0;
+  const avgOutcomeRating =
+    ratings.length > 0
+      ? ratings.reduce((a, b) => a + b, 0) / ratings.length
+      : 0;
 
   const typeStats: Record<string, { count: number; ratings: number[] }> = {};
   for (const d of decisions) {
@@ -684,16 +799,22 @@ export async function getDecisionAnalysis(userId: number, limit: number = 20): P
   const decisionTypes = Object.entries(typeStats).map(([type, stats]) => ({
     type,
     count: stats.count,
-    avgRating: stats.ratings.length > 0 ? stats.ratings.reduce((a, b) => a + b, 0) / stats.ratings.length : 0
+    avgRating:
+      stats.ratings.length > 0
+        ? stats.ratings.reduce((a, b) => a + b, 0) / stats.ratings.length
+        : 0,
   }));
 
-  const patternAnalysis = generateDecisionPatterns(decisionTypes, avgOutcomeRating);
+  const patternAnalysis = generateDecisionPatterns(
+    decisionTypes,
+    avgOutcomeRating
+  );
 
   return {
     totalDecisions,
     avgOutcomeRating,
     decisionTypes,
-    patternAnalysis
+    patternAnalysis,
   };
 }
 
@@ -707,8 +828,9 @@ function generateDecisionPatterns(
   const poorDecisions = decisionTypes.filter(t => t.avgRating < 0);
   if (poorDecisions.length > 0) {
     patterns.push({
-      pattern: `Low-rated decisions in: ${poorDecisions.map(t => t.type).join(", ")}`,
-      recommendation: "Consider gathering more information before making these decisions"
+      pattern: `Low-rated decisions in: ${poorDecisions.map(t => t.type).join(', ')}`,
+      recommendation:
+        'Consider gathering more information before making these decisions',
     });
   }
 
@@ -716,16 +838,17 @@ function generateDecisionPatterns(
   const totalDecisions = decisionTypes.reduce((sum, t) => sum + t.count, 0);
   if (totalDecisions > 50) {
     patterns.push({
-      pattern: "High decision volume detected",
-      recommendation: "Consider batching similar decisions or setting decision quotas"
+      pattern: 'High decision volume detected',
+      recommendation:
+        'Consider batching similar decisions or setting decision quotas',
     });
   }
 
   // General pattern if no issues
   if (patterns.length === 0) {
     patterns.push({
-      pattern: "Decision quality is good",
-      recommendation: "Continue your current decision-making approach"
+      pattern: 'Decision quality is good',
+      recommendation: 'Continue your current decision-making approach',
     });
   }
 
@@ -746,19 +869,22 @@ export interface MoodContextInput {
   tasks_filtered?: number[];
 }
 
-export async function logMoodContext(input: MoodContextInput): Promise<{ id: number }> {
+export async function logMoodContext(
+  input: MoodContextInput
+): Promise<{ id: number }> {
   const db = getDb();
   const user = await getCurrentUser();
 
   if (!user?.id) {
-    throw new Error("Authentication required");
+    throw new Error('Authentication required');
   }
 
   // Assess based on mood state and suggest relevant tasks
   const tasksToHighlight: number[] = input.tasks_filtered ?? [];
 
   const result = db
-    .prepare(`
+    .prepare(
+      `
       INSERT INTO mood_contexts
       (user_id, date, mood, energy, stress, focus, notes, tasks_filtered, created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
@@ -770,7 +896,8 @@ export async function logMoodContext(input: MoodContextInput): Promise<{ id: num
         notes = excluded.notes,
         tasks_filtered = excluded.tasks_filtered,
         updated_at = CURRENT_TIMESTAMP
-    `)
+    `
+    )
     .run(
       user.id,
       input.date,
@@ -785,7 +912,10 @@ export async function logMoodContext(input: MoodContextInput): Promise<{ id: num
   return { id: result.lastInsertRowid as number };
 }
 
-export async function getMoodBasedTaskRecommendations(userId: number, date: string): Promise<{
+export async function getMoodBasedTaskRecommendations(
+  userId: number,
+  date: string
+): Promise<{
   recommendedTaskIds: number[];
   reasoning: string;
   energyAdjustment: number;
@@ -794,63 +924,80 @@ export async function getMoodBasedTaskRecommendations(userId: number, date: stri
   const user = await getCurrentUser();
 
   if (!user?.id) {
-    return { recommendedTaskIds: [], reasoning: "No mood data available", energyAdjustment: 0 };
+    return {
+      recommendedTaskIds: [],
+      reasoning: 'No mood data available',
+      energyAdjustment: 0,
+    };
   }
 
   const mood = db
-    .prepare("SELECT * FROM mood_contexts WHERE user_id = ? AND date = ?")
-    .get(userId, date) as {
-      mood: number;
-      energy: number;
-      stress: number;
-      focus: number;
-    } | undefined;
+    .prepare('SELECT * FROM mood_contexts WHERE user_id = ? AND date = ?')
+    .get(userId, date) as
+    | {
+        mood: number;
+        energy: number;
+        stress: number;
+        focus: number;
+      }
+    | undefined;
 
   if (!mood) {
-    return { recommendedTaskIds: [], reasoning: "No mood data for today", energyAdjustment: 0 };
+    return {
+      recommendedTaskIds: [],
+      reasoning: 'No mood data for today',
+      energyAdjustment: 0,
+    };
   }
 
   // Get tasks for the day
   const tasks = db
-    .prepare("SELECT id, priority, estimate FROM tasks WHERE user_id = ? AND date = ?")
-    .all(userId, date) as Array<{ id: number; priority: string; estimate: string | null }>;
+    .prepare(
+      'SELECT id, priority, estimate FROM tasks WHERE user_id = ? AND date = ?'
+    )
+    .all(userId, date) as Array<{
+    id: number;
+    priority: string;
+    estimate: string | null;
+  }>;
 
   let recommendedTaskIds: number[] = [];
-  let reasoning = "";
+  let reasoning = '';
   let energyAdjustment = 0;
 
   if (mood.mood >= 4 && mood.energy >= 4) {
     // High energy - recommend challenging tasks
     recommendedTaskIds = tasks
-      .filter(t => t.priority === "critical" || t.priority === "high")
+      .filter(t => t.priority === 'critical' || t.priority === 'high')
       .map(t => t.id);
-    reasoning = "High energy detected - tackle challenging tasks";
+    reasoning = 'High energy detected - tackle challenging tasks';
     energyAdjustment = 1;
   } else if (mood.mood <= 2 || mood.energy <= 2) {
     // Low energy - recommend easier tasks
     recommendedTaskIds = tasks
-      .filter(t => t.priority === "low" || t.priority === "none")
+      .filter(t => t.priority === 'low' || t.priority === 'none')
       .map(t => t.id);
-    reasoning = "Lower energy detected - focus on easier, routine tasks";
+    reasoning = 'Lower energy detected - focus on easier, routine tasks';
     energyAdjustment = -1;
   } else {
     // Medium energy - recommend medium priority tasks
     recommendedTaskIds = tasks
-      .filter(t => t.priority === "medium")
+      .filter(t => t.priority === 'medium')
       .map(t => t.id);
-    reasoning = "Moderate energy - work on medium priority tasks";
+    reasoning = 'Moderate energy - work on medium priority tasks';
     energyAdjustment = 0;
   }
 
   // If stress is high, recommend breaks or calming activities
   if (mood.stress >= 4) {
-    reasoning += ". High stress detected - consider taking a break before starting";
+    reasoning +=
+      '. High stress detected - consider taking a break before starting';
   }
 
   return {
     recommendedTaskIds,
     reasoning,
-    energyAdjustment
+    energyAdjustment,
   };
 }
 
@@ -858,21 +1005,23 @@ export async function getMoodBasedTaskRecommendations(userId: number, date: stri
 // UTILITY FUNCTIONS
 // ============================================================================
 
-export async function estimateEnergyCost(task: TaskWithRelations): Promise<number> {
+export async function estimateEnergyCost(
+  task: TaskWithRelations
+): Promise<number> {
   // Base cost calculation
   const priorityWeights: Record<string, number> = {
     critical: 15,
     high: 10,
     medium: 5,
     low: 2,
-    none: 1
+    none: 1,
   };
 
   let cost = priorityWeights[task.priority] || 5;
 
   // Add cost for complexity
   if (task.estimate) {
-    const hours = parseFloat(task.estimate.replace(":", ".")) || 0;
+    const hours = parseFloat(task.estimate.replace(':', '.')) || 0;
     cost += Math.min(hours * 2, 15); // Cap at 15 for very long tasks
   }
 
