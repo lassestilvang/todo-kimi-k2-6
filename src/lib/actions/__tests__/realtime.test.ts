@@ -1,21 +1,29 @@
-import { describe, it, expect, beforeEach, afterEach, vi, afterAll } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  vi,
+  afterAll,
+} from 'vitest';
 
 // Mock modules
-vi.mock("@/lib/db", () => ({
+vi.mock('@/lib/db', () => ({
   getDb: vi.fn(),
 }));
 
-vi.mock("@/lib/activity-logger", () => ({
+vi.mock('@/lib/activity-logger', () => ({
   createActivityLog: vi.fn().mockResolvedValue({
     id: 1,
-    action: "test",
-    entity_type: "task",
+    action: 'test',
+    entity_type: 'task',
     created_at: new Date().toISOString(),
   }),
   type: {},
 }));
 
-vi.mock("@/lib/logger", () => ({
+vi.mock('@/lib/logger', () => ({
   logger: {
     info: vi.fn(),
     error: vi.fn(),
@@ -25,17 +33,17 @@ vi.mock("@/lib/logger", () => ({
 }));
 
 // Mock ws-server to simulate import error (tests line 89 - WebSocket broadcast skipped)
-vi.mock("@/lib/ws-server", () => {
-  throw new Error("WebSocket server not available");
+vi.mock('@/lib/ws-server', () => {
+  throw new Error('WebSocket server not available');
 });
 
-import { getDb } from "@/lib/db";
-import { createActivityLog } from "@/lib/activity-logger";
+import { getDb } from '@/lib/db';
+import { createActivityLog } from '@/lib/activity-logger';
 
 // Store original module to reset state
 let realtimeModule: any;
 
-describe("Real-time Actions", () => {
+describe('Real-time Actions', () => {
   let mockDb: any;
 
   beforeEach(() => {
@@ -62,43 +70,46 @@ describe("Real-time Actions", () => {
     }
   });
 
-  describe("broadcastTaskUpdate", () => {
-    it("should return early if task not found", async () => {
+  describe('broadcastTaskUpdate', () => {
+    it('should return early if task not found', async () => {
       mockDb.get.mockReturnValue(undefined); // No task found
 
-      const { broadcastTaskUpdate } = await import("../realtime");
-      await broadcastTaskUpdate(999, 1, { name: "Test" }, "updated");
+      const { broadcastTaskUpdate } = await import('../realtime');
+      await broadcastTaskUpdate(999, 1, { name: 'Test' }, 'updated');
 
       expect(mockDb.prepare).toHaveBeenCalled();
     });
 
-    it("should log activity for task updates", async () => {
-      mockDb.get.mockReturnValue({ id: 1, name: "Test Task", user_id: 1 });
-      mockDb.all.mockReturnValue([{ userId: 1, userName: "Test User", email: "test@example.com" }]);
+    it('should log activity for task updates', async () => {
+      mockDb.get.mockReturnValue({ id: 1, name: 'Test Task', user_id: 1 });
+      mockDb.all.mockReturnValue([
+        { userId: 1, userName: 'Test User', email: 'test@example.com' },
+      ]);
 
-      const { broadcastTaskUpdate } = await import("../realtime");
-      await broadcastTaskUpdate(1, 1, { name: "Task" }, "created");
+      const { broadcastTaskUpdate } = await import('../realtime');
+      await broadcastTaskUpdate(1, 1, { name: 'Task' }, 'created');
 
       expect(createActivityLog).toHaveBeenCalled();
     });
 
-    it("should handle errors during broadcast (lines 101-104)", async () => {
+    it('should handle errors during broadcast (lines 101-104)', async () => {
       // Mock db.get to throw an error to test error handling path
       mockDb.get.mockImplementation(() => {
-        throw new Error("Database error");
+        throw new Error('Database error');
       });
 
-      const { broadcastTaskUpdate } = await import("../realtime");
+      const { broadcastTaskUpdate } = await import('../realtime');
 
       await expect(
-        broadcastTaskUpdate(1, 1, { name: "Task" }, "updated")
-      ).rejects.toThrow("Database error");
+        broadcastTaskUpdate(1, 1, { name: 'Task' }, 'updated')
+      ).rejects.toThrow('Database error');
     });
   });
 
-  describe("subscribeToTask / unsubscribeFromTask", () => {
-    it("should subscribe user to task channel", async () => {
-      const { subscribeToTask, getTaskSubscribers, unsubscribeFromTask } = await import("../realtime");
+  describe('subscribeToTask / unsubscribeFromTask', () => {
+    it('should subscribe user to task channel', async () => {
+      const { subscribeToTask, getTaskSubscribers, unsubscribeFromTask } =
+        await import('../realtime');
 
       await subscribeToTask(1, 1);
       const subscribers = await getTaskSubscribers(1);
@@ -108,8 +119,9 @@ describe("Real-time Actions", () => {
       await unsubscribeFromTask(1, 1);
     });
 
-    it("should unsubscribe user from task channel", async () => {
-      const { subscribeToTask, unsubscribeFromTask, getTaskSubscribers } = await import("../realtime");
+    it('should unsubscribe user from task channel', async () => {
+      const { subscribeToTask, unsubscribeFromTask, getTaskSubscribers } =
+        await import('../realtime');
 
       await subscribeToTask(1, 2);
       await unsubscribeFromTask(2, 1);
@@ -118,22 +130,22 @@ describe("Real-time Actions", () => {
     });
   });
 
-  describe("canEditTask", () => {
-    it("should return false for non-existent task", async () => {
+  describe('canEditTask', () => {
+    it('should return false for non-existent task', async () => {
       mockDb.get.mockReturnValue(undefined);
 
-      const { canEditTask } = await import("../realtime");
+      const { canEditTask } = await import('../realtime');
       const result = await canEditTask(1, 999);
       expect(result).toBe(false);
     });
 
-    it("should return true for task owner", async () => {
+    it('should return true for task owner', async () => {
       // User 1 owns task 1
       mockDb.get
         .mockReturnValueOnce({ user_id: 1 }) // Task owned by user 1
         .mockReturnValueOnce(null); // No share needed for owner
 
-      const { canEditTask } = await import("../realtime");
+      const { canEditTask } = await import('../realtime');
       const result = await canEditTask(1, 1);
       expect(result).toBe(true);
     });
@@ -144,38 +156,43 @@ describe("Real-time Actions", () => {
         .mockReturnValueOnce({ user_id: 2 }) // Task owned by user 2, not user 1
         .mockReturnValueOnce(undefined); // No share found
 
-      const { canEditTask } = await import("../realtime");
+      const { canEditTask } = await import('../realtime');
       // userId=1 trying to edit taskId=1 owned by user 2
       const result = await canEditTask(1, 1);
       expect(result).toBe(false);
     });
 
-    it("should return true for user with edit permission", async () => {
+    it('should return true for user with edit permission', async () => {
       // User 1 does NOT own task 1 (owned by user 2)
       mockDb.get
         .mockReturnValueOnce({ user_id: 2 }) // Task owned by user 2
-        .mockReturnValueOnce({ permission: "edit" }); // User 1 has edit permission
+        .mockReturnValueOnce({ permission: 'edit' }); // User 1 has edit permission
 
-      const { canEditTask } = await import("../realtime");
+      const { canEditTask } = await import('../realtime');
       const result = await canEditTask(1, 1); // userId=1, taskId=1
       expect(result).toBe(true);
     });
 
-    it("should return false for user with only view permission", async () => {
+    it('should return false for user with only view permission', async () => {
       // User 1 does NOT own task 1 (owned by user 2)
       mockDb.get
         .mockReturnValueOnce({ user_id: 2 }) // Task owned by user 2
-        .mockReturnValueOnce({ permission: "view" }); // User 1 has view permission only
+        .mockReturnValueOnce({ permission: 'view' }); // User 1 has view permission only
 
-      const { canEditTask } = await import("../realtime");
+      const { canEditTask } = await import('../realtime');
       const result = await canEditTask(1, 1); // userId=1, taskId=1
       expect(result).toBe(false);
     });
   });
 
-  describe("Monitoring functions", () => {
-    it("should track channel count after subscriptions", async () => {
-      const { getActiveChannelCount, getTotalSubscriberCount, subscribeToTask, unsubscribeFromTask } = await import("../realtime");
+  describe('Monitoring functions', () => {
+    it('should track channel count after subscriptions', async () => {
+      const {
+        getActiveChannelCount,
+        getTotalSubscriberCount,
+        subscribeToTask,
+        unsubscribeFromTask,
+      } = await import('../realtime');
 
       const initialCount = await getActiveChannelCount();
       await subscribeToTask(100, 200);
@@ -186,98 +203,110 @@ describe("Real-time Actions", () => {
       await unsubscribeFromTask(200, 100);
     });
 
-    it("should return total subscriber count", async () => {
-      const { getTotalSubscriberCount } = await import("../realtime");
+    it('should return total subscriber count', async () => {
+      const { getTotalSubscriberCount } = await import('../realtime');
       const count = await getTotalSubscriberCount();
-      expect(typeof count).toBe("number");
+      expect(typeof count).toBe('number');
     });
   });
 
-  describe("logActivity", () => {
-    it("should delegate to createActivityLog (line 112)", async () => {
-      const { logActivity } = await import("../realtime");
+  describe('logActivity', () => {
+    it('should delegate to createActivityLog (line 112)', async () => {
+      const { logActivity } = await import('../realtime');
       await logActivity({
-        action: "task_created",
-        entity_type: "task",
-        details: "Test activity",
+        action: 'task_created',
+        entity_type: 'task',
+        details: 'Test activity',
       });
 
       expect(createActivityLog).toHaveBeenCalledWith({
-        action: "task_created",
-        entity_type: "task",
-        details: "Test activity",
+        action: 'task_created',
+        entity_type: 'task',
+        details: 'Test activity',
       });
     });
   });
 
-  describe("broadcastTaskUpdate - workspace members and notify subscribers", () => {
-    it("should subscribe users to channel and notify (lines 67-71, 92-99)", async () => {
-      mockDb.get.mockReturnValue({ id: 1, name: "Test Task", user_id: 1 });
+  describe('broadcastTaskUpdate - workspace members and notify subscribers', () => {
+    it('should subscribe users to channel and notify (lines 67-71, 92-99)', async () => {
+      mockDb.get.mockReturnValue({ id: 1, name: 'Test Task', user_id: 1 });
       // Multiple workspace members to trigger the forEach loop
       mockDb.all.mockReturnValue([
-        { userId: 1, userName: "User 1", email: "user1@example.com" },
-        { userId: 2, userName: "User 2", email: "user2@example.com" },
+        { userId: 1, userName: 'User 1', email: 'user1@example.com' },
+        { userId: 2, userName: 'User 2', email: 'user2@example.com' },
       ]);
 
-      const { broadcastTaskUpdate, getTaskSubscribers } = await import("../realtime");
+      const { broadcastTaskUpdate, getTaskSubscribers } =
+        await import('../realtime');
       mockDb.prepare.mockClear();
 
-      await broadcastTaskUpdate(1, 1, { status: "completed" }, "completed");
+      await broadcastTaskUpdate(1, 1, { status: 'completed' }, 'completed');
 
       // Verify workspace members were processed
       expect(mockDb.prepare).toHaveBeenCalled();
       expect(createActivityLog).toHaveBeenCalled();
     });
 
-    it("should handle WebSocket broadcast error gracefully (lines 73-90)", async () => {
-      mockDb.get.mockReturnValue({ id: 1, name: "Test Task", user_id: 1 });
+    it('should handle WebSocket broadcast error gracefully (lines 73-90)', async () => {
+      mockDb.get.mockReturnValue({ id: 1, name: 'Test Task', user_id: 1 });
       mockDb.all.mockReturnValue([]);
 
-      const { broadcastTaskUpdate } = await import("../realtime");
+      const { broadcastTaskUpdate } = await import('../realtime');
 
       // Should not throw even if WebSocket import fails
-      await expect(broadcastTaskUpdate(1, 1, { name: "Test" }, "updated")).resolves.not.toThrow();
+      await expect(
+        broadcastTaskUpdate(1, 1, { name: 'Test' }, 'updated')
+      ).resolves.not.toThrow();
     });
 
-    it("should execute notify subscribers forEach loop (lines 92-99)", async () => {
-      mockDb.get.mockReturnValue({ id: 1, name: "Test Task", user_id: 1 });
+    it('should execute notify subscribers forEach loop (lines 92-99)', async () => {
+      mockDb.get.mockReturnValue({ id: 1, name: 'Test Task', user_id: 1 });
       // Return multiple workspace members to test forEach loop
       mockDb.all.mockReturnValue([
-        { userId: 1, userName: "User 1", email: "user1@example.com" },
-        { userId: 2, userName: "User 2", email: "user2@example.com" },
+        { userId: 1, userName: 'User 1', email: 'user1@example.com' },
+        { userId: 2, userName: 'User 2', email: 'user2@example.com' },
       ]);
 
-      const { broadcastTaskUpdate } = await import("../realtime");
+      const { broadcastTaskUpdate } = await import('../realtime');
 
       // This should trigger lines 92-99 for the forEach loop
-      await broadcastTaskUpdate(1, 1, { status: "completed" }, "completed");
+      await broadcastTaskUpdate(1, 1, { status: 'completed' }, 'completed');
     });
   });
 
-  describe("sendNotification", () => {
-    it("should create activity log for notification (line 162)", async () => {
-      const { sendNotification } = await import("../realtime");
-      await sendNotification(1, "task_update", { taskId: 123, name: "Test Task" });
+  describe('sendNotification', () => {
+    it('should create activity log for notification (line 162)', async () => {
+      const { sendNotification } = await import('../realtime');
+      await sendNotification(1, 'task_update', {
+        taskId: 123,
+        name: 'Test Task',
+      });
 
       expect(createActivityLog).toHaveBeenCalledWith(
         expect.objectContaining({
           user_id: 1,
-          action: "notification_sent",
-          entity_type: "notification",
-          details: expect.stringContaining("task_update"),
+          action: 'notification_sent',
+          entity_type: 'notification',
+          details: expect.stringContaining('task_update'),
         })
       );
     });
 
-    it("should handle different notification types", async () => {
-      const { sendNotification } = await import("../realtime");
+    it('should handle different notification types', async () => {
+      const { sendNotification } = await import('../realtime');
 
-      await sendNotification(1, "task_mention", { taskId: 1, mention: "Test mention" });
+      await sendNotification(1, 'task_mention', {
+        taskId: 1,
+        mention: 'Test mention',
+      });
       expect(createActivityLog).toHaveBeenCalled();
 
       vi.clearAllMocks();
 
-      await sendNotification(1, "task_comment", { taskId: 1, comment: "Test comment" });
+      await sendNotification(1, 'task_comment', {
+        taskId: 1,
+        comment: 'Test comment',
+      });
       expect(createActivityLog).toHaveBeenCalled();
     });
   });
