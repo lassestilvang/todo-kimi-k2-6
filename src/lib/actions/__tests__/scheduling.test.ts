@@ -1,5 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { generateTimeBlockedSchedule, detectScheduleConflicts, rescheduleWithBuffer, predictTaskDuration, suggestOptimalTimes } from '../scheduling';
+import {
+  generateTimeBlockedSchedule,
+  detectScheduleConflicts,
+  rescheduleWithBuffer,
+  predictTaskDuration,
+  suggestOptimalTimes,
+} from '../scheduling';
 import { setupTestDb, cleanupTestDb, createTestTasks } from '@/test/test-utils';
 import { setDb, getDb } from '@/lib/db';
 import { createTestDb } from '@/lib/db/test-db';
@@ -37,12 +43,14 @@ vi.mock('@/lib/ai/providers', () => ({
   }),
 }));
 
-function createMockTask(overrides: Partial<TaskWithRelations> = {}): TaskWithRelations {
+function createMockTask(
+  overrides: Partial<TaskWithRelations> = {}
+): TaskWithRelations {
   const now = new Date().toISOString();
   return {
     id: 1,
     user_id: null,
-    name: "Test Task",
+    name: 'Test Task',
     description: null,
     notes: null,
     list_id: null,
@@ -50,8 +58,8 @@ function createMockTask(overrides: Partial<TaskWithRelations> = {}): TaskWithRel
     deadline: null,
     estimate: null,
     actual_time: null,
-    priority: "medium",
-    recurring: "none",
+    priority: 'medium',
+    recurring: 'none',
     recurring_config: null,
     completed: false,
     completed_at: null,
@@ -93,9 +101,16 @@ describe('Scheduling Actions', () => {
         userId: 1,
         workHours: { start: 9, end: 17 },
         energyProfile: {
-          peak_hours: [{ hour: 9, productivity_score: 95 }, { hour: 14, productivity_score: 85 }],
-          energy_cycles: { morning_boost: true, afternoon_dip: true, recovery_needed: false }
-        }
+          peak_hours: [
+            { hour: 9, productivity_score: 95 },
+            { hour: 14, productivity_score: 85 },
+          ],
+          energy_cycles: {
+            morning_boost: true,
+            afternoon_dip: true,
+            recovery_needed: false,
+          },
+        },
       });
 
       expect(Array.isArray(schedule)).toBe(true);
@@ -116,7 +131,7 @@ describe('Scheduling Actions', () => {
 
       const schedule = await generateTimeBlockedSchedule(criticalTasks, {
         userId: 1,
-        workHours: { start: 9, end: 17 }
+        workHours: { start: 9, end: 17 },
       });
 
       expect(schedule.length).toBe(criticalTasks.length);
@@ -127,16 +142,31 @@ describe('Scheduling Actions', () => {
     it('detects time overlaps between tasks', async () => {
       // Test with tasks that have times compatible with the existing schedule
       const tasks = [
-        createMockTask({ id: 1, name: 'Task 1', date: '09:00', estimate: '1:00', priority: 'high' }),
-        createMockTask({ id: 2, name: 'Task 2', date: '10:30', estimate: '1:00', priority: 'medium' })
+        createMockTask({
+          id: 1,
+          name: 'Task 1',
+          date: '09:00',
+          estimate: '1:00',
+          priority: 'high',
+        }),
+        createMockTask({
+          id: 2,
+          name: 'Task 2',
+          date: '10:30',
+          estimate: '1:00',
+          priority: 'medium',
+        }),
       ];
 
       const existingSchedule = [
         { taskId: 1, startTime: '09:00', endTime: '11:00' },
-        { taskId: 2, startTime: '10:30', endTime: '12:30' } // Overlaps with task 1
+        { taskId: 2, startTime: '10:30', endTime: '12:30' }, // Overlaps with task 1
       ];
 
-      const { conflicts, suggestions } = await detectScheduleConflicts(tasks, existingSchedule);
+      const { conflicts, suggestions } = await detectScheduleConflicts(
+        tasks,
+        existingSchedule
+      );
 
       // The conflict detection depends on the implementation of timeOverlap
       // which uses date + estimate to calculate time
@@ -148,7 +178,10 @@ describe('Scheduling Actions', () => {
       const tasks: TaskWithRelations[] = [];
       const existingSchedule: any[] = [];
 
-      const { conflicts } = await detectScheduleConflicts(tasks, existingSchedule);
+      const { conflicts } = await detectScheduleConflicts(
+        tasks,
+        existingSchedule
+      );
 
       expect(conflicts).toEqual([]);
     });
@@ -160,7 +193,7 @@ describe('Scheduling Actions', () => {
       const bufferMinutes = 15;
 
       const scheduledTasks = await rescheduleWithBuffer(tasks, bufferMinutes, {
-        workHours: { start: 9, end: 17 }
+        workHours: { start: 9, end: 17 },
       });
 
       expect(Array.isArray(scheduledTasks)).toBe(true);
@@ -208,9 +241,9 @@ describe('Scheduling Actions', () => {
           peak_hours: [
             { hour: 9, productivity_score: 95 },
             { hour: 10, productivity_score: 92 },
-            { hour: 14, productivity_score: 88 }
-          ]
-        }
+            { hour: 14, productivity_score: 88 },
+          ],
+        },
       });
 
       expect(Array.isArray(scheduleSuggestions)).toBe(true);
@@ -230,6 +263,6 @@ async function getTestTasks(): Promise<TaskWithRelations[]> {
   return [
     createMockTask({ id: 1, name: 'Design homepage', priority: 'critical' }),
     createMockTask({ id: 2, name: 'Write documentation', priority: 'high' }),
-    createMockTask({ id: 3, name: 'Code review', priority: 'medium' })
+    createMockTask({ id: 3, name: 'Code review', priority: 'medium' }),
   ];
 }
