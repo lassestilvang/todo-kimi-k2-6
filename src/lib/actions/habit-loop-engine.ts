@@ -1,9 +1,9 @@
-"use server";
+'use server';
 
-import { getDb } from "@/lib/db";
-import { getCurrentUser } from "@/lib/session";
-import type { HabitContext, HabitCompletion, Task } from "@/types";
-import { revalidatePath } from "next/cache";
+import { getDb } from '@/lib/db';
+import { getCurrentUser } from '@/lib/session';
+import type { HabitContext, HabitCompletion, Task } from '@/types';
+import { revalidatePath } from 'next/cache';
 
 // Extended Habit Loop Engine
 // Implements the complete habit formation cycle:
@@ -32,7 +32,7 @@ export interface HabitStacking {
   habit_loop_id: number;
   after_task_id: number; // Complete this task first
   before_task_id: number; // Complete this after
-  position: "before" | "after"; // Should this happen before/after
+  position: 'before' | 'after'; // Should this happen before/after
 }
 
 export interface HabitReflection {
@@ -53,13 +53,17 @@ export async function getHabitLoops(): Promise<HabitLoop[]> {
   const user = await getCurrentUser();
   if (!user?.id) return [];
 
-  return db.prepare(`
+  return db
+    .prepare(
+      `
     SELECT hl.*, t.name as task_name
     FROM habit_loops hl
     JOIN tasks t ON hl.task_id = t.id
     WHERE hl.enabled = 1 AND t.user_id = ?
     ORDER BY hl.streak_count DESC
-  `).all(user.id) as HabitLoop[];
+  `
+    )
+    .all(user.id) as HabitLoop[];
 }
 
 // Get a specific habit loop
@@ -67,12 +71,16 @@ export async function getHabitLoop(id: number): Promise<HabitLoop | null> {
   const user = await getCurrentUser();
   if (!user?.id) return null;
 
-  return db.prepare(`
+  return db
+    .prepare(
+      `
     SELECT hl.*, t.name as task_name
     FROM habit_loops hl
     JOIN tasks t ON hl.task_id = t.id
     WHERE hl.id = ? AND t.user_id = ?
-  `).get(id, user.id) as HabitLoop | null;
+  `
+    )
+    .get(id, user.id) as HabitLoop | null;
 }
 
 // Create a new habit loop (from a task)
@@ -88,22 +96,28 @@ export async function createHabitLoop(
   }
 ): Promise<HabitLoop> {
   // Verify task ownership
-  const task = db.prepare("SELECT id FROM tasks WHERE id = ? AND user_id = ?").get(input.task_id, userId);
-  if (!task) throw new Error("Task not found or access denied");
+  const task = db
+    .prepare('SELECT id FROM tasks WHERE id = ? AND user_id = ?')
+    .get(input.task_id, userId);
+  if (!task) throw new Error('Task not found or access denied');
 
-  const result = db.prepare(`
+  const result = db
+    .prepare(
+      `
     INSERT INTO habit_loops (task_id, name, description, cue, reward, reflection_prompt, enabled, streak_count, success_score)
     VALUES (?, ?, ?, ?, ?, ?, 1, 0, 0.5)
-  `).run(
-    input.task_id,
-    input.name,
-    input.description || null,
-    input.cue,
-    input.reward,
-    input.reflection_prompt || null
-  );
+  `
+    )
+    .run(
+      input.task_id,
+      input.name,
+      input.description || null,
+      input.cue,
+      input.reward,
+      input.reflection_prompt || null
+    );
 
-  revalidatePath("/habits");
+  revalidatePath('/habits');
   return {
     id: result.lastInsertRowid as number,
     task_id: input.task_id,
@@ -112,7 +126,7 @@ export async function createHabitLoop(
     cue: input.cue,
     reward: input.reward,
     stacking: [],
-    reflection_prompt: input.reflection_prompt || "",
+    reflection_prompt: input.reflection_prompt || '',
     enabled: true,
     streak_count: 0,
     completion_rate: 0,
@@ -136,22 +150,26 @@ export async function completeHabit(
 ): Promise<{ success: boolean; streak: number; successScore: number }> {
   // Verify ownership
   const habitLoop = await getHabitLoop(habitLoopId);
-  if (!habitLoop) throw new Error("Habit loop not found");
+  if (!habitLoop) throw new Error('Habit loop not found');
 
   const now = new Date();
-  const todayStr = now.toISOString().split("T")[0];
+  const todayStr = now.toISOString().split('T')[0];
 
   // Record completion
-  db.prepare(`
+  db.prepare(
+    `
     INSERT INTO habit_completions (task_id, date, completed_at)
     VALUES (?, ?, ?)
-  `).run(habitLoop.task_id, todayStr, now.toISOString());
+  `
+  ).run(habitLoop.task_id, todayStr, now.toISOString());
 
   // Record reflection
-  db.prepare(`
+  db.prepare(
+    `
     INSERT INTO habit_reflections (habit_loop_id, task_id, rating, notes, energy_level, context_tags)
     VALUES (?, ?, ?, ?, ?, ?)
-  `).run(
+  `
+  ).run(
     habitLoopId,
     habitLoop.task_id,
     reflection.rating,
@@ -163,11 +181,13 @@ export async function completeHabit(
   // Update streak and success score
   const streakData = await calculateHabitStats(userId, habitLoopId);
 
-  db.prepare(`
+  db.prepare(
+    `
     UPDATE habit_loops
     SET streak_count = ?, success_score = ?, last_completed = ?, updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
-  `).run(streakData.streak, streakData.successScore, todayStr, habitLoopId);
+  `
+  ).run(streakData.streak, streakData.successScore, todayStr, habitLoopId);
 
   revalidatePath(`/habits/${habitLoopId}`);
   return {
@@ -178,19 +198,32 @@ export async function completeHabit(
 }
 
 // Calculate habit statistics
-async function calculateHabitStats(userId: number, habitLoopId: number): Promise<{ streak: number; successScore: number }> {
-  const habitLoop = db.prepare("SELECT * FROM habit_loops WHERE id = ?").get(habitLoopId) as HabitLoop | undefined;
+async function calculateHabitStats(
+  userId: number,
+  habitLoopId: number
+): Promise<{ streak: number; successScore: number }> {
+  const habitLoop = db
+    .prepare('SELECT * FROM habit_loops WHERE id = ?')
+    .get(habitLoopId) as HabitLoop | undefined;
   if (!habitLoop) return { streak: 0, successScore: 0 };
 
-  const completions = db.prepare(`
+  const completions = db
+    .prepare(
+      `
     SELECT date FROM habit_completions
     WHERE task_id = ?
-  `).all(habitLoop.task_id) as { date: string }[];
+  `
+    )
+    .all(habitLoop.task_id) as { date: string }[];
 
-  const reflections = db.prepare(`
+  const reflections = db
+    .prepare(
+      `
     SELECT rating, energy_level FROM habit_reflections
     WHERE habit_loop_id = ? AND date(date) >= date('now', '-30 days')
-  `).all(habitLoopId) as { rating: number; energy_level: number | null }[];
+  `
+    )
+    .all(habitLoopId) as { rating: number; energy_level: number | null }[];
 
   // Calculate streak
   const streak = calculateCurrentStreak(completions.map(c => c.date));
@@ -201,22 +234,28 @@ async function calculateHabitStats(userId: number, habitLoopId: number): Promise
   // - Energy level consistency (20% weight)
   // - Streak (10% weight)
 
-  const completionRate = completions.length > 0 ? Math.min(1, completions.length / 30) : 0;
-  const avgRating = reflections.length > 0
-    ? reflections.reduce((sum, r) => sum + r.rating, 0) / reflections.length / 5
-    : 0;
-  const avgEnergy = reflections.length > 0
-    ? reflections.reduce((sum, r) => sum + (r.energy_level || 5), 0) / reflections.length / 10
-    : 0.5;
+  const completionRate =
+    completions.length > 0 ? Math.min(1, completions.length / 30) : 0;
+  const avgRating =
+    reflections.length > 0
+      ? reflections.reduce((sum, r) => sum + r.rating, 0) /
+        reflections.length /
+        5
+      : 0;
+  const avgEnergy =
+    reflections.length > 0
+      ? reflections.reduce((sum, r) => sum + (r.energy_level || 5), 0) /
+        reflections.length /
+        10
+      : 0.5;
 
   const streakBoost = Math.min(1, streak / 30);
 
-  const successScore = (
+  const successScore =
     completionRate * 0.4 +
     avgRating * 0.3 +
     avgEnergy * 0.2 +
-    streakBoost * 0.1
-  );
+    streakBoost * 0.1;
 
   return { streak, successScore: Math.round(successScore * 100) / 100 };
 }
@@ -226,11 +265,11 @@ function calculateCurrentStreak(dates: string[]): number {
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const todayStr = today.toISOString().split("T")[0];
+  const todayStr = today.toISOString().split('T')[0];
 
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayStr = yesterday.toISOString().split("T")[0];
+  const yesterdayStr = yesterday.toISOString().split('T')[0];
 
   const sorted = [...new Set(dates)].sort().reverse();
   const lastCompleted = sorted[0];
@@ -247,7 +286,7 @@ function calculateCurrentStreak(dates: string[]): number {
       streak++;
       const prevDate = new Date(expectedDate);
       prevDate.setDate(prevDate.getDate() - 1);
-      expectedDate = prevDate.toISOString().split("T")[0];
+      expectedDate = prevDate.toISOString().split('T')[0];
     } else {
       break;
     }
@@ -273,33 +312,45 @@ export async function createImplementationIntention(
   habitLoopId: number,
   input: { trigger: string; response: string; context_tags?: string[] }
 ): Promise<ImplementationIntention> {
-  const result = db.prepare(`
+  const result = db
+    .prepare(
+      `
     INSERT INTO implementation_intentions (habit_loop_id, trigger, response, context_tags)
     VALUES (?, ?, ?, ?)
-  `).run(
-    habitLoopId,
-    input.trigger,
-    input.response,
-    input.context_tags ? JSON.stringify(input.context_tags) : null
-  );
+  `
+    )
+    .run(
+      habitLoopId,
+      input.trigger,
+      input.response,
+      input.context_tags ? JSON.stringify(input.context_tags) : null
+    );
 
   return {
     id: result.lastInsertRowid as number,
     habit_loop_id: habitLoopId,
     trigger: input.trigger,
     response: input.response,
-    context_tags: input.context_tags ? JSON.stringify(input.context_tags) : null,
+    context_tags: input.context_tags
+      ? JSON.stringify(input.context_tags)
+      : null,
     success_rate: 0,
     created_at: new Date().toISOString(),
   };
 }
 
-export async function getImplementationIntentions(habitLoopId: number): Promise<ImplementationIntention[]> {
-  return db.prepare(`
+export async function getImplementationIntentions(
+  habitLoopId: number
+): Promise<ImplementationIntention[]> {
+  return db
+    .prepare(
+      `
     SELECT * FROM implementation_intentions
     WHERE habit_loop_id = ?
     ORDER BY created_at DESC
-  `).all(habitLoopId) as ImplementationIntention[];
+  `
+    )
+    .all(habitLoopId) as ImplementationIntention[];
 }
 
 // Habit Stacking
@@ -310,17 +361,26 @@ export async function addHabitStacking(
   input: {
     after_task_id?: number;
     before_task_id?: number;
-    position: "before" | "after";
+    position: 'before' | 'after';
   }
 ): Promise<HabitStacking> {
   if (!input.after_task_id && !input.before_task_id) {
-    throw new Error("Must specify either after_task_id or before_task_id");
+    throw new Error('Must specify either after_task_id or before_task_id');
   }
 
-  const result = db.prepare(`
+  const result = db
+    .prepare(
+      `
     INSERT INTO habit_stackings (habit_loop_id, after_task_id, before_task_id, position)
     VALUES (?, ?, ?, ?)
-  `).run(habitLoopId, input.after_task_id || null, input.before_task_id || null, input.position);
+  `
+    )
+    .run(
+      habitLoopId,
+      input.after_task_id || null,
+      input.before_task_id || null,
+      input.position
+    );
 
   revalidatePath(`/habits/${habitLoopId}`);
   return {
@@ -332,46 +392,71 @@ export async function addHabitStacking(
   };
 }
 
-export async function getHabitStacking(habitLoopId: number): Promise<HabitStacking[]> {
-  return db.prepare(`
+export async function getHabitStacking(
+  habitLoopId: number
+): Promise<HabitStacking[]> {
+  return db
+    .prepare(
+      `
     SELECT * FROM habit_stackings
     WHERE habit_loop_id = ?
-  `).all(habitLoopId) as HabitStacking[];
+  `
+    )
+    .all(habitLoopId) as HabitStacking[];
 }
 
 // Habit Score Calculation
-export async function calculateHabitScores(): Promise<Array<{
-  habit_loop_id: number;
-  name: string;
-  streak: number;
-  completion_rate: number;
-  success_score: number;
-  prediction_7days: number;
-}>> {
+export async function calculateHabitScores(): Promise<
+  Array<{
+    habit_loop_id: number;
+    name: string;
+    streak: number;
+    completion_rate: number;
+    success_score: number;
+    prediction_7days: number;
+  }>
+> {
   const habits = await getHabitLoops();
 
-  return Promise.all(habits.map(async (habit) => {
-    const completions = db.prepare(`
+  return Promise.all(
+    habits.map(async habit => {
+      const completions = db
+        .prepare(
+          `
       SELECT date FROM habit_completions
       WHERE task_id = ?
-    `).all(habit.task_id) as { date: string }[];
+    `
+        )
+        .all(habit.task_id) as { date: string }[];
 
-    const reflections = db.prepare(`
+      const reflections = db
+        .prepare(
+          `
       SELECT rating FROM habit_reflections
       WHERE habit_loop_id = ?
-    `).all(habit.id) as { rating: number }[];
+    `
+        )
+        .all(habit.id) as { rating: number }[];
 
-    const prediction = predictHabitSuccess(completions, reflections, habit.streak_count);
+      const prediction = predictHabitSuccess(
+        completions,
+        reflections,
+        habit.streak_count
+      );
 
-    return {
-      habit_loop_id: habit.id,
-      name: habit.name,
-      streak: habit.streak_count,
-      completion_rate: Math.min(100, Math.round((completions.length / 30) * 100)),
-      success_score: habit.success_score,
-      prediction_7days: prediction,
-    };
-  }));
+      return {
+        habit_loop_id: habit.id,
+        name: habit.name,
+        streak: habit.streak_count,
+        completion_rate: Math.min(
+          100,
+          Math.round((completions.length / 30) * 100)
+        ),
+        success_score: habit.success_score,
+        prediction_7days: prediction,
+      };
+    })
+  );
 }
 
 function predictHabitSuccess(
@@ -388,16 +473,20 @@ function predictHabitSuccess(
   });
 
   const recentRate = recentCompletions.length / 7;
-  const avgRating = reflections.length > 0
-    ? reflections.reduce((sum, r) => sum + r.rating, 0) / reflections.length / 5
-    : 0.5;
+  const avgRating =
+    reflections.length > 0
+      ? reflections.reduce((sum, r) => sum + r.rating, 0) /
+        reflections.length /
+        5
+      : 0.5;
 
   // Prediction formula: weighted average of recent rate, average rating, and streak
-  return Math.min(100, Math.round(
-    recentRate * 40 +
-    avgRating * 30 +
-    Math.min(1, currentStreak / 14) * 30
-  ));
+  return Math.min(
+    100,
+    Math.round(
+      recentRate * 40 + avgRating * 30 + Math.min(1, currentStreak / 14) * 30
+    )
+  );
 }
 
 // Habit Loop Analysis
@@ -407,20 +496,33 @@ export async function analyzeHabitLoop(habitLoopId: number): Promise<{
   improvement_suggestions: string[];
 }> {
   const habitLoop = await getHabitLoop(habitLoopId);
-  if (!habitLoop) throw new Error("Habit not found");
+  if (!habitLoop) throw new Error('Habit not found');
 
-  const completions = db.prepare(`
+  const completions = db
+    .prepare(
+      `
     SELECT date, created_at FROM habit_completions
     WHERE task_id = ?
     ORDER BY date ASC
-  `).all(habitLoop.task_id) as { date: string; created_at: string }[];
+  `
+    )
+    .all(habitLoop.task_id) as { date: string; created_at: string }[];
 
-  const reflections = db.prepare(`
+  const reflections = db
+    .prepare(
+      `
     SELECT rating, energy_level, context_tags, created_at
     FROM habit_reflections
     WHERE habit_loop_id = ?
     ORDER BY created_at DESC
-  `).all(habitLoopId) as { rating: number; energy_level: number | null; context_tags: string | null; created_at: string }[];
+  `
+    )
+    .all(habitLoopId) as {
+    rating: number;
+    energy_level: number | null;
+    context_tags: string | null;
+    created_at: string;
+  }[];
 
   // Analyze optimal time
   let optimalTime: string | null = null;
@@ -438,28 +540,35 @@ export async function analyzeHabitLoop(habitLoopId: number): Promise<{
   const energyLevels = reflections
     .map(r => r.energy_level)
     .filter((e): e is number => e !== null);
-  const energyLevel = energyLevels.length > 0
-    ? Math.round((energyLevels.reduce((a, b) => a + b, 0) / energyLevels.length) * 2) / 2
-    : 5;
+  const energyLevel =
+    energyLevels.length > 0
+      ? Math.round(
+          (energyLevels.reduce((a, b) => a + b, 0) / energyLevels.length) * 2
+        ) / 2
+      : 5;
 
   // Generate suggestions
   const suggestions: string[] = [];
 
   if (habitLoop.streak_count < 7) {
-    suggestions.push("Build consistency first - aim for 7 consecutive days");
+    suggestions.push('Build consistency first - aim for 7 consecutive days');
   }
 
   if (habitLoop.completion_rate < 0.3) {
-    suggestions.push("Start small - reduce the habit to 2-5 minutes initially");
+    suggestions.push('Start small - reduce the habit to 2-5 minutes initially');
   }
 
-  const lowEnergyReflections = reflections.filter(r => r.energy_level && r.energy_level < 5);
+  const lowEnergyReflections = reflections.filter(
+    r => r.energy_level && r.energy_level < 5
+  );
   if (lowEnergyReflections.length > reflections.length * 0.5) {
-    suggestions.push("Try this habit during your peak energy hours");
+    suggestions.push('Try this habit during your peak energy hours');
   }
 
   if (suggestions.length === 0) {
-    suggestions.push("You're doing great! Consider increasing the habit difficulty.");
+    suggestions.push(
+      "You're doing great! Consider increasing the habit difficulty."
+    );
   }
 
   return {
@@ -472,18 +581,24 @@ export async function analyzeHabitLoop(habitLoopId: number): Promise<{
 // Reset habit (for starting fresh)
 export async function resetHabit(habitLoopId: number): Promise<void> {
   const habitLoop = await getHabitLoop(habitLoopId);
-  if (!habitLoop) throw new Error("Habit not found");
+  if (!habitLoop) throw new Error('Habit not found');
 
   // Clear completions and reflections, keep streak for historical data
-  db.prepare("DELETE FROM habit_completions WHERE task_id = ?").run(habitLoop.task_id);
-  db.prepare("DELETE FROM habit_reflections WHERE habit_loop_id = ?").run(habitLoopId);
+  db.prepare('DELETE FROM habit_completions WHERE task_id = ?').run(
+    habitLoop.task_id
+  );
+  db.prepare('DELETE FROM habit_reflections WHERE habit_loop_id = ?').run(
+    habitLoopId
+  );
 
   // Reset streak
-  db.prepare(`
+  db.prepare(
+    `
     UPDATE habit_loops
     SET streak_count = 0, success_score = 0.5, last_completed = NULL
     WHERE id = ?
-  `).run(habitLoopId);
+  `
+  ).run(habitLoopId);
 
   revalidatePath(`/habits`);
 }
