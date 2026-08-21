@@ -1,7 +1,7 @@
-"use server";
+'use server';
 
-import { getCurrentUser } from "@/lib/session";
-import { aiCache } from "./providers";
+import { getCurrentUser } from '@/lib/session';
+import { aiCache } from './providers';
 
 /**
  * Calculate cognitive load for user's tasks based on multiple factors
@@ -10,7 +10,7 @@ export async function calculateCognitiveLoad(
   tasks: any[],
   userContext: {
     userId: number;
-    energyLevel?: "high" | "medium" | "low";
+    energyLevel?: 'high' | 'medium' | 'low';
     stressLevel?: number; // 0-10 scale
     availableTime?: number; // minutes
     currentFatigue?: number; // 0-10 scale
@@ -30,7 +30,7 @@ export async function calculateCognitiveLoad(
     energy_requirements: 0,
     prioritization_difficulty: 0,
     memory_load: 0,
-  // Risk factors
+    // Risk factors
     burnout_risk: 0,
     procrastination_risk: 0,
     overwhelm_risk: 0,
@@ -42,8 +42,11 @@ export async function calculateCognitiveLoad(
   // Try AI-powered analysis
   try {
     const ai = await getAIManager();
-    if (ai && typeof (ai as any).analyzeCognitiveLoad === "function") {
-      const analysis = await (ai as any).analyzeCognitiveLoad(tasks, userContext);
+    if (ai && typeof (ai as any).analyzeCognitiveLoad === 'function') {
+      const analysis = await (ai as any).analyzeCognitiveLoad(
+        tasks,
+        userContext
+      );
       Object.assign(loadAnalysis, analysis);
     }
   } catch (error) {
@@ -63,7 +66,7 @@ export async function suggestLoadReduction(
     userId: number;
     maxLoad?: number;
     deadline?: string;
-    preferredApproach?: "simplify" | "delegate" | "prioritize" | "delay";
+    preferredApproach?: 'simplify' | 'delegate' | 'prioritize' | 'delay';
   }
 ): Promise<any> {
   const cacheKey = `load-reduction:${constraints.userId}`;
@@ -77,15 +80,15 @@ export async function suggestLoadReduction(
   // Basic load reduction logic
   if (tasks.length > 10) {
     recommendations.push({
-      type: "simplify",
-      message: "Reduce task count by breaking larger tasks into smaller pieces",
+      type: 'simplify',
+      message: 'Reduce task count by breaking larger tasks into smaller pieces',
     });
   }
 
   if (!constraints.maxLoad && tasks.length > 5) {
     recommendations.push({
-      type: "delay",
-      message: "Consider deferring some tasks to tomorrow",
+      type: 'delay',
+      message: 'Consider deferring some tasks to tomorrow',
     });
   }
 
@@ -116,42 +119,42 @@ export async function detectFocusThreats(
 
   const threatAnalysis: any = {
     threats: [],
-    severity: "low",
+    severity: 'low',
     recommendations: [],
   };
 
   // Basic threat detection
   if (environment.notifications && environment.notifications > 10) {
     threatAnalysis.threats.push({
-      type: "notification_overload",
-      intensity: "high",
+      type: 'notification_overload',
+      intensity: 'high',
     });
   }
 
   if (environment.emailVolume && environment.emailVolume > 50) {
     threatAnalysis.threats.push({
-      type: "email_intrusion",
-      intensity: "medium",
+      type: 'email_intrusion',
+      intensity: 'medium',
     });
   }
 
   // Determine severity
   const threatCount = threatAnalysis.threats.length;
   if (threatCount >= 2) {
-    threatAnalysis.severity = "high";
+    threatAnalysis.severity = 'high';
   } else if (threatCount === 1) {
-    threatAnalysis.severity = "medium";
+    threatAnalysis.severity = 'medium';
   }
 
   // Generate recommendations
-  if (threatAnalysis.severity === "high") {
+  if (threatAnalysis.severity === 'high') {
     threatAnalysis.recommendations.push("Enable 'Do Not Disturb' mode");
-    threatAnalysis.recommendations.push("Batch process notifications");
-  } else if (threatAnalysis.severity === "medium") {
-    threatAnalysis.recommendations.push("Schedule notification breaks");
+    threatAnalysis.recommendations.push('Batch process notifications');
+  } else if (threatAnalysis.severity === 'medium') {
+    threatAnalysis.recommendations.push('Schedule notification breaks');
   }
 
-  threatAnalysis.recommendations.push("Focus on one task at a time");
+  threatAnalysis.recommendations.push('Focus on one task at a time');
 
   aiCache.set(cacheKey, threatAnalysis);
   return threatAnalysis;
@@ -166,7 +169,8 @@ export async function generateFocusPlan(
     userId: number;
     energyProfile?: any;
     availableTimeBlocks?: any[];
-    preferredWorkingStyle?: "deep_work" | "broad_exploration" | "scheduled" | "flexible";
+    preferredWorkingStyle?:
+      'deep_work' | 'broad_exploration' | 'scheduled' | 'flexible';
     goals?: any[];
   }
 ): Promise<any> {
@@ -183,12 +187,18 @@ export async function generateFocusPlan(
 
   // Basic focus plan generation based on task priority
   const sortedTasks = [...tasks].sort((a: any, b: any) => {
-    const priorityOrder: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3, none: 4 };
+    const priorityOrder: Record<string, number> = {
+      critical: 0,
+      high: 1,
+      medium: 2,
+      low: 3,
+      none: 4,
+    };
     return (priorityOrder[a.priority] || 2) - (priorityOrder[b.priority] || 2);
   });
 
   // Create 3 time blocks
-  const blocks = ["morning", "afternoon", "evening"];
+  const blocks = ['morning', 'afternoon', 'evening'];
   for (let i = 0; i < 3; i++) {
     const blockTasks = sortedTasks.slice(i * 3, (i + 1) * 3);
     focusPlan.timeBlocks.push({
@@ -198,9 +208,9 @@ export async function generateFocusPlan(
   }
 
   focusPlan.recommendations = [
-    "Start with critical tasks in the morning",
-    "Take regular breaks between time blocks",
-    "Review priorities at the end of each block",
+    'Start with critical tasks in the morning',
+    'Take regular breaks between time blocks',
+    'Review priorities at the end of each block',
   ];
 
   aiCache.set(cacheKey, focusPlan);
@@ -225,10 +235,34 @@ export async function analyzeCurrentState(
   const completedCount = tasks.filter((t: any) => t.completed).length;
   const completionRate = taskCount > 0 ? completedCount / taskCount : 0;
 
-  const loadLevel: "low" | "medium" | "high" | "overwhelmed" = taskCount < 5 ? "low" : taskCount < 15 ? "medium" : taskCount < 30 ? "high" : "overwhelmed";
-  const focusAbility: "excellent" | "good" | "fair" | "poor" = completionRate > 0.8 ? "excellent" : completionRate > 0.5 ? "good" : completionRate > 0.2 ? "fair" : "poor";
-  const energySituation: "peak" | "high" | "medium" | "low" | "depleted" = loadLevel === "low" ? "peak" : loadLevel === "medium" ? "high" : "medium";
-  const recommendation: "continue" | "restructuring_needed" | "breaks_needed" | "delegate_suggested" = loadLevel === "overwhelmed" ? "restructuring_needed" : loadLevel === "high" ? "breaks_needed" : "continue";
+  const loadLevel: 'low' | 'medium' | 'high' | 'overwhelmed' =
+    taskCount < 5
+      ? 'low'
+      : taskCount < 15
+        ? 'medium'
+        : taskCount < 30
+          ? 'high'
+          : 'overwhelmed';
+  const focusAbility: 'excellent' | 'good' | 'fair' | 'poor' =
+    completionRate > 0.8
+      ? 'excellent'
+      : completionRate > 0.5
+        ? 'good'
+        : completionRate > 0.2
+          ? 'fair'
+          : 'poor';
+  const energySituation: 'peak' | 'high' | 'medium' | 'low' | 'depleted' =
+    loadLevel === 'low' ? 'peak' : loadLevel === 'medium' ? 'high' : 'medium';
+  const recommendation:
+    | 'continue'
+    | 'restructuring_needed'
+    | 'breaks_needed'
+    | 'delegate_suggested' =
+    loadLevel === 'overwhelmed'
+      ? 'restructuring_needed'
+      : loadLevel === 'high'
+        ? 'breaks_needed'
+        : 'continue';
 
   const stateAnalysis: any = {
     current_load_level: loadLevel,
@@ -240,11 +274,16 @@ export async function analyzeCurrentState(
   };
 
   // Add recommendations based on state
-  if (loadLevel === "overwhelmed") {
-    stateAnalysis.immediate_actions.push("Prioritize and cancel lowest priority tasks");
-    stateAnalysis.recommendations = ["Delegate tasks where possible", "Break large tasks into smaller pieces"];
-  } else if (loadLevel === "high") {
-    stateAnalysis.immediate_actions.push("Take a short break to reset focus");
+  if (loadLevel === 'overwhelmed') {
+    stateAnalysis.immediate_actions.push(
+      'Prioritize and cancel lowest priority tasks'
+    );
+    stateAnalysis.recommendations = [
+      'Delegate tasks where possible',
+      'Break large tasks into smaller pieces',
+    ];
+  } else if (loadLevel === 'high') {
+    stateAnalysis.immediate_actions.push('Take a short break to reset focus');
   }
 
   aiCache.set(cacheKey, stateAnalysis);
@@ -274,9 +313,10 @@ export async function generateSmartReminders(
 
   // Generate reminders for upcoming deadlines
   tasks.forEach((task: any) => {
-    if (task.deadline && task.deadline !== "") {
+    if (task.deadline && task.deadline !== '') {
       const deadline = new Date(task.deadline);
-      const hoursUntil = (deadline.getTime() - now.getTime()) / (1000 * 60 * 60);
+      const hoursUntil =
+        (deadline.getTime() - now.getTime()) / (1000 * 60 * 60);
 
       if (hoursUntil <= 24 && hoursUntil > 0) {
         reminders.push({
@@ -309,23 +349,38 @@ export async function analyzeProductivityPatterns(
   // Basic productivity analysis
   const completedTasks = tasks.filter((t: any) => t.completed);
   const totalTasks = tasks.length;
-  const completionRate = totalTasks > 0 ? completedTasks.length / totalTasks : 0;
+  const completionRate =
+    totalTasks > 0 ? completedTasks.length / totalTasks : 0;
 
   const patterns: any = {
     completionRate,
     totalTasks,
     completedTasks: completedTasks.length,
-    averagePriority: completedTasks.reduce((sum: number, t: any) => sum + (t.priority === "critical" ? 4 : t.priority === "high" ? 3 : t.priority === "medium" ? 2 : 1), 0) / Math.max(completedTasks.length, 1),
+    averagePriority:
+      completedTasks.reduce(
+        (sum: number, t: any) =>
+          sum +
+          (t.priority === 'critical'
+            ? 4
+            : t.priority === 'high'
+              ? 3
+              : t.priority === 'medium'
+                ? 2
+                : 1),
+        0
+      ) / Math.max(completedTasks.length, 1),
     peakHours: [9, 10, 14, 15], // Default peak hours
     recommendations: [],
   };
 
   if (completionRate > 0.7) {
-    patterns.recommendations.push("Maintain current productivity pace");
+    patterns.recommendations.push('Maintain current productivity pace');
   } else if (completionRate > 0.4) {
-    patterns.recommendations.push("Focus on completing high-priority tasks");
+    patterns.recommendations.push('Focus on completing high-priority tasks');
   } else {
-    patterns.recommendations.push("Reduce task load and improve time estimation");
+    patterns.recommendations.push(
+      'Reduce task load and improve time estimation'
+    );
   }
 
   aiCache.set(cacheKey, patterns);
@@ -348,19 +403,34 @@ export async function predictCognitiveLoad(
 
   // Simple load prediction based on task count and complexity
   const taskCount = upcomingTasks.length;
-  const avgPriority = upcomingTasks.reduce((sum: number, t: any) => {
-    const priorityValue = t.priority === "critical" ? 4 : t.priority === "high" ? 3 : t.priority === "medium" ? 2 : 1;
-    return sum + priorityValue;
-  }, 0) / Math.max(taskCount, 1);
+  const avgPriority =
+    upcomingTasks.reduce((sum: number, t: any) => {
+      const priorityValue =
+        t.priority === 'critical'
+          ? 4
+          : t.priority === 'high'
+            ? 3
+            : t.priority === 'medium'
+              ? 2
+              : 1;
+      return sum + priorityValue;
+    }, 0) / Math.max(taskCount, 1);
 
   const predictedLoad = taskCount * (avgPriority / 4);
-  const overloadRisk = predictedLoad > 10 ? "high" : predictedLoad > 5 ? "medium" : "low";
+  const overloadRisk =
+    predictedLoad > 10 ? 'high' : predictedLoad > 5 ? 'medium' : 'low';
 
   const prediction: any = {
     predictedLoad,
     overloadRisk,
-    timing: "current",
-    recommendations: overloadRisk !== "low" ? ["Consider delegating some tasks", "Break large tasks into smaller pieces"] : ["Continue with current pace"],
+    timing: 'current',
+    recommendations:
+      overloadRisk !== 'low'
+        ? [
+            'Consider delegating some tasks',
+            'Break large tasks into smaller pieces',
+          ]
+        : ['Continue with current pace'],
   };
 
   aiCache.set(cacheKey, prediction);
@@ -376,7 +446,7 @@ export async function generateProductivityTips(
   context?: {
     currentTime?: Date;
     energyLevel?: string;
-    taskStatus?: "stuck" | "progress" | "completed";
+    taskStatus?: 'stuck' | 'progress' | 'completed';
   }
 ): Promise<string[]> {
   const cacheKey = `productivity-tips:${userId}`;
@@ -389,15 +459,17 @@ export async function generateProductivityTips(
 
   // Generate tips based on task analysis
   const pendingTasks = tasks.filter((t: any) => !t.completed);
-  const criticalTasks = pendingTasks.filter((t: any) => t.priority === "critical");
+  const criticalTasks = pendingTasks.filter(
+    (t: any) => t.priority === 'critical'
+  );
 
   if (criticalTasks.length > 0) {
     tips.push(`Focus on your ${criticalTasks.length} critical task(s) first`);
   }
 
-  tips.push("Use the Pomodoro technique for focused work sessions");
-  tips.push("Take a 5-minute break every 25 minutes of focused work");
-  tips.push("Review and update your task priorities daily");
+  tips.push('Use the Pomodoro technique for focused work sessions');
+  tips.push('Take a 5-minute break every 25 minutes of focused work');
+  tips.push('Review and update your task priorities daily');
 
   aiCache.set(cacheKey, tips);
   return tips;
@@ -417,24 +489,35 @@ export async function analyzeFocusPatterns(
   }
 
   // Basic focus pattern analysis
-  const completedInMorning = tasks.filter((t: any) => t.completed && t.date && new Date(t.date).getHours() < 12).length;
-  const completedInAfternoon = tasks.filter((t: any) => t.completed && t.date && new Date(t.date).getHours() >= 12).length;
+  const completedInMorning = tasks.filter(
+    (t: any) => t.completed && t.date && new Date(t.date).getHours() < 12
+  ).length;
+  const completedInAfternoon = tasks.filter(
+    (t: any) => t.completed && t.date && new Date(t.date).getHours() >= 12
+  ).length;
 
   const patterns: any = {
     morningFocus: completedInMorning > completedInAfternoon,
-    peakPeriod: completedInMorning > completedInAfternoon ? "morning" : "afternoon",
+    peakPeriod:
+      completedInMorning > completedInAfternoon ? 'morning' : 'afternoon',
     streakLength: 0,
     improvementAreas: [],
   };
 
   // Calculate consecutive days of completion
-  const completedDates = [...new Set(tasks.filter((t: any) => t.completed).map((t: any) => t.date))].sort().reverse();
+  const completedDates = [
+    ...new Set(tasks.filter((t: any) => t.completed).map((t: any) => t.date)),
+  ]
+    .sort()
+    .reverse();
   if (completedDates.length > 0) {
     let streak = 1;
     for (let i = 1; i < completedDates.length; i++) {
       const prevDate = new Date(completedDates[i - 1]);
       const currDate = new Date(completedDates[i]);
-      const diffDays = Math.abs((prevDate.getTime() - currDate.getTime()) / (1000 * 60 * 60 * 24));
+      const diffDays = Math.abs(
+        (prevDate.getTime() - currDate.getTime()) / (1000 * 60 * 60 * 24)
+      );
       if (diffDays === 1) {
         streak++;
       } else {
@@ -445,7 +528,7 @@ export async function analyzeFocusPatterns(
   }
 
   if (patterns.streakLength < 3) {
-    patterns.improvementAreas.push("Build consistent daily habits");
+    patterns.improvementAreas.push('Build consistent daily habits');
   }
 
   aiCache.set(cacheKey, patterns);
@@ -454,6 +537,6 @@ export async function analyzeFocusPatterns(
 
 // AI Manager helper
 async function getAIManager() {
-  const { AIManager } = await import("./providers");
+  const { AIManager } = await import('./providers');
   return new AIManager();
 }
