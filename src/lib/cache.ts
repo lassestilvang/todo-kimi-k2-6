@@ -32,13 +32,16 @@ async function initRedis() {
   try {
     // Dynamic import to avoid bundling redis in client builds
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const redisModule = require("redis");
+    const redisModule = require('redis');
     redis = redisModule.createClient({ url: redisUrl });
-    redis.on("error", (err: Error) => console.error("Redis error:", err));
+    redis.on('error', (err: Error) => console.error('Redis error:', err));
     await redis.connect();
     return redis;
   } catch (error) {
-    console.warn("Failed to connect to Redis, falling back to memory cache:", error);
+    console.warn(
+      'Failed to connect to Redis, falling back to memory cache:',
+      error
+    );
     return null;
   }
 }
@@ -49,7 +52,11 @@ async function initRedis() {
  * @param value - Value to cache
  * @param ttl - Time to live in milliseconds
  */
-export async function set<T>(key: string, value: T, ttl: number = DEFAULT_TTL): Promise<void> {
+export async function set<T>(
+  key: string,
+  value: T,
+  ttl: number = DEFAULT_TTL
+): Promise<void> {
   const serialized = JSON.stringify(value);
   const now = Date.now();
 
@@ -155,35 +162,36 @@ export const taskCache = {
       // Invalidate all task-related cache keys
       const redisClient = await initRedis();
       if (redisClient) {
-        const keys = await redisClient.keys("tasks:*");
+        const keys = await redisClient.keys('tasks:*');
         if (keys.length > 0) await redisClient.del(...keys);
       } else {
         for (const key of memoryCache.keys()) {
-          if (key.startsWith("tasks:")) memoryCache.delete(key);
+          if (key.startsWith('tasks:')) memoryCache.delete(key);
         }
       }
     },
   },
   lists: {
-    key: () => "lists",
+    key: () => 'lists',
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    set: async (data: any, ttl?: number) => await set("lists", data, ttl),
+    set: async (data: any, ttl?: number) => await set('lists', data, ttl),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    get: async () => await get<any>("lists"),
-    invalidate: async () => await del("lists"),
+    get: async () => await get<any>('lists'),
+    invalidate: async () => await del('lists'),
   },
   labels: {
-    key: () => "labels",
+    key: () => 'labels',
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    set: async (data: any, ttl?: number) => await set("labels", data, ttl),
+    set: async (data: any, ttl?: number) => await set('labels', data, ttl),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    get: async () => await get<any>("labels"),
-    invalidate: async () => await del("labels"),
+    get: async () => await get<any>('labels'),
+    invalidate: async () => await del('labels'),
   },
   user: {
     key: (userId: number) => `user:${userId}`,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    set: async (userId: number, data: any, ttl?: number) => await set(`user:${userId}`, data, ttl),
+    set: async (userId: number, data: any, ttl?: number) =>
+      await set(`user:${userId}`, data, ttl),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     get: async (userId: number) => await get<any>(`user:${userId}`),
     invalidate: async (userId: number) => {
@@ -195,23 +203,30 @@ export const taskCache = {
   workspace: {
     key: (workspaceId: number) => `workspace:${workspaceId}`,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    set: async (workspaceId: number, data: any, ttl?: number) => await set(`workspace:${workspaceId}`, data, ttl),
+    set: async (workspaceId: number, data: any, ttl?: number) =>
+      await set(`workspace:${workspaceId}`, data, ttl),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    get: async (workspaceId: number) => await get<any>(`workspace:${workspaceId}`),
-    invalidate: async (workspaceId: number) => await del(`workspace:${workspaceId}`),
+    get: async (workspaceId: number) =>
+      await get<any>(`workspace:${workspaceId}`),
+    invalidate: async (workspaceId: number) =>
+      await del(`workspace:${workspaceId}`),
   },
   aiResponses: {
     key: (prompt: string) => `ai:${Buffer.from(prompt).toString('base64')}`,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    set: async (prompt: string, data: any, ttl?: number) => await set(`ai:${Buffer.from(prompt).toString('base64')}`, data, ttl),
+    set: async (prompt: string, data: any, ttl?: number) =>
+      await set(`ai:${Buffer.from(prompt).toString('base64')}`, data, ttl),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    get: async (prompt: string) => await get<any>(`ai:${Buffer.from(prompt).toString('base64')}`),
-    invalidate: async (prompt: string) => await del(`ai:${Buffer.from(prompt).toString('base64')}`),
+    get: async (prompt: string) =>
+      await get<any>(`ai:${Buffer.from(prompt).toString('base64')}`),
+    invalidate: async (prompt: string) =>
+      await del(`ai:${Buffer.from(prompt).toString('base64')}`),
   },
   integrations: {
     key: (userId: number) => `integrations:${userId}`,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    set: async (userId: number, data: any, ttl?: number) => await set(`integrations:${userId}`, data, ttl),
+    set: async (userId: number, data: any, ttl?: number) =>
+      await set(`integrations:${userId}`, data, ttl),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     get: async (userId: number) => await get<any>(`integrations:${userId}`),
     invalidate: async (userId: number) => await del(`integrations:${userId}`),
@@ -219,7 +234,8 @@ export const taskCache = {
   decisions: {
     key: (userId: number) => `decisions:${userId}`,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    set: async (userId: number, data: any, ttl?: number) => await set(`decisions:${userId}`, data, ttl),
+    set: async (userId: number, data: any, ttl?: number) =>
+      await set(`decisions:${userId}`, data, ttl),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     get: async (userId: number) => await get<any>(`decisions:${userId}`),
     invalidate: async (userId: number) => await del(`decisions:${userId}`),
@@ -233,10 +249,10 @@ export const aiCache = {
   clear: async () => {
     const redisClient = await initRedis();
     if (redisClient) {
-      await redisClient.del("ai:*");
+      await redisClient.del('ai:*');
     } else {
       for (const key of memoryCache.keys()) {
-        if (key.startsWith("ai:")) memoryCache.delete(key);
+        if (key.startsWith('ai:')) memoryCache.delete(key);
       }
     }
   },
@@ -246,7 +262,7 @@ export const aiCache = {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function cached<T extends (...args: any[]) => Promise<any>>(
   fn: T,
-   
+
   keyGenerator: (...args: Parameters<T>) => string,
   ttl: number = DEFAULT_TTL
 ): T {
