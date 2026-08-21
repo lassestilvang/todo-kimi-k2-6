@@ -1,12 +1,18 @@
-"use server";
+'use server';
 
-import { getDb } from "@/lib/db";
-import type { CustomView, CreateCustomViewInput, SortField, SortDirection, ViewType } from "@/types";
+import { getDb } from '@/lib/db';
+import type {
+  CustomView,
+  CreateCustomViewInput,
+  SortField,
+  SortDirection,
+  ViewType,
+} from '@/types';
 
 export async function getCustomViews(userId: number): Promise<CustomView[]> {
   const db = getDb();
   return db
-    .prepare("SELECT * FROM custom_views WHERE user_id = ? ORDER BY name ASC")
+    .prepare('SELECT * FROM custom_views WHERE user_id = ? ORDER BY name ASC')
     .all(userId)
     .map((row: any) => ({
       ...row,
@@ -14,10 +20,13 @@ export async function getCustomViews(userId: number): Promise<CustomView[]> {
     })) as CustomView[];
 }
 
-export async function getCustomViewById(id: number, userId: number): Promise<CustomView | undefined> {
+export async function getCustomViewById(
+  id: number,
+  userId: number
+): Promise<CustomView | undefined> {
   const db = getDb();
   const row = db
-    .prepare("SELECT * FROM custom_views WHERE id = ? AND user_id = ?")
+    .prepare('SELECT * FROM custom_views WHERE id = ? AND user_id = ?')
     .get(id, userId) as any;
 
   if (!row) return undefined;
@@ -28,7 +37,10 @@ export async function getCustomViewById(id: number, userId: number): Promise<Cus
   };
 }
 
-export async function createCustomView(userId: number, input: CreateCustomViewInput): Promise<CustomView> {
+export async function createCustomView(
+  userId: number,
+  input: CreateCustomViewInput
+): Promise<CustomView> {
   const db = getDb();
   const result = db
     .prepare(
@@ -42,9 +54,9 @@ export async function createCustomView(userId: number, input: CreateCustomViewIn
       input.list_id || null,
       input.label_ids ? JSON.stringify(input.label_ids) : null,
       input.priority || null,
-      input.sort_field || "date",
-      input.sort_direction || "asc",
-      input.view_type || "today"
+      input.sort_field || 'date',
+      input.sort_direction || 'asc',
+      input.view_type || 'today'
     );
 
   return {
@@ -55,65 +67,77 @@ export async function createCustomView(userId: number, input: CreateCustomViewIn
     list_id: input.list_id || null,
     label_ids: input.label_ids || [],
     priority: input.priority || null,
-    sort_field: (input.sort_field || "date") as SortField,
-    sort_direction: (input.sort_direction || "asc") as SortDirection,
-    view_type: (input.view_type || "today") as ViewType,
+    sort_field: (input.sort_field || 'date') as SortField,
+    sort_direction: (input.sort_direction || 'asc') as SortDirection,
+    view_type: (input.view_type || 'today') as ViewType,
     created_at: new Date().toISOString(),
   };
 }
 
-export async function updateCustomView(id: number, userId: number, input: Partial<CreateCustomViewInput>): Promise<CustomView> {
+export async function updateCustomView(
+  id: number,
+  userId: number,
+  input: Partial<CreateCustomViewInput>
+): Promise<CustomView> {
   const db = getDb();
   const existing = await getCustomViewById(id, userId);
-  if (!existing) throw new Error("Custom view not found");
+  if (!existing) throw new Error('Custom view not found');
 
   const fields: string[] = [];
   const values: unknown[] = [];
 
   if (input.name !== undefined) {
-    fields.push("name = ?");
+    fields.push('name = ?');
     values.push(input.name);
   }
   if (input.filter_preset !== undefined) {
-    fields.push("filter_preset = ?");
+    fields.push('filter_preset = ?');
     values.push(input.filter_preset);
   }
   if (input.list_id !== undefined) {
-    fields.push("list_id = ?");
+    fields.push('list_id = ?');
     values.push(input.list_id);
   }
   if (input.label_ids !== undefined) {
-    fields.push("label_ids = ?");
+    fields.push('label_ids = ?');
     values.push(JSON.stringify(input.label_ids));
   }
   if (input.priority !== undefined) {
-    fields.push("priority = ?");
+    fields.push('priority = ?');
     values.push(input.priority);
   }
   if (input.sort_field !== undefined) {
-    fields.push("sort_field = ?");
+    fields.push('sort_field = ?');
     values.push(input.sort_field);
   }
   if (input.sort_direction !== undefined) {
-    fields.push("sort_direction = ?");
+    fields.push('sort_direction = ?');
     values.push(input.sort_direction);
   }
   if (input.view_type !== undefined) {
-    fields.push("view_type = ?");
+    fields.push('view_type = ?');
     values.push(input.view_type);
   }
 
   if (fields.length > 0) {
     values.push(id, userId);
-    db.prepare(`UPDATE custom_views SET ${fields.join(", ")} WHERE id = ? AND user_id = ?`).run(...values);
+    db.prepare(
+      `UPDATE custom_views SET ${fields.join(', ')} WHERE id = ? AND user_id = ?`
+    ).run(...values);
   }
 
   const updated = await getCustomViewById(id, userId);
-  if (!updated) throw new Error("Failed to update custom view");
+  if (!updated) throw new Error('Failed to update custom view');
   return updated;
 }
 
-export async function deleteCustomView(id: number, userId: number): Promise<void> {
+export async function deleteCustomView(
+  id: number,
+  userId: number
+): Promise<void> {
   const db = getDb();
-  db.prepare("DELETE FROM custom_views WHERE id = ? AND user_id = ?").run(id, userId);
+  db.prepare('DELETE FROM custom_views WHERE id = ? AND user_id = ?').run(
+    id,
+    userId
+  );
 }
