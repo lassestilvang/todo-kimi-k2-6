@@ -3,7 +3,7 @@
  * Analyzes task distribution and suggests optimal reassignments
  */
 
-import { getAIManager } from "./providers";
+import { getAIManager } from './providers';
 
 /**
  * Task schedule conflict detection
@@ -11,7 +11,7 @@ import { getAIManager } from "./providers";
 export interface ScheduleConflict {
   taskId: number;
   taskName: string;
-  conflictType: "overlap" | "too_many_tasks" | "missing_deadline";
+  conflictType: 'overlap' | 'too_many_tasks' | 'missing_deadline';
   conflictingTaskIds?: number[];
   date?: string;
   suggestedResolution?: {
@@ -50,13 +50,16 @@ export function detectScheduleConflicts(
 
   // Group tasks by date
   const tasksByDate = tasks
-    .filter((t) => !t.completed && t.date)
-    .reduce((acc, task) => {
-      const date = task.date!;
-      if (!acc[date]) acc[date] = [];
-      acc[date].push(task);
-      return acc;
-    }, {} as Record<string, typeof tasks>);
+    .filter(t => !t.completed && t.date)
+    .reduce(
+      (acc, task) => {
+        const date = task.date!;
+        if (!acc[date]) acc[date] = [];
+        acc[date].push(task);
+        return acc;
+      },
+      {} as Record<string, typeof tasks>
+    );
 
   // Check for too many tasks on a single day (>5 tasks)
   for (const [date, dayTasks] of Object.entries(tasksByDate)) {
@@ -64,9 +67,9 @@ export function detectScheduleConflicts(
       conflicts.push({
         taskId: dayTasks[0].id,
         taskName: dayTasks[0].name,
-        conflictType: "too_many_tasks",
+        conflictType: 'too_many_tasks',
         date,
-        conflictingTaskIds: dayTasks.map((t) => t.id),
+        conflictingTaskIds: dayTasks.map(t => t.id),
         suggestedResolution: {
           newDate: getNextAvailableDay(date, tasksByDate),
         },
@@ -76,13 +79,18 @@ export function detectScheduleConflicts(
 
   // Check for tasks missing deadlines
   const missingDeadlines = tasks.filter(
-    (t) => !t.completed && !t.deadline && t.date && new Date(t.date) < nextWeek && t.priority !== "low"
+    t =>
+      !t.completed &&
+      !t.deadline &&
+      t.date &&
+      new Date(t.date) < nextWeek &&
+      t.priority !== 'low'
   );
   for (const task of missingDeadlines) {
     conflicts.push({
       taskId: task.id,
       taskName: task.name,
-      conflictType: "missing_deadline",
+      conflictType: 'missing_deadline',
       date: task.date!,
     });
   }
@@ -100,7 +108,7 @@ function getNextAvailableDay(
   const current = new Date(currentDate);
   for (let i = 1; i <= 14; i++) {
     const next = new Date(current.getTime() + i * 24 * 60 * 60 * 1000);
-    const nextDate = next.toISOString().split("T")[0];
+    const nextDate = next.toISOString().split('T')[0];
     if (!tasksByDate[nextDate] || tasksByDate[nextDate].length < 4) {
       return nextDate;
     }
@@ -132,29 +140,35 @@ export function analyzeProductivityPatterns(
   }
 
   // Count completed tasks by hour
-  const completedByHour = timeEntries.reduce((acc, entry) => {
-    if (entry.end_time) {
-      const hour = new Date(entry.start_time).getHours();
-      if (!acc[hour]) acc[hour] = { completed: 0, total: 0 };
-      acc[hour].completed++;
-    }
-    return acc;
-  }, {} as Record<number, { completed: number; total: number }>);
+  const completedByHour = timeEntries.reduce(
+    (acc, entry) => {
+      if (entry.end_time) {
+        const hour = new Date(entry.start_time).getHours();
+        if (!acc[hour]) acc[hour] = { completed: 0, total: 0 };
+        acc[hour].completed++;
+      }
+      return acc;
+    },
+    {} as Record<number, { completed: number; total: number }>
+  );
 
   // Count total tasks by date and estimate hour
-  const tasksByHour = tasks.reduce((acc, task) => {
-    if (task.date) {
-      const hour = 10; // Default estimated hour
-      if (!acc[hour]) acc[hour] = { completed: 0, total: 0 };
-      acc[hour].total++;
-    }
-    return acc;
-  }, {} as Record<number, { completed: number; total: number }>);
+  const tasksByHour = tasks.reduce(
+    (acc, task) => {
+      if (task.date) {
+        const hour = 10; // Default estimated hour
+        if (!acc[hour]) acc[hour] = { completed: 0, total: 0 };
+        acc[hour].total++;
+      }
+      return acc;
+    },
+    {} as Record<number, { completed: number; total: number }>
+  );
 
   // Merge statistics
   for (const hour of Object.keys(completedByHour)) {
     const h = parseInt(hour);
-    const pattern = patterns.find((p) => p.hour === h);
+    const pattern = patterns.find(p => p.hour === h);
     if (pattern) {
       const data = completedByHour[h];
       pattern.taskCount = data.total;
@@ -177,24 +191,35 @@ export function suggestOptimalRescheduling(
     priority: string;
   }>,
   productivityPatterns: ProductivityPattern[]
-): Array<{ taskId: number; taskName: string; currentDate: string; suggestedDate: string; confidence: number }> {
+): Array<{
+  taskId: number;
+  taskName: string;
+  currentDate: string;
+  suggestedDate: string;
+  confidence: number;
+}> {
   const suggestions = [];
-  const peakHours = productivityPatterns.slice(0, 3).map((p) => p.hour);
+  const peakHours = productivityPatterns.slice(0, 3).map(p => p.hour);
 
   // Find tasks on overloaded days
   const tasksByDate = tasks
-    .filter((t) => t.date && !t.estimate) // Tasks without estimates need rescheduling
-    .reduce((acc, task) => {
-      const date = task.date!;
-      if (!acc[date]) acc[date] = [];
-      acc[date].push(task);
-      return acc;
-    }, {} as Record<string, typeof tasks>);
+    .filter(t => t.date && !t.estimate) // Tasks without estimates need rescheduling
+    .reduce(
+      (acc, task) => {
+        const date = task.date!;
+        if (!acc[date]) acc[date] = [];
+        acc[date].push(task);
+        return acc;
+      },
+      {} as Record<string, typeof tasks>
+    );
 
   for (const [date, dayTasks] of Object.entries(tasksByDate)) {
     if (dayTasks.length > 3) {
       // Overloaded day - suggest moving some tasks
-      const lowPriority = dayTasks.filter((t) => t.priority === "low" || t.priority === "none");
+      const lowPriority = dayTasks.filter(
+        t => t.priority === 'low' || t.priority === 'none'
+      );
       for (const task of lowPriority.slice(0, 2)) {
         const nextDay = getNextAvailableSlot(date, tasksByDate, peakHours);
         suggestions.push({
@@ -222,11 +247,14 @@ function getNextAvailableSlot(
   const current = new Date(currentDate);
   for (let i = 1; i <= 7; i++) {
     const next = new Date(current.getTime() + i * 24 * 60 * 60 * 1000);
-    const nextDate = next.toISOString().split("T")[0];
+    const nextDate = next.toISOString().split('T')[0];
     const dayOfWeek = next.getDay();
     const isPeakDay = peakHours.includes(dayOfWeek);
 
-    if ((!tasksByDate[nextDate] || tasksByDate[nextDate].length < 4) && isPeakDay) {
+    if (
+      (!tasksByDate[nextDate] || tasksByDate[nextDate].length < 4) &&
+      isPeakDay
+    ) {
       return nextDate;
     }
   }
@@ -234,7 +262,7 @@ function getNextAvailableSlot(
   // Fallback: just find any day with fewer tasks
   for (let i = 1; i <= 14; i++) {
     const next = new Date(current.getTime() + i * 24 * 60 * 60 * 1000);
-    const nextDate = next.toISOString().split("T")[0];
+    const nextDate = next.toISOString().split('T')[0];
     if (!tasksByDate[nextDate] || tasksByDate[nextDate].length < 4) {
       return nextDate;
     }
@@ -261,18 +289,29 @@ export interface ScheduleAnalysis {
 /**
  * Categorize workload levels
  */
-export function categorizeWorkload(score: number, avg: number): "underloaded" | "balanced" | "overloaded" {
-  if (score < avg * 0.7) return "underloaded";
-  if (score > avg * 1.3) return "overloaded";
-  return "balanced";
+export function categorizeWorkload(
+  score: number,
+  avg: number
+): 'underloaded' | 'balanced' | 'overloaded' {
+  if (score < avg * 0.7) return 'underloaded';
+  if (score > avg * 1.3) return 'overloaded';
+  return 'balanced';
 }
 
 /**
  * Calculate balance score for a user
  */
-export function calculateBalanceScore(workload: UserWorkload, avgWorkload: number): number {
-  const { totalTasks, overdueTasks, highPriorityTasks, totalEstimatedTime } = workload;
-  const score = totalTasks * 1 + overdueTasks * 3 + highPriorityTasks * 2 + totalEstimatedTime / 60;
+export function calculateBalanceScore(
+  workload: UserWorkload,
+  avgWorkload: number
+): number {
+  const { totalTasks, overdueTasks, highPriorityTasks, totalEstimatedTime } =
+    workload;
+  const score =
+    totalTasks * 1 +
+    overdueTasks * 3 +
+    highPriorityTasks * 2 +
+    totalEstimatedTime / 60;
   return Math.max(0, 100 - (score / avgWorkload) * 50);
 }
 
@@ -289,7 +328,7 @@ export interface UserWorkload {
 }
 
 export interface WorkloadSuggestion {
-  type: "reassign" | "reschedule" | "split";
+  type: 'reassign' | 'reschedule' | 'split';
   taskId: number;
   taskName: string;
   reason: string;
@@ -307,7 +346,7 @@ export interface WorkloadSuggestion {
 export function calculateWorkloads(users: UserWorkload[]): Map<number, number> {
   const workloadMap = new Map<number, number>();
 
-  users.forEach((user) => {
+  users.forEach(user => {
     // Weighted workload score
     const score =
       user.totalTasks * 1 +
@@ -340,22 +379,34 @@ export async function generateWorkloadSuggestions(
 
   // Calculate current workloads
   const workloadMap = calculateWorkloads(users);
-  const avgWorkload = Array.from(workloadMap.values()).reduce((a, b) => a + b, 0) /
+  const avgWorkload =
+    Array.from(workloadMap.values()).reduce((a, b) => a + b, 0) /
     (workloadMap.size || 1);
 
   // Find overloaded and underloaded users
-  const overloadedUsers = users.filter((u) => workloadMap.get(u.userId)! > avgWorkload * 1.3);
-  const underloadedUsers = users.filter((u) => workloadMap.get(u.userId)! < avgWorkload * 0.7);
+  const overloadedUsers = users.filter(
+    u => workloadMap.get(u.userId)! > avgWorkload * 1.3
+  );
+  const underloadedUsers = users.filter(
+    u => workloadMap.get(u.userId)! < avgWorkload * 0.7
+  );
 
   // Check for overdue high-priority tasks that could be reassigned
   const overdueHighPriority = tasks.filter(
-    (t) => !t.completed && t.priority === "critical" && t.date && new Date(t.date) < new Date()
+    t =>
+      !t.completed &&
+      t.priority === 'critical' &&
+      t.date &&
+      new Date(t.date) < new Date()
   );
 
   for (const task of overdueHighPriority) {
     if (overloadedUsers.length > 0 && underloadedUsers.length > 0) {
-      const currentAssignee = users.find((u) => u.userId === task.assignee_id);
-      if (currentAssignee && workloadMap.get(currentAssignee.userId)! > avgWorkload) {
+      const currentAssignee = users.find(u => u.userId === task.assignee_id);
+      if (
+        currentAssignee &&
+        workloadMap.get(currentAssignee.userId)! > avgWorkload
+      ) {
         const bestCandidate = underloadedUsers.reduce((best, user) =>
           workloadMap.get(user.userId)! < workloadMap.get(best.userId)!
             ? user
@@ -363,7 +414,7 @@ export async function generateWorkloadSuggestions(
         );
 
         suggestions.push({
-          type: "reassign",
+          type: 'reassign',
           taskId: task.id,
           taskName: task.name,
           reason: `Task is overdue and assignee is overloaded (${currentAssignee.totalTasks} tasks)`,
@@ -378,15 +429,19 @@ export async function generateWorkloadSuggestions(
 
   // Check for tasks that could be rescheduled
   const nearDueTasks = tasks.filter(
-    (t) => !t.completed && t.date && new Date(t.date) >= new Date() && new Date(t.date) <= new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
+    t =>
+      !t.completed &&
+      t.date &&
+      new Date(t.date) >= new Date() &&
+      new Date(t.date) <= new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
   );
 
   for (const task of nearDueTasks) {
     if (task.estimate) {
-      const estimateHours = parseFloat(task.estimate.replace(":", ".")) || 0;
+      const estimateHours = parseFloat(task.estimate.replace(':', '.')) || 0;
       if (estimateHours > 4) {
         suggestions.push({
-          type: "split",
+          type: 'split',
           taskId: task.id,
           taskName: task.name,
           reason: `Large task (${estimateHours}h) near deadline could be broken into smaller subtasks`,
@@ -416,16 +471,18 @@ export function getUserWorkloadSummary(
     estimate: string | null;
   }>
 ): UserWorkload {
-  const userTasks = allTasks.filter((t) => t.assignee_id === user.userId);
-  const completedTasks = userTasks.filter((t) => t.completed);
+  const userTasks = allTasks.filter(t => t.assignee_id === user.userId);
+  const completedTasks = userTasks.filter(t => t.completed);
   const overdueTasks = userTasks.filter(
-    (t) => !t.completed && t.date && new Date(t.date) < new Date()
+    t => !t.completed && t.date && new Date(t.date) < new Date()
   );
-  const highPriorityTasks = userTasks.filter((t) => t.priority === "critical" || t.priority === "high");
+  const highPriorityTasks = userTasks.filter(
+    t => t.priority === 'critical' || t.priority === 'high'
+  );
 
   const totalEstimatedTime = userTasks.reduce((sum, t) => {
     if (t.estimate) {
-      const hours = parseFloat(t.estimate.replace(":", ".")) || 0;
+      const hours = parseFloat(t.estimate.replace(':', '.')) || 0;
       return sum + hours;
     }
     return sum;
@@ -438,6 +495,7 @@ export function getUserWorkloadSummary(
     overdueTasks: overdueTasks.length,
     highPriorityTasks: highPriorityTasks.length,
     totalEstimatedTime,
-    avgEstimatedTime: userTasks.length > 0 ? totalEstimatedTime / userTasks.length : 0,
+    avgEstimatedTime:
+      userTasks.length > 0 ? totalEstimatedTime / userTasks.length : 0,
   };
 }
