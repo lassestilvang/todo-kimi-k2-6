@@ -3,7 +3,7 @@
  * Syncs tasks with Google Calendar
  */
 
-import type { Task } from "@/types";
+import type { Task } from '@/types';
 
 export interface CalendarEvent {
   id: string;
@@ -39,12 +39,12 @@ export async function getCalendarEvents(
 ): Promise<CalendarEvent[]> {
   const response = await fetch(
     `https://www.googleapis.com/calendar/v3/calendars/primary/events?` +
-    new URLSearchParams({
-      timeMin: `${startDate}T00:00:00Z`,
-      timeMax: `${endDate}T23:59:59Z`,
-      singleEvents: "true",
-      orderBy: "startTime",
-    }).toString(),
+      new URLSearchParams({
+        timeMin: `${startDate}T00:00:00Z`,
+        timeMax: `${endDate}T23:59:59Z`,
+        singleEvents: 'true',
+        orderBy: 'startTime',
+      }).toString(),
     {
       headers: {
         Authorization: `Bearer ${config.accessToken}`,
@@ -68,7 +68,7 @@ export async function createCalendarEvent(
   task: Task
 ): Promise<string> {
   if (!task.date) {
-    throw new Error("Task has no date");
+    throw new Error('Task has no date');
   }
 
   const event: CalendarEvent = {
@@ -83,24 +83,27 @@ export async function createCalendarEvent(
     },
     reminders: {
       useDefault: false,
-      overrides: [
-        { method: "popup", minutes: 15 },
-      ],
+      overrides: [{ method: 'popup', minutes: 15 }],
     },
   };
 
-  const response = await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${config.accessToken}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(event),
-  });
+  const response = await fetch(
+    'https://www.googleapis.com/calendar/v3/calendars/primary/events',
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${config.accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(event),
+    }
+  );
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(`Failed to create event: ${error.error?.message || response.statusText}`);
+    throw new Error(
+      `Failed to create event: ${error.error?.message || response.statusText}`
+    );
   }
 
   const result = await response.json();
@@ -118,10 +121,10 @@ export async function updateCalendarEvent(
   const response = await fetch(
     `https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`,
     {
-      method: "PUT",
+      method: 'PUT',
       headers: {
         Authorization: `Bearer ${config.accessToken}`,
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         summary: task.name,
@@ -151,7 +154,7 @@ export async function deleteCalendarEvent(
   const response = await fetch(
     `https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`,
     {
-      method: "DELETE",
+      method: 'DELETE',
       headers: {
         Authorization: `Bearer ${config.accessToken}`,
       },
@@ -168,11 +171,11 @@ export async function deleteCalendarEvent(
  */
 export function getAuthUrl(state: string): string {
   const params = new URLSearchParams({
-    client_id: process.env.GOOGLE_CLIENT_ID || "",
+    client_id: process.env.GOOGLE_CLIENT_ID || '',
     redirect_uri: `${process.env.NEXTAUTH_URL}/api/auth/callback/google`,
-    response_type: "code",
-    scope: "https://www.googleapis.com/auth/calendar",
-    access_type: "offline",
+    response_type: 'code',
+    scope: 'https://www.googleapis.com/auth/calendar',
+    access_type: 'offline',
     state,
   });
   return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
@@ -186,23 +189,25 @@ export async function exchangeCodeForTokens(code: string): Promise<{
   refresh_token?: string;
   expires_in: number;
 }> {
-  const response = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
+  const response = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
     headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
+      'Content-Type': 'application/x-www-form-urlencoded',
     },
     body: new URLSearchParams({
-      client_id: process.env.GOOGLE_CLIENT_ID || "",
-      client_secret: process.env.GOOGLE_CLIENT_SECRET || "",
+      client_id: process.env.GOOGLE_CLIENT_ID || '',
+      client_secret: process.env.GOOGLE_CLIENT_SECRET || '',
       redirect_uri: `${process.env.NEXTAUTH_URL}/api/auth/callback/google`,
-      grant_type: "authorization_code",
+      grant_type: 'authorization_code',
       code,
     }).toString(),
   });
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(`Token exchange failed: ${error.error_description || response.statusText}`);
+    throw new Error(
+      `Token exchange failed: ${error.error_description || response.statusText}`
+    );
   }
 
   return response.json();
@@ -226,15 +231,19 @@ export async function syncTasksToCalendar(
       result.created++;
     } catch (error) {
       // If it's a duplicate, try to update
-      if ((error as Error).message.includes("already exists")) {
+      if ((error as Error).message.includes('already exists')) {
         try {
           await updateCalendarEvent(config, `task-${task.id}`, task);
           result.updated++;
         } catch (updateError) {
-          result.errors.push(`Failed to update task ${task.id}: ${(updateError as Error).message}`);
+          result.errors.push(
+            `Failed to update task ${task.id}: ${(updateError as Error).message}`
+          );
         }
       } else {
-        result.errors.push(`Failed to create task ${task.id}: ${(error as Error).message}`);
+        result.errors.push(
+          `Failed to create task ${task.id}: ${(error as Error).message}`
+        );
       }
     }
   }
@@ -243,4 +252,4 @@ export async function syncTasksToCalendar(
 }
 
 // Re-export Task type for convenience
-export type { Task } from "@/types";
+export type { Task } from '@/types';
