@@ -1,10 +1,11 @@
-"use server";
+'use server';
 
-import { getDb } from "@/lib/db";
-import { getCurrentUser } from "@/lib/session";
-import type { CreateTaskInput, Task } from "@/types";
+import { getDb } from '@/lib/db';
+import { getCurrentUser } from '@/lib/session';
+import type { CreateTaskInput, Task } from '@/types';
 
-export type InboxSourceType = "calendar" | "email" | "slack" | "github" | "manual" | "integration";
+export type InboxSourceType =
+  'calendar' | 'email' | 'slack' | 'github' | 'manual' | 'integration';
 
 export interface InboxSource {
   id: number;
@@ -14,11 +15,11 @@ export interface InboxSource {
   title: string;
   description?: string;
   due_date?: string;
-  priority: "critical" | "high" | "medium" | "low" | "none";
+  priority: 'critical' | 'high' | 'medium' | 'low' | 'none';
   confidence: number;
   priority_score?: number;
-  status: "pending" | "processing" | "converted" | "dismissed";
-  predicted_priority?: "critical" | "high" | "medium" | "low" | "none";
+  status: 'pending' | 'processing' | 'converted' | 'dismissed';
+  predicted_priority?: 'critical' | 'high' | 'medium' | 'low' | 'none';
   predicted_due_date?: string;
   suggested_labels?: string; // JSON string in database
   ai_reasoning?: string;
@@ -34,7 +35,7 @@ export interface SmartInboxItem {
   matches: string[];
   priority_score: number;
   ai_suggestion?: string;
-  predicted_priority?: "critical" | "high" | "medium" | "low" | "none";
+  predicted_priority?: 'critical' | 'high' | 'medium' | 'low' | 'none';
   predicted_due_date?: string;
   suggested_labels?: string; // JSON string in database
   ai_reasoning?: string;
@@ -49,16 +50,19 @@ export interface SmartInboxResponse {
 
 // Source type display names
 const SOURCE_NAMES: Record<InboxSourceType, string> = {
-  calendar: "Calendar",
-  email: "Email",
-  slack: "Slack",
-  github: "GitHub",
-  manual: "Manual",
-  integration: "Integration",
+  calendar: 'Calendar',
+  email: 'Email',
+  slack: 'Slack',
+  github: 'GitHub',
+  manual: 'Manual',
+  integration: 'Integration',
 };
 
 // Import utility functions from the utils file
-import { calculatePriorityScore, calculateDaysUntil } from '../smart-inbox-utils';
+import {
+  calculatePriorityScore,
+  calculateDaysUntil,
+} from '../smart-inbox-utils';
 
 // Re-export for backwards compatibility
 export { calculatePriorityScore, calculateDaysUntil };
@@ -77,36 +81,45 @@ export async function getSmartInbox(options?: {
   }
 
   const limit = options?.limit || 50;
-  let whereClause = "WHERE user_id = ?";
+  let whereClause = 'WHERE user_id = ?';
   const params: any[] = [user.id];
 
   if (options?.status) {
-    whereClause += " AND status = ?";
+    whereClause += ' AND status = ?';
     params.push(options.status);
   }
 
   if (options?.sourceType) {
-    whereClause += " AND source_type = ?";
+    whereClause += ' AND source_type = ?';
     params.push(options.sourceType);
   }
 
-  const sources = await db.prepare(`
+  const sources = (await db
+    .prepare(
+      `
     SELECT * FROM smart_inbox_sources
     ${whereClause}
     ORDER BY priority_score DESC, created_at DESC
     LIMIT ?
-  `).all(...params, limit) as InboxSource[];
+  `
+    )
+    .all(...params, limit)) as InboxSource[];
 
   // Count by status
-  const counts = await db.prepare(`
+  const counts = (await db
+    .prepare(
+      `
     SELECT status, COUNT(*) as count
     FROM smart_inbox_sources
     WHERE user_id = ?
     GROUP BY status
-  `).all(user.id) as { status: string; count: number }[];
+  `
+    )
+    .all(user.id)) as { status: string; count: number }[];
 
-  const pending_count = counts.find(c => c.status === "pending")?.count ?? 0;
-  const converted_count = counts.find(c => c.status === "converted")?.count ?? 0;
+  const pending_count = counts.find(c => c.status === 'pending')?.count ?? 0;
+  const converted_count =
+    counts.find(c => c.status === 'converted')?.count ?? 0;
 
   const items: SmartInboxItem[] = sources.map(source => ({
     id: source.id,
@@ -154,7 +167,7 @@ export async function upsertInboxSource(data: {
   title: string;
   description?: string;
   due_date?: string;
-  priority?: "critical" | "high" | "medium" | "low" | "none";
+  priority?: 'critical' | 'high' | 'medium' | 'low' | 'none';
   confidence?: number;
   metadata?: Record<string, any>;
 }): Promise<InboxSource> {
@@ -168,56 +181,78 @@ export async function upsertInboxSource(data: {
   }
 
   if (!userId) {
-    throw new Error("User not authenticated");
+    throw new Error('User not authenticated');
   }
 
   // Check if source already exists
-  const existing = db.prepare(`
+  const existing = db
+    .prepare(
+      `
     SELECT id FROM smart_inbox_sources
     WHERE user_id = ? AND source_type = ? AND external_id = ?
-  `).get(userId, data.source_type, data.external_id) as { id: number } | undefined;
+  `
+    )
+    .get(userId, data.source_type, data.external_id) as
+    { id: number } | undefined;
 
   const metadata = data.metadata ? JSON.stringify(data.metadata) : null;
-  const priority = data.priority || "medium";
-  const confidence = data.confidence ?? Math.min(100, (data.priority === "critical" ? 95 : data.priority === "high" ? 85 : 50));
+  const priority = data.priority || 'medium';
+  const confidence =
+    data.confidence ??
+    Math.min(
+      100,
+      data.priority === 'critical' ? 95 : data.priority === 'high' ? 85 : 50
+    );
 
   if (existing) {
     // Update existing
-    const result = await db.prepare(`
+    const result = await db
+      .prepare(
+        `
       UPDATE smart_inbox_sources
       SET title = ?, description = ?, due_date = ?, priority = ?, confidence = ?, metadata = ?, status = 'pending'
       WHERE id = ?
-    `).run(
+    `
+      )
+      .run(
+        data.title,
+        data.description || null,
+        data.due_date || null,
+        priority,
+        confidence,
+        metadata,
+        existing.id
+      );
+
+    return db
+      .prepare('SELECT * FROM smart_inbox_sources WHERE id = ?')
+      .get(existing.id) as InboxSource;
+  }
+
+  // Insert new
+  const result = await db
+    .prepare(
+      `
+    INSERT INTO smart_inbox_sources
+    (user_id, source_type, external_id, title, description, due_date, priority, confidence, metadata)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `
+    )
+    .run(
+      userId,
+      data.source_type,
+      data.external_id,
       data.title,
       data.description || null,
       data.due_date || null,
       priority,
       confidence,
-      metadata,
-      existing.id
+      metadata
     );
 
-    return db.prepare("SELECT * FROM smart_inbox_sources WHERE id = ?").get(existing.id) as InboxSource;
-  }
-
-  // Insert new
-  const result = await db.prepare(`
-    INSERT INTO smart_inbox_sources
-    (user_id, source_type, external_id, title, description, due_date, priority, confidence, metadata)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(
-    userId,
-    data.source_type,
-    data.external_id,
-    data.title,
-    data.description || null,
-    data.due_date || null,
-    priority,
-    confidence,
-    metadata
-  );
-
-  return db.prepare("SELECT * FROM smart_inbox_sources WHERE id = last_insert_rowid()").get() as InboxSource;
+  return db
+    .prepare('SELECT * FROM smart_inbox_sources WHERE id = last_insert_rowid()')
+    .get() as InboxSource;
 }
 
 // Convert inbox source to a task
@@ -226,16 +261,20 @@ export async function convertSourceToTask(sourceId: number): Promise<Task> {
   const user = await getCurrentUser();
 
   if (!user?.id) {
-    throw new Error("User not authenticated");
+    throw new Error('User not authenticated');
   }
 
   // Get the source
-  const source = await db.prepare(`
+  const source = (await db
+    .prepare(
+      `
     SELECT * FROM smart_inbox_sources WHERE id = ? AND user_id = ?
-  `).get(sourceId, user.id) as InboxSource | undefined;
+  `
+    )
+    .get(sourceId, user.id)) as InboxSource | undefined;
 
   if (!source) {
-    throw new Error("Source not found");
+    throw new Error('Source not found');
   }
 
   // Create task from source
@@ -247,13 +286,17 @@ export async function convertSourceToTask(sourceId: number): Promise<Task> {
   };
 
   // Get the createTask action
-  const { createTask } = await import("./tasks");
+  const { createTask } = await import('./tasks');
   const task = await createTask(taskData);
 
   // Mark source as converted
-  await db.prepare(`
+  await db
+    .prepare(
+      `
     UPDATE smart_inbox_sources SET status = 'converted', updated_at = CURRENT_TIMESTAMP WHERE id = ?
-  `).run(sourceId);
+  `
+    )
+    .run(sourceId);
 
   return task;
 }
@@ -274,7 +317,9 @@ export async function bulkConvertSourcesToTasks(sourceIds: number[]): Promise<{
       created++;
     } catch (error) {
       failed++;
-      errors.push(`Failed to convert source ${id}: ${error instanceof Error ? error.message : "Unknown error"}`);
+      errors.push(
+        `Failed to convert source ${id}: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
@@ -287,12 +332,16 @@ export async function dismissSource(sourceId: number): Promise<void> {
   const user = await getCurrentUser();
 
   if (!user?.id) {
-    throw new Error("User not authenticated");
+    throw new Error('User not authenticated');
   }
 
-  await db.prepare(`
+  await db
+    .prepare(
+      `
     UPDATE smart_inbox_sources SET status = 'dismissed', updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?
-  `).run(sourceId, user.id);
+  `
+    )
+    .run(sourceId, user.id);
 }
 
 // Get or create default inbox list
@@ -300,17 +349,23 @@ export async function getInboxList(): Promise<number> {
   const db = getDb();
 
   // Check if inbox list exists
-  const inbox = await db.prepare("SELECT id FROM lists WHERE is_inbox = 1 LIMIT 1").get() as { id: number } | undefined;
+  const inbox = (await db
+    .prepare('SELECT id FROM lists WHERE is_inbox = 1 LIMIT 1')
+    .get()) as { id: number } | undefined;
 
   if (inbox) {
     return inbox.id;
   }
 
   // Create default inbox
-  const result = await db.prepare(`
+  const result = await db
+    .prepare(
+      `
     INSERT INTO lists (name, emoji, color, is_inbox, created_at)
     VALUES ('Inbox', '📥', '#6366f1', 1, CURRENT_TIMESTAMP)
-  `).run();
+  `
+    )
+    .run();
 
   return result.lastInsertRowid as unknown as number;
 }
@@ -321,27 +376,36 @@ export async function deleteInboxSource(sourceId: number): Promise<void> {
   const user = await getCurrentUser();
 
   if (!user?.id) {
-    throw new Error("User not authenticated");
+    throw new Error('User not authenticated');
   }
 
-  await db.prepare(`DELETE FROM smart_inbox_sources WHERE id = ? AND user_id = ?`).run(sourceId, user.id);
+  await db
+    .prepare(`DELETE FROM smart_inbox_sources WHERE id = ? AND user_id = ?`)
+    .run(sourceId, user.id);
 }
 
 // Sync all sources to unified inbox
-export async function syncAllSourcesToInbox(): Promise<{ total: number; converted: number }> {
+export async function syncAllSourcesToInbox(): Promise<{
+  total: number;
+  converted: number;
+}> {
   const db = getDb();
   const user = await getCurrentUser();
 
   if (!user?.id) {
-    throw new Error("User not authenticated");
+    throw new Error('User not authenticated');
   }
 
   // Get pending sources
-  const pending = await db.prepare(`
+  const pending = (await db
+    .prepare(
+      `
     SELECT * FROM smart_inbox_sources
     WHERE user_id = ? AND status = 'pending'
     ORDER BY priority_score DESC
-  `).all(user.id) as InboxSource[];
+  `
+    )
+    .all(user.id)) as InboxSource[];
 
   let converted = 0;
 
@@ -372,7 +436,9 @@ export async function getInboxSummary(): Promise<{
     return { total: 0, pending: 0, bySourceType: {}, byPriority: {} };
   }
 
-  const result = await db.prepare(`
+  const result = (await db
+    .prepare(
+      `
     SELECT
       source_type,
       priority,
@@ -381,7 +447,14 @@ export async function getInboxSummary(): Promise<{
     FROM smart_inbox_sources
     WHERE user_id = ?
     GROUP BY source_type, priority
-  `).all(user.id) as { source_type: InboxSourceType; priority: string; count: number; pending_count: number }[];
+  `
+    )
+    .all(user.id)) as {
+    source_type: InboxSourceType;
+    priority: string;
+    count: number;
+    pending_count: number;
+  }[];
 
   const bySourceType: Record<string, number> = {};
   const byPriority: Record<string, number> = {};
@@ -389,7 +462,8 @@ export async function getInboxSummary(): Promise<{
   let pending = 0;
 
   for (const row of result) {
-    bySourceType[row.source_type] = (bySourceType[row.source_type] || 0) + row.count;
+    bySourceType[row.source_type] =
+      (bySourceType[row.source_type] || 0) + row.count;
     byPriority[row.priority] = (byPriority[row.priority] || 0) + row.count;
     total += row.count;
     pending += row.pending_count;
