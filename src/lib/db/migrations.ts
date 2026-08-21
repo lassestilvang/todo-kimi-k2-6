@@ -1,4 +1,4 @@
-import { getDb } from "./index";
+import { getDb } from './index';
 
 export interface Migration {
   id: number;
@@ -446,8 +446,10 @@ export async function runMigrations(): Promise<void> {
   `);
 
   // Get executed migrations
-  const executed = db.prepare("SELECT id FROM migrations").all() as { id: number }[];
-  const executedIds = new Set(executed.map((m) => m.id));
+  const executed = db.prepare('SELECT id FROM migrations').all() as {
+    id: number;
+  }[];
+  const executedIds = new Set(executed.map(m => m.id));
 
   // Run pending migrations
   const migrationEntries = Object.entries(migrations);
@@ -460,8 +462,9 @@ export async function runMigrations(): Promise<void> {
       console.log(`Running migration ${migrationId}...`);
       try {
         db.exec(sql);
-        db.prepare("INSERT INTO migrations (id, name, sql) VALUES (?, ?, ?)")
-          .run(migrationId, `migration_${migrationId}`, sql);
+        db.prepare(
+          'INSERT INTO migrations (id, name, sql) VALUES (?, ?, ?)'
+        ).run(migrationId, `migration_${migrationId}`, sql);
         console.log(`Migration ${migrationId} completed`);
       } catch (error) {
         console.error(`Failed to run migration ${migrationId}:`, error);
@@ -473,11 +476,13 @@ export async function runMigrations(): Promise<void> {
 
 export function getPendingMigrations(): number[] {
   const db = getDb();
-  const executed = db.prepare("SELECT id FROM migrations").all() as { id: number }[];
-  const executedIds = new Set(executed.map((m) => m.id));
+  const executed = db.prepare('SELECT id FROM migrations').all() as {
+    id: number;
+  }[];
+  const executedIds = new Set(executed.map(m => m.id));
 
   return Object.keys(migrations)
-    .map((id) => parseInt(id))
-    .filter((id) => !executedIds.has(id))
+    .map(id => parseInt(id))
+    .filter(id => !executedIds.has(id))
     .sort((a, b) => a - b);
 }
