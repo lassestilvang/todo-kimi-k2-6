@@ -1,7 +1,7 @@
-"use server";
+'use server';
 
-import { getCurrentUser } from "@/lib/session";
-import { aiCache } from "./providers";
+import { getCurrentUser } from '@/lib/session';
+import { aiCache } from './providers';
 
 /**
  * Analyze user's energy patterns based on task completion data
@@ -49,7 +49,7 @@ export async function suggestOptimalTaskTimes(
   constraints?: {
     workHours?: { start: number; end: number };
     existingTasks?: any[];
-    energyLevel?: "high" | "medium" | "low";
+    energyLevel?: 'high' | 'medium' | 'low';
     deadlinePressure?: number; // 0-1 scale
   }
 ): Promise<any[]> {
@@ -63,7 +63,12 @@ export async function suggestOptimalTaskTimes(
   const patterns = await analyzeUserEnergyPatterns(
     userId,
     [], // Would pass actual tasks
-    constraints?.existingTasks?.length ? { start: new Date().toISOString(), end: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() } : undefined
+    constraints?.existingTasks?.length
+      ? {
+          start: new Date().toISOString(),
+          end: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        }
+      : undefined
   );
 
   // Generate optimal time suggestions
@@ -108,14 +113,16 @@ function analyzeDayPattern(dayTasks: any[], date: string): any {
   const pendingTasks = dayTasks.filter(task => !task.completed);
 
   // Extract time-based patterns from task logs
-  const taskTimes = dayTasks.map(task => {
-    if (task.logs && task.logs.length > 0) {
-      return extractTaskTimeFromLogs(task);
-    } else if (task.date) {
-      return new Date(task.date).getHours();
-    }
-    return null;
-  }).filter((time): time is number => time !== null);
+  const taskTimes = dayTasks
+    .map(task => {
+      if (task.logs && task.logs.length > 0) {
+        return extractTaskTimeFromLogs(task);
+      } else if (task.date) {
+        return new Date(task.date).getHours();
+      }
+      return null;
+    })
+    .filter((time): time is number => time !== null);
 
   // Calculate pattern metrics
   const pattern = {
@@ -124,11 +131,16 @@ function analyzeDayPattern(dayTasks: any[], date: string): any {
     completed_tasks: completedTasks.length,
     completion_rate: completedTasks.length / Math.max(dayTasks.length, 1),
     average_task_duration: calculateAverageTaskDuration(completedTasks),
-    peak_productivity_hour: taskTimes.length > 0 ? mostFrequent(taskTimes) : null,
+    peak_productivity_hour:
+      taskTimes.length > 0 ? mostFrequent(taskTimes) : null,
     task_types_completed: completedTasks.map(t => t.priority).filter(Boolean),
     energy_indicators: {
-      high_tasks_completed: completedTasks.filter(t => t.priority === 'critical' || t.priority === 'high').length,
-      complex_tasks_handled: completedTasks.filter(t => t.priority === 'medium' || t.priority === 'low').length,
+      high_tasks_completed: completedTasks.filter(
+        t => t.priority === 'critical' || t.priority === 'high'
+      ).length,
+      complex_tasks_handled: completedTasks.filter(
+        t => t.priority === 'medium' || t.priority === 'low'
+      ).length,
     },
   };
 
@@ -148,9 +160,13 @@ function groupTasksByDate(tasks: any[]): Record<string, any[]> {
       date = task.date;
     } else if (task.logs && task.logs.length > 0) {
       // Extract date from task logs (most recent completion)
-      const completionLogs = task.logs.filter((log: { action: string }) => log.action === 'completed');
+      const completionLogs = task.logs.filter(
+        (log: { action: string }) => log.action === 'completed'
+      );
       if (completionLogs.length > 0) {
-        date = new Date(completionLogs[0].created_at).toISOString().split('T')[0];
+        date = new Date(completionLogs[0].created_at)
+          .toISOString()
+          .split('T')[0];
       } else {
         date = new Date().toISOString().split('T')[0]; // Today
       }
@@ -174,7 +190,9 @@ function extractTaskTimeFromLogs(task: any): number | null {
   if (!task.logs || task.logs.length === 0) return null;
 
   // Find completion time
-  const completionLog = task.logs.find((log: { action: string }) => log.action === 'completed');
+  const completionLog = task.logs.find(
+    (log: { action: string }) => log.action === 'completed'
+  );
   if (completionLog) {
     return new Date(completionLog.created_at).getHours();
   }
@@ -199,12 +217,15 @@ function calculateAverageTaskDuration(tasks: any[]): number {
 
   tasks.forEach(task => {
     if (task.time_entries && task.time_entries.length > 0) {
-      const taskDuration = task.time_entries.reduce((sum: number, entry: { duration_seconds?: number }) => {
-        if (entry.duration_seconds) {
-          return sum + entry.duration_seconds;
-        }
-        return sum;
-      }, 0);
+      const taskDuration = task.time_entries.reduce(
+        (sum: number, entry: { duration_seconds?: number }) => {
+          if (entry.duration_seconds) {
+            return sum + entry.duration_seconds;
+          }
+          return sum;
+        },
+        0
+      );
 
       if (taskDuration > 0) {
         totalDuration += taskDuration;
@@ -278,8 +299,12 @@ function analyzeTaskTypesByTime(dailyPatterns: any[]): any {
       }
 
       if (pattern.energy_indicators) {
-        taskTypesByHour[hour].high_priority = (taskTypesByHour[hour].high_priority || 0) + pattern.energy_indicators.high_tasks_completed;
-        taskTypesByHour[hour].complex_tasks = (taskTypesByHour[hour].complex_tasks || 0) + pattern.energy_indicators.complex_tasks_handled;
+        taskTypesByHour[hour].high_priority =
+          (taskTypesByHour[hour].high_priority || 0) +
+          pattern.energy_indicators.high_tasks_completed;
+        taskTypesByHour[hour].complex_tasks =
+          (taskTypesByHour[hour].complex_tasks || 0) +
+          pattern.energy_indicators.complex_tasks_handled;
       }
     }
   });
@@ -309,24 +334,46 @@ function detectEnergyCycles(dailyPatterns: any[]): any {
   });
 
   // Analyze weekly cycles
-  const weeklyCycles = Object.entries(dayOfWeekPatterns).map(([dayOfWeek, patterns]) => {
-    const avgCompletionRate = patterns.reduce((sum: number, p: { completion_rate: number }) => sum + p.completion_rate, 0) / patterns.length;
+  const weeklyCycles = Object.entries(dayOfWeekPatterns).map(
+    ([dayOfWeek, patterns]) => {
+      const avgCompletionRate =
+        patterns.reduce(
+          (sum: number, p: { completion_rate: number }) =>
+            sum + p.completion_rate,
+          0
+        ) / patterns.length;
 
-    return {
-      day_of_week: parseInt(dayOfWeek),
-      average_completion_rate: Math.round(avgCompletionRate * 100),
-      typical_task_count: patterns.reduce((sum: number, p: { total_tasks: number }) => sum + p.total_tasks, 0) / patterns.length,
-    };
-  });
+      return {
+        day_of_week: parseInt(dayOfWeek),
+        average_completion_rate: Math.round(avgCompletionRate * 100),
+        typical_task_count:
+          patterns.reduce(
+            (sum: number, p: { total_tasks: number }) => sum + p.total_tasks,
+            0
+          ) / patterns.length,
+      };
+    }
+  );
 
   // Identify recovery days (lower task load, higher completion rate)
   const recoveryDays = weeklyCycles
-    .filter(day => day.average_completion_rate > 80 && day.typical_task_count < 5)
+    .filter(
+      day => day.average_completion_rate > 80 && day.typical_task_count < 5
+    )
     .map(day => {
-      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const dayNames = [
+        'Sunday',
+        'Monday',
+        'Tuesday',
+        'Wednesday',
+        'Thursday',
+        'Friday',
+        'Saturday',
+      ];
       return {
         day_name: dayNames[day.day_of_week],
-        recovery_score: day.average_completion_rate - (day.typical_task_count * 10),
+        recovery_score:
+          day.average_completion_rate - day.typical_task_count * 10,
       };
     });
 
@@ -368,11 +415,15 @@ function calculateBurnoutRisk(dailyPatterns: any[]): any {
     };
   });
 
-  const totalRisk = burnoutIndicators.reduce((sum, indicator) => sum + indicator.risk_score, 0);
+  const totalRisk = burnoutIndicators.reduce(
+    (sum, indicator) => sum + indicator.risk_score,
+    0
+  );
 
   return {
     daily_risk_assessments: burnoutIndicators,
-    overall_burnout_risk: totalRisk > 20 ? 'high' : totalRisk > 10 ? 'medium' : 'low',
+    overall_burnout_risk:
+      totalRisk > 20 ? 'high' : totalRisk > 10 ? 'medium' : 'low',
     recommendations: generateBurnoutRecommendations(burnoutIndicators),
   };
 }
@@ -397,7 +448,9 @@ function identifyOptimalWorkWindows(dailyPatterns: any[]): any {
   });
 
   const sortedHours = Object.entries(hourlyFrequency)
-    .sort(([a], [b]) => hourlyFrequency[parseInt(a)] - hourlyFrequency[parseInt(b)])
+    .sort(
+      ([a], [b]) => hourlyFrequency[parseInt(a)] - hourlyFrequency[parseInt(b)]
+    )
     .reverse();
 
   const optimalHours = sortedHours.slice(0, 4).map(([hour, count]) => ({
@@ -410,18 +463,32 @@ function identifyOptimalWorkWindows(dailyPatterns: any[]): any {
   const afternoonHours = optimalHours.filter(h => h.hour >= 13 && h.hour <= 17);
   const eveningHours = optimalHours.filter(h => h.hour >= 18 && h.hour <= 22);
 
-  const preferredPattern = morningHours.length > afternoonHours.length && morningHours.length > eveningHours.length ? 'morning' :
-    afternoonHours.length > morningHours.length && afternoonHours.length > eveningHours.length ? 'afternoon' :
-      eveningHours.length > morningHours.length && eveningHours.length > afternoonHours.length ? 'evening' : 'balanced';
+  const preferredPattern =
+    morningHours.length > afternoonHours.length &&
+    morningHours.length > eveningHours.length
+      ? 'morning'
+      : afternoonHours.length > morningHours.length &&
+          afternoonHours.length > eveningHours.length
+        ? 'afternoon'
+        : eveningHours.length > morningHours.length &&
+            eveningHours.length > afternoonHours.length
+          ? 'evening'
+          : 'balanced';
 
   return {
     optimal_hours: optimalHours,
     preferred_pattern: preferredPattern,
-    suggested_work_hours: preferredPattern === 'morning' ? { start: 8, end: 12 } :
-                         preferredPattern === 'afternoon' ? { start: 13, end: 17 } :
-                         preferredPattern === 'evening' ? { start: 14, end: 20 } :
-                         { start: 9, end: 17 },
-    recommended_breaks: calculateOptimalBreakTimes({ peak_hours: optimalHours }),
+    suggested_work_hours:
+      preferredPattern === 'morning'
+        ? { start: 8, end: 12 }
+        : preferredPattern === 'afternoon'
+          ? { start: 13, end: 17 }
+          : preferredPattern === 'evening'
+            ? { start: 14, end: 20 }
+            : { start: 9, end: 17 },
+    recommended_breaks: calculateOptimalBreakTimes({
+      peak_hours: optimalHours,
+    }),
   };
 }
 
@@ -443,7 +510,10 @@ function analyzeRecoveryNeeds(dailyPatterns: any[]): any {
     }
 
     // Days with low completion and many high-priority tasks
-    if (pattern.completion_rate < 0.5 && pattern.energy_indicators?.high_tasks_completed > 0) {
+    if (
+      pattern.completion_rate < 0.5 &&
+      pattern.energy_indicators?.high_tasks_completed > 0
+    ) {
       recoveryRecommendations.push({
         date: pattern.date,
         type: 'immediate_recovery',
@@ -502,7 +572,9 @@ function calculateOptimalBreakTimes(energyProfile: any): any[] {
 function generateBurnoutRecommendations(burnoutIndicators: any[]): any[] {
   const recommendations: any[] = [];
 
-  const highRiskDays = burnoutIndicators.filter(indicator => indicator.risk_level === 'high');
+  const highRiskDays = burnoutIndicators.filter(
+    indicator => indicator.risk_level === 'high'
+  );
 
   if (highRiskDays.length > 0) {
     recommendations.push({
@@ -542,7 +614,10 @@ function generateTimeSuggestions(
   const suggestions: any[] = [];
 
   // Base suggestion using optimal work hours
-  const optimalHours = energyProfile.optimal_work_hours || { start: 9, end: 17 };
+  const optimalHours = energyProfile.optimal_work_hours || {
+    start: 9,
+    end: 17,
+  };
 
   // Calculate suggested date and time
   const suggestedDate = new Date().toISOString().split('T')[0];
@@ -566,10 +641,14 @@ function generateTimeSuggestions(
 
   // Generate 3 different time options
   for (let i = 0; i < 3; i++) {
-    const startHour = suggestedHour + (i * 2); // 2-hour intervals
+    const startHour = suggestedHour + i * 2; // 2-hour intervals
     const endHour = startHour + Math.ceil(estimatedDuration / 60);
 
-    const confidence = calculateTimeConfidence(task, energyProfile, constraints);
+    const confidence = calculateTimeConfidence(
+      task,
+      energyProfile,
+      constraints
+    );
 
     suggestions.push({
       date: suggestedDate,
@@ -586,7 +665,11 @@ function generateTimeSuggestions(
 /**
  * Calculate confidence score for time suggestion
  */
-function calculateTimeConfidence(task: any, energyProfile: any, constraints?: any): number {
+function calculateTimeConfidence(
+  task: any,
+  energyProfile: any,
+  constraints?: any
+): number {
   let confidence = 0.7; // Base confidence
 
   // Higher confidence for clear deadlines
@@ -606,7 +689,12 @@ function calculateTimeConfidence(task: any, energyProfile: any, constraints?: an
 /**
  * Generate human-readable reason for time suggestion
  */
-function generateTimeReason(task: any, energyProfile: any, constraints?: any, suggestionIndex?: number): string {
+function generateTimeReason(
+  task: any,
+  energyProfile: any,
+  constraints?: any,
+  suggestionIndex?: number
+): string {
   const reasons: string[] = [];
 
   if (task.priority === 'critical') {
@@ -614,7 +702,9 @@ function generateTimeReason(task: any, energyProfile: any, constraints?: any, su
   }
 
   if (task.deadline) {
-    const daysUntilDeadline = Math.ceil((new Date(task.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    const daysUntilDeadline = Math.ceil(
+      (new Date(task.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+    );
     if (daysUntilDeadline <= 1) {
       reasons.push('Urgent deadline approaching');
     } else if (daysUntilDeadline <= 3) {
