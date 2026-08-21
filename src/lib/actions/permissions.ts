@@ -4,7 +4,7 @@
  */
 
 // Admin email for special permissions (would normally come from config)
-const ADMIN_EMAIL = "admin@todo.com";
+const ADMIN_EMAIL = 'admin@todo.com';
 
 /**
  * Check if a user is the owner (admin)
@@ -33,7 +33,7 @@ export function isEditor(email: string): boolean {
 
   // Regular users have editor access
   // In a real system, this would check workspace membership or explicit permissions
-  return email.includes("@");
+  return email.includes('@');
 }
 
 /**
@@ -52,18 +52,18 @@ export function isViewer(email: string): boolean {
  */
 export function canPerformActionByPermission(
   userEmail: string | null,
-  action: "view" | "edit" | "delete" | "admin" = "view"
+  action: 'view' | 'edit' | 'delete' | 'admin' = 'view'
 ): boolean {
-  if (!userEmail) return action === "view"; // Allow viewing for guests
+  if (!userEmail) return action === 'view'; // Allow viewing for guests
 
   switch (action) {
-    case "view":
+    case 'view':
       return true; // All authenticated users can view
-    case "edit":
+    case 'edit':
       return isEditor(userEmail);
-    case "delete":
+    case 'delete':
       return isOwner(userEmail);
-    case "admin":
+    case 'admin':
       return isOwner(userEmail);
     default:
       return false;
