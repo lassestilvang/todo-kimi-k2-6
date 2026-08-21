@@ -3,22 +3,73 @@
  * Supports multiple AI providers with fallback
  */
 
-import type { TaskSuggestion, AITaskInput, AIEditCommand } from "./index";
-import type { ProjectPlanInput, GeneratedProject, ProjectPhase, DecisionContext, GeneratedDecisionTemplate } from "./index";
-import { logError, logWarn } from "@/lib/logger";
-import { taskSuggestionSchema, aiInsightsSchema } from "./index";
-import { formatMinutesToTime, parseTimeToMinutes, getNextDay, parseTimeRange, parseTime } from "../time-utils";
+import type { TaskSuggestion, AITaskInput, AIEditCommand } from './index';
+import type {
+  ProjectPlanInput,
+  GeneratedProject,
+  ProjectPhase,
+  DecisionContext,
+  GeneratedDecisionTemplate,
+} from './index';
+import { logError, logWarn } from '@/lib/logger';
+import { taskSuggestionSchema, aiInsightsSchema } from './index';
+import {
+  formatMinutesToTime,
+  parseTimeToMinutes,
+  getNextDay,
+  parseTimeRange,
+  parseTime,
+} from '../time-utils';
 
 export interface AIProvider {
   name: string;
   parseTask(input: AITaskInput): Promise<TaskSuggestion>;
-  parseTaskStream?(input: AITaskInput, onChunk: (chunk: string) => void): Promise<TaskSuggestion>;
-  generateInsights(tasks: Array<{ name: string; completed: boolean; priority: string; date?: string | null; deadline?: string | null }>): Promise<{ tips: string[]; suggestions: string[]; trends: string[] }>;
-  generateTasksFromNotes?(notes: string, context?: { lists?: Array<{ id: number; name: string; emoji: string }> }): Promise<Array<{ name: string; description?: string; priority?: "critical" | "high" | "medium" | "low" | "none" }>>;
-  parseEditCommand?(text: string, context: { tasks: Array<{ id: number; name: string; completed: boolean; priority: string }> }): Promise<AIEditCommand>;
+  parseTaskStream?(
+    input: AITaskInput,
+    onChunk: (chunk: string) => void
+  ): Promise<TaskSuggestion>;
+  generateInsights(
+    tasks: Array<{
+      name: string;
+      completed: boolean;
+      priority: string;
+      date?: string | null;
+      deadline?: string | null;
+    }>
+  ): Promise<{ tips: string[]; suggestions: string[]; trends: string[] }>;
+  generateTasksFromNotes?(
+    notes: string,
+    context?: { lists?: Array<{ id: number; name: string; emoji: string }> }
+  ): Promise<
+    Array<{
+      name: string;
+      description?: string;
+      priority?: 'critical' | 'high' | 'medium' | 'low' | 'none';
+    }>
+  >;
+  parseEditCommand?(
+    text: string,
+    context: {
+      tasks: Array<{
+        id: number;
+        name: string;
+        completed: boolean;
+        priority: string;
+      }>;
+    }
+  ): Promise<AIEditCommand>;
   generateProjectPlan?(input: ProjectPlanInput): Promise<GeneratedProject>;
-  generateDecisionTemplate?(context: DecisionContext): Promise<GeneratedDecisionTemplate>;
-  predictTaskDuration?(task: any, context?: any): Promise<{ estimated_duration: number; confidence: number; factors: string[] }>;
+  generateDecisionTemplate?(
+    context: DecisionContext
+  ): Promise<GeneratedDecisionTemplate>;
+  predictTaskDuration?(
+    task: any,
+    context?: any
+  ): Promise<{
+    estimated_duration: number;
+    confidence: number;
+    factors: string[];
+  }>;
 }
 
 /**
@@ -37,7 +88,10 @@ const CACHE_TTL_MS = 5 * 60 * 1000;
 async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
   const timeoutPromise = new Promise<T>((_, reject) => {
-    timeoutId = setTimeout(() => reject(new Error(`Request timed out after ${ms}ms`)), ms);
+    timeoutId = setTimeout(
+      () => reject(new Error(`Request timed out after ${ms}ms`)),
+      ms
+    );
   });
 
   try {
@@ -87,28 +141,46 @@ export const aiCache = new AICache();
  * Works well for basic task parsing
  */
 export class KeywordParser implements AIProvider {
-  name = "keyword-parser";
+  name = 'keyword-parser';
 
   private readonly projectPhaseKeywords = {
-    planning: ["planning", "setup", "foundation", "design", "architect"],
-    development: ["development", "coding", "building", "implementation", "feature"],
-    testing: ["testing", "qa", "quality", "review", "debug", "audit"],
-    launch: ["launch", "release", "deployment", "go-live", "production"],
-    maintenance: ["maintenance", "update", "optimize", "refactor", "support"],
+    planning: ['planning', 'setup', 'foundation', 'design', 'architect'],
+    development: [
+      'development',
+      'coding',
+      'building',
+      'implementation',
+      'feature',
+    ],
+    testing: ['testing', 'qa', 'quality', 'review', 'debug', 'audit'],
+    launch: ['launch', 'release', 'deployment', 'go-live', 'production'],
+    maintenance: ['maintenance', 'update', 'optimize', 'refactor', 'support'],
   };
 
   private readonly phasePriorityKeywords = {
-    critical: ["critical", "urgent", "asap", "must-have", "blocking", "immediately"],
-    high: ["high priority", "important", "soon", "required", "needed"],
-    medium: ["medium priority", "normal", "standard", "important but not urgent"],
-    low: ["low priority", "later", "optional", "nice-to-have", "backlog"],
+    critical: [
+      'critical',
+      'urgent',
+      'asap',
+      'must-have',
+      'blocking',
+      'immediately',
+    ],
+    high: ['high priority', 'important', 'soon', 'required', 'needed'],
+    medium: [
+      'medium priority',
+      'normal',
+      'standard',
+      'important but not urgent',
+    ],
+    low: ['low priority', 'later', 'optional', 'nice-to-have', 'backlog'],
   };
 
   private readonly priorityKeywords = {
-    critical: ["urgent", "asap", "critical", "high priority", "deadline"],
-    high: ["important", "high priority", "soon", "today", "this week"],
-    medium: ["medium priority", "normal", "standard"],
-    low: ["low priority", "later", "someday", "optional", "backlog"],
+    critical: ['urgent', 'asap', 'critical', 'high priority', 'deadline'],
+    high: ['important', 'high priority', 'soon', 'today', 'this week'],
+    medium: ['medium priority', 'normal', 'standard'],
+    low: ['low priority', 'later', 'someday', 'optional', 'backlog'],
   };
 
   private readonly durationKeywords: Record<string, number> = {
@@ -131,72 +203,98 @@ export class KeywordParser implements AIProvider {
   };
 
   private readonly recurringKeywords = {
-    daily: ["daily", "every day", "each day"],
-    weekly: ["weekly", "every week", "each week"],
-    weekdays: ["weekdays", "mon-fri", "monday tuesday wednesday thursday friday"],
-    monthly: ["monthly", "every month", "each month"],
-    yearly: ["yearly", "every year", "each year"],
+    daily: ['daily', 'every day', 'each day'],
+    weekly: ['weekly', 'every week', 'each week'],
+    weekdays: [
+      'weekdays',
+      'mon-fri',
+      'monday tuesday wednesday thursday friday',
+    ],
+    monthly: ['monthly', 'every month', 'each month'],
+    yearly: ['yearly', 'every year', 'each year'],
   };
 
   private readonly listKeywords: Record<string, string> = {
-    "work": "Work",
-    "personal": "Personal",
-    "health": "Health",
-    "finance": "Finance",
-    "home": "Home",
-    "family": "Family",
-    "travel": "Travel",
-    "errand": "Errands",
-    "gym": "Health",
-    "exercise": "Health",
-    "meeting": "Work",
-    "call": "Work",
-    "email": "Work",
-    "review": "Work",
-    "project": "Work",
-    "study": "Personal",
-    "learning": "Personal",
-    "grocery": "Shopping",
-    "buy": "Shopping",
-    "doctor": "Health",
-    "appointment": "Health",
-    "pay": "Finance",
-    "bill": "Finance",
-    "budget": "Finance",
-    "clean": "Home",
-    "chore": "Home",
-    "trip": "Travel",
-    "vacation": "Travel",
+    work: 'Work',
+    personal: 'Personal',
+    health: 'Health',
+    finance: 'Finance',
+    home: 'Home',
+    family: 'Family',
+    travel: 'Travel',
+    errand: 'Errands',
+    gym: 'Health',
+    exercise: 'Health',
+    meeting: 'Work',
+    call: 'Work',
+    email: 'Work',
+    review: 'Work',
+    project: 'Work',
+    study: 'Personal',
+    learning: 'Personal',
+    grocery: 'Shopping',
+    buy: 'Shopping',
+    doctor: 'Health',
+    appointment: 'Health',
+    pay: 'Finance',
+    bill: 'Finance',
+    budget: 'Finance',
+    clean: 'Home',
+    chore: 'Home',
+    trip: 'Travel',
+    vacation: 'Travel',
   };
 
-  private readonly dayKeywords = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+  private readonly dayKeywords = [
+    'monday',
+    'tuesday',
+    'wednesday',
+    'thursday',
+    'friday',
+    'saturday',
+    'sunday',
+  ];
 
   // Common project phase names based on typical project workflows
   private readonly standardPhaseNames = [
-    ["Planning", "Initiation", "Setup", "Research", "Design"],
-    ["Development", "Implementation", "Building", "Creation"],
-    ["Testing", "Quality Assurance", "Review", "Debugging", "Audit"],
-    ["Launch", "Release", "Deployment", "Go-Live"],
-    ["Maintenance", "Updates", "Optimization", "Support"],
+    ['Planning', 'Initiation', 'Setup', 'Research', 'Design'],
+    ['Development', 'Implementation', 'Building', 'Creation'],
+    ['Testing', 'Quality Assurance', 'Review', 'Debugging', 'Audit'],
+    ['Launch', 'Release', 'Deployment', 'Go-Live'],
+    ['Maintenance', 'Updates', 'Optimization', 'Support'],
   ];
 
   async parseTask(input: AITaskInput): Promise<TaskSuggestion> {
     const text = input.text.toLowerCase();
 
     // Extract priority
-    let priority: "critical" | "high" | "medium" | "low" | "none" = "none";
+    let priority: 'critical' | 'high' | 'medium' | 'low' | 'none' = 'none';
     for (const [p, keywords] of Object.entries(this.priorityKeywords)) {
-      if (keywords.some((k) => text.includes(k))) {
-        priority = p as "critical" | "high" | "medium" | "low" | "none";
+      if (keywords.some(k => text.includes(k))) {
+        priority = p as 'critical' | 'high' | 'medium' | 'low' | 'none';
         break;
       }
     }
 
     // Extract recurring pattern FIRST (before everyMatch check)
-    let recurring: "none" | "daily" | "weekly" | "weekdays" | "monthly" | "yearly" | "custom" = "none";
+    let recurring:
+      | 'none'
+      | 'daily'
+      | 'weekly'
+      | 'weekdays'
+      | 'monthly'
+      | 'yearly'
+      | 'custom' = 'none';
     for (const [rec, keywords] of Object.entries(this.recurringKeywords)) {
-      if (keywords.some((k) => text.includes(k))) {
-        recurring = rec as "none" | "daily" | "weekly" | "weekdays" | "monthly" | "yearly" | "custom";
+      if (keywords.some(k => text.includes(k))) {
+        recurring = rec as
+          | 'none'
+          | 'daily'
+          | 'weekly'
+          | 'weekdays'
+          | 'monthly'
+          | 'yearly'
+          | 'custom';
         break;
       }
     }
@@ -222,19 +320,20 @@ export class KeywordParser implements AIProvider {
     const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
     const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 1000);
 
-    if (text.includes("tomorrow")) {
-      suggested_date = tomorrow.toISOString().split("T")[0];
-    } else if (text.includes("next week") || text.includes("weekend")) {
-      suggested_date = nextWeek.toISOString().split("T")[0];
-    } else if (text.includes("today")) {
-      suggested_date = today.toISOString().split("T")[0];
+    if (text.includes('tomorrow')) {
+      suggested_date = tomorrow.toISOString().split('T')[0];
+    } else if (text.includes('next week') || text.includes('weekend')) {
+      suggested_date = nextWeek.toISOString().split('T')[0];
+    } else if (text.includes('today')) {
+      suggested_date = today.toISOString().split('T')[0];
     }
 
     // Check for specific weekdays
     for (const day of this.dayKeywords) {
       if (text.includes(day)) {
         const nextDay = this.getNextDay(day);
-        if (!suggested_date) suggested_date = nextDay.toISOString().split("T")[0];
+        if (!suggested_date)
+          suggested_date = nextDay.toISOString().split('T')[0];
         break;
       }
     }
@@ -244,39 +343,65 @@ export class KeywordParser implements AIProvider {
     if (inMatch && !suggested_date) {
       const daysNum = parseInt(inMatch[1]);
       const daysUnit = inMatch[2];
-      const multiplier = daysUnit === "day" ? 1 : daysUnit === "week" ? 7 : daysUnit === "month" ? 30 : 365;
-      const futureDate = new Date(Date.now() + daysNum * multiplier * 24 * 60 * 60 * 1000);
-      suggested_date = futureDate.toISOString().split("T")[0];
+      const multiplier =
+        daysUnit === 'day'
+          ? 1
+          : daysUnit === 'week'
+            ? 7
+            : daysUnit === 'month'
+              ? 30
+              : 365;
+      const futureDate = new Date(
+        Date.now() + daysNum * multiplier * 24 * 60 * 60 * 1000
+      );
+      suggested_date = futureDate.toISOString().split('T')[0];
     }
 
     // Parse "every X day/week/month/year" patterns for custom recurring
     // Supports: "every day", "every 3 days", "every week", "every 2 weeks", etc.
-    const everyMatch = text.match(/every\s+(\d+)\s*(day|week|weekday|month|year)s?/i);
-    if (everyMatch && recurring === "none") {
+    const everyMatch = text.match(
+      /every\s+(\d+)\s*(day|week|weekday|month|year)s?/i
+    );
+    if (everyMatch && recurring === 'none') {
       const recNum = parseInt(everyMatch[1]);
       const recUnit = everyMatch[2].toLowerCase();
-      const intervalMap: Record<string, { interval: number; unit: "days" | "weeks" | "months" | "years" }> = {
-        "day": { interval: recNum, unit: "days" },
-        "week": { interval: recNum, unit: "weeks" },
-        "weekday": { interval: 1, unit: "days" }, // weekdays treated as daily for config
-        "month": { interval: recNum, unit: "months" },
-        "year": { interval: recNum, unit: "years" },
+      const intervalMap: Record<
+        string,
+        { interval: number; unit: 'days' | 'weeks' | 'months' | 'years' }
+      > = {
+        day: { interval: recNum, unit: 'days' },
+        week: { interval: recNum, unit: 'weeks' },
+        weekday: { interval: 1, unit: 'days' }, // weekdays treated as daily for config
+        month: { interval: recNum, unit: 'months' },
+        year: { interval: recNum, unit: 'years' },
       };
       const interval = intervalMap[recUnit];
       if (interval) {
-        recurring = "custom";
+        recurring = 'custom';
         // Store for later use in return
-         
+
         recurringConfig = JSON.stringify(interval);
       }
     }
 
     // Enhanced deadline parsing
     const deadlinePatterns = [
-      { pattern: /deadline[:\s]+(\d{4}-\d{2}-\d{2})/i, parse: (m: string[]) => m[1] },
-      { pattern: /due[:\s]+(\d{4}-\d{2}-\d{2})/i, parse: (m: string[]) => m[1] },
-      { pattern: /by[:\s]+(tomorrow)/i, parse: () => tomorrow.toISOString().split("T")[0] },
-      { pattern: /by[:\s]+(next week)/i, parse: () => nextWeek.toISOString().split("T")[0] },
+      {
+        pattern: /deadline[:\s]+(\d{4}-\d{2}-\d{2})/i,
+        parse: (m: string[]) => m[1],
+      },
+      {
+        pattern: /due[:\s]+(\d{4}-\d{2}-\d{2})/i,
+        parse: (m: string[]) => m[1],
+      },
+      {
+        pattern: /by[:\s]+(tomorrow)/i,
+        parse: () => tomorrow.toISOString().split('T')[0],
+      },
+      {
+        pattern: /by[:\s]+(next week)/i,
+        parse: () => nextWeek.toISOString().split('T')[0],
+      },
     ];
 
     for (const { pattern, parse } of deadlinePatterns) {
@@ -292,7 +417,9 @@ export class KeywordParser implements AIProvider {
     let list_id: number | undefined;
 
     // Check for explicit list mention
-    const listMatch = text.match(/(?:in|for|under)\s+(?:the\s+)?([a-z][a-z\s]+?)(?:\s+(?:project|list|folder)|$)/i);
+    const listMatch = text.match(
+      /(?:in|for|under)\s+(?:the\s+)?([a-z][a-z\s]+?)(?:\s+(?:project|list|folder)|$)/i
+    );
     if (listMatch) {
       list_name = listMatch[1].trim();
     }
@@ -300,7 +427,10 @@ export class KeywordParser implements AIProvider {
     // Check context lists if available
     if (input.context?.lists && !list_name) {
       for (const list of input.context.lists) {
-        if (text.includes(list.name.toLowerCase()) || text.includes(list.emoji)) {
+        if (
+          text.includes(list.name.toLowerCase()) ||
+          text.includes(list.emoji)
+        ) {
           list_name = list.name;
           list_id = list.id;
           break;
@@ -322,13 +452,17 @@ export class KeywordParser implements AIProvider {
     const timeRange = this.parseTimeRange(text);
 
     // Build recurring_config for custom intervals
-    if (recurring === "custom") {
+    if (recurring === 'custom') {
       // recurringConfig is already set above from the everyMatch block
     }
 
     return {
       name: this.cleanTaskName(input.text),
-      description: this.generateDescription(input.text, priority, estimated_duration),
+      description: this.generateDescription(
+        input.text,
+        priority,
+        estimated_duration
+      ),
       priority,
       estimated_duration,
       suggested_date: suggested_date ?? undefined,
@@ -345,42 +479,46 @@ export class KeywordParser implements AIProvider {
   private cleanTaskName(text: string): string {
     // Remove common prefixes and keywords
     const prefixes = [
-      "create a task for",
-      "add",
-      "schedule",
-      "remind me to",
-      "i need to",
-      "please",
+      'create a task for',
+      'add',
+      'schedule',
+      'remind me to',
+      'i need to',
+      'please',
       "don't forget to",
-      "remember to",
+      'remember to',
       "let's",
-      "let us",
+      'let us',
     ];
 
     let name = text;
     for (const prefix of prefixes) {
-      name = name.replace(new RegExp(`^${prefix}\\s*`, "i"), "");
+      name = name.replace(new RegExp(`^${prefix}\\s*`, 'i'), '');
     }
 
     // Remove trailing context that's not part of the task name
-    name = name.replace(/\s*\(due.*?\)$/i, "");
-    name = name.replace(/\s*\binbox\b/i, "");
+    name = name.replace(/\s*\(due.*?\)$/i, '');
+    name = name.replace(/\s*\binbox\b/i, '');
 
     return name.trim().charAt(0).toUpperCase() + name.slice(1);
   }
 
-  private generateDescription(text: string, priority: string, duration?: number): string | undefined {
+  private generateDescription(
+    text: string,
+    priority: string,
+    duration?: number
+  ): string | undefined {
     const desc: string[] = [];
 
-    if (priority === "critical" || text.includes("urgent")) {
-      desc.push("High priority task - requires immediate attention");
+    if (priority === 'critical' || text.includes('urgent')) {
+      desc.push('High priority task - requires immediate attention');
     }
 
     if (duration) {
       desc.push(`Estimated time: ${duration} minutes`);
     }
 
-    return desc.length > 0 ? desc.join(". ") : undefined;
+    return desc.length > 0 ? desc.join('. ') : undefined;
   }
 
   /**
@@ -393,7 +531,9 @@ export class KeywordParser implements AIProvider {
   /**
    * Parse time range - using shared utility
    */
-  private parseTimeRange(text: string): { start_time?: string; end_time?: string } | null {
+  private parseTimeRange(
+    text: string
+  ): { start_time?: string; end_time?: string } | null {
     return parseTimeRange(text);
   }
 
@@ -407,21 +547,27 @@ export class KeywordParser implements AIProvider {
   /**
    * Generate tasks from bullet points or notes
    */
-  async generateTasksFromNotes(notes: string): Promise<Array<{
-    name: string;
-    description?: string;
-    priority?: "critical" | "high" | "medium" | "low" | "none";
-  }>> {
-    const lines = notes.split("\n").filter(line => line.trim());
-    const tasks: Array<{ name: string; description?: string; priority?: "critical" | "high" | "medium" | "low" | "none" }> = [];
+  async generateTasksFromNotes(notes: string): Promise<
+    Array<{
+      name: string;
+      description?: string;
+      priority?: 'critical' | 'high' | 'medium' | 'low' | 'none';
+    }>
+  > {
+    const lines = notes.split('\n').filter(line => line.trim());
+    const tasks: Array<{
+      name: string;
+      description?: string;
+      priority?: 'critical' | 'high' | 'medium' | 'low' | 'none';
+    }> = [];
 
     for (const line of lines) {
       // Remove markdown bullet characters
-      const cleanLine = line.replace(/^[\s]*[-*>\d.\)\s]+/, "").trim();
+      const cleanLine = line.replace(/^[\s]*[-*>\d.\)\s]+/, '').trim();
       if (cleanLine && cleanLine.length > 3) {
         tasks.push({
           name: cleanLine,
-          priority: "medium",
+          priority: 'medium',
         });
       }
     }
@@ -432,12 +578,26 @@ export class KeywordParser implements AIProvider {
   /**
    * Generate a project plan from natural language description
    */
-  async generateProjectPlan(input: ProjectPlanInput): Promise<GeneratedProject> {
-    const { projectName, description = "", constraints = {}, context = {} } = input;
-    const normalizedDescription = (description + " " + projectName).toLowerCase();
+  async generateProjectPlan(
+    input: ProjectPlanInput
+  ): Promise<GeneratedProject> {
+    const {
+      projectName,
+      description = '',
+      constraints = {},
+      context = {},
+    } = input;
+    const normalizedDescription = (
+      description +
+      ' ' +
+      projectName
+    ).toLowerCase();
 
     // Determine project duration based on constraints or description analysis
-    const totalDuration = this.calculateProjectDuration(normalizedDescription, constraints);
+    const totalDuration = this.calculateProjectDuration(
+      normalizedDescription,
+      constraints
+    );
 
     // Identify phases based on keywords in the description
     const phases = this.identifyPhases(normalizedDescription, totalDuration);
@@ -453,10 +613,10 @@ export class KeywordParser implements AIProvider {
     // If no phases detected, create a default single phase
     if (phases.length === 0) {
       phases.push({
-        name: "Execution",
+        name: 'Execution',
         description: `Primary phase for ${projectName}`,
         duration_days: totalDuration,
-        priority: "high",
+        priority: 'high',
       });
       calculatedDuration = totalDuration;
     }
@@ -485,53 +645,83 @@ export class KeywordParser implements AIProvider {
   /**
    * Generate a decision template based on context
    */
-  async generateDecisionTemplate(context: { decisionType?: string; task?: { name: string; priority?: string; deadline?: string } }): Promise<{ name: string; prompt_template: string; option_template?: string; provider: string }> {
-    const decisionTemplates: Record<string, { name: string; prompt_template: string; option_template?: string }> = {
+  async generateDecisionTemplate(context: {
+    decisionType?: string;
+    task?: { name: string; priority?: string; deadline?: string };
+  }): Promise<{
+    name: string;
+    prompt_template: string;
+    option_template?: string;
+    provider: string;
+  }> {
+    const decisionTemplates: Record<
+      string,
+      { name: string; prompt_template: string; option_template?: string }
+    > = {
       priority: {
-        name: "Priority Decision Template",
-        prompt_template: "You need to decide on priority for task: {task_name}. Consider: deadline, urgency, impact, effort required. What's the best priority level (critical, high, medium, low)?",
-        option_template: '[{{ "critical": "Urgent and important - do immediately", "high": "Important but not urgent - schedule soon", "medium": "Standard priority - do when scheduled", "low": "Can wait - low impact" }}]',
+        name: 'Priority Decision Template',
+        prompt_template:
+          "You need to decide on priority for task: {task_name}. Consider: deadline, urgency, impact, effort required. What's the best priority level (critical, high, medium, low)?",
+        option_template:
+          '[{{ "critical": "Urgent and important - do immediately", "high": "Important but not urgent - schedule soon", "medium": "Standard priority - do when scheduled", "low": "Can wait - low impact" }}]',
       },
       approach: {
-        name: "Approach Decision Template",
-        prompt_template: "You need to decide on an approach for: {task_name}. What's the best strategy? Consider: available resources, constraints, past learnings, and desired outcome.",
-        option_template: '[{{ "method1": "Description", "method2": "Description", "method3": "Description" }}]',
+        name: 'Approach Decision Template',
+        prompt_template:
+          "You need to decide on an approach for: {task_name}. What's the best strategy? Consider: available resources, constraints, past learnings, and desired outcome.",
+        option_template:
+          '[{{ "method1": "Description", "method2": "Description", "method3": "Description" }}]',
       },
       tool: {
-        name: "Tool Selection Template",
-        prompt_template: "You need to select a tool for: {task_name}. What tool best fits the need? Consider: cost, integration, learning curve, and capabilities.",
-        option_template: '[{{ "tool_name": "Features, pros, cons", "alternative": "Features, pros, cons" }}]',
+        name: 'Tool Selection Template',
+        prompt_template:
+          'You need to select a tool for: {task_name}. What tool best fits the need? Consider: cost, integration, learning curve, and capabilities.',
+        option_template:
+          '[{{ "tool_name": "Features, pros, cons", "alternative": "Features, pros, cons" }}]',
       },
       timeline: {
-        name: "Timeline Decision Template",
-        prompt_template: "You need to decide on a timeline for: {task_name}. When should this be completed? Consider: dependencies, deadlines, and available time.",
-        option_template: '[{{ "date": "Duration, milestones", "alternative_date": "Duration, milestones" }}]',
+        name: 'Timeline Decision Template',
+        prompt_template:
+          'You need to decide on a timeline for: {task_name}. When should this be completed? Consider: dependencies, deadlines, and available time.',
+        option_template:
+          '[{{ "date": "Duration, milestones", "alternative_date": "Duration, milestones" }}]',
       },
       allocation: {
-        name: "Resource Allocation Template",
-        prompt_template: "You need to allocate resources for: {task_name}. How should resources be distributed? Consider: team capacity, skill requirements, and priority.",
-        option_template: '[{{ "allocation1": "Resources, rationale", "allocation2": "Resources, rationale" }}]',
+        name: 'Resource Allocation Template',
+        prompt_template:
+          'You need to allocate resources for: {task_name}. How should resources be distributed? Consider: team capacity, skill requirements, and priority.',
+        option_template:
+          '[{{ "allocation1": "Resources, rationale", "allocation2": "Resources, rationale" }}]',
       },
       cancellation: {
-        name: "Cancellation Decision Template",
-        prompt_template: "You need to decide whether to cancel: {task_name}. What are the costs and benefits of cancellation vs. completion? Consider: time invested, remaining work, and opportunity cost.",
-        option_template: '[{{ "cancel": "Rationale, costs", "complete": "Rationale, benefits", "defer": "Conditions for deferral" }}]',
+        name: 'Cancellation Decision Template',
+        prompt_template:
+          'You need to decide whether to cancel: {task_name}. What are the costs and benefits of cancellation vs. completion? Consider: time invested, remaining work, and opportunity cost.',
+        option_template:
+          '[{{ "cancel": "Rationale, costs", "complete": "Rationale, benefits", "defer": "Conditions for deferral" }}]',
       },
     };
 
-    const template = decisionTemplates[context.decisionType || "approach"] || decisionTemplates.approach;
+    const template =
+      decisionTemplates[context.decisionType || 'approach'] ||
+      decisionTemplates.approach;
     return { ...template, provider: this.name };
   }
 
   /**
    * Calculate project duration from description and constraints
    */
-  private calculateProjectDuration(description: string, constraints: ProjectPlanInput["constraints"]): number {
+  private calculateProjectDuration(
+    description: string,
+    constraints: ProjectPlanInput['constraints']
+  ): number {
     // Check for explicit constraint dates
     if (constraints?.deadline && constraints?.startDate) {
       const deadline = new Date(constraints.deadline);
       const startDate = new Date(constraints.startDate);
-      const diffDays = Math.ceil((deadline.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+      const diffDays = Math.ceil(
+        (deadline.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
+      );
       if (diffDays > 0) return diffDays;
     }
 
@@ -544,7 +734,9 @@ export class KeywordParser implements AIProvider {
     ];
 
     // Look for timeline indicators
-    const timelineMatch = description.match(/(quick|fast|rapid|short).*?(project|delivery|milestone)/i);
+    const timelineMatch = description.match(
+      /(quick|fast|rapid|short).*?(project|delivery|milestone)/i
+    );
     if (timelineMatch) {
       return 14;
     }
@@ -554,21 +746,23 @@ export class KeywordParser implements AIProvider {
       return 60;
     }
 
-    const longMatch = description.match(/(long|extended|comprehensive|major|enterprise|large)/i);
+    const longMatch = description.match(
+      /(long|extended|comprehensive|major|enterprise|large)/i
+    );
     if (longMatch) {
       return 180;
     }
 
     // Default duration based on project complexity keywords
     const complexityKeywords = {
-      "simple": 30,
-      "basic": 30,
-      "standard": 60,
-      "complex": 90,
-      "advanced": 90,
-      "enterprise": 180,
-      "major": 120,
-      "comprehensive": 150,
+      simple: 30,
+      basic: 30,
+      standard: 60,
+      complex: 90,
+      advanced: 90,
+      enterprise: 180,
+      major: 120,
+      comprehensive: 150,
     };
 
     for (const [keyword, defaultDays] of Object.entries(complexityKeywords)) {
@@ -578,12 +772,16 @@ export class KeywordParser implements AIProvider {
     }
 
     // Check for "sprint" or "agile" patterns
-    if (description.includes("sprint") || description.includes("agile")) {
+    if (description.includes('sprint') || description.includes('agile')) {
       return 90;
     }
 
     // Check for "launch" or "rollout" keywords
-    if (description.includes("launch") || description.includes("rollout") || description.includes("release")) {
+    if (
+      description.includes('launch') ||
+      description.includes('rollout') ||
+      description.includes('release')
+    ) {
       return 60;
     }
 
@@ -594,7 +792,10 @@ export class KeywordParser implements AIProvider {
   /**
    * Identify phases based on keywords in the description
    */
-  private identifyPhases(description: string, totalDuration: number): ProjectPhase[] {
+  private identifyPhases(
+    description: string,
+    totalDuration: number
+  ): ProjectPhase[] {
     const phases: ProjectPhase[] = [];
     let remainingDays = totalDuration;
 
@@ -606,33 +807,39 @@ export class KeywordParser implements AIProvider {
       estimatedDays?: number;
     }> = [
       {
-        namePattern: ["planning", "setup", "design", "research"],
-        description: "Initial planning, research, and design work",
-        priorityKeyword: ["critical", "important", "essential", "foundational"],
+        namePattern: ['planning', 'setup', 'design', 'research'],
+        description: 'Initial planning, research, and design work',
+        priorityKeyword: ['critical', 'important', 'essential', 'foundational'],
         estimatedDays: Math.floor(totalDuration * 0.15),
       },
       {
-        namePattern: ["development", "building", "implementation", "coding", "creation"],
-        description: "Core development and implementation work",
-        priorityKeyword: ["high", "critical", "essential", "main"],
+        namePattern: [
+          'development',
+          'building',
+          'implementation',
+          'coding',
+          'creation',
+        ],
+        description: 'Core development and implementation work',
+        priorityKeyword: ['high', 'critical', 'essential', 'main'],
         estimatedDays: Math.floor(totalDuration * 0.5),
       },
       {
-        namePattern: ["testing", "review", "qa", "quality", "debug"],
-        description: "Testing, quality assurance, and bug fixes",
-        priorityKeyword: ["high", "important", "required"],
+        namePattern: ['testing', 'review', 'qa', 'quality', 'debug'],
+        description: 'Testing, quality assurance, and bug fixes',
+        priorityKeyword: ['high', 'important', 'required'],
         estimatedDays: Math.floor(totalDuration * 0.2),
       },
       {
-        namePattern: ["launch", "deployment", "release", "go-live"],
-        description: "Final deployment and launch activities",
-        priorityKeyword: ["critical", "urgent", "must-have", "final"],
+        namePattern: ['launch', 'deployment', 'release', 'go-live'],
+        description: 'Final deployment and launch activities',
+        priorityKeyword: ['critical', 'urgent', 'must-have', 'final'],
         estimatedDays: Math.floor(totalDuration * 0.1),
       },
       {
-        namePattern: ["maintenance", "support", "update", "optimization"],
-        description: "Post-launch monitoring and optimization",
-        priorityKeyword: ["medium", "ongoing", "support"],
+        namePattern: ['maintenance', 'support', 'update', 'optimization'],
+        description: 'Post-launch monitoring and optimization',
+        priorityKeyword: ['medium', 'ongoing', 'support'],
         estimatedDays: Math.floor(totalDuration * 0.05),
       },
     ];
@@ -642,34 +849,43 @@ export class KeywordParser implements AIProvider {
 
     // Find matching phases based on keywords
     for (const [phaseIndex, template] of phaseTemplates.entries()) {
-      const matches = template.namePattern.filter((pattern) =>
-        description.includes(pattern) || detectedPhaseKeys.has(pattern)
+      const matches = template.namePattern.filter(
+        pattern =>
+          description.includes(pattern) || detectedPhaseKeys.has(pattern)
       );
 
       if (matches.length > 0) {
         // Determine priority based on keywords in description
-        let priority: "critical" | "high" | "medium" | "low" | "none" = "medium";
-        if (template.priorityKeyword.some((k) => description.includes(k))) {
-          if (template.priorityKeyword.includes("critical") || template.priorityKeyword.includes("must-have") || template.priorityKeyword.includes("urgent")) {
-            priority = "critical";
-          } else if (template.priorityKeyword.includes("high")) {
-            priority = "high";
-          } else if (template.priorityKeyword.includes("medium")) {
-            priority = "medium";
+        let priority: 'critical' | 'high' | 'medium' | 'low' | 'none' =
+          'medium';
+        if (template.priorityKeyword.some(k => description.includes(k))) {
+          if (
+            template.priorityKeyword.includes('critical') ||
+            template.priorityKeyword.includes('must-have') ||
+            template.priorityKeyword.includes('urgent')
+          ) {
+            priority = 'critical';
+          } else if (template.priorityKeyword.includes('high')) {
+            priority = 'high';
+          } else if (template.priorityKeyword.includes('medium')) {
+            priority = 'medium';
           } else {
-            priority = "low";
+            priority = 'low';
           }
         }
 
         // Calculate duration (minimum 3 days, use estimatedDays if found)
-        let phaseDays = template.estimatedDays || Math.max(3, Math.floor(totalDuration / 5));
+        let phaseDays =
+          template.estimatedDays || Math.max(3, Math.floor(totalDuration / 5));
 
         // Check if there are specific duration mentions
-        const phaseNumberMatch = description.match(new RegExp(`${matches[0]}\\s*(\\d+)\\s*(?:day|week)`, "i"));
+        const phaseNumberMatch = description.match(
+          new RegExp(`${matches[0]}\\s*(\\d+)\\s*(?:day|week)`, 'i')
+        );
         if (phaseNumberMatch) {
           const num = parseInt(phaseNumberMatch[1], 10);
           const unit = phaseNumberMatch[2].toLowerCase();
-          phaseDays = unit === "week" ? num * 7 : num;
+          phaseDays = unit === 'week' ? num * 7 : num;
         }
 
         // Mark these patterns as detected
@@ -696,37 +912,49 @@ export class KeywordParser implements AIProvider {
    */
   private formatPhaseName(keyword: string, phaseIndex: number): string {
     const nameMap: Record<string, string> = {
-      "planning": "Planning",
-      "setup": "Setup",
-      "design": "Design",
-      "research": "Research",
-      "development": "Development",
-      "building": "Building",
-      "implementation": "Implementation",
-      "coding": "Coding",
-      "creation": "Creation",
-      "testing": "Testing",
-      "review": "Review",
-      "qa": "QA",
-      "quality": "Quality Assurance",
-      "debug": "Debugging",
-      "launch": "Launch",
-      "deployment": "Deployment",
-      "release": "Release",
-      "go-live": "Go Live",
-      "maintenance": "Maintenance",
-      "support": "Support",
-      "update": "Update",
-      "optimization": "Optimization",
+      planning: 'Planning',
+      setup: 'Setup',
+      design: 'Design',
+      research: 'Research',
+      development: 'Development',
+      building: 'Building',
+      implementation: 'Implementation',
+      coding: 'Coding',
+      creation: 'Creation',
+      testing: 'Testing',
+      review: 'Review',
+      qa: 'QA',
+      quality: 'Quality Assurance',
+      debug: 'Debugging',
+      launch: 'Launch',
+      deployment: 'Deployment',
+      release: 'Release',
+      'go-live': 'Go Live',
+      maintenance: 'Maintenance',
+      support: 'Support',
+      update: 'Update',
+      optimization: 'Optimization',
     };
 
-    return nameMap[keyword.toLowerCase()] || keyword.charAt(0).toUpperCase() + keyword.slice(1);
+    return (
+      nameMap[keyword.toLowerCase()] ||
+      keyword.charAt(0).toUpperCase() + keyword.slice(1)
+    );
   }
 
-  async generateInsights(tasks: Array<{ name: string; completed: boolean; priority: string; date?: string | null; deadline?: string | null }>): Promise<{ tips: string[]; suggestions: string[]; trends: string[] }> {
+  async generateInsights(
+    tasks: Array<{
+      name: string;
+      completed: boolean;
+      priority: string;
+      date?: string | null;
+      deadline?: string | null;
+    }>
+  ): Promise<{ tips: string[]; suggestions: string[]; trends: string[] }> {
     const completed = tasks.filter(t => t.completed).length;
     const total = tasks.length;
-    const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+    const completionRate =
+      total > 0 ? Math.round((completed / total) * 100) : 0;
     const now = new Date();
 
     const tips: string[] = [];
@@ -735,92 +963,158 @@ export class KeywordParser implements AIProvider {
 
     // Productivity tips based on completion rate
     if (completionRate < 30) {
-      tips.push("Your completion rate is quite low. Try breaking large tasks into smaller, actionable steps.");
+      tips.push(
+        'Your completion rate is quite low. Try breaking large tasks into smaller, actionable steps.'
+      );
     } else if (completionRate < 50) {
-      tips.push("Focus on completing high-priority tasks first to improve your completion rate.");
+      tips.push(
+        'Focus on completing high-priority tasks first to improve your completion rate.'
+      );
     } else if (completionRate >= 80) {
-      tips.push("Great job! Your completion rate is excellent. Consider taking on more challenging tasks.");
+      tips.push(
+        'Great job! Your completion rate is excellent. Consider taking on more challenging tasks.'
+      );
     } else if (completionRate >= 60) {
-      tips.push("Good progress! Keep focusing on consistency to reach the next level.");
+      tips.push(
+        'Good progress! Keep focusing on consistency to reach the next level.'
+      );
     }
 
     // Priority-based suggestions
-    const criticalTasks = tasks.filter(t => t.priority === "critical" && !t.completed);
-    const highPriorityTasks = tasks.filter(t => t.priority === "high" && !t.completed);
+    const criticalTasks = tasks.filter(
+      t => t.priority === 'critical' && !t.completed
+    );
+    const highPriorityTasks = tasks.filter(
+      t => t.priority === 'high' && !t.completed
+    );
 
     if (criticalTasks.length > 3) {
-      suggestions.push(`You have ${criticalTasks.length} critical tasks pending. Consider breaking them into smaller steps.`);
+      suggestions.push(
+        `You have ${criticalTasks.length} critical tasks pending. Consider breaking them into smaller steps.`
+      );
     } else if (criticalTasks.length === 1) {
-      suggestions.push(`Focus on completing "${criticalTasks[0].name}" - your only critical task.`);
+      suggestions.push(
+        `Focus on completing "${criticalTasks[0].name}" - your only critical task.`
+      );
     }
 
     if (highPriorityTasks.length > 5) {
-      suggestions.push(`${highPriorityTasks.length} high-priority tasks could be rescheduled if not urgent.`);
+      suggestions.push(
+        `${highPriorityTasks.length} high-priority tasks could be rescheduled if not urgent.`
+      );
     }
 
     // Overdue analysis
-    const overdueTasks = tasks.filter(t => t.deadline && new Date(t.deadline) < now && !t.completed);
+    const overdueTasks = tasks.filter(
+      t => t.deadline && new Date(t.deadline) < now && !t.completed
+    );
     if (overdueTasks.length > 0) {
-      const oldestOverdue = overdueTasks.reduce((oldest, t) =>
-        t.deadline && (!oldest.deadline || new Date(t.deadline) < new Date(oldest.deadline)) ? t : oldest,
-        { deadline: null as string | null } as typeof tasks[0]
+      const oldestOverdue = overdueTasks.reduce(
+        (oldest, t) =>
+          t.deadline &&
+          (!oldest.deadline || new Date(t.deadline) < new Date(oldest.deadline))
+            ? t
+            : oldest,
+        { deadline: null as string | null } as (typeof tasks)[0]
       );
-      suggestions.push(`${overdueTasks.length} task(s) are overdue. Review and update deadlines or prioritize completion.`);
+      suggestions.push(
+        `${overdueTasks.length} task(s) are overdue. Review and update deadlines or prioritize completion.`
+      );
       if (oldestOverdue.deadline) {
-        const daysOverdue = Math.floor((now.getTime() - new Date(oldestOverdue.deadline).getTime()) / (1000 * 60 * 60 * 24));
-        suggestions.push(`Your oldest overdue task "${oldestOverdue.name}" has been pending for ${daysOverdue} days.`);
+        const daysOverdue = Math.floor(
+          (now.getTime() - new Date(oldestOverdue.deadline).getTime()) /
+            (1000 * 60 * 60 * 24)
+        );
+        suggestions.push(
+          `Your oldest overdue task "${oldestOverdue.name}" has been pending for ${daysOverdue} days.`
+        );
       }
     }
 
     // Deadline proximity suggestions
-    const thisWeek = tasks.filter(t => t.deadline && new Date(t.deadline) >= now && new Date(t.deadline) <= new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000) && !t.completed);
+    const thisWeek = tasks.filter(
+      t =>
+        t.deadline &&
+        new Date(t.deadline) >= now &&
+        new Date(t.deadline) <=
+          new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000) &&
+        !t.completed
+    );
     if (thisWeek.length > 0) {
-      tips.push(`${thisWeek.length} task(s) due this week. Consider blocking dedicated time for them.`);
+      tips.push(
+        `${thisWeek.length} task(s) due this week. Consider blocking dedicated time for them.`
+      );
     }
 
     // Trends analysis
     trends.push(`Current completion rate: ${completionRate}%`);
-    trends.push(`${criticalTasks.length} critical, ${highPriorityTasks.length} high-priority tasks in progress`);
-    trends.push(`${overdueTasks.length} overdue, ${thisWeek.length} due this week`);
+    trends.push(
+      `${criticalTasks.length} critical, ${highPriorityTasks.length} high-priority tasks in progress`
+    );
+    trends.push(
+      `${overdueTasks.length} overdue, ${thisWeek.length} due this week`
+    );
 
     // Productivity insights
     const avgCompletion = tasks.length > 0 ? completed / tasks.length : 0;
     if (avgCompletion > 0.8) {
-      trends.push("Excellent productivity - consider setting more ambitious goals");
+      trends.push(
+        'Excellent productivity - consider setting more ambitious goals'
+      );
     } else if (avgCompletion > 0.5) {
-      trends.push("Steady progress - focus on consistency");
+      trends.push('Steady progress - focus on consistency');
     } else {
-      trends.push("Opportunity to improve task completion habits");
+      trends.push('Opportunity to improve task completion habits');
     }
 
     return { tips, suggestions, trends };
   }
 
   async predictTaskDuration(
-    task: { name: string; description?: string; priority?: string; estimate?: string; date?: string; deadline?: string },
-    context?: { userId?: number; taskHistory?: any[]; factors?: { taskComplexity?: "simple" | "moderate" | "complex"; energyLevel?: "high" | "medium" | "low"; deadlineUrgency?: number } }
-  ): Promise<{ estimated_duration: number; confidence: number; factors: string[] }> {
+    task: {
+      name: string;
+      description?: string;
+      priority?: string;
+      estimate?: string;
+      date?: string;
+      deadline?: string;
+    },
+    context?: {
+      userId?: number;
+      taskHistory?: any[];
+      factors?: {
+        taskComplexity?: 'simple' | 'moderate' | 'complex';
+        energyLevel?: 'high' | 'medium' | 'low';
+        deadlineUrgency?: number;
+      };
+    }
+  ): Promise<{
+    estimated_duration: number;
+    confidence: number;
+    factors: string[];
+  }> {
     const factors: string[] = [];
 
     // Base duration based on priority
     let estimatedDuration = 45; // default 45 minutes
-    if (task.priority === "critical") {
+    if (task.priority === 'critical') {
       estimatedDuration = 120;
-      factors.push("priority");
-    } else if (task.priority === "high") {
+      factors.push('priority');
+    } else if (task.priority === 'high') {
       estimatedDuration = 90;
-      factors.push("priority");
-    } else if (task.priority === "medium") {
+      factors.push('priority');
+    } else if (task.priority === 'medium') {
       estimatedDuration = 60;
-    } else if (task.priority === "low") {
+    } else if (task.priority === 'low') {
       estimatedDuration = 30;
     }
 
     // Adjust based on task complexity
-    const textLength = (task.name || "").length + (task.description || "").length;
+    const textLength =
+      (task.name || '').length + (task.description || '').length;
     if (textLength > 200) {
       estimatedDuration += 30;
-      factors.push("complexity");
+      factors.push('complexity');
     }
 
     // Adjust based on estimate field
@@ -828,32 +1122,32 @@ export class KeywordParser implements AIProvider {
       const estimateMinutes = parseTimeToMinutes(task.estimate);
       if (estimateMinutes !== null && estimateMinutes > 0) {
         estimatedDuration = estimateMinutes;
-        factors.push("estimate_field");
+        factors.push('estimate_field');
       }
     }
 
     // Adjust based on context
-    if (context?.factors?.taskComplexity === "complex") {
+    if (context?.factors?.taskComplexity === 'complex') {
       estimatedDuration += 60;
-      factors.push("complexity");
-    } else if (context?.factors?.taskComplexity === "simple") {
+      factors.push('complexity');
+    } else if (context?.factors?.taskComplexity === 'simple') {
       estimatedDuration = Math.max(15, estimatedDuration - 30);
     }
 
-    if (context?.factors?.energyLevel === "low") {
+    if (context?.factors?.energyLevel === 'low') {
       estimatedDuration += 15;
-      factors.push("energy_decrease");
+      factors.push('energy_decrease');
     }
 
     if (context?.factors?.deadlineUrgency) {
       if (context.factors.deadlineUrgency > 0.7) {
         estimatedDuration -= 15; // Rush
-        factors.push("urgency");
+        factors.push('urgency');
       }
     }
 
-    const confidence = factors.length > 0 ? 0.7 + (factors.length * 0.05) : 0.6;
-    factors.push("historical_data");
+    const confidence = factors.length > 0 ? 0.7 + factors.length * 0.05 : 0.6;
+    factors.push('historical_data');
 
     return {
       estimated_duration: Math.max(15, estimatedDuration),
@@ -868,14 +1162,14 @@ export class KeywordParser implements AIProvider {
  * Requires OPENAI_API_KEY environment variable
  */
 export class OpenAIProvider implements AIProvider {
-  name = "openai-gpt4";
+  name = 'openai-gpt4';
   private readonly model: string;
   private readonly baseURL: string;
   private readonly maxRetries: number;
 
   constructor() {
-    this.model = process.env.OPENAI_MODEL || "gpt-4o";
-    this.baseURL = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
+    this.model = process.env.OPENAI_MODEL || 'gpt-4o';
+    this.baseURL = process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1';
     this.maxRetries = 3;
   }
 
@@ -888,7 +1182,9 @@ export class OpenAIProvider implements AIProvider {
         lastError = error instanceof Error ? error : new Error(String(error));
         if (i < this.maxRetries - 1) {
           // Exponential backoff: 1s, 2s, 4s
-          await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
+          await new Promise(resolve =>
+            setTimeout(resolve, Math.pow(2, i) * 1000)
+          );
         }
       }
     }
@@ -897,7 +1193,7 @@ export class OpenAIProvider implements AIProvider {
 
   async parseTask(input: AITaskInput): Promise<TaskSuggestion> {
     if (!process.env.OPENAI_API_KEY) {
-      throw new Error("OPENAI_API_KEY not configured");
+      throw new Error('OPENAI_API_KEY not configured');
     }
 
     const prompt = `
@@ -922,14 +1218,14 @@ Output format:
       return await this.withRetry(async () => {
         const response = await withTimeout(
           fetch(`${this.baseURL}/chat/completions`, {
-            method: "POST",
+            method: 'POST',
             headers: {
-              "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
-              "Content-Type": "application/json",
+              Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+              'Content-Type': 'application/json',
             },
             body: JSON.stringify({
               model: this.model,
-              messages: [{ role: "user", content: prompt }],
+              messages: [{ role: 'user', content: prompt }],
               temperature: 0.3,
               stream: false,
             }),
@@ -939,27 +1235,41 @@ Output format:
 
         if (!response.ok) {
           const errorBody = await response.text();
-          logError("OpenAI API error", { status: response.status, body: errorBody });
-          throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
+          logError('OpenAI API error', {
+            status: response.status,
+            body: errorBody,
+          });
+          throw new Error(
+            `OpenAI API error: ${response.status} ${response.statusText}`
+          );
         }
 
         const data = await response.json();
-        const content = data.choices[0]?.message?.content ?? "{}";
+        const content = data.choices[0]?.message?.content ?? '{}';
         const parsed = taskSuggestionSchema.safeParse(JSON.parse(content));
         if (!parsed.success) {
-          logWarn("OpenAI response validation failed, using fallback", { issues: parsed.error.issues });
+          logWarn('OpenAI response validation failed, using fallback', {
+            issues: parsed.error.issues,
+          });
           // Fallback to keyword parser on validation failure
           return new KeywordParser().parseTask(input);
         }
         return parsed.data;
       });
     } catch (error) {
-      logError("OpenAI parsing failed", undefined, error instanceof Error ? error : new Error(String(error)));
+      logError(
+        'OpenAI parsing failed',
+        undefined,
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
 
-  async parseTaskStream(input: AITaskInput, onChunk: (chunk: string) => Promise<void> | void): Promise<TaskSuggestion> {
+  async parseTaskStream(
+    input: AITaskInput,
+    onChunk: (chunk: string) => Promise<void> | void
+  ): Promise<TaskSuggestion> {
     if (!process.env.OPENAI_API_KEY) {
       return new KeywordParser().parseTask(input);
     }
@@ -983,14 +1293,14 @@ Output format:
 `;
 
     const response = await fetch(`${this.baseURL}/chat/completions`, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
-        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         model: this.model,
-        messages: [{ role: "user", content: prompt }],
+        messages: [{ role: 'user', content: prompt }],
         temperature: 0.3,
         stream: true,
       }),
@@ -1002,7 +1312,7 @@ Output format:
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
-    let accumulatedContent = "";
+    let accumulatedContent = '';
 
     try {
       while (true) {
@@ -1010,15 +1320,15 @@ Output format:
         if (done) break;
 
         const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split("\n");
+        const lines = chunk.split('\n');
 
         for (const line of lines) {
-          if (line.startsWith("data: ")) {
+          if (line.startsWith('data: ')) {
             const data = line.slice(6);
-            if (data === "[DONE]") continue;
+            if (data === '[DONE]') continue;
             try {
               const parsed = JSON.parse(data);
-              const content = parsed.choices[0]?.delta?.content || "";
+              const content = parsed.choices[0]?.delta?.content || '';
               if (content) {
                 accumulatedContent += content;
                 await onChunk(content);
@@ -1035,7 +1345,9 @@ Output format:
 
     // Return parsed result from the accumulated content
     try {
-      const parsed = taskSuggestionSchema.safeParse(JSON.parse(accumulatedContent || "{}"));
+      const parsed = taskSuggestionSchema.safeParse(
+        JSON.parse(accumulatedContent || '{}')
+      );
       if (parsed.success) {
         return parsed.data;
       }
@@ -1046,7 +1358,15 @@ Output format:
     return new KeywordParser().parseTask(input);
   }
 
-  async generateInsights(tasks: Array<{ name: string; completed: boolean; priority: string; date?: string | null; deadline?: string | null }>): Promise<{ tips: string[]; suggestions: string[]; trends: string[] }> {
+  async generateInsights(
+    tasks: Array<{
+      name: string;
+      completed: boolean;
+      priority: string;
+      date?: string | null;
+      deadline?: string | null;
+    }>
+  ): Promise<{ tips: string[]; suggestions: string[]; trends: string[] }> {
     if (!process.env.OPENAI_API_KEY) {
       return { tips: [], suggestions: [], trends: [] };
     }
@@ -1067,14 +1387,14 @@ Return JSON:
     try {
       return await this.withRetry(async () => {
         const response = await fetch(`${this.baseURL}/chat/completions`, {
-          method: "POST",
+          method: 'POST',
           headers: {
-            "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
-            "Content-Type": "application/json",
+            Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+            'Content-Type': 'application/json',
           },
           body: JSON.stringify({
             model: this.model,
-            messages: [{ role: "user", content: prompt }],
+            messages: [{ role: 'user', content: prompt }],
             temperature: 0.5,
           }),
         });
@@ -1084,25 +1404,35 @@ Return JSON:
         }
 
         const data = await response.json();
-        const content = data.choices[0]?.message?.content ?? '{"tips":[],"suggestions":[],"trends":[]}';
+        const content =
+          data.choices[0]?.message?.content ??
+          '{"tips":[],"suggestions":[],"trends":[]}';
         const parsed = aiInsightsSchema.safeParse(JSON.parse(content));
         if (!parsed.success) {
-          logWarn("OpenAI insights validation failed", { issues: parsed.error.issues });
+          logWarn('OpenAI insights validation failed', {
+            issues: parsed.error.issues,
+          });
           return { tips: [], suggestions: [], trends: [] };
         }
         return parsed.data;
       });
     } catch (error) {
-      logError("OpenAI insights failed", undefined, error instanceof Error ? error : new Error(String(error)));
+      logError(
+        'OpenAI insights failed',
+        undefined,
+        error instanceof Error ? error : new Error(String(error))
+      );
       return { tips: [], suggestions: [], trends: [] };
     }
   }
 
-  async generateTasksFromNotes(notes: string): Promise<Array<{
-    name: string;
-    description?: string;
-    priority?: "critical" | "high" | "medium" | "low" | "none";
-  }>> {
+  async generateTasksFromNotes(notes: string): Promise<
+    Array<{
+      name: string;
+      description?: string;
+      priority?: 'critical' | 'high' | 'medium' | 'low' | 'none';
+    }>
+  > {
     if (!process.env.OPENAI_API_KEY) {
       return [];
     }
@@ -1122,14 +1452,14 @@ Only return valid JSON.
 
     try {
       const response = await fetch(`${this.baseURL}/chat/completions`, {
-        method: "POST",
+        method: 'POST',
         headers: {
-          "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
-          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           model: this.model,
-          messages: [{ role: "user", content: prompt }],
+          messages: [{ role: 'user', content: prompt }],
           temperature: 0.3,
         }),
       });
@@ -1139,22 +1469,24 @@ Only return valid JSON.
       }
 
       const data = await response.json();
-      return JSON.parse(data.choices[0]?.message?.content || "[]");
+      return JSON.parse(data.choices[0]?.message?.content || '[]');
     } catch {
       return [];
     }
   }
 
-  async generateProjectPlan(input: ProjectPlanInput): Promise<GeneratedProject> {
+  async generateProjectPlan(
+    input: ProjectPlanInput
+  ): Promise<GeneratedProject> {
     if (!process.env.OPENAI_API_KEY) {
-      throw new Error("OPENAI_API_KEY not configured");
+      throw new Error('OPENAI_API_KEY not configured');
     }
 
     const prompt = `
 Generate a detailed project plan from this description:
 
 Project Name: ${input.projectName}
-Description: ${input.description || "No description provided"}
+Description: ${input.description || 'No description provided'}
 Constraints: ${JSON.stringify(input.constraints || {})}
 
 Return JSON:
@@ -1171,25 +1503,25 @@ Only return valid JSON.
 
     try {
       const response = await fetch(`${this.baseURL}/chat/completions`, {
-        method: "POST",
+        method: 'POST',
         headers: {
-          "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
-          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           model: this.model,
-          messages: [{ role: "user", content: prompt }],
+          messages: [{ role: 'user', content: prompt }],
           temperature: 0.5,
           max_tokens: 1000,
         }),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to generate project plan");
+        throw new Error('Failed to generate project plan');
       }
 
       const data = await response.json();
-      const content = data.choices[0]?.message?.content || "{}";
+      const content = data.choices[0]?.message?.content || '{}';
       return JSON.parse(content);
     } catch {
       // Fallback to keyword parser
@@ -1197,13 +1529,15 @@ Only return valid JSON.
     }
   }
 
-  async generateDecisionTemplate(context: DecisionContext): Promise<GeneratedDecisionTemplate> {
+  async generateDecisionTemplate(
+    context: DecisionContext
+  ): Promise<GeneratedDecisionTemplate> {
     if (!process.env.OPENAI_API_KEY) {
-      throw new Error("OPENAI_API_KEY not configured");
+      throw new Error('OPENAI_API_KEY not configured');
     }
 
     const prompt = `
-Generate a decision template for: ${context.decisionType || "general"}
+Generate a decision template for: ${context.decisionType || 'general'}
 
 Context:
 - Task: ${context.task?.name}
@@ -1220,14 +1554,14 @@ Only return valid JSON.
 
     try {
       const response = await fetch(`${this.baseURL}/chat/completions`, {
-        method: "POST",
+        method: 'POST',
         headers: {
-          "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
-          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           model: this.model,
-          messages: [{ role: "user", content: prompt }],
+          messages: [{ role: 'user', content: prompt }],
           temperature: 0.5,
           max_tokens: 500,
         }),
@@ -1235,23 +1569,25 @@ Only return valid JSON.
 
       if (!response.ok) {
         return {
-          name: "General Decision Template",
-          prompt_template: "You need to make a decision about: {task_name}. What are the options, pros, and cons of each?",
+          name: 'General Decision Template',
+          prompt_template:
+            'You need to make a decision about: {task_name}. What are the options, pros, and cons of each?',
           option_template: '[{"option": "Description, pros, cons"}]',
-          provider: this.name
+          provider: this.name,
         };
       }
 
       const data = await response.json();
-      const content = data.choices[0]?.message?.content || "{}";
+      const content = data.choices[0]?.message?.content || '{}';
       const parsed = JSON.parse(content);
       return { ...parsed, provider: this.name };
     } catch {
       return {
-        name: "General Decision Template",
-        prompt_template: "You need to make a decision about: {task_name}. What are the options, pros, and cons of each?",
+        name: 'General Decision Template',
+        prompt_template:
+          'You need to make a decision about: {task_name}. What are the options, pros, and cons of each?',
         option_template: '[{"option": "Description, pros, cons"}]',
-        provider: this.name
+        provider: this.name,
       };
     }
   }
@@ -1262,14 +1598,14 @@ Only return valid JSON.
  * Requires ANTHROPIC_API_KEY environment variable
  */
 export class ClaudeProvider implements AIProvider {
-  name = "claude-sonnet";
+  name = 'claude-sonnet';
   private readonly model: string;
   private readonly baseURL: string;
   private readonly maxRetries: number;
 
   constructor() {
-    this.model = process.env.CLAUDE_MODEL || "claude-3-5-sonnet-latest";
-    this.baseURL = process.env.CLAUDE_BASE_URL || "https://api.anthropic.com";
+    this.model = process.env.CLAUDE_MODEL || 'claude-3-5-sonnet-latest';
+    this.baseURL = process.env.CLAUDE_BASE_URL || 'https://api.anthropic.com';
     this.maxRetries = 3;
   }
 
@@ -1282,7 +1618,9 @@ export class ClaudeProvider implements AIProvider {
         lastError = error instanceof Error ? error : new Error(String(error));
         if (i < this.maxRetries - 1) {
           // Exponential backoff: 1s, 2s, 4s
-          await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
+          await new Promise(resolve =>
+            setTimeout(resolve, Math.pow(2, i) * 1000)
+          );
         }
       }
     }
@@ -1291,7 +1629,7 @@ export class ClaudeProvider implements AIProvider {
 
   async parseTask(input: AITaskInput): Promise<TaskSuggestion> {
     if (!process.env.ANTHROPIC_API_KEY) {
-      throw new Error("ANTHROPIC_API_KEY not configured");
+      throw new Error('ANTHROPIC_API_KEY not configured');
     }
 
     const prompt = `
@@ -1313,16 +1651,16 @@ Return only JSON with these fields:
       return await this.withRetry(async () => {
         const response = await withTimeout(
           fetch(`${this.baseURL}/v1/messages`, {
-            method: "POST",
+            method: 'POST',
             headers: {
-              "x-api-key": process.env.ANTHROPIC_API_KEY!,
-              "Content-Type": "application/json",
-              "anthropic-version": "2023-06-01",
+              'x-api-key': process.env.ANTHROPIC_API_KEY!,
+              'Content-Type': 'application/json',
+              'anthropic-version': '2023-06-01',
             },
             body: JSON.stringify({
               model: this.model,
               max_tokens: 500,
-              messages: [{ role: "user", content: prompt }],
+              messages: [{ role: 'user', content: prompt }],
             }),
           }),
           DEFAULT_TIMEOUT_MS
@@ -1330,27 +1668,46 @@ Return only JSON with these fields:
 
         if (!response.ok) {
           const errorBody = await response.text();
-          logError("Claude API error", { status: response.status, body: errorBody });
-          throw new Error(`Claude API error: ${response.status} ${response.statusText}`);
+          logError('Claude API error', {
+            status: response.status,
+            body: errorBody,
+          });
+          throw new Error(
+            `Claude API error: ${response.status} ${response.statusText}`
+          );
         }
 
         const data = await response.json();
-        const content = data.content[0]?.text ?? "{}";
+        const content = data.content[0]?.text ?? '{}';
         const parsed = taskSuggestionSchema.safeParse(JSON.parse(content));
         if (!parsed.success) {
-          logWarn("Claude response validation failed, using fallback", { issues: parsed.error.issues });
+          logWarn('Claude response validation failed, using fallback', {
+            issues: parsed.error.issues,
+          });
           // Fallback to keyword parser on validation failure
           return new KeywordParser().parseTask(input);
         }
         return parsed.data;
       });
     } catch (error) {
-      logError("Claude parsing failed", undefined, error instanceof Error ? error : new Error(String(error)));
+      logError(
+        'Claude parsing failed',
+        undefined,
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
 
-  async generateInsights(tasks: Array<{ name: string; completed: boolean; priority: string; date?: string | null; deadline?: string | null }>): Promise<{ tips: string[]; suggestions: string[]; trends: string[] }> {
+  async generateInsights(
+    tasks: Array<{
+      name: string;
+      completed: boolean;
+      priority: string;
+      date?: string | null;
+      deadline?: string | null;
+    }>
+  ): Promise<{ tips: string[]; suggestions: string[]; trends: string[] }> {
     if (!process.env.ANTHROPIC_API_KEY) {
       return { tips: [], suggestions: [], trends: [] };
     }
@@ -1366,16 +1723,16 @@ Return JSON: {"tips":["..."],"suggestions":["..."],"trends":["..."]}
     try {
       return await this.withRetry(async () => {
         const response = await fetch(`${this.baseURL}/v1/messages`, {
-          method: "POST",
+          method: 'POST',
           headers: {
-            "x-api-key": process.env.ANTHROPIC_API_KEY!,
-            "Content-Type": "application/json",
-            "anthropic-version": "2023-06-01",
+            'x-api-key': process.env.ANTHROPIC_API_KEY!,
+            'Content-Type': 'application/json',
+            'anthropic-version': '2023-06-01',
           },
           body: JSON.stringify({
             model: this.model,
             max_tokens: 500,
-            messages: [{ role: "user", content: prompt }],
+            messages: [{ role: 'user', content: prompt }],
           }),
         });
 
@@ -1384,25 +1741,34 @@ Return JSON: {"tips":["..."],"suggestions":["..."],"trends":["..."]}
         }
 
         const data = await response.json();
-        const content = data.content[0]?.text ?? '{"tips":[],"suggestions":[],"trends":[]}';
+        const content =
+          data.content[0]?.text ?? '{"tips":[],"suggestions":[],"trends":[]}';
         const parsed = aiInsightsSchema.safeParse(JSON.parse(content));
         if (!parsed.success) {
-          logWarn("Claude insights validation failed", { issues: parsed.error.issues });
+          logWarn('Claude insights validation failed', {
+            issues: parsed.error.issues,
+          });
           return { tips: [], suggestions: [], trends: [] };
         }
         return parsed.data;
       });
     } catch (error) {
-      logError("Claude insights failed", undefined, error instanceof Error ? error : new Error(String(error)));
+      logError(
+        'Claude insights failed',
+        undefined,
+        error instanceof Error ? error : new Error(String(error))
+      );
       return { tips: [], suggestions: [], trends: [] };
     }
   }
 
-  async generateTasksFromNotes(notes: string): Promise<Array<{
-    name: string;
-    description?: string;
-    priority?: "critical" | "high" | "medium" | "low" | "none";
-  }>> {
+  async generateTasksFromNotes(notes: string): Promise<
+    Array<{
+      name: string;
+      description?: string;
+      priority?: 'critical' | 'high' | 'medium' | 'low' | 'none';
+    }>
+  > {
     if (!process.env.ANTHROPIC_API_KEY) {
       return [];
     }
@@ -1422,16 +1788,16 @@ Only return valid JSON.
 
     try {
       const response = await fetch(`${this.baseURL}/v1/messages`, {
-        method: "POST",
+        method: 'POST',
         headers: {
-          "x-api-key": process.env.ANTHROPIC_API_KEY!,
-          "Content-Type": "application/json",
-          "anthropic-version": "2023-06-01",
+          'x-api-key': process.env.ANTHROPIC_API_KEY!,
+          'Content-Type': 'application/json',
+          'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify({
           model: this.model,
           max_tokens: 1000,
-          messages: [{ role: "user", content: prompt }],
+          messages: [{ role: 'user', content: prompt }],
         }),
       });
 
@@ -1440,22 +1806,24 @@ Only return valid JSON.
       }
 
       const data = await response.json();
-      return JSON.parse(data.content[0]?.text ?? "[]");
+      return JSON.parse(data.content[0]?.text ?? '[]');
     } catch {
       return [];
     }
   }
 
-  async generateProjectPlan(input: ProjectPlanInput): Promise<GeneratedProject> {
+  async generateProjectPlan(
+    input: ProjectPlanInput
+  ): Promise<GeneratedProject> {
     if (!process.env.ANTHROPIC_API_KEY) {
-      throw new Error("ANTHROPIC_API_KEY not configured");
+      throw new Error('ANTHROPIC_API_KEY not configured');
     }
 
     const prompt = `
 Generate a detailed project plan:
 
 Project Name: ${input.projectName}
-Description: ${input.description || "No description"}
+Description: ${input.description || 'No description'}
 Constraints: ${JSON.stringify(input.constraints || {})}
 
 Return JSON with phases and total_duration_days.
@@ -1463,16 +1831,16 @@ Return JSON with phases and total_duration_days.
 
     try {
       const response = await fetch(`${this.baseURL}/v1/messages`, {
-        method: "POST",
+        method: 'POST',
         headers: {
-          "x-api-key": process.env.ANTHROPIC_API_KEY!,
-          "Content-Type": "application/json",
-          "anthropic-version": "2023-06-01",
+          'x-api-key': process.env.ANTHROPIC_API_KEY!,
+          'Content-Type': 'application/json',
+          'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify({
           model: this.model,
           max_tokens: 1000,
-          messages: [{ role: "user", content: prompt }],
+          messages: [{ role: 'user', content: prompt }],
         }),
       });
 
@@ -1481,20 +1849,22 @@ Return JSON with phases and total_duration_days.
       }
 
       const data = await response.json();
-      const content = data.content[0]?.text ?? "{}";
+      const content = data.content[0]?.text ?? '{}';
       return JSON.parse(content);
     } catch {
       return new KeywordParser().generateProjectPlan(input);
     }
   }
 
-  async generateDecisionTemplate(context: DecisionContext): Promise<GeneratedDecisionTemplate> {
+  async generateDecisionTemplate(
+    context: DecisionContext
+  ): Promise<GeneratedDecisionTemplate> {
     if (!process.env.ANTHROPIC_API_KEY) {
-      throw new Error("ANTHROPIC_API_KEY not configured");
+      throw new Error('ANTHROPIC_API_KEY not configured');
     }
 
     const prompt = `
-Generate decision template for: ${context.decisionType || "general"}
+Generate decision template for: ${context.decisionType || 'general'}
 
 Task: ${context.task?.name}
 
@@ -1503,39 +1873,41 @@ Return JSON with name, prompt_template, and option_template.
 
     try {
       const response = await fetch(`${this.baseURL}/v1/messages`, {
-        method: "POST",
+        method: 'POST',
         headers: {
-          "x-api-key": process.env.ANTHROPIC_API_KEY!,
-          "Content-Type": "application/json",
-          "anthropic-version": "2023-06-01",
+          'x-api-key': process.env.ANTHROPIC_API_KEY!,
+          'Content-Type': 'application/json',
+          'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify({
           model: this.model,
           max_tokens: 500,
-          messages: [{ role: "user", content: prompt }],
+          messages: [{ role: 'user', content: prompt }],
         }),
       });
 
       if (!response.ok) {
         const defaultTemplate = {
-          name: "General Decision Template",
-          prompt_template: "You need to decide on: {task_name}. What are the options?",
+          name: 'General Decision Template',
+          prompt_template:
+            'You need to decide on: {task_name}. What are the options?',
           option_template: '[{"option": "description, pros, cons"}]',
-          provider: this.name
+          provider: this.name,
         };
         return defaultTemplate;
       }
 
       const data = await response.json();
-      const content = data.content[0]?.text ?? "{}";
+      const content = data.content[0]?.text ?? '{}';
       const parsed = JSON.parse(content);
       return { ...parsed, provider: this.name };
     } catch {
       return {
-        name: "General Decision Template",
-        prompt_template: "You need to decide on: {task_name}. What are the options?",
+        name: 'General Decision Template',
+        prompt_template:
+          'You need to decide on: {task_name}. What are the options?',
         option_template: '[{"option": "description, pros, cons"}]',
-        provider: this.name
+        provider: this.name,
       };
     }
   }
@@ -1563,10 +1935,14 @@ export class AIManager {
     }
   }
 
-  async parseTask(input: AITaskInput): Promise<TaskSuggestion & { provider: string }> {
+  async parseTask(
+    input: AITaskInput
+  ): Promise<TaskSuggestion & { provider: string }> {
     // Check cache first (only for keyword parser to avoid stale AI results)
     const cacheKey = `parse:${input.text}`;
-    const cachedResult = aiCache.get<TaskSuggestion & { provider: string }>(cacheKey);
+    const cachedResult = aiCache.get<TaskSuggestion & { provider: string }>(
+      cacheKey
+    );
     if (cachedResult) {
       return cachedResult;
     }
@@ -1577,37 +1953,54 @@ export class AIManager {
         const resultWithProvider = { ...result, provider: provider.name };
 
         // Cache keyword parser results
-        if (provider.name === "keyword-parser") {
+        if (provider.name === 'keyword-parser') {
           aiCache.set(cacheKey, resultWithProvider);
         }
 
         return resultWithProvider;
       } catch (error) {
-        logWarn(`${provider.name} failed, trying next provider`, { error: error instanceof Error ? error.message : String(error) });
+        logWarn(`${provider.name} failed, trying next provider`, {
+          error: error instanceof Error ? error.message : String(error),
+        });
         continue;
       }
     }
 
     // Fallback to keyword parser (should never fail)
     const result = await new KeywordParser().parseTask(input);
-    return { ...result, provider: "keyword-parser" };
+    return { ...result, provider: 'keyword-parser' };
   }
 
-  async generateInsights(tasks: Array<{ name: string; completed: boolean; priority: string; date?: string | null; deadline?: string | null }>): Promise<{ tips: string[]; suggestions: string[]; trends: string[]; provider: string }> {
+  async generateInsights(
+    tasks: Array<{
+      name: string;
+      completed: boolean;
+      priority: string;
+      date?: string | null;
+      deadline?: string | null;
+    }>
+  ): Promise<{
+    tips: string[];
+    suggestions: string[];
+    trends: string[];
+    provider: string;
+  }> {
     // Use the first AI provider, fallback to keyword parser
     for (const provider of this.providers) {
-      if (provider.name !== "keyword-parser") {
+      if (provider.name !== 'keyword-parser') {
         try {
           const result = await provider.generateInsights(tasks);
           return { ...result, provider: provider.name };
         } catch (error) {
-          logWarn(`${provider.name} insights failed`, { error: error instanceof Error ? error.message : String(error) });
+          logWarn(`${provider.name} insights failed`, {
+            error: error instanceof Error ? error.message : String(error),
+          });
         }
       }
     }
 
     const result = await new KeywordParser().generateInsights(tasks);
-    return { ...result, provider: "keyword-parser" };
+    return { ...result, provider: 'keyword-parser' };
   }
 
   async generateTasksFromNotes(
@@ -1618,9 +2011,15 @@ export class AIManager {
   ): Promise<Array<TaskSuggestion & { provider: string }>> {
     // Try AI providers first (skip keyword-parser since we want to use it as fallback)
     for (const provider of this.providers) {
-      if (provider.name !== "keyword-parser" && typeof (provider as any).generateTasksFromNotes === "function") {
+      if (
+        provider.name !== 'keyword-parser' &&
+        typeof (provider as any).generateTasksFromNotes === 'function'
+      ) {
         try {
-          const result = await (provider as any).generateTasksFromNotes(notes, context);
+          const result = await (provider as any).generateTasksFromNotes(
+            notes,
+            context
+          );
           if (result && result.length > 0) {
             return result.map((task: TaskSuggestion) => ({
               ...task,
@@ -1628,7 +2027,10 @@ export class AIManager {
             }));
           }
         } catch (error) {
-          logWarn(`${provider.name} notes generation failed, trying next provider`, { error: error instanceof Error ? error.message : String(error) });
+          logWarn(
+            `${provider.name} notes generation failed, trying next provider`,
+            { error: error instanceof Error ? error.message : String(error) }
+          );
         }
       }
     }
@@ -1638,24 +2040,28 @@ export class AIManager {
     const result = await parser.generateTasksFromNotes(notes);
     return result.map(task => ({
       ...task,
-      provider: "keyword-parser",
+      provider: 'keyword-parser',
     }));
   }
 
   /**
    * Generate a project plan from natural language description
    */
-  async generateProjectPlan(input: ProjectPlanInput): Promise<GeneratedProject & { provider: string }> {
+  async generateProjectPlan(
+    input: ProjectPlanInput
+  ): Promise<GeneratedProject & { provider: string }> {
     // Try providers that support project planning (keyword parser always has it)
     for (const provider of this.providers) {
-      if (typeof (provider as any).generateProjectPlan === "function") {
+      if (typeof (provider as any).generateProjectPlan === 'function') {
         try {
           const result = await (provider as any).generateProjectPlan(input);
           if (result) {
             return { ...result, provider: provider.name };
           }
         } catch (error) {
-          logWarn(`${provider.name} project plan generation failed`, { error: error instanceof Error ? error.message : String(error) });
+          logWarn(`${provider.name} project plan generation failed`, {
+            error: error instanceof Error ? error.message : String(error),
+          });
         }
       }
     }
@@ -1663,23 +2069,33 @@ export class AIManager {
     // Fallback to keyword parser (should never fail)
     const parser = new KeywordParser();
     const result = await parser.generateProjectPlan(input);
-    return { ...result, provider: "keyword-parser" };
+    return { ...result, provider: 'keyword-parser' };
   }
 
   /**
    * Generate a decision template based on context
    */
-  async generateDecisionTemplate(context: { decisionType?: string; task?: { name: string; priority?: string; deadline?: string } }): Promise<{ name: string; prompt_template: string; option_template?: string }> {
+  async generateDecisionTemplate(context: {
+    decisionType?: string;
+    task?: { name: string; priority?: string; deadline?: string };
+  }): Promise<{
+    name: string;
+    prompt_template: string;
+    option_template?: string;
+  }> {
     // Try keyword parser first (always available)
     const parser = new KeywordParser();
     try {
       return await parser.generateDecisionTemplate(context);
     } catch (error) {
-      logWarn("Decision template generation failed", { error: error instanceof Error ? error.message : String(error) });
+      logWarn('Decision template generation failed', {
+        error: error instanceof Error ? error.message : String(error),
+      });
       // Return a default template
       return {
-        name: "General Decision Template",
-        prompt_template: "You need to make a decision about: {task_name}. What are the options, pros, and cons of each?",
+        name: 'General Decision Template',
+        prompt_template:
+          'You need to make a decision about: {task_name}. What are the options, pros, and cons of each?',
         option_template: '[{{ "option1": "Description, pros, cons" }}]',
       };
     }
@@ -1691,16 +2107,20 @@ export class AIManager {
   async predictTaskDuration(
     task: any,
     context?: any
-  ): Promise<{ estimated_duration: number; confidence: number; factors: string[] }> {
+  ): Promise<{
+    estimated_duration: number;
+    confidence: number;
+    factors: string[];
+  }> {
     const provider = this.providers[0]; // Use keyword parser by default
-    if (typeof provider.predictTaskDuration === "function") {
+    if (typeof provider.predictTaskDuration === 'function') {
       return provider.predictTaskDuration(task, context);
     }
     // Fallback
     return {
       estimated_duration: 45,
       confidence: 0.6,
-      factors: ["default"],
+      factors: ['default'],
     };
   }
 
@@ -1713,10 +2133,19 @@ export class AIManager {
    */
   async parseEditCommand(
     text: string,
-    context: { tasks: Array<{ id: number; name: string; completed: boolean; priority: string }> }
+    context: {
+      tasks: Array<{
+        id: number;
+        name: string;
+        completed: boolean;
+        priority: string;
+      }>;
+    }
   ): Promise<AIEditCommand & { provider: string }> {
     const cacheKey = `edit:${text}`;
-    const cachedResult = aiCache.get<AIEditCommand & { provider: string }>(cacheKey);
+    const cachedResult = aiCache.get<AIEditCommand & { provider: string }>(
+      cacheKey
+    );
     if (cachedResult) {
       return cachedResult;
     }
@@ -1724,27 +2153,35 @@ export class AIManager {
     // Check for simple keyword patterns first
     const simpleResult = this.trySimpleEditCommand(text, context);
     if (simpleResult) {
-      aiCache.set(cacheKey, { ...simpleResult, provider: "keyword-parser" });
-      return { ...simpleResult, provider: "keyword-parser" };
+      aiCache.set(cacheKey, { ...simpleResult, provider: 'keyword-parser' });
+      return { ...simpleResult, provider: 'keyword-parser' };
     }
 
     // Try AI providers
     for (const provider of this.providers) {
       try {
-        if (provider.name !== "keyword-parser" && typeof (provider as any).parseEditCommand === "function") {
-          const result = await (provider as any).parseEditCommand(text, context);
+        if (
+          provider.name !== 'keyword-parser' &&
+          typeof (provider as any).parseEditCommand === 'function'
+        ) {
+          const result = await (provider as any).parseEditCommand(
+            text,
+            context
+          );
           if (result) {
             return { ...result, provider: provider.name };
           }
         }
       } catch (error) {
-        logWarn(`${provider.name} edit command failed`, { error: error instanceof Error ? error.message : String(error) });
+        logWarn(`${provider.name} edit command failed`, {
+          error: error instanceof Error ? error.message : String(error),
+        });
         continue;
       }
     }
 
     // Fallback: return a safe command that won't modify anything
-    return { action: "edit" as const, provider: "keyword-parser" };
+    return { action: 'edit' as const, provider: 'keyword-parser' };
   }
 
   /**
@@ -1752,86 +2189,121 @@ export class AIManager {
    */
   private trySimpleEditCommand(
     text: string,
-    context: { tasks: Array<{ id: number; name: string; completed: boolean; priority: string }> }
+    context: {
+      tasks: Array<{
+        id: number;
+        name: string;
+        completed: boolean;
+        priority: string;
+      }>;
+    }
   ): AIEditCommand | null {
     // Pattern: "complete/mark done [task name]" or "mark [task] as complete"
-    const completeMatch = text.match(/(?:complete|mark\s+(?:as\s+)?done|finish|done)[:\s]+(.+?)(?:\s*$|\s*[.!?])/i);
+    const completeMatch = text.match(
+      /(?:complete|mark\s+(?:as\s+)?done|finish|done)[:\s]+(.+?)(?:\s*$|\s*[.!?])/i
+    );
     if (completeMatch) {
       const taskName = completeMatch[1].trim();
-      const task = context.tasks.find((t) => t.name.toLowerCase().includes(taskName.toLowerCase()));
+      const task = context.tasks.find(t =>
+        t.name.toLowerCase().includes(taskName.toLowerCase())
+      );
       if (task) {
-        return { action: "complete", taskId: task.id };
+        return { action: 'complete', taskId: task.id };
       }
     }
 
     // Pattern: "delete/remove [task name]"
-    const deleteMatch = text.match(/(?:delete|remove)[:\s]+(?:task\s+)?(.+?)(?:\s*$|\s*[.!?])/i);
+    const deleteMatch = text.match(
+      /(?:delete|remove)[:\s]+(?:task\s+)?(.+?)(?:\s*$|\s*[.!?])/i
+    );
     if (deleteMatch) {
       const taskName = deleteMatch[1].trim();
-      const task = context.tasks.find((t) => t.name.toLowerCase().includes(taskName.toLowerCase()));
+      const task = context.tasks.find(t =>
+        t.name.toLowerCase().includes(taskName.toLowerCase())
+      );
       if (task) {
-        return { action: "delete", taskId: task.id };
+        return { action: 'delete', taskId: task.id };
       }
     }
 
     // Pattern: "change priority of [task] to [level]"
-    const priorityMatch = text.match(/(?:set|change)\s+(?:priority\s+of\s+)?(.+?)\s+to\s+(critical|high|medium|low)/i);
+    const priorityMatch = text.match(
+      /(?:set|change)\s+(?:priority\s+of\s+)?(.+?)\s+to\s+(critical|high|medium|low)/i
+    );
     if (priorityMatch) {
       const taskName = priorityMatch[1].trim();
       const priority = priorityMatch[2].toLowerCase();
-      const task = context.tasks.find((t) => t.name.toLowerCase().includes(taskName.toLowerCase()));
+      const task = context.tasks.find(t =>
+        t.name.toLowerCase().includes(taskName.toLowerCase())
+      );
       if (task) {
-        return { action: "prioritize", taskId: task.id, updates: { priority } };
+        return { action: 'prioritize', taskId: task.id, updates: { priority } };
       }
     }
 
     // Pattern: "add label [label] to [task]"
-    const labelMatch = text.match(/(?:add|assign)\s+(?:label\s+)?(\w+)\s+to\s+(.+)/i);
+    const labelMatch = text.match(
+      /(?:add|assign)\s+(?:label\s+)?(\w+)\s+to\s+(.+)/i
+    );
     if (labelMatch) {
       const labelName = labelMatch[1];
-      const taskName = labelMatch[2].replace(/[.!?]$/, "").trim();
-      const task = context.tasks.find((t) => t.name.toLowerCase().includes(taskName.toLowerCase()));
+      const taskName = labelMatch[2].replace(/[.!?]$/, '').trim();
+      const task = context.tasks.find(t =>
+        t.name.toLowerCase().includes(taskName.toLowerCase())
+      );
       if (task) {
-        return { action: "add_label", taskId: task.id, updates: { labelName } };
+        return { action: 'add_label', taskId: task.id, updates: { labelName } };
       }
     }
 
     // Pattern: "move [task] to [list name]" or "move [task] to inbox"
-    const moveMatch = text.match(/(?:move|put)\s+(?:task\s+)?(.+?)\s+to\s+(.+)/i);
+    const moveMatch = text.match(
+      /(?:move|put)\s+(?:task\s+)?(.+?)\s+to\s+(.+)/i
+    );
     if (moveMatch) {
       const taskName = moveMatch[1].trim();
       const listName = moveMatch[2].trim();
-      const task = context.tasks.find((t) => t.name.toLowerCase().includes(taskName.toLowerCase()));
+      const task = context.tasks.find(t =>
+        t.name.toLowerCase().includes(taskName.toLowerCase())
+      );
       if (task) {
-        return { action: "edit", taskId: task.id, updates: { listName } };
+        return { action: 'edit', taskId: task.id, updates: { listName } };
       }
     }
 
     // Pattern: "schedule [task] for [date]" or "move [task] to [day]"
-    const scheduleMatch = text.match(/(?:schedule|move|set)\s+(?:task\s+)?(.+?)\s+(?:for|on|to)\s+(.+)/i);
+    const scheduleMatch = text.match(
+      /(?:schedule|move|set)\s+(?:task\s+)?(.+?)\s+(?:for|on|to)\s+(.+)/i
+    );
     if (scheduleMatch && !completeMatch && !deleteMatch) {
       const taskName = scheduleMatch[1].trim();
       const dateStr = scheduleMatch[2].trim();
-      const task = context.tasks.find((t) => t.name.toLowerCase().includes(taskName.toLowerCase()));
+      const task = context.tasks.find(t =>
+        t.name.toLowerCase().includes(taskName.toLowerCase())
+      );
       if (task) {
         // Try to parse date
         const date = this.parseNaturalDate(dateStr);
         if (date) {
-          return { action: "schedule", taskId: task.id, updates: { date } };
+          return { action: 'schedule', taskId: task.id, updates: { date } };
         }
       }
     }
 
     // Pattern: "postpone [task] to tomorrow/today/next week"
-    const postponeMatch = text.match(/(?:postpone|defer|push)\s+(?:task\s+)?(.+?)\s+(?:to\s+)?(.+)/i);
+    const postponeMatch = text.match(
+      /(?:postpone|defer|push)\s+(?:task\s+)?(.+?)\s+(?:to\s+)?(.+)/i
+    );
     if (postponeMatch) {
       const taskName = postponeMatch[1].trim();
       const timeRef = postponeMatch[2].trim();
-      const task = context.tasks.find((t) => t.name.toLowerCase().includes(taskName.toLowerCase()));
+      const task = context.tasks.find(t =>
+        t.name.toLowerCase().includes(taskName.toLowerCase())
+      );
       if (task) {
         const date = this.parseNaturalDate(timeRef);
         if (date) {
-          return { action: "schedule", taskId: task.id, updates: { date } };
+          return { action: 'schedule', taskId: task.id, updates: { date } };
         }
       }
     }
@@ -1840,7 +2312,7 @@ export class AIManager {
     const searchMatch = text.match(/(?:search|find)\s+(?:for\s+)?(.+)/i);
     if (searchMatch) {
       const query = searchMatch[1].trim();
-      return { action: "search", searchQuery: query };
+      return { action: 'search', searchQuery: query };
     }
 
     return null;
@@ -1853,29 +2325,37 @@ export class AIManager {
     const normalized = dateStr.toLowerCase().trim();
     const today = new Date();
 
-    if (normalized === "today") {
-      return today.toISOString().split("T")[0];
+    if (normalized === 'today') {
+      return today.toISOString().split('T')[0];
     }
 
-    if (normalized === "tomorrow") {
+    if (normalized === 'tomorrow') {
       const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
-      return tomorrow.toISOString().split("T")[0];
+      return tomorrow.toISOString().split('T')[0];
     }
 
-    if (normalized === "next week" || normalized === "weekend") {
+    if (normalized === 'next week' || normalized === 'weekend') {
       const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
-      return nextWeek.toISOString().split("T")[0];
+      return nextWeek.toISOString().split('T')[0];
     }
 
     const dayMap: Record<string, number> = {
-      sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6,
+      sunday: 0,
+      monday: 1,
+      tuesday: 2,
+      wednesday: 3,
+      thursday: 4,
+      friday: 5,
+      saturday: 6,
     };
 
     if (dayMap[normalized] !== undefined) {
       const targetDay = dayMap[normalized];
       const daysUntil = (targetDay - today.getDay() + 7) % 7 || 7;
-      const targetDate = new Date(today.getTime() + daysUntil * 24 * 60 * 60 * 1000);
-      return targetDate.toISOString().split("T")[0];
+      const targetDate = new Date(
+        today.getTime() + daysUntil * 24 * 60 * 60 * 1000
+      );
+      return targetDate.toISOString().split('T')[0];
     }
 
     // Try YYYY-MM-DD format
@@ -1888,9 +2368,11 @@ export class AIManager {
     if (inMatch) {
       const num = parseInt(inMatch[1]);
       const unit = inMatch[2];
-      const multiplier = unit === "day" ? 1 : unit === "week" ? 7 : 30;
-      const targetDate = new Date(today.getTime() + num * multiplier * 24 * 60 * 60 * 1000);
-      return targetDate.toISOString().split("T")[0];
+      const multiplier = unit === 'day' ? 1 : unit === 'week' ? 7 : 30;
+      const targetDate = new Date(
+        today.getTime() + num * multiplier * 24 * 60 * 60 * 1000
+      );
+      return targetDate.toISOString().split('T')[0];
     }
 
     return null;
