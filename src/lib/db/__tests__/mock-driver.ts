@@ -1,4 +1,4 @@
-import type { Database, Statement } from "../driver";
+import type { Database, Statement } from '../driver';
 
 interface MockRow {
   id: number;
@@ -46,12 +46,12 @@ export function createMockDatabase(): Database {
 
       return {
         run: (...params: unknown[]) => {
-          if (sql.toUpperCase().includes("INSERT INTO")) {
+          if (sql.toUpperCase().includes('INSERT INTO')) {
             const row: MockRow = {
               id: table.nextId++,
-              name: typeof params[0] === "string" ? params[0] : "value",
-              emoji: "📋",
-              color: "#6366f1",
+              name: typeof params[0] === 'string' ? params[0] : 'value',
+              emoji: '📋',
+              color: '#6366f1',
             };
             table.rows.push(row);
             return { lastInsertRowid: row.id, changes: 1 };
@@ -61,15 +61,19 @@ export function createMockDatabase(): Database {
 
         get: (...params: unknown[]) => {
           // Handle COUNT queries
-          if (sql.toUpperCase().includes("COUNT(*)")) {
+          if (sql.toUpperCase().includes('COUNT(*)')) {
             return { count: table.rows.length } as { count: number };
           }
 
           // Handle WHERE conditions for filtering
-          if (params.length > 0 && typeof params[0] === "string" && params[1] !== undefined) {
+          if (
+            params.length > 0 &&
+            typeof params[0] === 'string' &&
+            params[1] !== undefined
+          ) {
             const key = params[0];
             const value = params[1];
-            return table.rows.find((row) => row[key] === value) || null;
+            return table.rows.find(row => row[key] === value) || null;
           }
 
           // Simple select all or by ID
@@ -77,7 +81,7 @@ export function createMockDatabase(): Database {
         },
 
         all: () => {
-          if (sql.toUpperCase().includes("COUNT(*)")) {
+          if (sql.toUpperCase().includes('COUNT(*)')) {
             return [{ count: table.rows.length }];
           }
           return table.rows;
@@ -86,7 +90,9 @@ export function createMockDatabase(): Database {
     },
 
     exec(sql: string): void {
-      const createTableMatch = sql.match(/CREATE\s+TABLE\s+IF\s+NOT\s+EXISTS\s+(\w+)/i);
+      const createTableMatch = sql.match(
+        /CREATE\s+TABLE\s+IF\s+NOT\s+EXISTS\s+(\w+)/i
+      );
 
       if (createTableMatch) {
         const tableName = createTableMatch[1];
@@ -96,15 +102,15 @@ export function createMockDatabase(): Database {
       }
 
       // Handle INSERT OR IGNORE for inbox list
-      if (sql.includes("INSERT OR IGNORE") && sql.includes("lists")) {
-        if (!mockTables["lists"]?.rows?.length) {
-          mockTables["lists"] = {
+      if (sql.includes('INSERT OR IGNORE') && sql.includes('lists')) {
+        if (!mockTables['lists']?.rows?.length) {
+          mockTables['lists'] = {
             rows: [
               {
                 id: 1,
-                name: "Inbox",
-                emoji: "📥",
-                color: "#6366f1",
+                name: 'Inbox',
+                emoji: '📥',
+                color: '#6366f1',
                 is_inbox: 1,
               },
             ],
@@ -115,7 +121,7 @@ export function createMockDatabase(): Database {
     },
 
     close(): void {
-      Object.keys(mockTables).forEach((key) => {
+      Object.keys(mockTables).forEach(key => {
         mockTables[key].rows = [];
         mockTables[key].nextId = 1;
       });
