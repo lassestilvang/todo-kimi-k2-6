@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import type { ZodSchema } from "zod";
+import { NextResponse } from 'next/server';
+import type { ZodSchema } from 'zod';
 
 /**
  * Result of request body validation
@@ -38,14 +38,16 @@ export async function validateBody<T>(
     if (!parsed.success) {
       return {
         success: false,
-        error: parsed.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`),
+        error: parsed.error.issues.map(
+          issue => `${issue.path.join('.')}: ${issue.message}`
+        ),
         details: parsed.error.issues,
       };
     }
 
     return { success: true, data: parsed.data };
   } catch {
-    return { success: false, error: ["Invalid JSON body"] };
+    return { success: false, error: ['Invalid JSON body'] };
   }
 }
 
@@ -60,11 +62,12 @@ export async function validateBody<T>(
  * @example
  * return jsonError("Task not found", 404);
  */
-export function jsonError(message: string, status = 400, details?: unknown): NextResponse {
-  return NextResponse.json(
-    { error: message, details },
-    { status }
-  );
+export function jsonError(
+  message: string,
+  status = 400,
+  details?: unknown
+): NextResponse {
+  return NextResponse.json({ error: message, details }, { status });
 }
 
 /**
