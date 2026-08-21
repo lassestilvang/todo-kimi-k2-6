@@ -20,15 +20,21 @@ describe('Database Driver', () => {
   });
 
   it('should correctly handle insert and retrieval', () => {
-    db.exec("CREATE TABLE IF NOT EXISTS test (id INTEGER PRIMARY KEY, name TEXT)");
-    const insertResult = db.prepare('INSERT INTO test (name) VALUES (?)').run('Hello');
+    db.exec(
+      'CREATE TABLE IF NOT EXISTS test (id INTEGER PRIMARY KEY, name TEXT)'
+    );
+    const insertResult = db
+      .prepare('INSERT INTO test (name) VALUES (?)')
+      .run('Hello');
     expect(insertResult.lastInsertRowid).toBeGreaterThan(0);
     const result = db.prepare('SELECT * FROM test').all();
     expect(result.length).toBe(1);
   });
 
   it('should return lastInsertRowid on insert', () => {
-    const result = db.prepare('INSERT INTO mytable (name) VALUES (?)').run('Test');
+    const result = db
+      .prepare('INSERT INTO mytable (name) VALUES (?)')
+      .run('Test');
     expect(typeof result.lastInsertRowid).toBe('number');
     expect(typeof result.changes).toBe('number');
   });
@@ -42,7 +48,9 @@ describe('Database Driver', () => {
   it('should handle transactions', () => {
     // Use the same test table
     db.transaction(() => {
-      db.prepare('INSERT INTO test (name) VALUES (?)').run('Item in transaction');
+      db.prepare('INSERT INTO test (name) VALUES (?)').run(
+        'Item in transaction'
+      );
     });
 
     const all = db.prepare('SELECT * FROM test').all();
