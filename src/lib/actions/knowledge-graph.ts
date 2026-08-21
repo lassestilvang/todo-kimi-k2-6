@@ -1,9 +1,9 @@
-"use server";
+'use server';
 
-import { getDb } from "@/lib/db";
-import { getCurrentUser } from "@/lib/session";
-import type { TaskWithRelations } from "@/types";
-import { aiCache } from "@/lib/ai/providers";
+import { getDb } from '@/lib/db';
+import { getCurrentUser } from '@/lib/session';
+import type { TaskWithRelations } from '@/types';
+import { aiCache } from '@/lib/ai/providers';
 
 /**
  * Create a new connection between two tasks in the knowledge graph
@@ -27,23 +27,36 @@ export async function createTaskConnection(
   const user = await getCurrentUser();
 
   if (!user?.id) {
-    throw new Error("Authentication required to create task connections");
+    throw new Error('Authentication required to create task connections');
   }
 
   // Validate connection type
-  const validTypes = ['prerequisite', 'inspiration', 'similar', 'contrast', 'related', 'learned_from'];
+  const validTypes = [
+    'prerequisite',
+    'inspiration',
+    'similar',
+    'contrast',
+    'related',
+    'learned_from',
+  ];
   if (!validTypes.includes(connectionType)) {
-    throw new Error(`Invalid connection type: ${connectionType}. Must be one of: ${validTypes.join(', ')}`);
+    throw new Error(
+      `Invalid connection type: ${connectionType}. Must be one of: ${validTypes.join(', ')}`
+    );
   }
 
   // Validate strength is between 0 and 1
   if (strength < 0 || strength > 1) {
-    throw new Error("Strength must be between 0 and 1");
+    throw new Error('Strength must be between 0 and 1');
   }
 
   // Check if tasks exist and belong to user or are shared (null user_id for shared tasks)
-  const sourceTask = db.prepare("SELECT id, user_id FROM tasks WHERE id = ?").get(sourceTaskId);
-  const targetTask = db.prepare("SELECT id, user_id FROM tasks WHERE id = ?").get(targetTaskId);
+  const sourceTask = db
+    .prepare('SELECT id, user_id FROM tasks WHERE id = ?')
+    .get(sourceTaskId);
+  const targetTask = db
+    .prepare('SELECT id, user_id FROM tasks WHERE id = ?')
+    .get(targetTaskId);
 
   if (!sourceTask) {
     throw new Error(`Source task ${sourceTaskId} not found or not accessible`);
@@ -61,27 +74,35 @@ export async function createTaskConnection(
   }
 
   // Check if connection already exists for this type
-  const existing = db.prepare(
-    "SELECT id FROM task_connections WHERE source_task_id = ? AND target_task_id = ? AND connection_type = ?"
-  ).get(sourceTaskId, targetTaskId, connectionType);
+  const existing = db
+    .prepare(
+      'SELECT id FROM task_connections WHERE source_task_id = ? AND target_task_id = ? AND connection_type = ?'
+    )
+    .get(sourceTaskId, targetTaskId, connectionType);
 
   if (existing) {
     // Update existing connection
     db.prepare(
-      "UPDATE task_connections SET strength = ?, notes = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?"
+      'UPDATE task_connections SET strength = ?, notes = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
     ).run(strength, notes || null, existing.id);
 
-    const updated = db.prepare("SELECT * FROM task_connections WHERE id = ?").get(existing.id);
+    const updated = db
+      .prepare('SELECT * FROM task_connections WHERE id = ?')
+      .get(existing.id);
     return updated as any;
   }
 
   // Create new connection
-  const result = db.prepare(
-    `INSERT INTO task_connections (source_task_id, target_task_id, connection_type, strength, notes, created_at)
+  const result = db
+    .prepare(
+      `INSERT INTO task_connections (source_task_id, target_task_id, connection_type, strength, notes, created_at)
      VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`
-  ).run(sourceTaskId, targetTaskId, connectionType, strength, notes || null);
+    )
+    .run(sourceTaskId, targetTaskId, connectionType, strength, notes || null);
 
-  const connection = db.prepare("SELECT * FROM task_connections WHERE id = ?").get(result.lastInsertRowid as number);
+  const connection = db
+    .prepare('SELECT * FROM task_connections WHERE id = ?')
+    .get(result.lastInsertRowid as number);
   return connection as any;
 }
 
@@ -102,12 +123,14 @@ export async function getConnectionStrength(
   // Query existing connections
   const connection = db
     .prepare(
-      "SELECT strength, connection_type FROM task_connections WHERE source_task_id = ? AND target_task_id = ? AND (source_task_id IN (SELECT id FROM tasks WHERE user_id = ?) OR target_task_id IN (SELECT id FROM tasks WHERE user_id = ?))"
+      'SELECT strength, connection_type FROM task_connections WHERE source_task_id = ? AND target_task_id = ? AND (source_task_id IN (SELECT id FROM tasks WHERE user_id = ?) OR target_task_id IN (SELECT id FROM tasks WHERE user_id = ?))'
     )
-    .get(sourceTaskId, targetTaskId, user.id, user.id) as {
-      strength: number;
-      connection_type: string;
-    } | undefined;
+    .get(sourceTaskId, targetTaskId, user.id, user.id) as
+    | {
+        strength: number;
+        connection_type: string;
+      }
+    | undefined;
 
   if (connection) {
     return connection.strength;
@@ -124,16 +147,17 @@ export async function getConnectionStrength(
       ) as target_label_names
       FROM tasks t1
       WHERE t1.id = ? AND (t1.user_id = ? OR t1.user_id IS NULL)
-    `)
+    `
+    )
     .all(targetTaskId, sourceTaskId, user.id) as Array<{
-      id: number;
-      name: string;
-      description: string | null;
-      priority: string;
-      date: string | null;
-      label_names: string | null;
-      target_label_names: string | null;
-    }>;
+    id: number;
+    name: string;
+    description: string | null;
+    priority: string;
+    date: string | null;
+    label_names: string | null;
+    target_label_names: string | null;
+  }>;
 
   if (tasks.length === 0) {
     return 0;
@@ -155,27 +179,31 @@ export async function getConnectionStrength(
   if (sourceTask.date && tasks[0].date) {
     const sourceDate = new Date(sourceTask.date);
     const targetDate = new Date(tasks[0].date);
-    const daysDiff = Math.abs((sourceDate.getTime() - targetDate.getTime()) / (1000 * 60 * 60 * 24));
+    const daysDiff = Math.abs(
+      (sourceDate.getTime() - targetDate.getTime()) / (1000 * 60 * 60 * 24)
+    );
     if (daysDiff <= 7) similarity += 0.4;
     else if (daysDiff <= 30) similarity += 0.2;
   }
 
   // Shared labels
   const sourceLabels = sourceTask.labels?.map(l => l.name) || [];
-  const targetLabels = (tasks[0].label_names || "").split(",") || [];
-  const sharedLabels = sourceLabels.filter(label => targetLabels.includes(label));
+  const targetLabels = (tasks[0].label_names || '').split(',') || [];
+  const sharedLabels = sourceLabels.filter(label =>
+    targetLabels.includes(label)
+  );
   if (sharedLabels.length > 0) {
-    similarity += 0.2 * Math.min(sharedLabels.length, 3) / 3;
+    similarity += (0.2 * Math.min(sharedLabels.length, 3)) / 3;
   }
 
   // Similar description keywords (simplified)
-  const sourceDesc = (sourceTask.description || "").toLowerCase();
-  const targetDesc = (tasks[0].description || "").toLowerCase();
-  const sourceWords = sourceDesc.split(" ").filter(w => w.length > 3);
-  const targetWords = targetDesc.split(" ").filter(w => w.length > 3);
+  const sourceDesc = (sourceTask.description || '').toLowerCase();
+  const targetDesc = (tasks[0].description || '').toLowerCase();
+  const sourceWords = sourceDesc.split(' ').filter(w => w.length > 3);
+  const targetWords = targetDesc.split(' ').filter(w => w.length > 3);
   const commonWords = sourceWords.filter(word => targetWords.includes(word));
   if (commonWords.length > 0) {
-    similarity += 0.1 * Math.min(commonWords.length, 5) / 5;
+    similarity += (0.1 * Math.min(commonWords.length, 5)) / 5;
   }
 
   return Math.min(similarity, 1);
@@ -187,7 +215,14 @@ export async function getConnectionStrength(
 export async function findRelatedTasks(
   taskId: number,
   limit = 10,
-  connectionTypes: string[] = ['prerequisite', 'inspiration', 'similar', 'related', 'learned_from', 'contrast']
+  connectionTypes: string[] = [
+    'prerequisite',
+    'inspiration',
+    'similar',
+    'related',
+    'learned_from',
+    'contrast',
+  ]
 ): Promise<TaskWithRelations[]> {
   const db = getDb();
   const user = await getCurrentUser();
@@ -196,7 +231,7 @@ export async function findRelatedTasks(
     return [];
   }
 
-  const placeholders = connectionTypes.map(() => "?").join(",");
+  const placeholders = connectionTypes.map(() => '?').join(',');
 
   const connections = db
     .prepare(
@@ -210,17 +245,26 @@ export async function findRelatedTasks(
        ORDER BY tc.strength DESC
        LIMIT ?`
     )
-    .all(taskId, user.id, taskId, user.id, user.id, user.id, ...connectionTypes, limit) as Array<{
-      id: number;
-      source_task_id: number;
-      target_task_id: number;
-      connection_type: string;
-      strength: number;
-      notes: string | null;
-      target_task_name: string;
-      target_priority: string;
-      target_date: string | null;
-    }>;
+    .all(
+      taskId,
+      user.id,
+      taskId,
+      user.id,
+      user.id,
+      user.id,
+      ...connectionTypes,
+      limit
+    ) as Array<{
+    id: number;
+    source_task_id: number;
+    target_task_id: number;
+    connection_type: string;
+    strength: number;
+    notes: string | null;
+    target_task_name: string;
+    target_priority: string;
+    target_date: string | null;
+  }>;
 
   const relatedTaskIds = connections.map(c => c.target_task_id);
   if (relatedTaskIds.length === 0) return [];
@@ -242,7 +286,9 @@ export async function findRelatedTasks(
 /**
  * AI-powered insight extraction from a completed task
  */
-export async function extractInsightsFromTask(taskId: number): Promise<string[]> {
+export async function extractInsightsFromTask(
+  taskId: number
+): Promise<string[]> {
   const cacheKey = `insights:${taskId}`;
   const cached = aiCache.get<string[]>(cacheKey);
   if (cached) {
@@ -263,10 +309,14 @@ export async function extractInsightsFromTask(taskId: number): Promise<string[]>
 
   // Check if task was actually completed by this user
   const ownership = db
-    .prepare("SELECT user_id FROM tasks WHERE id = ?")
+    .prepare('SELECT user_id FROM tasks WHERE id = ?')
     .get(taskId) as { user_id: number | null };
 
-  if (ownership.user_id !== user.id && ownership.user_id !== 1 && process.env.NODE_ENV === "test") {
+  if (
+    ownership.user_id !== user.id &&
+    ownership.user_id !== 1 &&
+    process.env.NODE_ENV === 'test'
+  ) {
     return [];
   }
 
@@ -278,7 +328,7 @@ export async function extractInsightsFromTask(taskId: number): Promise<string[]>
       priority: task.priority,
       date: task.date,
       deadline: task.deadline,
-    }
+    },
   ]);
 
   const result = insights.suggestions;
@@ -295,7 +345,10 @@ export async function extractInsightsFromTask(taskId: number): Promise<string[]>
 /**
  * Update user's skill proficiency based on task completion
  */
-export async function updateSkillProficiency(userId: number, task: TaskWithRelations): Promise<void> {
+export async function updateSkillProficiency(
+  userId: number,
+  task: TaskWithRelations
+): Promise<void> {
   const db = getDb();
 
   // Simple skill inference based on task priority and category
@@ -304,19 +357,33 @@ export async function updateSkillProficiency(userId: number, task: TaskWithRelat
   if (task.priority === 'critical') skills.push('priority management');
   if (task.priority === 'high') skills.push('high-urgency task handling');
 
-  if (task.name.toLowerCase().includes('design') || task.name.toLowerCase().includes('ui') || task.name.toLowerCase().includes('ux')) {
+  if (
+    task.name.toLowerCase().includes('design') ||
+    task.name.toLowerCase().includes('ui') ||
+    task.name.toLowerCase().includes('ux')
+  ) {
     skills.push('design work');
   }
 
-  if (task.name.toLowerCase().includes('code') || task.name.toLowerCase().includes('develop') || task.name.toLowerCase().includes('implement')) {
+  if (
+    task.name.toLowerCase().includes('code') ||
+    task.name.toLowerCase().includes('develop') ||
+    task.name.toLowerCase().includes('implement')
+  ) {
     skills.push('development');
   }
 
-  if (task.name.toLowerCase().includes('research') || task.name.toLowerCase().includes('investigate')) {
+  if (
+    task.name.toLowerCase().includes('research') ||
+    task.name.toLowerCase().includes('investigate')
+  ) {
     skills.push('research');
   }
 
-  if (task.name.toLowerCase().includes('write') || task.name.toLowerCase().includes('document')) {
+  if (
+    task.name.toLowerCase().includes('write') ||
+    task.name.toLowerCase().includes('document')
+  ) {
     skills.push('technical writing');
   }
 
@@ -330,7 +397,8 @@ export async function updateSkillProficiency(userId: number, task: TaskWithRelat
  */
 export async function recordHabitContext(
   taskId: number,
-  contextType: 'time_of_day' | 'location' | 'mood' | 'energy_level' | 'external_trigger',
+  contextType:
+    'time_of_day' | 'location' | 'mood' | 'energy_level' | 'external_trigger',
   contextValue: string,
   success = true
 ): Promise<void> {
@@ -343,24 +411,28 @@ export async function recordHabitContext(
 
   const existing = db
     .prepare(
-      "SELECT id, frequency, success_rate FROM habit_contexts WHERE task_id = ? AND context_type = ? AND context_value = ? AND user_id = ?"
+      'SELECT id, frequency, success_rate FROM habit_contexts WHERE task_id = ? AND context_type = ? AND context_value = ? AND user_id = ?'
     )
-    .get(taskId, contextType, contextValue, user.id) as {
-      id: number;
-      frequency: number;
-      success_rate: number;
-    } | undefined;
+    .get(taskId, contextType, contextValue, user.id) as
+    | {
+        id: number;
+        frequency: number;
+        success_rate: number;
+      }
+    | undefined;
 
   if (existing) {
     const newFrequency = existing.frequency + 1;
-    const newSuccessRate = ((existing.success_rate * existing.frequency) + (success ? 1 : 0)) / newFrequency;
+    const newSuccessRate =
+      (existing.success_rate * existing.frequency + (success ? 1 : 0)) /
+      newFrequency;
 
     db.prepare(
-      "UPDATE habit_contexts SET frequency = ?, success_rate = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?"
+      'UPDATE habit_contexts SET frequency = ?, success_rate = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
     ).run(newFrequency, newSuccessRate, existing.id);
   } else {
     db.prepare(
-      "INSERT INTO habit_contexts (task_id, user_id, context_type, context_value, frequency, success_rate) VALUES (?, ?, ?, ?, 1, ?)"
+      'INSERT INTO habit_contexts (task_id, user_id, context_type, context_value, frequency, success_rate) VALUES (?, ?, ?, ?, 1, ?)'
     ).run(taskId, user.id, contextType, contextValue, success ? 1.0 : 0.0);
   }
 }
@@ -396,12 +468,12 @@ export async function getKnowledgeGraphStats(userId: number): Promise<any> {
        `
     )
     .get(userId, userId, userId, userId, userId) as {
-      total_tasks: number;
-      total_connections: number;
-      insight_count: number;
-      skill_count: number;
-      pattern_matches: number;
-    };
+    total_tasks: number;
+    total_connections: number;
+    insight_count: number;
+    skill_count: number;
+    pattern_matches: number;
+  };
 
   // Calculate average connection strength
   const avgStrength = db
@@ -416,18 +488,21 @@ export async function getKnowledgeGraphStats(userId: number): Promise<any> {
   return {
     ...stats,
     ...basicStats,
-    avg_connection_strength: Math.round((avgStrength.avg_strength || 0) * 100) / 100,
+    avg_connection_strength:
+      Math.round((avgStrength.avg_strength || 0) * 100) / 100,
   };
 }
 
 // Helper functions
-async function getTaskById(taskId: number): Promise<TaskWithRelations | undefined> {
-  const { getTaskById } = await import("@/lib/actions/tasks");
+async function getTaskById(
+  taskId: number
+): Promise<TaskWithRelations | undefined> {
+  const { getTaskById } = await import('@/lib/actions/tasks');
   return getTaskById(taskId);
 }
 
 async function getTasksByIds(ids: number[]): Promise<TaskWithRelations[]> {
-  const { getTasksByIds } = await import("@/lib/actions/tasks");
+  const { getTasksByIds } = await import('@/lib/actions/tasks');
   return getTasksByIds(ids);
 }
 
@@ -447,26 +522,36 @@ async function createTaskInsight(
   const tagsJson = contextTags ? JSON.stringify(contextTags) : null;
 
   db.prepare(
-    "INSERT INTO task_insights (task_id, user_id, insight_type, content, context_tags, confidence) VALUES (?, ?, ?, ?, ?, ?)"
+    'INSERT INTO task_insights (task_id, user_id, insight_type, content, context_tags, confidence) VALUES (?, ?, ?, ?, ?, ?)'
   ).run(taskId, userId, insightType, content, tagsJson, confidence || 0.8);
 }
 
-async function updateSingleSkill(userId: number, skillName: string, task: TaskWithRelations): Promise<void> {
+async function updateSingleSkill(
+  userId: number,
+  skillName: string,
+  task: TaskWithRelations
+): Promise<void> {
   const db = getDb();
   const existing = db
-    .prepare("SELECT id, proficiency_level, evidence_task_ids FROM user_skills WHERE user_id = ? AND skill_name = ?")
-    .get(userId, skillName) as {
-      id: number;
-      proficiency_level: number;
-      evidence_task_ids: string | null;
-    } | undefined;
+    .prepare(
+      'SELECT id, proficiency_level, evidence_task_ids FROM user_skills WHERE user_id = ? AND skill_name = ?'
+    )
+    .get(userId, skillName) as
+    | {
+        id: number;
+        proficiency_level: number;
+        evidence_task_ids: string | null;
+      }
+    | undefined;
 
-  const evidenceTaskIds = existing?.evidence_task_ids ? JSON.parse(existing.evidence_task_ids) : [];
+  const evidenceTaskIds = existing?.evidence_task_ids
+    ? JSON.parse(existing.evidence_task_ids)
+    : [];
 
   if (!existing?.id) {
     evidenceTaskIds.push(task.id);
     db.prepare(
-      "INSERT INTO user_skills (user_id, skill_name, proficiency_level, evidence_task_ids) VALUES (?, ?, 1, ?)"
+      'INSERT INTO user_skills (user_id, skill_name, proficiency_level, evidence_task_ids) VALUES (?, ?, 1, ?)'
     ).run(userId, skillName, JSON.stringify(evidenceTaskIds));
   } else {
     const currentProficiency = existing.proficiency_level;
@@ -474,13 +559,13 @@ async function updateSingleSkill(userId: number, skillName: string, task: TaskWi
     evidenceTaskIds.push(task.id);
 
     db.prepare(
-      "UPDATE user_skills SET proficiency_level = ?, evidence_task_ids = ?, last_used_at = CURRENT_TIMESTAMP WHERE id = ?"
+      'UPDATE user_skills SET proficiency_level = ?, evidence_task_ids = ?, last_used_at = CURRENT_TIMESTAMP WHERE id = ?'
     ).run(newProficiency, JSON.stringify(evidenceTaskIds), existing.id);
   }
 }
 
 // AI manager import
 async function getAIManager() {
-  const { getAIManager } = await import("@/lib/ai/providers");
+  const { getAIManager } = await import('@/lib/ai/providers');
   return getAIManager();
 }
