@@ -3,13 +3,13 @@
  * Syncs tasks with Microsoft Outlook/Exchange Calendar
  */
 
-import type { Task } from "@/types";
+import type { Task } from '@/types';
 
 export interface OutlookEvent {
   id?: string;
   subject: string;
   body?: {
-    contentType: "HTML" | "Text";
+    contentType: 'HTML' | 'Text';
     content: string;
   };
   start: {
@@ -36,8 +36,8 @@ export interface OutlookCalendarSyncConfig {
   tenantId?: string;
 }
 
-const OUTLOOK_API_BASE = "https://graph.microsoft.com/v1.0";
-const TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+const OUTLOOK_API_BASE = 'https://graph.microsoft.com/v1.0';
+const TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 
 /**
  * Get Outlook Calendar events for a date range
@@ -49,23 +49,25 @@ export async function getOutlookEvents(
 ): Promise<OutlookEvent[]> {
   const response = await fetch(
     `${OUTLOOK_API_BASE}/me/calendar/events?` +
-    new URLSearchParams({
-      startDateTime: `${startDate}T00:00:00`,
-      endDateTime: `${endDate}T23:59:59Z`,
-      $filter: "isCancelled eq false",
-      $orderby: "start/dateTime",
-    }).toString(),
+      new URLSearchParams({
+        startDateTime: `${startDate}T00:00:00`,
+        endDateTime: `${endDate}T23:59:59Z`,
+        $filter: 'isCancelled eq false',
+        $orderby: 'start/dateTime',
+      }).toString(),
     {
       headers: {
         Authorization: `Bearer ${config.accessToken}`,
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
     }
   );
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw new Error(`Outlook Calendar API error: ${error.error?.message || response.statusText}`);
+    throw new Error(
+      `Outlook Calendar API error: ${error.error?.message || response.statusText}`
+    );
   }
 
   const data = await response.json();
@@ -80,14 +82,14 @@ export async function createOutlookEvent(
   task: Task
 ): Promise<string> {
   if (!task.date) {
-    throw new Error("Task has no date");
+    throw new Error('Task has no date');
   }
 
   const event: OutlookEvent = {
     subject: task.name,
     body: {
-      contentType: "HTML",
-      content: task.description || task.notes || "",
+      contentType: 'HTML',
+      content: task.description || task.notes || '',
     },
     start: {
       dateTime: `${task.date}T09:00:00`,
@@ -103,21 +105,23 @@ export async function createOutlookEvent(
       timeZone: TIME_ZONE,
     },
     categories: task.priority ? [task.priority.toUpperCase()] : undefined,
-    location: task.labels?.map(l => l.name).join(", ") || undefined,
+    location: task.labels?.map(l => l.name).join(', ') || undefined,
   };
 
   const response = await fetch(`${OUTLOOK_API_BASE}/me/events`, {
-    method: "POST",
+    method: 'POST',
     headers: {
       Authorization: `Bearer ${config.accessToken}`,
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
     },
     body: JSON.stringify(event),
   });
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw new Error(`Failed to create Outlook event: ${error.error?.message || response.statusText}`);
+    throw new Error(
+      `Failed to create Outlook event: ${error.error?.message || response.statusText}`
+    );
   }
 
   const result = await response.json();
@@ -135,34 +139,37 @@ export async function updateOutlookEvent(
   const event: Partial<OutlookEvent> = {
     subject: task.name,
     body: {
-      contentType: "HTML",
-      content: task.description || task.notes || "",
+      contentType: 'HTML',
+      content: task.description || task.notes || '',
     },
-    start: task.date ? {
-      dateTime: `${task.date}T09:00:00`,
-      timeZone: TIME_ZONE,
-    } : undefined,
-    end: task.date ? {
-      dateTime: `${task.date}T10:00:00`,
-      timeZone: TIME_ZONE,
-    } : undefined,
+    start: task.date
+      ? {
+          dateTime: `${task.date}T09:00:00`,
+          timeZone: TIME_ZONE,
+        }
+      : undefined,
+    end: task.date
+      ? {
+          dateTime: `${task.date}T10:00:00`,
+          timeZone: TIME_ZONE,
+        }
+      : undefined,
   };
 
-  const response = await fetch(
-    `${OUTLOOK_API_BASE}/me/events/${eventId}`,
-    {
-      method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${config.accessToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(event),
-    }
-  );
+  const response = await fetch(`${OUTLOOK_API_BASE}/me/events/${eventId}`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${config.accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(event),
+  });
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw new Error(`Failed to update Outlook event: ${error.error?.message || response.statusText}`);
+    throw new Error(
+      `Failed to update Outlook event: ${error.error?.message || response.statusText}`
+    );
   }
 }
 
@@ -173,19 +180,18 @@ export async function deleteOutlookEvent(
   config: OutlookCalendarSyncConfig,
   eventId: string
 ): Promise<void> {
-  const response = await fetch(
-    `${OUTLOOK_API_BASE}/me/events/${eventId}`,
-    {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${config.accessToken}`,
-      },
-    }
-  );
+  const response = await fetch(`${OUTLOOK_API_BASE}/me/events/${eventId}`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${config.accessToken}`,
+    },
+  });
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw new Error(`Failed to delete Outlook event: ${error.error?.message || response.statusText}`);
+    throw new Error(
+      `Failed to delete Outlook event: ${error.error?.message || response.statusText}`
+    );
   }
 }
 
@@ -194,12 +200,13 @@ export async function deleteOutlookEvent(
  */
 export function getOutlookAuthUrl(state: string): string {
   const params = new URLSearchParams({
-    client_id: process.env.OUTLOOK_CLIENT_ID || "",
+    client_id: process.env.OUTLOOK_CLIENT_ID || '',
     redirect_uri: `${process.env.NEXTAUTH_URL}/api/auth/callback/outlook`,
-    response_type: "code",
-    scope: "https://graph.microsoft.com/Calendars.ReadWrite offline_access openid",
+    response_type: 'code',
+    scope:
+      'https://graph.microsoft.com/Calendars.ReadWrite offline_access openid',
     state,
-    prompt: "consent", // Force consent to get refresh token
+    prompt: 'consent', // Force consent to get refresh token
   });
   return `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?${params.toString()}`;
 }
@@ -212,23 +219,28 @@ export async function exchangeOutlookCodeForTokens(code: string): Promise<{
   refresh_token?: string;
   expires_in: number;
 }> {
-  const response = await fetch("https://login.microsoftonline.com/common/oauth2/v2.0/token", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: new URLSearchParams({
-      client_id: process.env.OUTLOOK_CLIENT_ID || "",
-      client_secret: process.env.OUTLOOK_CLIENT_SECRET || "",
-      redirect_uri: `${process.env.NEXTAUTH_URL}/api/auth/callback/outlook`,
-      grant_type: "authorization_code",
-      code,
-    }).toString(),
-  });
+  const response = await fetch(
+    'https://login.microsoftonline.com/common/oauth2/v2.0/token',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        client_id: process.env.OUTLOOK_CLIENT_ID || '',
+        client_secret: process.env.OUTLOOK_CLIENT_SECRET || '',
+        redirect_uri: `${process.env.NEXTAUTH_URL}/api/auth/callback/outlook`,
+        grant_type: 'authorization_code',
+        code,
+      }).toString(),
+    }
+  );
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw new Error(`Outlook token exchange failed: ${error.error_description || response.statusText}`);
+    throw new Error(
+      `Outlook token exchange failed: ${error.error_description || response.statusText}`
+    );
   }
 
   return response.json();
@@ -242,23 +254,28 @@ export async function refreshOutlookToken(refreshToken: string): Promise<{
   refresh_token?: string;
   expires_in: number;
 }> {
-  const response = await fetch("https://login.microsoftonline.com/common/oauth2/v2.0/token", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: new URLSearchParams({
-      client_id: process.env.OUTLOOK_CLIENT_ID || "",
-      client_secret: process.env.OUTLOOK_CLIENT_SECRET || "",
-      redirect_uri: `${process.env.NEXTAUTH_URL}/api/auth/callback/outlook`,
-      grant_type: "refresh_token",
-      refresh_token: refreshToken,
-    }).toString(),
-  });
+  const response = await fetch(
+    'https://login.microsoftonline.com/common/oauth2/v2.0/token',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        client_id: process.env.OUTLOOK_CLIENT_ID || '',
+        client_secret: process.env.OUTLOOK_CLIENT_SECRET || '',
+        redirect_uri: `${process.env.NEXTAUTH_URL}/api/auth/callback/outlook`,
+        grant_type: 'refresh_token',
+        refresh_token: refreshToken,
+      }).toString(),
+    }
+  );
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw new Error(`Outlook token refresh failed: ${error.error_description || response.statusText}`);
+    throw new Error(
+      `Outlook token refresh failed: ${error.error_description || response.statusText}`
+    );
   }
 
   return response.json();
@@ -274,14 +291,14 @@ export async function syncTasksToOutlook(
   const result = { created: 0, updated: 0, errors: [] as string[] };
   const existingEvents = await getOutlookEvents(
     config,
-    new Date().toISOString().split("T")[0],
-    new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
+    new Date().toISOString().split('T')[0],
+    new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   );
 
   // Create a map of existing events by subject (simplified - in production, use event IDs)
   const existingEventIds = new Map<string, string>();
   for (const event of existingEvents) {
-    existingEventIds.set(event.subject, event.id || "");
+    existingEventIds.set(event.subject, event.id || '');
   }
 
   for (const task of tasks) {
@@ -298,7 +315,9 @@ export async function syncTasksToOutlook(
         result.created++;
       }
     } catch (error) {
-      result.errors.push(`Failed to sync task ${task.id}: ${(error as Error).message}`);
+      result.errors.push(
+        `Failed to sync task ${task.id}: ${(error as Error).message}`
+      );
     }
   }
 
@@ -320,8 +339,8 @@ export async function getCompletedTaskEvents(
 
   const events = await getOutlookEvents(
     config,
-    new Date().toISOString().split("T")[0],
-    new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
+    new Date().toISOString().split('T')[0],
+    new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   );
 
   const results: { taskId: number; eventId: string }[] = [];
