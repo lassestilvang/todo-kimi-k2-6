@@ -1,5 +1,5 @@
-import { createMockDatabase } from "./mock-driver";
-import type { Database } from "./driver";
+import { createMockDatabase } from './mock-driver';
+import type { Database } from './driver';
 
 /**
  * Creates a test database for unit testing.
