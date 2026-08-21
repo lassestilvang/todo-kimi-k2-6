@@ -1,14 +1,18 @@
-"use server";
+'use server';
 
-import { getDb } from "@/lib/db";
-import type { User } from "@/types";
+import { getDb } from '@/lib/db';
+import type { User } from '@/types';
 
 /**
  * Get all users (for assignment)
  */
 export async function getUsers(): Promise<User[]> {
   const db = getDb();
-  return db.prepare("SELECT id, email, name, avatar_url FROM users ORDER BY name, email").all() as User[];
+  return db
+    .prepare(
+      'SELECT id, email, name, avatar_url FROM users ORDER BY name, email'
+    )
+    .all() as User[];
 }
 
 /**
