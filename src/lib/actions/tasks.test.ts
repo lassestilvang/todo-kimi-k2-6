@@ -1,8 +1,6 @@
- 
- 
-import { describe, it, expect, beforeEach, afterEach, beforeAll } from "vitest";
-import { createTestDb } from "../db/test-db";
-import { setDb, resetDb } from "../db";
+import { describe, it, expect, beforeEach, afterEach, beforeAll } from 'vitest';
+import { createTestDb } from '../db/test-db';
+import { setDb, resetDb } from '../db';
 import {
   getLists,
   getListById,
@@ -20,32 +18,29 @@ import {
   reorderTasks,
   bulkUpdateTasks,
   bulkDeleteTasks,
-} from "./tasks";
-import { getLabels, getLabelById, createLabel, deleteLabel } from "./labels";
-import { getTimeReport } from "./time-tracking";
+} from './tasks';
+import { getLabels, getLabelById, createLabel, deleteLabel } from './labels';
+import { getTimeReport } from './time-tracking';
 import {
   addTaskDependency,
   removeTaskDependency,
   getBlockedTasks,
-} from "./dependencies";
+} from './dependencies';
 import {
   createTemplate,
   getTemplates,
   deleteTemplate,
   saveTemplateFromTask,
-} from "./templates";
-import {
-  addTaskComment,
-  getTaskComments,
-} from "./comments";
+} from './templates';
+import { addTaskComment, getTaskComments } from './comments';
 import {
   exportData,
   importData,
   exportCsv,
   exportJson,
   exportIcal,
-} from "./export";
-import { initializeSchema } from "../db/index";
+} from './export';
+import { initializeSchema } from '../db/index';
 
 // Set up demo mode for authentication
 beforeAll(() => {
@@ -53,7 +48,7 @@ beforeAll(() => {
   (process.env as any).NEXTAUTH_SECRET = 'demo-secret';
 });
 
-describe("Task Actions", () => {
+describe('Task Actions', () => {
   beforeEach(() => {
     resetDb();
     const testDb = createTestDb();
@@ -61,41 +56,41 @@ describe("Task Actions", () => {
     initializeSchema(testDb);
   });
 
-  describe("Lists", () => {
-    it("should get lists including inbox", async () => {
+  describe('Lists', () => {
+    it('should get lists including inbox', async () => {
       const lists = await getLists();
       expect(Array.isArray(lists)).toBe(true);
       // Note: In mock environment, the inbox is pre-created in the mock's reset() function
       // The test verifies that the query works correctly, not that inbox always exists
     });
 
-    it("should create a new list", async () => {
+    it('should create a new list', async () => {
       const list = await createList({
-        name: "Work",
-        emoji: "💼",
-        color: "#3b82f6",
+        name: 'Work',
+        emoji: '💼',
+        color: '#3b82f6',
       });
-      expect(list.name).toBe("Work");
-      expect(list.emoji).toBe("💼");
+      expect(list.name).toBe('Work');
+      expect(list.emoji).toBe('💼');
 
       const lists = await getLists();
       expect(lists.length).toBeGreaterThanOrEqual(1);
     });
 
-    it("should update a list", async () => {
-      const created = await createList({ name: "Old Name" });
-      const updated = await updateList(created.id, { name: "New Name" });
-      expect(updated.name).toBe("New Name");
+    it('should update a list', async () => {
+      const created = await createList({ name: 'Old Name' });
+      const updated = await updateList(created.id, { name: 'New Name' });
+      expect(updated.name).toBe('New Name');
     });
 
-    it("should delete a list and move tasks to inbox", async () => {
-      const list = await createList({ name: "Temp" });
-      await createTask({ name: "Task in temp list", list_id: list.id });
+    it('should delete a list and move tasks to inbox', async () => {
+      const list = await createList({ name: 'Temp' });
+      await createTask({ name: 'Task in temp list', list_id: list.id });
 
       await deleteList(list.id);
 
       const lists = await getLists();
-      expect(lists.find((l) => l.id === list.id)).toBeUndefined();
+      expect(lists.find(l => l.id === list.id)).toBeUndefined();
 
       const tasks = await getTasks();
       expect(tasks.length).toBeGreaterThanOrEqual(0);
@@ -103,21 +98,21 @@ describe("Task Actions", () => {
     });
   });
 
-  describe("Labels", () => {
-    it("should create and get labels", async () => {
+  describe('Labels', () => {
+    it('should create and get labels', async () => {
       const label = await createLabel({
-        name: "Urgent",
-        icon: "🔥",
-        color: "#ef4444",
+        name: 'Urgent',
+        icon: '🔥',
+        color: '#ef4444',
       });
-      expect(label.name).toBe("Urgent");
+      expect(label.name).toBe('Urgent');
 
       const labels = await getLabels();
       expect(labels.length).toBe(1);
     });
 
-    it("should delete a label", async () => {
-      const label = await createLabel({ name: "Temp" });
+    it('should delete a label', async () => {
+      const label = await createLabel({ name: 'Temp' });
       await deleteLabel(label.id);
 
       const labels = await getLabels();
@@ -125,63 +120,63 @@ describe("Task Actions", () => {
     });
   });
 
-  describe("Tasks", () => {
-    it("should create a task successfully", async () => {
+  describe('Tasks', () => {
+    it('should create a task successfully', async () => {
       const task = await createTask({
-        name: "Test Task",
-        description: "A test description",
-        priority: "high",
+        name: 'Test Task',
+        description: 'A test description',
+        priority: 'high',
       });
 
       expect(task).toBeDefined();
       expect(task.id).toBeDefined();
     });
 
-    it("should create a task with subtasks and labels", async () => {
-      const label = await createLabel({ name: "Work" });
+    it('should create a task with subtasks and labels', async () => {
+      const label = await createLabel({ name: 'Work' });
 
       // Mock may have issues with complex task creation involving labels and subtasks
       try {
         const task = await createTask({
-          name: "Complex Task",
+          name: 'Complex Task',
           label_ids: [label.id],
-          subtasks: ["Step 1", "Step 2"],
+          subtasks: ['Step 1', 'Step 2'],
         });
 
         expect(task).toBeDefined();
-        expect(task.name).toBe("Complex Task");
+        expect(task.name).toBe('Complex Task');
       } catch (e) {
         // Mock may not fully handle complex task creation
         // Just verify the functions exist
-        expect(typeof createTask).toBe("function");
-        expect(typeof createLabel).toBe("function");
+        expect(typeof createTask).toBe('function');
+        expect(typeof createLabel).toBe('function');
       }
     });
 
-    it("should handle tasks by view", async () => {
-      const today = new Date().toISOString().split("T")[0];
-      await createTask({ name: "Today Task", date: today });
-      await createTask({ name: "No Date Task" });
+    it('should handle tasks by view', async () => {
+      const today = new Date().toISOString().split('T')[0];
+      await createTask({ name: 'Today Task', date: today });
+      await createTask({ name: 'No Date Task' });
 
-      const todayTasks = await getTasks({ view: "today" });
+      const todayTasks = await getTasks({ view: 'today' });
       // Mock behavior may vary
       expect(Array.isArray(todayTasks)).toBe(true);
 
-      const allTasks = await getTasks({ view: "all" });
+      const allTasks = await getTasks({ view: 'all' });
       expect(Array.isArray(allTasks)).toBe(true);
     });
 
-    it("should update a task", async () => {
-      const task = await createTask({ name: "Original" });
-      const updated = await updateTask(task.id, { name: "Updated" });
+    it('should update a task', async () => {
+      const task = await createTask({ name: 'Original' });
+      const updated = await updateTask(task.id, { name: 'Updated' });
 
-      expect(updated.name).toBe("Updated");
+      expect(updated.name).toBe('Updated');
       // Note: logs may be empty in mock database - verify the task was updated
       expect(updated.logs).toBeDefined();
     });
 
-    it("should handle task completion toggle", async () => {
-      const task = await createTask({ name: "Toggle Me" });
+    it('should handle task completion toggle', async () => {
+      const task = await createTask({ name: 'Toggle Me' });
       expect(task).toBeDefined();
 
       const completed = await updateTask(task.id, { completed: true });
@@ -191,18 +186,18 @@ describe("Task Actions", () => {
       expect(uncompleted).toBeDefined();
     });
 
-    it("should delete a task", async () => {
-      const task = await createTask({ name: "Delete Me" });
+    it('should delete a task', async () => {
+      const task = await createTask({ name: 'Delete Me' });
       await deleteTask(task.id);
 
       const found = await getTaskById(task.id);
       expect(found).toBeUndefined();
     });
 
-    it("should handle subtasks creation", async () => {
+    it('should handle subtasks creation', async () => {
       const task = await createTask({
-        name: "With Subtasks",
-        subtasks: ["Sub 1"],
+        name: 'With Subtasks',
+        subtasks: ['Sub 1'],
       });
 
       // Subtasks should be created
@@ -210,81 +205,85 @@ describe("Task Actions", () => {
       expect(task.subtasks).toBeDefined();
     });
 
-    it("should search tasks", async () => {
-      await createTask({ name: "Alpha Task", description: "Something" });
-      await createTask({ name: "Beta Task", description: "Else" });
+    it('should search tasks', async () => {
+      await createTask({ name: 'Alpha Task', description: 'Something' });
+      await createTask({ name: 'Beta Task', description: 'Else' });
 
-      const results = await getTasks({ searchQuery: "Alpha" });
+      const results = await getTasks({ searchQuery: 'Alpha' });
       // Mock behavior may vary - just verify we get an array
       expect(Array.isArray(results)).toBe(true);
     });
 
-    it("should get overdue count", async () => {
+    it('should get overdue count', async () => {
       const yesterday = new Date(Date.now() - 86400000)
         .toISOString()
-        .split("T")[0];
-      await createTask({ name: "Overdue", date: yesterday });
+        .split('T')[0];
+      await createTask({ name: 'Overdue', date: yesterday });
 
       const count = await getOverdueCount();
       // Mock may return different values
-      expect(typeof count).toBe("number");
+      expect(typeof count).toBe('number');
     });
 
-    it("should get tasks by list", async () => {
-      const list = await createList({ name: "Custom" });
-      await createTask({ name: "In Custom", list_id: list.id });
-      await createTask({ name: "In Inbox" });
+    it('should get tasks by list', async () => {
+      const list = await createList({ name: 'Custom' });
+      await createTask({ name: 'In Custom', list_id: list.id });
+      await createTask({ name: 'In Inbox' });
 
       const listTasks = await getTasks({ listId: list.id });
       expect(Array.isArray(listTasks)).toBe(true);
     });
   });
 
-  describe("Additional Coverage", () => {
-    it("should handle updateTask with empty string name", async () => {
-      const task = await createTask({ name: "Valid" });
-      const updated = await updateTask(task.id, { name: "" });
-      expect(updated.name).toBe("");
+  describe('Additional Coverage', () => {
+    it('should handle updateTask with empty string name', async () => {
+      const task = await createTask({ name: 'Valid' });
+      const updated = await updateTask(task.id, { name: '' });
+      expect(updated.name).toBe('');
     });
 
-    it("should handle null values in updateTask", async () => {
-      const task = await createTask({ name: "Task", description: "Original" });
-      const updated = await updateTask(task.id, { description: null as unknown as string });
+    it('should handle null values in updateTask', async () => {
+      const task = await createTask({ name: 'Task', description: 'Original' });
+      const updated = await updateTask(task.id, {
+        description: null as unknown as string,
+      });
       expect(updated.description).toBeNull();
     });
 
-    it("should handle updating only completed status", async () => {
-      const task = await createTask({ name: "Task" });
+    it('should handle updating only completed status', async () => {
+      const task = await createTask({ name: 'Task' });
       const updated = await updateTask(task.id, { completed: true });
       expect(updated.completed).toBe(1);
       expect(updated.completed_at).not.toBeNull();
     });
 
-    it("should handle clearing completed status", async () => {
-      const task = await createTask({ name: "Task" });
+    it('should handle clearing completed status', async () => {
+      const task = await createTask({ name: 'Task' });
       await updateTask(task.id, { completed: true });
       const updated = await updateTask(task.id, { completed: false });
       expect(updated.completed).toBe(0);
       expect(updated.completed_at).toBeNull();
     });
 
-    it("should handle deleteList for non-existent list", async () => {
+    it('should handle deleteList for non-existent list', async () => {
       await deleteList(99999);
     });
 
-    it("should handle deleteLabel for non-existent label", async () => {
+    it('should handle deleteLabel for non-existent label', async () => {
       await deleteLabel(99999);
     });
 
-    it("should handle getLabelById for non-existent label", async () => {
+    it('should handle getLabelById for non-existent label', async () => {
       const found = await getLabelById(99999);
       // Mock may return null, undefined, or throw - just verify it doesn't crash
-      expect(found === null || found === undefined || typeof found === 'object').toBe(true);
+      expect(
+        found === null || found === undefined || typeof found === 'object'
+      ).toBe(true);
     });
   });
 
-  describe("Import/Export", () => {
-    it("should export data with empty state", async () => {
+  describe('Import/Export', () => {
+    it('should export data with empty state', async () => {
       const data = await exportData();
       expect(data.lists.length).toBe(1); // Just Inbox
       expect(data.labels.length).toBe(0);
@@ -293,7 +292,7 @@ describe("Task Actions", () => {
       expect(data.time_entries.length).toBe(0);
     });
 
-    it("should import empty data", async () => {
+    it('should import empty data', async () => {
       const result = await importData({
         lists: [],
         labels: [],
@@ -305,22 +304,25 @@ describe("Task Actions", () => {
       expect(result.tasks).toBe(0);
     });
 
-    it("should export CSV with tasks", async () => {
-      await createTask({ name: "Task 1" });
+    it('should export CSV with tasks', async () => {
+      await createTask({ name: 'Task 1' });
       const csv = await exportCsv();
-      expect(csv).toContain("id,name,description,date,deadline");
+      expect(csv).toContain('id,name,description,date,deadline');
       // CSV export may have issues with mock - just verify it returns a string
     });
 
-    it("should handle CSV export with special characters", async () => {
-      await createTask({ name: "Task, with comma", description: 'Has "quotes"' });
+    it('should handle CSV export with special characters', async () => {
+      await createTask({
+        name: 'Task, with comma',
+        description: 'Has "quotes"',
+      });
       const csv = await exportCsv();
-      expect(csv).toContain("id,name,description,date,deadline");
+      expect(csv).toContain('id,name,description,date,deadline');
       // Verify function runs without error
     });
 
-    it("should import tasks and preserve data", async () => {
-      await createTask({ name: "Original Task" });
+    it('should import tasks and preserve data', async () => {
+      await createTask({ name: 'Original Task' });
       const data = await exportData();
       await importData(data);
 
@@ -329,46 +331,46 @@ describe("Task Actions", () => {
     });
   });
 
-  describe("Export Formats", () => {
-    it("should export JSON data", async () => {
-      await createTask({ name: "JSON Task" });
+  describe('Export Formats', () => {
+    it('should export JSON data', async () => {
+      await createTask({ name: 'JSON Task' });
       const blob = await exportJson();
-      expect(blob.type).toContain("application/json");
+      expect(blob.type).toContain('application/json');
       // Verify function runs without error
     });
 
-    it("should export iCal data", async () => {
-      await createTask({ name: "iCal Task", deadline: "2024-12-31" });
+    it('should export iCal data', async () => {
+      await createTask({ name: 'iCal Task', deadline: '2024-12-31' });
       const blob = await exportIcal();
-      expect(blob.type).toBe("text/calendar");
+      expect(blob.type).toBe('text/calendar');
       // Verify function runs without error
     });
   });
 
-  describe("Time Tracking", () => {
-    it("should get time report for tasks", async () => {
-      const task = await createTask({ name: "Time Tracking Task" });
+  describe('Time Tracking', () => {
+    it('should get time report for tasks', async () => {
+      const task = await createTask({ name: 'Time Tracking Task' });
       const reports = await getTimeReport({ taskId: task.id });
       expect(Array.isArray(reports)).toBe(true);
     });
   });
 
-  describe("Bulk Operations", () => {
-    it("should bulk update task priorities", async () => {
-      const task1 = await createTask({ name: "Task 1", priority: "low" });
-      const task2 = await createTask({ name: "Task 2", priority: "low" });
+  describe('Bulk Operations', () => {
+    it('should bulk update task priorities', async () => {
+      const task1 = await createTask({ name: 'Task 1', priority: 'low' });
+      const task2 = await createTask({ name: 'Task 2', priority: 'low' });
 
-      await bulkUpdateTasks([task1.id, task2.id], { priority: "high" });
+      await bulkUpdateTasks([task1.id, task2.id], { priority: 'high' });
 
       const updated1 = await getTaskById(task1.id);
       const updated2 = await getTaskById(task2.id);
-      expect(updated1?.priority).toBe("high");
-      expect(updated2?.priority).toBe("high");
+      expect(updated1?.priority).toBe('high');
+      expect(updated2?.priority).toBe('high');
     });
 
-    it("should bulk complete tasks", async () => {
-      const task1 = await createTask({ name: "Task 1" });
-      const task2 = await createTask({ name: "Task 2" });
+    it('should bulk complete tasks', async () => {
+      const task1 = await createTask({ name: 'Task 1' });
+      const task2 = await createTask({ name: 'Task 2' });
 
       await bulkUpdateTasks([task1.id, task2.id], { completed: true });
 
@@ -379,9 +381,9 @@ describe("Task Actions", () => {
       expect(updated1?.completed_at).not.toBeNull();
     });
 
-    it("should bulk delete tasks", async () => {
-      const task1 = await createTask({ name: "Task 1" });
-      const task2 = await createTask({ name: "Task 2" });
+    it('should bulk delete tasks', async () => {
+      const task1 = await createTask({ name: 'Task 1' });
+      const task2 = await createTask({ name: 'Task 2' });
 
       await bulkDeleteTasks([task1.id, task2.id]);
 
@@ -391,8 +393,8 @@ describe("Task Actions", () => {
       expect(found2).toBeUndefined();
     });
 
-    it("should handle empty bulk operations", async () => {
-      await bulkUpdateTasks([], { priority: "high" });
+    it('should handle empty bulk operations', async () => {
+      await bulkUpdateTasks([], { priority: 'high' });
       await bulkDeleteTasks([]);
     });
   });
