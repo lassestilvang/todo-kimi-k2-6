@@ -3,7 +3,7 @@
  * Provides unified interface for calendar integrations
  */
 
-import type { Task } from "@/types";
+import type { Task } from '@/types';
 
 export interface CalendarEvent {
   id: string;
@@ -24,14 +24,14 @@ export interface CalendarEvent {
 }
 
 export interface CalendarSyncConfig {
-  provider: "google" | "outlook";
+  provider: 'google' | 'outlook';
   accessToken: string;
   refreshToken?: string;
   expiresAt?: string;
 }
 
 // Re-export types
-export type { Task } from "@/types";
+export type { Task } from '@/types';
 
 // Import Google calendar functions
 import {
@@ -43,7 +43,7 @@ import {
   exchangeCodeForTokens as googleExchangeCode,
   syncTasksToCalendar as googleSyncTasks,
   type CalendarSyncConfig as GoogleSyncConfig,
-} from "./google";
+} from './google';
 
 // Import Outlook calendar functions
 import {
@@ -54,7 +54,7 @@ import {
   getOutlookAuthUrl,
   exchangeOutlookCodeForTokens,
   type OutlookEvent,
-} from "./outlook";
+} from './outlook';
 
 // Extend OutlookSyncConfig type
 export interface OutlookSyncConfig {
@@ -71,11 +71,15 @@ export async function getCalendarEvents(
   startDate: string,
   endDate: string
 ): Promise<CalendarEvent[]> {
-  if (config.provider === "google") {
+  if (config.provider === 'google') {
     return googleGetEvents(config as GoogleSyncConfig, startDate, endDate);
   }
-  if (config.provider === "outlook") {
-    const events = await outlookGetEvents(config as OutlookSyncConfig, startDate, endDate);
+  if (config.provider === 'outlook') {
+    const events = await outlookGetEvents(
+      config as OutlookSyncConfig,
+      startDate,
+      endDate
+    );
     // Convert Outlook events to match CalendarEvent interface
     return events.map(e => ({
       id: e.id || '',
@@ -83,7 +87,9 @@ export async function getCalendarEvents(
       description: e.body?.content,
       start: { dateTime: e.start.dateTime },
       end: { dateTime: e.end.dateTime },
-      reminders: e.isReminderOn ? { useDefault: true, overrides: [] } : undefined,
+      reminders: e.isReminderOn
+        ? { useDefault: true, overrides: [] }
+        : undefined,
     }));
   }
   throw new Error(`Calendar provider ${config.provider} not yet implemented`);
@@ -96,10 +102,10 @@ export async function createCalendarEvent(
   config: CalendarSyncConfig,
   task: Task
 ): Promise<string> {
-  if (config.provider === "google") {
+  if (config.provider === 'google') {
     return googleCreateEvent(config as GoogleSyncConfig, task);
   }
-  if (config.provider === "outlook") {
+  if (config.provider === 'outlook') {
     return outlookCreateEvent(config as OutlookSyncConfig, task);
   }
   throw new Error(`Calendar provider ${config.provider} not yet implemented`);
@@ -113,10 +119,10 @@ export async function updateCalendarEvent(
   eventId: string,
   task: Task
 ): Promise<void> {
-  if (config.provider === "google") {
+  if (config.provider === 'google') {
     return googleUpdateEvent(config as GoogleSyncConfig, eventId, task);
   }
-  if (config.provider === "outlook") {
+  if (config.provider === 'outlook') {
     return outlookUpdateEvent(config as OutlookSyncConfig, eventId, task);
   }
   throw new Error(`Calendar provider ${config.provider} not yet implemented`);
@@ -129,10 +135,10 @@ export async function deleteCalendarEvent(
   config: CalendarSyncConfig,
   eventId: string
 ): Promise<void> {
-  if (config.provider === "google") {
+  if (config.provider === 'google') {
     return googleDeleteEvent(config as GoogleSyncConfig, eventId);
   }
-  if (config.provider === "outlook") {
+  if (config.provider === 'outlook') {
     return outlookDeleteEvent(config as OutlookSyncConfig, eventId);
   }
   throw new Error(`Calendar provider ${config.provider} not yet implemented`);
@@ -141,11 +147,14 @@ export async function deleteCalendarEvent(
 /**
  * Get OAuth2 authorization URL
  */
-export function getAuthUrl(provider: "google" | "outlook", state: string): string {
-  if (provider === "google") {
+export function getAuthUrl(
+  provider: 'google' | 'outlook',
+  state: string
+): string {
+  if (provider === 'google') {
     return googleGetAuthUrl(state);
   }
-  if (provider === "outlook") {
+  if (provider === 'outlook') {
     return getOutlookAuthUrl(state);
   }
   throw new Error(`Calendar provider ${provider} not yet implemented`);
@@ -155,17 +164,17 @@ export function getAuthUrl(provider: "google" | "outlook", state: string): strin
  * Exchange authorization code for tokens
  */
 export async function exchangeCodeForTokens(
-  provider: "google" | "outlook",
+  provider: 'google' | 'outlook',
   code: string
 ): Promise<{
   access_token: string;
   refresh_token?: string;
   expires_in: number;
 }> {
-  if (provider === "google") {
+  if (provider === 'google') {
     return googleExchangeCode(code);
   }
-  if (provider === "outlook") {
+  if (provider === 'outlook') {
     return exchangeOutlookCodeForTokens(code);
   }
   throw new Error(`Calendar provider ${provider} not yet implemented`);
@@ -178,10 +187,10 @@ export async function syncTasksToCalendar(
   config: CalendarSyncConfig,
   tasks: Task[]
 ): Promise<{ created: number; updated: number; errors: string[] }> {
-  if (config.provider === "google") {
+  if (config.provider === 'google') {
     return googleSyncTasks(config as GoogleSyncConfig, tasks);
   }
-  if (config.provider === "outlook") {
+  if (config.provider === 'outlook') {
     // Outlook sync implementation
     let created = 0;
     const errors: string[] = [];
@@ -191,7 +200,9 @@ export async function syncTasksToCalendar(
         await outlookCreateEvent(config as OutlookSyncConfig, task);
         created++;
       } catch (error) {
-        errors.push(`Failed to sync task ${task.id}: ${(error as Error).message}`);
+        errors.push(
+          `Failed to sync task ${task.id}: ${(error as Error).message}`
+        );
       }
     }
     return { created, updated: 0, errors };
