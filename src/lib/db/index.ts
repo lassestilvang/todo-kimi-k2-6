@@ -1,7 +1,7 @@
-import { join } from "path";
-import { createDatabase, type Database } from "./driver";
-import { runMigrations } from "./migrations";
-import { config } from "@/lib/config";
+import { join } from 'path';
+import { createDatabase, type Database } from './driver';
+import { runMigrations } from './migrations';
+import { config } from '@/lib/config';
 
 let db: Database | null = null;
 
@@ -14,7 +14,9 @@ export type { Database };
  * @param fn The function to execute within a transaction
  * @returns The return value of the function
  */
-export async function withTransaction<T>(fn: (db: Database) => T | Promise<T>): Promise<T> {
+export async function withTransaction<T>(
+  fn: (db: Database) => T | Promise<T>
+): Promise<T> {
   const database = getDb();
   // SQLite transaction is synchronous, PostgreSQL is async
   // We handle both by checking the result type
@@ -38,12 +40,13 @@ export function withTransactionSync<T>(fn: (db: Database) => T): T {
 export function getDb(): Database {
   if (!db) {
     // Use configured database URL or default path
-    const dbPath = config.database.url || join(process.cwd(), "data", "planner.db");
+    const dbPath =
+      config.database.url || join(process.cwd(), 'data', 'planner.db');
     db = createDatabase();
 
     // SQLite-specific configuration
-    if (!config.isProduction && dbPath.startsWith("file:")) {
-      db.exec("PRAGMA journal_mode = WAL");
+    if (!config.isProduction && dbPath.startsWith('file:')) {
+      db.exec('PRAGMA journal_mode = WAL');
     }
 
     initializeSchema(db);
@@ -62,7 +65,10 @@ export function setDb(testDb: Database): void {
  * This allows testing the actual database initialization path.
  */
 export function resetDb(): void {
-  if (db && typeof (db as Database & { _reset: () => void })._reset === "function") {
+  if (
+    db &&
+    typeof (db as Database & { _reset: () => void })._reset === 'function'
+  ) {
     (db as Database & { _reset: () => void })._reset();
   }
   db = null;
