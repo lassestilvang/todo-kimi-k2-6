@@ -2,14 +2,21 @@
  * Smart Scheduler - Energy-aware time blocking and scheduling suggestions
  */
 
-import { getDb } from "@/lib/db";
-import { parseNaturalLanguageTask } from "./index";
-import { getAIManager } from "./providers";
+import { getDb } from '@/lib/db';
+import { parseNaturalLanguageTask } from './index';
+import { getAIManager } from './providers';
 
 export interface EnergyLevel {
   time: string; // "09:00"
   level: 1 | 2 | 3 | 4 | 5; // 1 = low, 5 = high
-  type: "morning_energy" | "afternoon_focus" | "creative_window" | "recovery_time" | "morning_routine" | "lunch_break" | "end_of_day";
+  type:
+    | 'morning_energy'
+    | 'afternoon_focus'
+    | 'creative_window'
+    | 'recovery_time'
+    | 'morning_routine'
+    | 'lunch_break'
+    | 'end_of_day';
 }
 
 export interface BlockSuggestion {
@@ -45,12 +52,14 @@ export interface UserEnergyPreferences {
 /**
  * Get or create default energy profile for a user
  */
-export async function getUserEnergyProfile(userId: number): Promise<UserEnergyPreferences> {
+export async function getUserEnergyProfile(
+  userId: number
+): Promise<UserEnergyPreferences> {
   const db = getDb();
 
   // Check for existing profile
   const profile = db
-    .prepare("SELECT profile_data FROM user_energy_profiles WHERE user_id = ?")
+    .prepare('SELECT profile_data FROM user_energy_profiles WHERE user_id = ?')
     .get(userId) as { profile_data: string } | undefined;
 
   if (profile) {
@@ -63,28 +72,30 @@ export async function getUserEnergyProfile(userId: number): Promise<UserEnergyPr
     wakeUpHour: 8,
     sleepHour: 23,
     peakEnergyTimes: [
-      { start: "09:00", end: "11:00" },
-      { start: "14:00", end: "16:00" }
+      { start: '09:00', end: '11:00' },
+      { start: '14:00', end: '16:00' },
     ],
     energyLevels: [
-      { time: "08:00", level: 2, type: "morning_routine" },
-      { time: "09:00", level: 4, type: "morning_energy" },
-      { time: "10:00", level: 5, type: "morning_energy" },
-      { time: "11:00", level: 3, type: "afternoon_focus" },
-      { time: "12:00", level: 2, type: "lunch_break" },
-      { time: "13:00", level: 3, type: "afternoon_focus" },
-      { time: "14:00", level: 4, type: "afternoon_focus" },
-      { time: "15:00", level: 3, type: "creative_window" },
-      { time: "16:00", level: 3, type: "creative_window" },
-      { time: "17:00", level: 2, type: "end_of_day" },
-      { time: "18:00", level: 1, type: "recovery_time" }
-    ]
+      { time: '08:00', level: 2, type: 'morning_routine' },
+      { time: '09:00', level: 4, type: 'morning_energy' },
+      { time: '10:00', level: 5, type: 'morning_energy' },
+      { time: '11:00', level: 3, type: 'afternoon_focus' },
+      { time: '12:00', level: 2, type: 'lunch_break' },
+      { time: '13:00', level: 3, type: 'afternoon_focus' },
+      { time: '14:00', level: 4, type: 'afternoon_focus' },
+      { time: '15:00', level: 3, type: 'creative_window' },
+      { time: '16:00', level: 3, type: 'creative_window' },
+      { time: '17:00', level: 2, type: 'end_of_day' },
+      { time: '18:00', level: 1, type: 'recovery_time' },
+    ],
   };
 
-  db.prepare(`
+  db.prepare(
+    `
     INSERT INTO user_energy_profiles (user_id, profile_data, created_at, updated_at)
     VALUES (?, ?, datetime('now'), datetime('now'))
-  `).run(userId, JSON.stringify(defaultProfile));
+  `
+  ).run(userId, JSON.stringify(defaultProfile));
 
   return defaultProfile;
 }
@@ -97,20 +108,22 @@ export async function calculateOptimalSchedule(
   taskIds: number[],
   options?: {
     date?: string;
-    durationPreference?: "focused" | "balanced" | "spread";
+    durationPreference?: 'focused' | 'balanced' | 'spread';
   }
 ): Promise<ScheduleAnalysis> {
   const db = getDb();
   const energyProfile = await getUserEnergyProfile(userId);
-  const targetDate = options?.date || new Date().toISOString().split("T")[0];
+  const targetDate = options?.date || new Date().toISOString().split('T')[0];
 
   // Get tasks
   const tasks = db
-    .prepare(`
+    .prepare(
+      `
       SELECT * FROM tasks
-      WHERE id IN (${taskIds.map(() => "?").join(",")})
+      WHERE id IN (${taskIds.map(() => '?').join(',')})
       AND user_id = ?
-    `)
+    `
+    )
     .all(...taskIds, userId) as any[];
 
   if (tasks.length === 0) {
@@ -118,24 +131,28 @@ export async function calculateOptimalSchedule(
       optimalTimes: [],
       conflicts: [],
       availableSlots: [],
-      energyEfficiency: 0
+      energyEfficiency: 0,
     };
   }
 
   // Get calendar events for the date
   const calendarEvents = db
-    .prepare(`
+    .prepare(
+      `
       SELECT * FROM calendar_events
       WHERE user_id = ? AND date = ?
-    `)
+    `
+    )
     .all(userId, targetDate) as any[];
 
   // Calculate blocked time
   const blockedTime: { start: string; end: string }[] = [];
 
   // Add user preferences (work hours)
-  const workStart = energyProfile.wakeUpHour.toString().padStart(2, "0") + ":00";
-  const workEnd = (energyProfile.sleepHour - 1).toString().padStart(2, "0") + ":00";
+  const workStart =
+    energyProfile.wakeUpHour.toString().padStart(2, '0') + ':00';
+  const workEnd =
+    (energyProfile.sleepHour - 1).toString().padStart(2, '0') + ':00';
   blockedTime.push({ start: workStart, end: workEnd });
 
   // Add calendar events
@@ -148,10 +165,10 @@ export async function calculateOptimalSchedule(
   // Score each time slot based on energy level
   const energyScores = energyProfile.energyLevels
     .filter(level => {
-      const hour = parseInt(level.time.split(":")[0]);
+      const hour = parseInt(level.time.split(':')[0]);
       const isBlocked = blockedTime.some(block => {
-        const blockStart = parseInt(block.start.split(":")[0]);
-        const blockEnd = parseInt(block.end.split(":")[0]);
+        const blockStart = parseInt(block.start.split(':')[0]);
+        const blockEnd = parseInt(block.end.split(':')[0]);
         return hour >= blockStart && hour < blockEnd;
       });
       return !isBlocked;
@@ -159,15 +176,17 @@ export async function calculateOptimalSchedule(
     .map(level => ({
       time: level.time,
       score: level.level as number,
-      available: true
+      available: true,
     }));
 
   // Generate suggestions for each task
   const suggestions: BlockSuggestion[] = [];
 
   for (const task of tasks) {
-    const estimatedMinutes = parseDuration(task.estimate || task.actual_time || "30");
-    const priority = task.priority || "medium";
+    const estimatedMinutes = parseDuration(
+      task.estimate || task.actual_time || '30'
+    );
+    const priority = task.priority || 'medium';
 
     // Find best time slot
     let bestSlot: BlockSuggestion | null = null;
@@ -187,7 +206,13 @@ export async function calculateOptimalSchedule(
           startTime: startTime,
           endTime: endTime,
           confidence: Math.min(0.95, adjustedScore / 100 + 0.3),
-          reasoning: generateReasoning(priority, task.name, startTime, endTime, slotScore)
+          reasoning: generateReasoning(
+            priority,
+            task.name,
+            startTime,
+            endTime,
+            slotScore
+          ),
         };
       }
     }
@@ -201,15 +226,19 @@ export async function calculateOptimalSchedule(
   const availableSlots = generateAvailableSlots(energyProfile, blockedTime);
 
   // Calculate energy efficiency
-  const energyEfficiency = tasks.length > 0
-    ? Math.round(suggestions.filter(s => s.confidence > 0.7).length / tasks.length * 100)
-    : 0;
+  const energyEfficiency =
+    tasks.length > 0
+      ? Math.round(
+          (suggestions.filter(s => s.confidence > 0.7).length / tasks.length) *
+            100
+        )
+      : 0;
 
   return {
     optimalTimes: suggestions,
     conflicts: [], // Would need more complex logic to detect
     availableSlots,
-    energyEfficiency
+    energyEfficiency,
   };
 }
 
@@ -223,9 +252,9 @@ function parseDuration(duration: string): number {
   if (!match) return 30;
 
   const value = parseInt(match[1]);
-  const unit = match[2] || "min";
+  const unit = match[2] || 'min';
 
-  if (unit.startsWith("h") || unit === "hr") {
+  if (unit.startsWith('h') || unit === 'hr') {
     return value * 60;
   }
   return value;
@@ -240,7 +269,7 @@ function priorityScore(priority: string): number {
     high: 75,
     medium: 50,
     low: 25,
-    none: 10
+    none: 10,
   };
   return scores[priority] || 50;
 }
@@ -249,11 +278,11 @@ function priorityScore(priority: string): number {
  * Add minutes to time string
  */
 function addMinutes(time: string, minutes: number): string {
-  const [h, m] = time.split(":").map(Number);
+  const [h, m] = time.split(':').map(Number);
   const totalMinutes = h * 60 + m + minutes;
   const newHours = Math.floor(totalMinutes / 60);
   const newMinutes = totalMinutes % 60;
-  return `${newHours.toString().padStart(2, "0")}:${newMinutes.toString().padStart(2, "0")}`;
+  return `${newHours.toString().padStart(2, '0')}:${newMinutes.toString().padStart(2, '0')}`;
 }
 
 /**
@@ -266,7 +295,12 @@ function generateReasoning(
   endTime: string,
   energyScore: number
 ): string {
-  const priorityText = priority === "critical" ? "urgent" : priority === "high" ? "important" : "routine";
+  const priorityText =
+    priority === 'critical'
+      ? 'urgent'
+      : priority === 'high'
+        ? 'important'
+        : 'routine';
   return `Scheduled during ${energyScore}-level energy window (${startTime}-${endTime}) for optimal ${priorityText} task execution.`;
 }
 
@@ -277,17 +311,21 @@ function generateAvailableSlots(
   profile: UserEnergyPreferences,
   blockedTime: { start: string; end: string }[]
 ): Array<{ startTime: string; endTime: string; durationMinutes: number }> {
-  const slots: Array<{ startTime: string; endTime: string; durationMinutes: number }> = [];
+  const slots: Array<{
+    startTime: string;
+    endTime: string;
+    durationMinutes: number;
+  }> = [];
 
   // Define standard time slots
   const standardSlots = [
-    { start: "09:00", end: "10:00" },
-    { start: "10:00", end: "11:00" },
-    { start: "11:00", end: "12:00" },
-    { start: "13:00", end: "14:00" },
-    { start: "14:00", end: "15:00" },
-    { start: "15:00", end: "16:00" },
-    { start: "16:00", end: "17:00" }
+    { start: '09:00', end: '10:00' },
+    { start: '10:00', end: '11:00' },
+    { start: '11:00', end: '12:00' },
+    { start: '13:00', end: '14:00' },
+    { start: '14:00', end: '15:00' },
+    { start: '15:00', end: '16:00' },
+    { start: '16:00', end: '17:00' },
   ];
 
   standardSlots.forEach(slot => {
@@ -301,7 +339,7 @@ function generateAvailableSlots(
       slots.push({
         startTime: slot.start,
         endTime: slot.end,
-        durationMinutes: 60
+        durationMinutes: 60,
       });
     }
   });
@@ -321,19 +359,21 @@ export async function rescheduleTask(
   const db = getDb();
 
   const task = db
-    .prepare("SELECT * FROM tasks WHERE id = ? AND user_id = ?")
+    .prepare('SELECT * FROM tasks WHERE id = ? AND user_id = ?')
     .get(taskId, userId) as any | undefined;
 
   if (!task) {
-    return { success: false, message: "Task not found" };
+    return { success: false, message: 'Task not found' };
   }
 
   // Update task schedule
-  db.prepare(`
+  db.prepare(
+    `
     UPDATE tasks
     SET date = ?, updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
-  `).run(newDate, taskId);
+  `
+  ).run(newDate, taskId);
 
-  return { success: true, message: "Task rescheduled successfully" };
+  return { success: true, message: 'Task rescheduled successfully' };
 }
