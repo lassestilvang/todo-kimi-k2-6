@@ -83,9 +83,10 @@ export const config = {
 } as const;
 
 // Development warnings (computed after config)
-export const developmentWarnings = config.env === 'development' && !process.env.NEXTAUTH_SECRET
-  ? ['NEXTAUTH_SECRET not set, using insecure default']
-  : [];
+export const developmentWarnings =
+  config.env === 'development' && !process.env.NEXTAUTH_SECRET
+    ? ['NEXTAUTH_SECRET not set, using insecure default']
+    : [];
 
 // Type for config
 export type Config = typeof config;
