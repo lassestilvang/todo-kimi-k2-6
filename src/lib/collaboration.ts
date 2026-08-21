@@ -3,11 +3,17 @@
  * Supports real-time updates, mentions, and task assignments
  */
 
-import type { TaskWithRelations, User } from "../types";
-import { getDb } from "@/lib/db";
+import type { TaskWithRelations, User } from '../types';
+import { getDb } from '@/lib/db';
 
 export interface CollaborationEvent {
-  type: "task_updated" | "task_created" | "task_deleted" | "comment_added" | "user_joined" | "user_left";
+  type:
+    | 'task_updated'
+    | 'task_created'
+    | 'task_deleted'
+    | 'comment_added'
+    | 'user_joined'
+    | 'user_left';
   taskId?: number;
   task?: Partial<TaskWithRelations>;
   userId?: number;
@@ -26,7 +32,10 @@ export interface Mention {
  * Parse mentions from text
  * Returns array of mentions and cleaned text
  */
-export function parseMentions(text: string): { mentions: Mention[]; cleanedText: string } {
+export function parseMentions(text: string): {
+  mentions: Mention[];
+  cleanedText: string;
+} {
   const mentionRegex = /@(\w+)/g;
   const mentions: Mention[] = [];
 
@@ -44,7 +53,10 @@ export function parseMentions(text: string): { mentions: Mention[]; cleanedText:
   }
 
   // Remove @ mentions from cleaned text
-  const cleanedText = text.replace(mentionRegex, "").replace(/\s+/g, " ").trim();
+  const cleanedText = text
+    .replace(mentionRegex, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 
   return { mentions, cleanedText };
 }
@@ -54,7 +66,7 @@ export function parseMentions(text: string): { mentions: Mention[]; cleanedText:
  */
 export function generateTaskShareLink(taskId: number, baseUrl: string): string {
   const expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days
-  const token = Buffer.from(`task:${taskId}:${expiresAt}`).toString("base64");
+  const token = Buffer.from(`task:${taskId}:${expiresAt}`).toString('base64');
   return `${baseUrl}/share/${token}`;
 }
 
@@ -63,7 +75,7 @@ export function generateTaskShareLink(taskId: number, baseUrl: string): string {
  */
 export function generateListShareLink(listId: number, baseUrl: string): string {
   const expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days
-  const token = Buffer.from(`list:${listId}:${expiresAt}`).toString("base64");
+  const token = Buffer.from(`list:${listId}:${expiresAt}`).toString('base64');
   return `${baseUrl}/share/${token}`;
 }
 
@@ -71,20 +83,20 @@ export function generateListShareLink(listId: number, baseUrl: string): string {
  * Validate a share token and return the entity info
  */
 export function validateShareToken(token: string): {
-  entityType: "task" | "list";
+  entityType: 'task' | 'list';
   entityId: number;
   expiresAt: number;
 } | null {
   try {
-    const decoded = Buffer.from(token, "base64").toString();
-    const [entityType, entityIdStr, expiresAtStr] = decoded.split(":");
+    const decoded = Buffer.from(token, 'base64').toString();
+    const [entityType, entityIdStr, expiresAtStr] = decoded.split(':');
     const entityId = parseInt(entityIdStr, 10);
     const expiresAt = parseInt(expiresAtStr, 10);
 
     if (isNaN(entityId) || isNaN(expiresAt)) return null;
     if (Date.now() > expiresAt) return null; // Token expired
 
-    if (entityType !== "task" && entityType !== "list") return null;
+    if (entityType !== 'task' && entityType !== 'list') return null;
 
     return { entityType, entityId, expiresAt };
   } catch {
@@ -106,7 +118,7 @@ export interface TaskAssignment {
 /**
  * Permission levels for task sharing
  */
-export type PermissionLevel = "view" | "edit" | "admin";
+export type PermissionLevel = 'view' | 'edit' | 'admin';
 
 export interface TaskShare {
   taskId: number;
@@ -124,11 +136,11 @@ export interface TaskShare {
 export function canPerformAction(
   user: User | null,
   task: TaskWithRelations,
-  action: "view" | "edit" | "delete" = "view"
+  action: 'view' | 'edit' | 'delete' = 'view'
 ): boolean {
   if (!user) {
     // In demo mode, allow view access for unauthenticated users
-    return action === "view";
+    return action === 'view';
   }
 
   // Owner can always do everything
@@ -139,19 +151,22 @@ export function canPerformAction(
     const db = getDb();
     const row = db
       .prepare(
-        "SELECT permission FROM task_shares WHERE task_id = ? AND user_id = ?"
+        'SELECT permission FROM task_shares WHERE task_id = ? AND user_id = ?'
       )
       .get(task.id, user.id) as { permission: string } | undefined;
 
     if (row) {
       const perm = row.permission as PermissionLevel;
-      if (action === "view" && (perm === "view" || perm === "edit" || perm === "admin")) {
+      if (
+        action === 'view' &&
+        (perm === 'view' || perm === 'edit' || perm === 'admin')
+      ) {
         return true;
       }
-      if (action === "edit" && (perm === "edit" || perm === "admin")) {
+      if (action === 'edit' && (perm === 'edit' || perm === 'admin')) {
         return true;
       }
-      if (action === "delete" && perm === "admin") {
+      if (action === 'delete' && perm === 'admin') {
         return true;
       }
     }
@@ -162,7 +177,7 @@ export function canPerformAction(
 
   // In demo mode, allow all authenticated users to view tasks
   // In production, this would return false without explicit permission
-  if (action === "view") return true;
+  if (action === 'view') return true;
 
   // No explicit permission found
   return false;
@@ -171,15 +186,20 @@ export function canPerformAction(
 /**
  * Group tasks by assignee
  */
-export function groupTasksByAssignee(tasks: TaskWithRelations[]): Record<number, TaskWithRelations[]> {
-  return tasks.reduce((acc, task) => {
-    const assigneeId = task.assignee_id || 0;
-    if (!acc[assigneeId]) {
-      acc[assigneeId] = [];
-    }
-    acc[assigneeId].push(task);
-    return acc;
-  }, {} as Record<number, TaskWithRelations[]>);
+export function groupTasksByAssignee(
+  tasks: TaskWithRelations[]
+): Record<number, TaskWithRelations[]> {
+  return tasks.reduce(
+    (acc, task) => {
+      const assigneeId = task.assignee_id || 0;
+      if (!acc[assigneeId]) {
+        acc[assigneeId] = [];
+      }
+      acc[assigneeId].push(task);
+      return acc;
+    },
+    {} as Record<number, TaskWithRelations[]>
+  );
 }
 
 /**
@@ -190,7 +210,7 @@ export function getPendingAssignments(
   userId: number
 ): TaskWithRelations[] {
   return tasks.filter(
-    (t) =>
+    t =>
       t.assignee_id === userId &&
       !t.completed &&
       t.deadline &&
@@ -204,5 +224,5 @@ export function getPendingAssignments(
 export function generateSecureShareToken(): string {
   // Use Node.js crypto for secure random bytes
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  return require("crypto").randomBytes(32).toString("hex");
+  return require('crypto').randomBytes(32).toString('hex');
 }
