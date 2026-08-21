@@ -1,8 +1,8 @@
-import { v4 as uuidv4 } from "uuid";
-import { cookies } from "next/headers";
+import { v4 as uuidv4 } from 'uuid';
+import { cookies } from 'next/headers';
 
-const CSRF_TOKEN_NAME = "csrf_token";
-const CSRF_HEADER_NAME = "X-CSRF-Token";
+const CSRF_TOKEN_NAME = 'csrf_token';
+const CSRF_HEADER_NAME = 'X-CSRF-Token';
 
 /**
  * Generate a cryptographically secure CSRF token using UUID v4.
@@ -44,8 +44,8 @@ export async function setCSRFToken(token: string): Promise<void> {
   const cookieStore = await cookies();
   cookieStore.set(CSRF_TOKEN_NAME, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
     maxAge: 60 * 60 * 24 * 30, // 30 days
   });
 }
@@ -86,9 +86,11 @@ export async function validateCSRFToken(): Promise<boolean> {
  *   // Continue with request processing
  * }
  */
-export async function csrfProtection(request: Request): Promise<Response | null> {
+export async function csrfProtection(
+  request: Request
+): Promise<Response | null> {
   // Skip CSRF for safe methods
-  if (["GET", "HEAD", "OPTIONS"].includes(request.method)) {
+  if (['GET', 'HEAD', 'OPTIONS'].includes(request.method)) {
     return null;
   }
 
@@ -96,13 +98,10 @@ export async function csrfProtection(request: Request): Promise<Response | null>
   const headerToken = request.headers.get(CSRF_HEADER_NAME);
 
   if (!cookieToken || !headerToken || cookieToken !== headerToken) {
-    return new Response(
-      JSON.stringify({ error: "Invalid CSRF token" }),
-      {
-        status: 403,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+    return new Response(JSON.stringify({ error: 'Invalid CSRF token' }), {
+      status: 403,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
   return null;
