@@ -1,23 +1,53 @@
 // AI Assistant for task management
 // Supports natural language task creation and suggestions
 
-import { z } from "zod";
-import { getAIManager } from "./providers";
+import { z } from 'zod';
+import { getAIManager } from './providers';
 
 // Zod schema for validating AI task suggestions
 export const taskSuggestionSchema = z.object({
   name: z.string().min(1).max(500),
   description: z.string().nullable().optional(),
-  priority: z.enum(["critical", "high", "medium", "low", "none"]).nullable().optional(),
+  priority: z
+    .enum(['critical', 'high', 'medium', 'low', 'none'])
+    .nullable()
+    .optional(),
   estimated_duration: z.number().int().min(0).nullable().optional(),
-  suggested_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
-  recurring: z.enum(["none", "daily", "weekly", "weekdays", "monthly", "yearly", "custom"]).nullable().optional(),
+  suggested_date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .nullable()
+    .optional(),
+  recurring: z
+    .enum([
+      'none',
+      'daily',
+      'weekly',
+      'weekdays',
+      'monthly',
+      'yearly',
+      'custom',
+    ])
+    .nullable()
+    .optional(),
   recurring_config: z.string().nullable().optional(),
   list_name: z.string().nullable().optional(),
-  deadline: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  deadline: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .nullable()
+    .optional(),
   list_id: z.number().int().min(1).nullable().optional(),
-  start_time: z.string().regex(/^\d{2}:\d{2}$/).nullable().optional(),
-  end_time: z.string().regex(/^\d{2}:\d{2}$/).nullable().optional(),
+  start_time: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/)
+    .nullable()
+    .optional(),
+  end_time: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/)
+    .nullable()
+    .optional(),
   location: z.string().nullable().optional(),
 });
 
@@ -34,7 +64,16 @@ export type AIInsights = z.infer<typeof aiInsightsSchema>;
 
 // Schema for AI task editing commands
 export const aiEditCommandSchema = z.object({
-  action: z.enum(["edit", "delete", "complete", "prioritize", "schedule", "add_label", "remove_label", "search"]),
+  action: z.enum([
+    'edit',
+    'delete',
+    'complete',
+    'prioritize',
+    'schedule',
+    'add_label',
+    'remove_label',
+    'search',
+  ]),
   taskId: z.number().optional(),
   taskName: z.string().optional(),
   updates: z.record(z.string(), z.unknown()).optional(),
@@ -46,7 +85,12 @@ export type AIEditCommand = z.infer<typeof aiEditCommandSchema>;
 export interface AITaskInput {
   text: string;
   context?: {
-    existingTasks?: Array<{ name: string; date?: string | null; deadline?: string | null; priority?: string }>;
+    existingTasks?: Array<{
+      name: string;
+      date?: string | null;
+      deadline?: string | null;
+      priority?: string;
+    }>;
     preferences?: {
       workHours?: { start: number; end: number };
       preferredTimes?: string[];
@@ -67,7 +111,9 @@ export interface EnhancedTaskSuggestion extends TaskSuggestion {
 }
 
 // Parse natural language input into task structure
-export async function parseTaskInput(input: AITaskInput): Promise<TaskSuggestion & { provider: string }> {
+export async function parseTaskInput(
+  input: AITaskInput
+): Promise<TaskSuggestion & { provider: string }> {
   const ai = getAIManager();
   return ai.parseTask(input);
 }
@@ -79,7 +125,7 @@ export async function parseTaskInput(input: AITaskInput): Promise<TaskSuggestion
 export async function parseNaturalLanguageTask(text: string): Promise<{
   name: string;
   description?: string;
-  priority?: "critical" | "high" | "medium" | "low" | "none";
+  priority?: 'critical' | 'high' | 'medium' | 'low' | 'none';
   due_date?: string;
   labels?: string[];
   confidence?: number;
@@ -91,10 +137,10 @@ export async function parseNaturalLanguageTask(text: string): Promise<{
   return {
     name: result.name,
     description: result.description ?? undefined,
-    priority: result.priority || "medium",
+    priority: result.priority || 'medium',
     due_date: result.deadline ?? result.suggested_date ?? undefined,
     labels: result.list_name ? [result.list_name] : [],
-    confidence: result.provider === "keyword-parser" ? 50 : 80,
+    confidence: result.provider === 'keyword-parser' ? 50 : 80,
     matches: [],
   };
 }
@@ -112,20 +158,29 @@ export async function suggestTaskSchedule(
     workHours?: { start: number; end: number };
     existingSchedule?: Array<{ name: string; date: string; startTime: string }>;
   }
-): Promise<Array<{ name: string; suggested_date: string; suggested_time: string; confidence: number }>> {
+): Promise<
+  Array<{
+    name: string;
+    suggested_date: string;
+    suggested_time: string;
+    confidence: number;
+  }>
+> {
   const workHours = context?.workHours || { start: 9, end: 17 };
 
-  return tasks.map((task) => {
+  return tasks.map(task => {
     // Calculate suggested time based on priority and workload
     const priorityScore = getPriorityScore(task.priority);
     const duration = task.estimated_duration || 30;
 
     // Default to working hours
-    const hour = Math.floor(workHours.start + (priorityScore * (workHours.end - workHours.start)));
+    const hour = Math.floor(
+      workHours.start + priorityScore * (workHours.end - workHours.start)
+    );
     const minute = Math.floor(Math.random() * 4) * 15; // 0, 15, 30, or 45
 
     // Determine date based on deadline or availability
-    let suggestedDate = new Date().toISOString().split("T")[0];
+    let suggestedDate = new Date().toISOString().split('T')[0];
     if (task.deadline) {
       suggestedDate = task.deadline;
     } else if (task.date) {
@@ -133,12 +188,16 @@ export async function suggestTaskSchedule(
     }
 
     // Calculate confidence based on task characteristics
-    const confidence = calculateScheduleConfidence(task, priorityScore, duration);
+    const confidence = calculateScheduleConfidence(
+      task,
+      priorityScore,
+      duration
+    );
 
     return {
       name: task.name,
       suggested_date: suggestedDate,
-      suggested_time: `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`,
+      suggested_time: `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`,
       confidence,
     };
   });
@@ -147,16 +206,29 @@ export async function suggestTaskSchedule(
 // Helper function to convert priority to score (0-1)
 function getPriorityScore(priority: string): number {
   switch (priority) {
-    case "critical": return 0.2;
-    case "high": return 0.4;
-    case "medium": return 0.6;
-    case "low": return 0.8;
-    default: return 0.5;
+    case 'critical':
+      return 0.2;
+    case 'high':
+      return 0.4;
+    case 'medium':
+      return 0.6;
+    case 'low':
+      return 0.8;
+    default:
+      return 0.5;
   }
 }
 
 // Helper function to calculate confidence score
-function calculateScheduleConfidence(task: { estimated_duration?: number | null; deadline?: string | null; priority?: string }, priorityScore: number, duration: number): number {
+function calculateScheduleConfidence(
+  task: {
+    estimated_duration?: number | null;
+    deadline?: string | null;
+    priority?: string;
+  },
+  priorityScore: number,
+  duration: number
+): number {
   let confidence = 0.7; // Base confidence
 
   // Higher confidence for tasks with more info
@@ -173,25 +245,28 @@ function calculateScheduleConfidence(task: { estimated_duration?: number | null;
 /**
  * Parse location context from task text
  */
-export function parseLocation(text: string, locations?: Array<{ name: string; keywords: string[] }>): string | null {
+export function parseLocation(
+  text: string,
+  locations?: Array<{ name: string; keywords: string[] }>
+): string | null {
   if (!locations) return null;
 
   const normalizedText = text.toLowerCase();
   for (const location of locations) {
-    if (location.keywords.some((k) => normalizedText.includes(k.toLowerCase()))) {
+    if (location.keywords.some(k => normalizedText.includes(k.toLowerCase()))) {
       return location.name;
     }
   }
 
   // Default location keywords
   const defaultLocations: Record<string, string> = {
-    "home": "Home Office",
-    "office": "Work Office",
-    "gym": "Gym",
-    "doctor": "Doctor's Office",
-    "store": "Store",
-    "restaurant": "Restaurant",
-    "meeting": "Meeting Room",
+    home: 'Home Office',
+    office: 'Work Office',
+    gym: 'Gym',
+    doctor: "Doctor's Office",
+    store: 'Store',
+    restaurant: 'Restaurant',
+    meeting: 'Meeting Room',
   };
 
   for (const [keyword, name] of Object.entries(defaultLocations)) {
@@ -242,12 +317,12 @@ export async function generateTasksFromNotes(
 
   return result.map(task => ({
     ...task,
-    provider: "keyword-parser",
+    provider: 'keyword-parser',
   }));
 }
 
 // Re-export types from providers
-export { type AIProvider, getAIManager } from "./providers";
+export { type AIProvider, getAIManager } from './providers';
 
 // Re-export workload balancing
 export {
@@ -262,10 +337,10 @@ export {
   type ScheduleConflict,
   type ProductivityPattern,
   type ScheduleAnalysis,
-} from "./workload";
+} from './workload';
 
 // Cache management
-export { aiCache } from "./providers";
+export { aiCache } from './providers';
 
 // Re-export shared time utilities
 export {
@@ -274,12 +349,19 @@ export {
   parseTimeRange,
   getNextDay,
   parseMonthDayDate,
-} from "@/lib/time-utils";
+} from '@/lib/time-utils';
 
 // AI-powered task editing
 export async function parseEditCommand(
   text: string,
-  context: { tasks: Array<{ id: number; name: string; completed: boolean; priority: string }> }
+  context: {
+    tasks: Array<{
+      id: number;
+      name: string;
+      completed: boolean;
+      priority: string;
+    }>;
+  }
 ): Promise<AIEditCommand & { provider: string }> {
   const ai = getAIManager();
   return ai.parseEditCommand(text, context);
@@ -290,9 +372,12 @@ export const projectPhaseSchema = z.object({
   name: z.string(),
   description: z.string().optional(),
   duration_days: z.number().int().min(1).optional(),
-  priority: z.enum(["critical", "high", "medium", "low", "none"]).optional(),
+  priority: z.enum(['critical', 'high', 'medium', 'low', 'none']).optional(),
   labels: z.string().optional(),
-  deadline: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  deadline: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
   blocking_tasks: z.array(z.number()).optional(),
 });
 
@@ -332,7 +417,9 @@ export interface GeneratedProject {
 /**
  * Generate a project plan from natural language description
  */
-export async function generateProjectPlan(input: ProjectPlanInput): Promise<GeneratedProject> {
+export async function generateProjectPlan(
+  input: ProjectPlanInput
+): Promise<GeneratedProject> {
   const ai = getAIManager();
   return ai.generateProjectPlan(input);
 }
@@ -362,5 +449,5 @@ export async function generateDecisionTemplate(
 ): Promise<GeneratedDecisionTemplate> {
   const ai = await getAIManager();
   const result = await ai.generateDecisionTemplate(context);
-  return { ...result, provider: "keyword-parser" };
+  return { ...result, provider: 'keyword-parser' };
 }
