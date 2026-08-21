@@ -1,9 +1,9 @@
-"use server";
+'use server';
 
-import { getDb } from "@/lib/db";
-import { getCurrentUser } from "@/lib/session";
-import type { TaskWithRelations, Priority } from "@/types";
-import { aiCache } from "@/lib/ai/providers";
+import { getDb } from '@/lib/db';
+import { getCurrentUser } from '@/lib/session';
+import type { TaskWithRelations, Priority } from '@/types';
+import { aiCache } from '@/lib/ai/providers';
 
 /**
  * Generate an optimal time-blocking schedule for a list of tasks
@@ -26,14 +26,21 @@ export async function generateTimeBlockedSchedule(
   }
 
   // Get user's circadian rhythm data if available
-  const energyProfile = constraints.energyProfile || await getUserEnergyProfile(constraints.userId);
+  const energyProfile =
+    constraints.energyProfile ||
+    (await getUserEnergyProfile(constraints.userId));
   const workHours = constraints.workHours || { start: 9, end: 17 };
 
   // Sort tasks by priority, deadline urgency, and dependencies
   const sortedTasks = sortTasksForScheduling(tasks, constraints);
 
   // Generate schedule slots
-  const schedule = await createTimeBlocks(sortedTasks, workHours, energyProfile, constraints.deadline);
+  const schedule = await createTimeBlocks(
+    sortedTasks,
+    workHours,
+    energyProfile,
+    constraints.deadline
+  );
 
   aiCache.set(cacheKey, schedule); // Cache for default TTL
   return schedule;
@@ -61,7 +68,7 @@ export async function detectScheduleConflicts(
           taskId: task.id,
           taskName: task.name,
           conflictingSlot: existingSlot,
-          overlapType: "time_overlap",
+          overlapType: 'time_overlap',
         });
 
         // Generate suggestions
@@ -116,7 +123,7 @@ export async function rescheduleWithBuffer(
     });
 
     // Add buffer time before next task
-    currentTime = endTime + (bufferMinutes * 2); // 2-minute transitions
+    currentTime = endTime + bufferMinutes * 2; // 2-minute transitions
   }
 
   return scheduledTasks;
@@ -131,8 +138,8 @@ export async function predictTaskDuration(
     userId: number;
     taskHistory?: TaskWithRelations[];
     factors?: {
-      taskComplexity?: "simple" | "moderate" | "complex";
-      energyLevel?: "high" | "medium" | "low";
+      taskComplexity?: 'simple' | 'moderate' | 'complex';
+      energyLevel?: 'high' | 'medium' | 'low';
       deadlineUrgency?: number;
     };
   }
@@ -176,7 +183,9 @@ export async function suggestOptimalTimes(
   }
 
   // Get user energy profile
-  const energyProfile = constraints.energyProfile || await getUserEnergyProfile(constraints.userId);
+  const energyProfile =
+    constraints.energyProfile ||
+    (await getUserEnergyProfile(constraints.userId));
 
   // Generate optimal time suggestions
   const suggestions = generateTimeSuggestions(task, energyProfile, constraints);
@@ -234,21 +243,41 @@ async function getUserEnergyProfile(userId: number): Promise<any> {
 /**
  * Get user calendar events for availability analysis
  */
-async function getUserCalendarEvents(userId: number, timeRange: { start: string; end: string }): Promise<any[]> {
+async function getUserCalendarEvents(
+  userId: number,
+  timeRange: { start: string; end: string }
+): Promise<any[]> {
   // In a real implementation, this would call calendar APIs
   // For now, return mock data
   return [
-    { date: timeRange.start, startTime: "09:00", endTime: "10:00", type: "meeting" },
-    { date: timeRange.start, startTime: "14:00", endTime: "15:00", type: "focus" },
-    { date: timeRange.start, startTime: "16:00", endTime: "17:00", type: "collaboration" },
+    {
+      date: timeRange.start,
+      startTime: '09:00',
+      endTime: '10:00',
+      type: 'meeting',
+    },
+    {
+      date: timeRange.start,
+      startTime: '14:00',
+      endTime: '15:00',
+      type: 'focus',
+    },
+    {
+      date: timeRange.start,
+      startTime: '16:00',
+      endTime: '17:00',
+      type: 'collaboration',
+    },
   ];
 }
 
 /**
  * Get task by ID
  */
-async function getTaskById(taskId: number): Promise<TaskWithRelations | undefined> {
-  const { getTaskById } = await import("@/lib/actions/tasks");
+async function getTaskById(
+  taskId: number
+): Promise<TaskWithRelations | undefined> {
+  const { getTaskById } = await import('@/lib/actions/tasks');
   return getTaskById(taskId);
 }
 
@@ -259,24 +288,23 @@ function sortTasksForScheduling(
   tasks: TaskWithRelations[],
   constraints?: any
 ): TaskWithRelations[] {
-  return tasks
-    .sort((a, b) => {
-      // Primary: Critical priority tasks first
-      const priorityOrder = { critical: 0, high: 1, medium: 2, low: 3, none: 4 };
-      if (priorityOrder[a.priority] !== priorityOrder[b.priority]) {
-        return priorityOrder[a.priority] - priorityOrder[b.priority];
-      }
+  return tasks.sort((a, b) => {
+    // Primary: Critical priority tasks first
+    const priorityOrder = { critical: 0, high: 1, medium: 2, low: 3, none: 4 };
+    if (priorityOrder[a.priority] !== priorityOrder[b.priority]) {
+      return priorityOrder[a.priority] - priorityOrder[b.priority];
+    }
 
-      // Secondary: Deadline urgency (sooner deadlines first)
-      if (a.deadline && b.deadline) {
-        return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
-      }
-      if (a.deadline) return -1;
-      if (b.deadline) return 1;
+    // Secondary: Deadline urgency (sooner deadlines first)
+    if (a.deadline && b.deadline) {
+      return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+    }
+    if (a.deadline) return -1;
+    if (b.deadline) return 1;
 
-      // Tertiary: Task ID for consistency
-      return a.id - b.id;
-    });
+    // Tertiary: Task ID for consistency
+    return a.id - b.id;
+  });
 }
 
 /**
@@ -293,7 +321,13 @@ async function createTimeBlocks(
 
   for (const task of tasks) {
     const duration = estimateTaskDuration(task);
-    const optimalSlot = findOptimalTimeSlot(task, currentTime, workHours, energyProfile, deadline);
+    const optimalSlot = findOptimalTimeSlot(
+      task,
+      currentTime,
+      workHours,
+      energyProfile,
+      deadline
+    );
 
     schedule.push({
       taskId: task.id,
@@ -319,17 +353,22 @@ async function createTimeBlocks(
  */
 function estimateTaskDuration(task: TaskWithRelations): number {
   // Base duration based on priority
-  const baseDuration = {
-    'critical': 120, // 2 hours
-    'high': 90,     // 1.5 hours
-    'medium': 60,   // 1 hour
-    'low': 30,      // 0.5 hour
-    'none': 15,     // 0.25 hour
-  }[task.priority] || 45;
+  const baseDuration =
+    {
+      critical: 120, // 2 hours
+      high: 90, // 1.5 hours
+      medium: 60, // 1 hour
+      low: 30, // 0.5 hour
+      none: 15, // 0.25 hour
+    }[task.priority] || 45;
 
   // Adjust based on time entries if available
   if (task.time_entries && task.time_entries.length > 0) {
-    const avgDuration = task.time_entries.reduce((sum, entry) => sum + (entry.duration_seconds || 0), 0) / task.time_entries.length;
+    const avgDuration =
+      task.time_entries.reduce(
+        (sum, entry) => sum + (entry.duration_seconds || 0),
+        0
+      ) / task.time_entries.length;
     return Math.max(baseDuration, avgDuration / 60); // Convert seconds to minutes
   }
 
@@ -362,15 +401,15 @@ function findOptimalTimeSlot(
   // Find the best time based on energy levels and task requirements
   let optimalTime = currentTime;
   let optimalConfidence = 0;
-  let optimalReason = "Default time slot";
+  let optimalReason = 'Default time slot';
 
   // Try different times throughout the day
   const timeOptions = [
-    { hour: 8, weight: 0.8 },   // Early morning - focused work
-    { hour: 10, weight: 1.0 },  // Peak morning - high priority
-    { hour: 14, weight: 0.9 },  // Afternoon - medium priority
-    { hour: 16, weight: 0.7 },  // Late afternoon - low priority
-    { hour: 19, weight: 0.5 },  // Evening - relaxed pace
+    { hour: 8, weight: 0.8 }, // Early morning - focused work
+    { hour: 10, weight: 1.0 }, // Peak morning - high priority
+    { hour: 14, weight: 0.9 }, // Afternoon - medium priority
+    { hour: 16, weight: 0.7 }, // Late afternoon - low priority
+    { hour: 19, weight: 0.5 }, // Evening - relaxed pace
   ];
 
   for (const option of timeOptions) {
@@ -378,7 +417,12 @@ function findOptimalTimeSlot(
     const endTime = startTime + duration;
 
     if (startTime >= workHours.start * 60 && endTime <= workHours.end * 60) {
-      const confidence = calculateSlotConfidence(task, option.hour, energyProfile, deadline);
+      const confidence = calculateSlotConfidence(
+        task,
+        option.hour,
+        energyProfile,
+        deadline
+      );
       const energyRequirement = getTaskEnergyRequirement(task, option.hour);
 
       if (confidence > optimalConfidence) {
@@ -403,7 +447,9 @@ function findOptimalTimeSlot(
  * Check if two time ranges overlap
  */
 function timeOverlap(task: TaskWithRelations, existingSlot: any): boolean {
-  const taskStart = parseTimeToMinutes(task.date || "") + (task.estimate ? parseTimeToMinutes(task.estimate) : 0);
+  const taskStart =
+    parseTimeToMinutes(task.date || '') +
+    (task.estimate ? parseTimeToMinutes(task.estimate) : 0);
   const taskEnd = taskStart + estimateTaskDuration(task);
 
   const slotStart = parseTimeToMinutes(existingSlot.startTime);
@@ -415,21 +461,28 @@ function timeOverlap(task: TaskWithRelations, existingSlot: any): boolean {
 /**
  * Generate conflict resolution suggestion
  */
-function generateConflictResolution(task: TaskWithRelations, existingSlot: any): any {
+function generateConflictResolution(
+  task: TaskWithRelations,
+  existingSlot: any
+): any {
   const taskDuration = estimateTaskDuration(task);
-  const slotDuration = parseTimeToMinutes(existingSlot.endTime) - parseTimeToMinutes(existingSlot.startTime);
+  const slotDuration =
+    parseTimeToMinutes(existingSlot.endTime) -
+    parseTimeToMinutes(existingSlot.startTime);
 
   // Suggest rescheduling the task
-  const newTime = parseTimeToMinutes(existingSlot.startTime) + slotDuration + 15; // 15-minute gap
+  const newTime =
+    parseTimeToMinutes(existingSlot.startTime) + slotDuration + 15; // 15-minute gap
 
-  if (newTime <= 24 * 60) { // Not past midnight
+  if (newTime <= 24 * 60) {
+    // Not past midnight
     return {
-      type: "reschedule",
+      type: 'reschedule',
       originalTime: existingSlot,
       suggestedTime: {
         startTime: minutesToTime(newTime),
         endTime: minutesToTime(newTime + taskDuration),
-        reason: "Move to avoid time conflict with existing meeting",
+        reason: 'Move to avoid time conflict with existing meeting',
       },
     };
   }
@@ -449,20 +502,24 @@ function calculateSlotConfidence(
   let confidence = 0.5; // Base confidence
 
   // Higher confidence for critical tasks during peak hours
-  if (task.priority === 'critical' && (hour >= 9 && hour <= 12)) {
+  if (task.priority === 'critical' && hour >= 9 && hour <= 12) {
     confidence += 0.3;
   }
 
   // Higher confidence for deadline-driven tasks
   if (deadline) {
-    const daysUntilDeadline = Math.ceil((new Date(deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    const daysUntilDeadline = Math.ceil(
+      (new Date(deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+    );
     if (daysUntilDeadline <= 1) confidence += 0.4;
     else if (daysUntilDeadline <= 3) confidence += 0.2;
   }
 
   // Consider energy profile
   if (energyProfile) {
-    const hourEnergy = energyProfile.peak_hours?.find((h: any) => h.hour === hour);
+    const hourEnergy = energyProfile.peak_hours?.find(
+      (h: any) => h.hour === hour
+    );
     if (hourEnergy) {
       confidence += hourEnergy.productivity_score / 100;
     }
@@ -474,14 +531,18 @@ function calculateSlotConfidence(
 /**
  * Get energy requirement for a task at a specific time
  */
-function getTaskEnergyRequirement(task: TaskWithRelations, hour: number): number {
-  const priorityMultiplier = {
-    'critical': 1.0,
-    'high': 0.8,
-    'medium': 0.6,
-    'low': 0.4,
-    'none': 0.2,
-  }[task.priority] || 0.5;
+function getTaskEnergyRequirement(
+  task: TaskWithRelations,
+  hour: number
+): number {
+  const priorityMultiplier =
+    {
+      critical: 1.0,
+      high: 0.8,
+      medium: 0.6,
+      low: 0.4,
+      none: 0.2,
+    }[task.priority] || 0.5;
 
   // Peak energy hours (9 AM - 12 PM)
   const isPeakHour = hour >= 9 && hour <= 12;
@@ -493,8 +554,12 @@ function getTaskEnergyRequirement(task: TaskWithRelations, hour: number): number
 /**
  * Generate reason for time slot selection
  */
-function generateSlotReason(task: TaskWithRelations, hour: number, confidence: number): string {
-  const timeOfDay = hour < 12 ? "morning" : hour < 17 ? "afternoon" : "evening";
+function generateSlotReason(
+  task: TaskWithRelations,
+  hour: number,
+  confidence: number
+): string {
+  const timeOfDay = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
 
   if (task.priority === 'critical') {
     return `Critical task scheduled for ${timeOfDay} (${hour}:00) - high priority window`;
@@ -516,7 +581,9 @@ function generateTimeSuggestions(
   const suggestions = [];
 
   // Use energy profile to find optimal times
-  const optimalHours = energyProfile?.peak_hours?.map((h: any) => h.hour) || [9, 10, 11, 14, 15];
+  const optimalHours = energyProfile?.peak_hours?.map((h: any) => h.hour) || [
+    9, 10, 11, 14, 15,
+  ];
 
   // Generate 3 different time suggestions
   for (let i = 0; i < Math.min(3, optimalHours.length); i++) {
@@ -524,15 +591,28 @@ function generateTimeSuggestions(
     const duration = estimateTaskDuration(task);
 
     // Check if this time works with existing tasks
-    const worksWithExisting = checkTimeSlot(task, hour, duration, constraints.existingTasks || []);
+    const worksWithExisting = checkTimeSlot(
+      task,
+      hour,
+      duration,
+      constraints.existingTasks || []
+    );
 
     if (worksWithExisting) {
       suggestions.push({
         time: `${hour.toString().padStart(2, '0')}:00`,
-        confidence: Math.round((energyProfile?.peak_hours?.find((h: any) => h.hour === hour)?.productivity_score || 80) / 100 * 100) / 100,
+        confidence:
+          Math.round(
+            ((energyProfile?.peak_hours?.find((h: any) => h.hour === hour)
+              ?.productivity_score || 80) /
+              100) *
+              100
+          ) / 100,
         energyRequirement: getTaskEnergyRequirement(task, hour),
         reason: generateSlotReason(task, hour, suggestions.length + 1),
-        deadlineCompatible: constraints.deadline ? isTimeCompatibleWithDeadline(hour, duration, constraints.deadline) : true,
+        deadlineCompatible: constraints.deadline
+          ? isTimeCompatibleWithDeadline(hour, duration, constraints.deadline)
+          : true,
       });
     }
   }
@@ -543,14 +623,24 @@ function generateTimeSuggestions(
 /**
  * Check if a time slot is compatible with existing tasks
  */
-function checkTimeSlot(task: TaskWithRelations, hour: number, duration: number, existingTasks: TaskWithRelations[]): boolean {
+function checkTimeSlot(
+  task: TaskWithRelations,
+  hour: number,
+  duration: number,
+  existingTasks: TaskWithRelations[]
+): boolean {
   const startTime = hour * 60;
   const endTime = startTime + duration;
 
   // Simple check for conflicts with existing completed or in-progress tasks
   for (const existing of existingTasks) {
-    if (existing.completed || (existing.date && new Date(existing.date) <= new Date())) {
-      const existingStart = parseTimeToMinutes(existing.date || "") + (existing.estimate ? parseTimeToMinutes(existing.estimate) : 0);
+    if (
+      existing.completed ||
+      (existing.date && new Date(existing.date) <= new Date())
+    ) {
+      const existingStart =
+        parseTimeToMinutes(existing.date || '') +
+        (existing.estimate ? parseTimeToMinutes(existing.estimate) : 0);
       const existingEnd = existingStart + estimateTaskDuration(existing);
 
       if (startTime < existingEnd && endTime > existingStart) {
@@ -565,7 +655,11 @@ function checkTimeSlot(task: TaskWithRelations, hour: number, duration: number, 
 /**
  * Check if a time slot is compatible with deadline
  */
-function isTimeCompatibleWithDeadline(hour: number, duration: number, deadline: string): boolean {
+function isTimeCompatibleWithDeadline(
+  hour: number,
+  duration: number,
+  deadline: string
+): boolean {
   const taskDate = new Date(deadline);
   const taskDateHour = taskDate.getHours();
 
@@ -583,7 +677,7 @@ function parseTimeToMinutes(timeStr: string): number {
   if (!timeStr) return 0;
 
   const [hours, minutes] = timeStr.split(':').map(Number);
-  return (hours * 60) + minutes;
+  return hours * 60 + minutes;
 }
 
 /**
@@ -626,7 +720,10 @@ function identifyPeakHours(events: any[], tasks: TaskWithRelations[]): any[] {
 /**
  * Find available time windows
  */
-function findAvailableWindows(events: any[], timeRange: { start: string; end: string }): any[] {
+function findAvailableWindows(
+  events: any[],
+  timeRange: { start: string; end: string }
+): any[] {
   const windows = [];
 
   // Simplified: find gaps in calendar events
@@ -641,7 +738,7 @@ function findAvailableWindows(events: any[], timeRange: { start: string; end: st
     windows.push({
       startTime: minutesToTime(windowStart),
       endTime: minutesToTime(windowEnd),
-      capacity: "high",
+      capacity: 'high',
     });
   }
 
@@ -651,28 +748,31 @@ function findAvailableWindows(events: any[], timeRange: { start: string; end: st
 /**
  * Calculate optimal scheduling periods
  */
-function calculateOptimalPeriods(events: any[], tasks: TaskWithRelations[]): any[] {
+function calculateOptimalPeriods(
+  events: any[],
+  tasks: TaskWithRelations[]
+): any[] {
   const periods = [
     {
-      period: "Morning Focus",
+      period: 'Morning Focus',
       startHour: 9,
       endHour: 12,
-      suitability: "high",
-      taskTypes: ["critical", "high"],
+      suitability: 'high',
+      taskTypes: ['critical', 'high'],
     },
     {
-      period: "Afternoon Deep Work",
+      period: 'Afternoon Deep Work',
       startHour: 14,
       endHour: 17,
-      suitability: "medium",
-      taskTypes: ["medium", "low"],
+      suitability: 'medium',
+      taskTypes: ['medium', 'low'],
     },
     {
-      period: "Evening Wrap-up",
+      period: 'Evening Wrap-up',
       startHour: 18,
       endHour: 20,
-      suitability: "low",
-      taskTypes: ["low", "none"],
+      suitability: 'low',
+      taskTypes: ['low', 'none'],
     },
   ];
 
@@ -682,22 +782,26 @@ function calculateOptimalPeriods(events: any[], tasks: TaskWithRelations[]): any
 /**
  * Generate energy recommendations
  */
-function generateEnergyRecommendations(events: any[], tasks: TaskWithRelations[]): any[] {
+function generateEnergyRecommendations(
+  events: any[],
+  tasks: TaskWithRelations[]
+): any[] {
   const recommendations = [
     {
-      type: "focus_time",
-      description: "Schedule critical tasks during peak energy hours (9 AM - 12 PM)",
-      impact: "high",
+      type: 'focus_time',
+      description:
+        'Schedule critical tasks during peak energy hours (9 AM - 12 PM)',
+      impact: 'high',
     },
     {
-      type: "breaks",
-      description: "Plan regular breaks to maintain energy levels",
-      impact: "medium",
+      type: 'breaks',
+      description: 'Plan regular breaks to maintain energy levels',
+      impact: 'medium',
     },
     {
-      type: "task_order",
-      description: "Order tasks by energy requirements throughout the day",
-      impact: "high",
+      type: 'task_order',
+      description: 'Order tasks by energy requirements throughout the day',
+      impact: 'high',
     },
   ];
 
@@ -723,9 +827,9 @@ async function generateEnergyProfile(userId: number): Promise<any> {
       recovery_needed: true,
     },
     recommendations: [
-      "Schedule critical tasks before 12 PM",
-      "Use afternoon for deep work",
-      "Reserve evening for lighter tasks",
+      'Schedule critical tasks before 12 PM',
+      'Use afternoon for deep work',
+      'Reserve evening for lighter tasks',
     ],
   };
 }
@@ -734,6 +838,6 @@ async function generateEnergyProfile(userId: number): Promise<any> {
  * AI Manager helper
  */
 async function getAIManager() {
-  const { AIManager } = await import("@/lib/ai/providers");
+  const { AIManager } = await import('@/lib/ai/providers');
   return new AIManager();
 }
