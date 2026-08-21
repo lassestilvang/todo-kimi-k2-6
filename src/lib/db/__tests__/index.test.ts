@@ -1,5 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { setDb, resetDb, getDb, withTransaction, withTransactionSync } from '../index';
+import {
+  setDb,
+  resetDb,
+  getDb,
+  withTransaction,
+  withTransactionSync,
+} from '../index';
 import { createMockDatabase } from './mock-driver';
 
 // Directly mock getDb to ensure it returns the mock database
