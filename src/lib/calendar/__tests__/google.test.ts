@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   getCalendarEvents,
   createCalendarEvent,
@@ -7,10 +7,10 @@ import {
   getAuthUrl,
   exchangeCodeForTokens,
   syncTasksToCalendar,
-} from "../google";
-import type { Task } from "../../../types";
+} from '../google';
+import type { Task } from '../../../types';
 
-describe("Google Calendar Integration", () => {
+describe('Google Calendar Integration', () => {
   let mockConfig: {
     accessToken: string;
     refreshToken?: string;
@@ -19,9 +19,9 @@ describe("Google Calendar Integration", () => {
 
   beforeEach(() => {
     mockConfig = {
-      accessToken: "test-access-token",
-      refreshToken: "test-refresh-token",
-      expiresAt: "2026-12-31T23:59:59Z",
+      accessToken: 'test-access-token',
+      refreshToken: 'test-refresh-token',
+      expiresAt: '2026-12-31T23:59:59Z',
     };
     global.fetch = vi.fn() as any;
   });
@@ -30,11 +30,11 @@ describe("Google Calendar Integration", () => {
     vi.clearAllMocks();
   });
 
-  describe("getCalendarEvents", () => {
-    it("should fetch calendar events for a date range", async () => {
+  describe('getCalendarEvents', () => {
+    it('should fetch calendar events for a date range', async () => {
       const mockEvents = [
-        { id: "event1", summary: "Test Event 1" },
-        { id: "event2", summary: "Test Event 2" },
+        { id: 'event1', summary: 'Test Event 1' },
+        { id: 'event2', summary: 'Test Event 2' },
       ];
 
       (global.fetch as any).mockResolvedValue({
@@ -44,31 +44,33 @@ describe("Google Calendar Integration", () => {
 
       const events = await getCalendarEvents(
         mockConfig,
-        "2026-06-01",
-        "2026-06-30"
+        '2026-06-01',
+        '2026-06-30'
       );
 
       expect(events).toEqual(mockEvents);
       expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining("www.googleapis.com/calendar/v3/calendars/primary/events"),
+        expect.stringContaining(
+          'www.googleapis.com/calendar/v3/calendars/primary/events'
+        ),
         expect.objectContaining({
-          headers: { Authorization: "Bearer test-access-token" },
+          headers: { Authorization: 'Bearer test-access-token' },
         })
       );
     });
 
-    it("should throw error when API fails", async () => {
+    it('should throw error when API fails', async () => {
       (global.fetch as any).mockResolvedValue({
         ok: false,
-        statusText: "Unauthorized",
+        statusText: 'Unauthorized',
       });
 
       await expect(
-        getCalendarEvents(mockConfig, "2026-06-01", "2026-06-30")
-      ).rejects.toThrow("Google Calendar API error: Unauthorized");
+        getCalendarEvents(mockConfig, '2026-06-01', '2026-06-30')
+      ).rejects.toThrow('Google Calendar API error: Unauthorized');
     });
 
-    it("should return empty array when no events", async () => {
+    it('should return empty array when no events', async () => {
       (global.fetch as any).mockResolvedValue({
         ok: true,
         json: async () => ({}),
@@ -76,180 +78,193 @@ describe("Google Calendar Integration", () => {
 
       const events = await getCalendarEvents(
         mockConfig,
-        "2026-06-01",
-        "2026-06-30"
+        '2026-06-01',
+        '2026-06-30'
       );
 
       expect(events).toEqual([]);
     });
   });
 
-  describe("createCalendarEvent", () => {
+  describe('createCalendarEvent', () => {
     const mockTask: Task = {
       id: 1,
-      name: "Test Task",
-      description: "Test Description",
+      name: 'Test Task',
+      description: 'Test Description',
       notes: null,
       list_id: 1,
-      date: "2026-06-30",
+      date: '2026-06-30',
       deadline: null,
       estimate: null,
       actual_time: null,
-      priority: "high",
-      recurring: "none",
+      priority: 'high',
+      recurring: 'none',
       recurring_config: null,
       completed: false,
       completed_at: null,
-      created_at: "2026-06-01T00:00:00Z",
-      updated_at: "2026-06-01T00:00:00Z",
+      created_at: '2026-06-01T00:00:00Z',
+      updated_at: '2026-06-01T00:00:00Z',
       sort_order: 0,
       user_id: 1,
       archived: false,
     };
 
-    it("should create a calendar event from a task", async () => {
+    it('should create a calendar event from a task', async () => {
       (global.fetch as any).mockResolvedValue({
         ok: true,
-        json: async () => ({ id: "event123" }),
+        json: async () => ({ id: 'event123' }),
       });
 
       const eventId = await createCalendarEvent(mockConfig, mockTask);
 
-      expect(eventId).toBe("event123");
+      expect(eventId).toBe('event123');
       expect(global.fetch).toHaveBeenCalledWith(
-        "https://www.googleapis.com/calendar/v3/calendars/primary/events",
+        'https://www.googleapis.com/calendar/v3/calendars/primary/events',
         expect.objectContaining({
-          method: "POST",
+          method: 'POST',
           headers: {
-            Authorization: "Bearer test-access-token",
-            "Content-Type": "application/json",
+            Authorization: 'Bearer test-access-token',
+            'Content-Type': 'application/json',
           },
         })
       );
     });
 
-    it("should throw error when task has no date", async () => {
+    it('should throw error when task has no date', async () => {
       const taskWithoutDate = { ...mockTask, date: null };
 
-      await expect(createCalendarEvent(mockConfig, taskWithoutDate)).rejects.toThrow(
-        "Task has no date"
-      );
+      await expect(
+        createCalendarEvent(mockConfig, taskWithoutDate)
+      ).rejects.toThrow('Task has no date');
     });
 
-    it("should throw error when API fails", async () => {
+    it('should throw error when API fails', async () => {
       (global.fetch as any).mockResolvedValue({
         ok: false,
-        statusText: "Bad Request",
-        json: async () => ({ error: { message: "Invalid task" } }),
+        statusText: 'Bad Request',
+        json: async () => ({ error: { message: 'Invalid task' } }),
       });
 
       await expect(createCalendarEvent(mockConfig, mockTask)).rejects.toThrow(
-        "Failed to create event"
+        'Failed to create event'
       );
     });
 
-    it("should throw error with statusText when error response has no message", async () => {
+    it('should throw error with statusText when error response has no message', async () => {
       (global.fetch as any).mockResolvedValue({
         ok: false,
-        statusText: "Internal Server Error",
+        statusText: 'Internal Server Error',
         json: async () => ({}),
       });
 
       await expect(createCalendarEvent(mockConfig, mockTask)).rejects.toThrow(
-        "Failed to create event: Internal Server Error"
+        'Failed to create event: Internal Server Error'
       );
     });
 
-    it("should handle task with null description", async () => {
+    it('should handle task with null description', async () => {
       (global.fetch as any).mockResolvedValue({
         ok: true,
-        json: async () => ({ id: "event123" }),
+        json: async () => ({ id: 'event123' }),
       });
 
-      const taskWithNullDescription = { ...mockTask, description: null } as Task;
-      const eventId = await createCalendarEvent(mockConfig, taskWithNullDescription);
+      const taskWithNullDescription = {
+        ...mockTask,
+        description: null,
+      } as Task;
+      const eventId = await createCalendarEvent(
+        mockConfig,
+        taskWithNullDescription
+      );
 
-      expect(eventId).toBe("event123");
+      expect(eventId).toBe('event123');
       const callArgs = (global.fetch as any).mock.calls[0][1];
       const body = JSON.parse(callArgs.body);
       expect(body.description).toBeUndefined();
     });
   });
 
-  describe("updateCalendarEvent", () => {
+  describe('updateCalendarEvent', () => {
     const mockTask: Task = {
       id: 1,
-      name: "Updated Task",
-      description: "Updated Description",
+      name: 'Updated Task',
+      description: 'Updated Description',
       notes: null,
       list_id: 1,
-      date: "2026-06-30",
+      date: '2026-06-30',
       deadline: null,
       estimate: null,
       actual_time: null,
-      priority: "high",
-      recurring: "none",
+      priority: 'high',
+      recurring: 'none',
       recurring_config: null,
       completed: false,
       completed_at: null,
-      created_at: "2026-06-01T00:00:00Z",
-      updated_at: "2026-06-01T00:00:00Z",
+      created_at: '2026-06-01T00:00:00Z',
+      updated_at: '2026-06-01T00:00:00Z',
       sort_order: 0,
       user_id: 1,
       archived: false,
     };
 
-    it("should update a calendar event", async () => {
+    it('should update a calendar event', async () => {
       (global.fetch as any).mockResolvedValue({
         ok: true,
       });
 
-      await updateCalendarEvent(mockConfig, "event123", mockTask);
+      await updateCalendarEvent(mockConfig, 'event123', mockTask);
 
       expect(global.fetch).toHaveBeenCalledWith(
-        "https://www.googleapis.com/calendar/v3/calendars/primary/events/event123",
+        'https://www.googleapis.com/calendar/v3/calendars/primary/events/event123',
         expect.objectContaining({
-          method: "PUT",
+          method: 'PUT',
         })
       );
     });
 
-    it("should throw error when API fails", async () => {
+    it('should throw error when API fails', async () => {
       (global.fetch as any).mockResolvedValue({
         ok: false,
-        statusText: "Not Found",
+        statusText: 'Not Found',
       });
 
       await expect(
-        updateCalendarEvent(mockConfig, "event123", mockTask)
-      ).rejects.toThrow("Failed to update event");
+        updateCalendarEvent(mockConfig, 'event123', mockTask)
+      ).rejects.toThrow('Failed to update event');
     });
 
-    it("should handle task with undefined date", async () => {
+    it('should handle task with undefined date', async () => {
       const taskWithoutDate = { ...mockTask, date: undefined as any };
 
       (global.fetch as any).mockResolvedValue({
         ok: true,
       });
 
-      await updateCalendarEvent(mockConfig, "event123", taskWithoutDate);
+      await updateCalendarEvent(mockConfig, 'event123', taskWithoutDate);
 
       expect(global.fetch).toHaveBeenCalledWith(
-        "https://www.googleapis.com/calendar/v3/calendars/primary/events/event123",
+        'https://www.googleapis.com/calendar/v3/calendars/primary/events/event123',
         expect.objectContaining({
-          method: "PUT",
+          method: 'PUT',
         })
       );
     });
 
-    it("should handle task with null description", async () => {
-      const taskWithNullDescription = { ...mockTask, description: null } as Task;
+    it('should handle task with null description', async () => {
+      const taskWithNullDescription = {
+        ...mockTask,
+        description: null,
+      } as Task;
 
       (global.fetch as any).mockResolvedValue({
         ok: true,
       });
 
-      await updateCalendarEvent(mockConfig, "event123", taskWithNullDescription);
+      await updateCalendarEvent(
+        mockConfig,
+        'event123',
+        taskWithNullDescription
+      );
 
       const callArgs = (global.fetch as any).mock.calls[0][1];
       const body = JSON.parse(callArgs.body);
@@ -257,137 +272,137 @@ describe("Google Calendar Integration", () => {
     });
   });
 
-  describe("deleteCalendarEvent", () => {
-    it("should delete a calendar event", async () => {
+  describe('deleteCalendarEvent', () => {
+    it('should delete a calendar event', async () => {
       (global.fetch as any).mockResolvedValue({
         ok: true,
       });
 
-      await deleteCalendarEvent(mockConfig, "event123");
+      await deleteCalendarEvent(mockConfig, 'event123');
 
       expect(global.fetch).toHaveBeenCalledWith(
-        "https://www.googleapis.com/calendar/v3/calendars/primary/events/event123",
+        'https://www.googleapis.com/calendar/v3/calendars/primary/events/event123',
         expect.objectContaining({
-          method: "DELETE",
+          method: 'DELETE',
         })
       );
     });
 
-    it("should throw error when API fails", async () => {
+    it('should throw error when API fails', async () => {
       (global.fetch as any).mockResolvedValue({
         ok: false,
-        statusText: "Not Found",
+        statusText: 'Not Found',
       });
 
-      await expect(deleteCalendarEvent(mockConfig, "event123")).rejects.toThrow(
-        "Failed to delete event"
+      await expect(deleteCalendarEvent(mockConfig, 'event123')).rejects.toThrow(
+        'Failed to delete event'
       );
     });
   });
 
-  describe("getAuthUrl", () => {
-    it("should generate authorization URL with correct parameters", () => {
-      const state = "random-state-123";
+  describe('getAuthUrl', () => {
+    it('should generate authorization URL with correct parameters', () => {
+      const state = 'random-state-123';
       const url = getAuthUrl(state);
 
-      expect(url).toContain("accounts.google.com/o/oauth2/v2/auth");
-      expect(url).toContain("state=random-state-123");
-      expect(url).toContain("scope=");
-      expect(url).toContain("access_type=offline");
+      expect(url).toContain('accounts.google.com/o/oauth2/v2/auth');
+      expect(url).toContain('state=random-state-123');
+      expect(url).toContain('scope=');
+      expect(url).toContain('access_type=offline');
     });
 
-    it("should include client_id in URL when set", () => {
+    it('should include client_id in URL when set', () => {
       const originalClientId = process.env.GOOGLE_CLIENT_ID;
-      process.env.GOOGLE_CLIENT_ID = "test-client-id";
+      process.env.GOOGLE_CLIENT_ID = 'test-client-id';
 
-      const url = getAuthUrl("state");
+      const url = getAuthUrl('state');
 
-      expect(url).toContain("client_id=test-client-id");
+      expect(url).toContain('client_id=test-client-id');
 
       process.env.GOOGLE_CLIENT_ID = originalClientId;
     });
   });
 
-  describe("exchangeCodeForTokens", () => {
-    it("should exchange code for tokens", async () => {
+  describe('exchangeCodeForTokens', () => {
+    it('should exchange code for tokens', async () => {
       (global.fetch as any).mockResolvedValue({
         ok: true,
         json: async () => ({
-          access_token: "new-access-token",
-          refresh_token: "new-refresh-token",
+          access_token: 'new-access-token',
+          refresh_token: 'new-refresh-token',
           expires_in: 3600,
         }),
       });
 
-      const tokens = await exchangeCodeForTokens("auth-code-123");
+      const tokens = await exchangeCodeForTokens('auth-code-123');
 
-      expect(tokens.access_token).toBe("new-access-token");
-      expect(tokens.refresh_token).toBe("new-refresh-token");
+      expect(tokens.access_token).toBe('new-access-token');
+      expect(tokens.refresh_token).toBe('new-refresh-token');
       expect(tokens.expires_in).toBe(3600);
     });
 
-    it("should throw error when token exchange fails", async () => {
+    it('should throw error when token exchange fails', async () => {
       (global.fetch as any).mockResolvedValue({
         ok: false,
-        json: async () => ({ error_description: "Invalid code" }),
+        json: async () => ({ error_description: 'Invalid code' }),
       });
 
-      await expect(exchangeCodeForTokens("invalid-code")).rejects.toThrow(
-        "Token exchange failed"
+      await expect(exchangeCodeForTokens('invalid-code')).rejects.toThrow(
+        'Token exchange failed'
       );
     });
 
-    it("should handle missing GOOGLE_CLIENT_ID", async () => {
+    it('should handle missing GOOGLE_CLIENT_ID', async () => {
       const originalClientId = process.env.GOOGLE_CLIENT_ID;
       delete process.env.GOOGLE_CLIENT_ID;
 
       (global.fetch as any).mockResolvedValue({
         ok: true,
         json: async () => ({
-          access_token: "test-token",
-          refresh_token: "test-refresh",
+          access_token: 'test-token',
+          refresh_token: 'test-refresh',
           expires_in: 3600,
         }),
       });
 
-      const tokens = await exchangeCodeForTokens("auth-code");
-      expect(tokens.access_token).toBe("test-token");
+      const tokens = await exchangeCodeForTokens('auth-code');
+      expect(tokens.access_token).toBe('test-token');
 
       process.env.GOOGLE_CLIENT_ID = originalClientId;
     });
 
-    it("should throw error when token exchange fails without error description", async () => {
+    it('should throw error when token exchange fails without error description', async () => {
       (global.fetch as any).mockResolvedValue({
         ok: false,
-        statusText: "Bad Request",
+        statusText: 'Bad Request',
         json: async () => ({}),
       });
 
-      await expect(exchangeCodeForTokens("bad-code")).rejects.toThrow(
-        "Token exchange failed"
+      await expect(exchangeCodeForTokens('bad-code')).rejects.toThrow(
+        'Token exchange failed'
       );
     });
   });
 
-  describe("syncTasksToCalendar", () => {
+  describe('syncTasksToCalendar', () => {
     const mockTasks: Task[] = [
       {
         id: 1,
-        name: "Task with date",
-        description: "Description",
+        name: 'Task with date',
+        description: 'Description',
         notes: null,
         list_id: 1,
-        date: "2026-06-30",
+        date: '2026-06-30',
         deadline: null,
         estimate: null,
         actual_time: null,
-        priority: "high",
-        recurring: "none",
+        priority: 'high',
+        recurring: 'none',
         recurring_config: null,
         completed: false,
         completed_at: null,
-        created_at: "2026-06-01T00:00:00Z",
-        updated_at: "2026-06-01T00:00:00Z",
+        created_at: '2026-06-01T00:00:00Z',
+        updated_at: '2026-06-01T00:00:00Z',
         sort_order: 0,
         user_id: 1,
         archived: false,
@@ -397,7 +412,7 @@ describe("Google Calendar Integration", () => {
       },
       {
         id: 2,
-        name: "Task without date",
+        name: 'Task without date',
         description: null,
         notes: null,
         list_id: 1,
@@ -405,13 +420,13 @@ describe("Google Calendar Integration", () => {
         deadline: null,
         estimate: null,
         actual_time: null,
-        priority: "none",
-        recurring: "none",
+        priority: 'none',
+        recurring: 'none',
         recurring_config: null,
         completed: false,
         completed_at: null,
-        created_at: "2026-06-01T00:00:00Z",
-        updated_at: "2026-06-01T00:00:00Z",
+        created_at: '2026-06-01T00:00:00Z',
+        updated_at: '2026-06-01T00:00:00Z',
         sort_order: 0,
         user_id: 1,
         archived: false,
@@ -421,10 +436,10 @@ describe("Google Calendar Integration", () => {
       },
     ];
 
-    it("should sync tasks with dates and skip tasks without dates", async () => {
+    it('should sync tasks with dates and skip tasks without dates', async () => {
       (global.fetch as any).mockResolvedValue({
         ok: true,
-        json: async () => ({ id: "event-1" }),
+        json: async () => ({ id: 'event-1' }),
       });
 
       const result = await syncTasksToCalendar(mockConfig, mockTasks);
@@ -433,11 +448,13 @@ describe("Google Calendar Integration", () => {
       expect(result.errors).toHaveLength(0);
     });
 
-    it("should handle duplicate event by updating", async () => {
+    it('should handle duplicate event by updating', async () => {
       (global.fetch as any)
         .mockResolvedValueOnce({
           ok: false,
-          json: async () => ({ error: { message: "A task with this id already exists" } }),
+          json: async () => ({
+            error: { message: 'A task with this id already exists' },
+          }),
         })
         .mockResolvedValueOnce({
           ok: true,
@@ -448,45 +465,46 @@ describe("Google Calendar Integration", () => {
       expect(result.updated).toBe(1);
     });
 
-    it("should track errors", async () => {
-      (global.fetch as any).mockRejectedValue(new Error("Network error"));
+    it('should track errors', async () => {
+      (global.fetch as any).mockRejectedValue(new Error('Network error'));
 
       const result = await syncTasksToCalendar(mockConfig, mockTasks);
 
       expect(result.errors.length).toBeGreaterThanOrEqual(1);
     });
 
-    it("should track error when duplicate update fails", async () => {
+    it('should track error when duplicate update fails', async () => {
       // First call (create) fails with duplicate error
       // Second call (update) also fails
       (global.fetch as any)
         .mockResolvedValueOnce({
           ok: false,
-          json: async () => ({ error: { message: "A task with this id already exists" } }),
+          json: async () => ({
+            error: { message: 'A task with this id already exists' },
+          }),
         })
         .mockResolvedValueOnce({
           ok: false,
-          statusText: "Not Found",
+          statusText: 'Not Found',
         });
 
       const result = await syncTasksToCalendar(mockConfig, mockTasks);
 
       expect(result.errors.length).toBe(1);
-      expect(result.errors[0]).toContain("Failed to update task");
+      expect(result.errors[0]).toContain('Failed to update task');
     });
 
-    it("should track error when create fails with error message", async () => {
-      (global.fetch as any)
-        .mockResolvedValueOnce({
-          ok: false,
-          json: async () => ({ error: { message: "Custom error message" } }),
-        });
+    it('should track error when create fails with error message', async () => {
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: false,
+        json: async () => ({ error: { message: 'Custom error message' } }),
+      });
 
       const result = await syncTasksToCalendar(mockConfig, mockTasks);
 
       expect(result.errors.length).toBe(1);
-      expect(result.errors[0]).toContain("Failed to create task");
-      expect(result.errors[0]).toContain("Custom error message");
+      expect(result.errors[0]).toContain('Failed to create task');
+      expect(result.errors[0]).toContain('Custom error message');
     });
   });
 });
