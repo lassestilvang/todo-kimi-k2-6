@@ -2,7 +2,7 @@
 // This implementation uses Nodemailer for sending emails
 // Requires SMTP configuration (e.g., SendGrid, Resend, or custom SMTP)
 
-import type { Priority } from "@/types";
+import type { Priority } from '@/types';
 
 interface EmailConfig {
   host: string;
@@ -25,13 +25,17 @@ export function validateSmtpConfig(config: EmailConfig): void {
   }
 
   // Validate port - must be valid TCP port
-  if (!Number.isInteger(config.port) || config.port < 1 || config.port > 65535) {
+  if (
+    !Number.isInteger(config.port) ||
+    config.port < 1 ||
+    config.port > 65535
+  ) {
     throw new Error(`Invalid SMTP port: ${config.port}`);
   }
 
   // Validate port is not 25 to avoid potential issues with non-encrypted SMTP
   if (config.port === 25 && !config.secure) {
-    console.warn("Warning: Using non-encrypted SMTP on port 25");
+    console.warn('Warning: Using non-encrypted SMTP on port 25');
   }
 }
 
@@ -41,7 +45,7 @@ export function validateSmtpConfig(config: EmailConfig): void {
  */
 export function sanitizeEmail(email: string): string {
   // Remove line breaks and other injection characters
-  return email.replace(/[\r\n<>,;:\\]/g, "");
+  return email.replace(/[\r\n<>,;:\\]/g, '');
 }
 
 /**
@@ -60,15 +64,15 @@ function createTransporter(config?: EmailConfig) {
   // Check if nodemailer is available
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const nodemailer = require("nodemailer");
+    const nodemailer = require('nodemailer');
 
     const smtp = config || {
-      host: process.env.SMTP_HOST || "smtp.resend.dev",
-      port: parseInt(process.env.SMTP_PORT || "587"),
+      host: process.env.SMTP_HOST || 'smtp.resend.dev',
+      port: parseInt(process.env.SMTP_PORT || '587'),
       secure: false,
       auth: {
-        user: process.env.SMTP_USER || "resend",
-        pass: process.env.SMTP_PASS || "",
+        user: process.env.SMTP_USER || 'resend',
+        pass: process.env.SMTP_PASS || '',
       },
     };
 
@@ -93,12 +97,15 @@ export interface EmailOptions {
   text?: string;
 }
 
-export async function sendEmail(options: EmailOptions, config?: EmailConfig): Promise<boolean> {
+export async function sendEmail(
+  options: EmailOptions,
+  config?: EmailConfig
+): Promise<boolean> {
   try {
     const transporter = createTransporter(config);
 
     await transporter.sendMail({
-      from: process.env.EMAIL_FROM || "TaskFlow <noreply@taskflow.app>",
+      from: process.env.EMAIL_FROM || 'TaskFlow <noreply@taskflow.app>',
       to: options.to,
       subject: options.subject,
       html: options.html,
@@ -107,7 +114,7 @@ export async function sendEmail(options: EmailOptions, config?: EmailConfig): Pr
 
     return true;
   } catch (error) {
-    console.error("Failed to send email:", error);
+    console.error('Failed to send email:', error);
     return false;
   }
 }
@@ -142,20 +149,19 @@ export async function getUserNotificationSettings(): Promise<NotificationSetting
 export async function shouldSendNotification(
   userId: number,
   task: EmailTask,
-  type: "reminder" | "due_soon" | "overdue"
+  type: 'reminder' | 'due_soon' | 'overdue'
 ): Promise<boolean> {
-   
   void userId;
   const settings = await getUserNotificationSettings();
 
   if (!settings.enabled) return false;
 
   switch (type) {
-    case "reminder":
+    case 'reminder':
       return settings.reminderMinutes > 0;
-    case "due_soon":
+    case 'due_soon':
       return settings.dueDateReminders;
-    case "overdue":
+    case 'overdue':
       return settings.overdueReminders;
     default:
       return false;
@@ -171,8 +177,8 @@ export async function sendTaskReminderEmail(
     <h2>Task Reminder</h2>
     <p>You have a pending task:</p>
     <h3>${task.name}</h3>
-    ${task.description ? `<p>${task.description}</p>` : ""}
-    ${task.deadline ? `<p><strong>Due:</strong> ${new Date(task.deadline).toLocaleString()}</p>` : ""}
+    ${task.description ? `<p>${task.description}</p>` : ''}
+    ${task.deadline ? `<p><strong>Due:</strong> ${new Date(task.deadline).toLocaleString()}</p>` : ''}
     <p><a href="${process.env.NEXTAUTH_URL}/tasks/${task.id}">View Task</a></p>
   `;
 
@@ -192,7 +198,7 @@ export async function sendDueSoonEmail(
     <h2>Task Due Soon</h2>
     <p>The following task is due soon:</p>
     <h3>${task.name}</h3>
-    ${task.deadline ? `<p><strong>Due:</strong> ${new Date(task.deadline).toLocaleString()}</p>` : ""}
+    ${task.deadline ? `<p><strong>Due:</strong> ${new Date(task.deadline).toLocaleString()}</p>` : ''}
     <p><a href="${process.env.NEXTAUTH_URL}/tasks/${task.id}">View Task</a></p>
   `;
 
@@ -207,7 +213,7 @@ export async function sendTaskSharedEmail(
   userEmail: string,
   taskName: string,
   sharerName: string,
-  permission: "view" | "edit"
+  permission: 'view' | 'edit'
 ): Promise<boolean> {
   const subject = `${sharerName} shared a task with you`;
   const html = `
