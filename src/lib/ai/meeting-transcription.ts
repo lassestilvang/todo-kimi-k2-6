@@ -42,15 +42,28 @@ export async function extractActionItems(
   // For now, we use keyword-based extraction as fallback
 
   const actionVerbs = [
-    'need to', 'should', 'must', 'have to', 'let\'s', 'let\'s',
-    'remember to', 'don\'t forget to', 'please', 'could you',
-    'will you', 'would you', 'please', 'assign'
+    'need to',
+    'should',
+    'must',
+    'have to',
+    "let's",
+    "let's",
+    'remember to',
+    "don't forget to",
+    'please',
+    'could you',
+    'will you',
+    'would you',
+    'please',
+    'assign',
   ];
 
   const actionItems: MeetingActionItem[] = [];
 
   // Split into sentences
-  const sentences = transcript.split(/[.!?]+/).filter(s => s.trim().length > 10);
+  const sentences = transcript
+    .split(/[.!?]+/)
+    .filter(s => s.trim().length > 10);
 
   for (const sentence of sentences) {
     const isActionItem = actionVerbs.some(verb =>
@@ -59,8 +72,12 @@ export async function extractActionItems(
 
     if (isActionItem) {
       // Clean up the sentence
-      const description = sentence.trim()
-        .replace(/^(need to|should|must|have to|let's|please|could you|will you|would you)/i, '')
+      const description = sentence
+        .trim()
+        .replace(
+          /^(need to|should|must|have to|let's|please|could you|will you|would you)/i,
+          ''
+        )
         .replace(/^assign\s+/i, '')
         .replace(/\s+/g, ' ')
         .trim();
@@ -74,22 +91,44 @@ export async function extractActionItems(
       } else if (sentence.toLowerCase().includes('tomorrow')) {
         const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
         dueDate = tomorrow.toISOString().split('T')[0];
-      } else if (sentence.match(/next\s+(monday|tuesday|wednesday|thursday|friday)/i)) {
-        const dayMatch = sentence.match(/next\s+(monday|tuesday|wednesday|thursday|friday)/i);
+      } else if (
+        sentence.match(/next\s+(monday|tuesday|wednesday|thursday|friday)/i)
+      ) {
+        const dayMatch = sentence.match(
+          /next\s+(monday|tuesday|wednesday|thursday|friday)/i
+        );
         if (dayMatch) {
-          const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-          const targetDay = dayNames.findIndex(d => d === dayMatch[1].toLowerCase());
+          const dayNames = [
+            'sunday',
+            'monday',
+            'tuesday',
+            'wednesday',
+            'thursday',
+            'friday',
+            'saturday',
+          ];
+          const targetDay = dayNames.findIndex(
+            d => d === dayMatch[1].toLowerCase()
+          );
           const daysUntil = (targetDay - today.getDay() + 7) % 7 || 7;
-          const nextDate = new Date(today.getTime() + daysUntil * 24 * 60 * 60 * 1000);
+          const nextDate = new Date(
+            today.getTime() + daysUntil * 24 * 60 * 60 * 1000
+          );
           dueDate = nextDate.toISOString().split('T')[0];
         }
       }
 
       // Determine priority
       let priority: 'high' | 'medium' | 'low' = 'medium';
-      if (sentence.toLowerCase().includes('urgent') || sentence.toLowerCase().includes('asap')) {
+      if (
+        sentence.toLowerCase().includes('urgent') ||
+        sentence.toLowerCase().includes('asap')
+      ) {
         priority = 'high';
-      } else if (sentence.toLowerCase().includes('later') || sentence.toLowerCase().includes('someday')) {
+      } else if (
+        sentence.toLowerCase().includes('later') ||
+        sentence.toLowerCase().includes('someday')
+      ) {
         priority = 'low';
       }
 
@@ -122,15 +161,23 @@ export async function generateMeetingSummary(
   participants: string[]
 ): Promise<MeetingSummary> {
   // Extract decisions (sentences with consensus words)
-  const decisionKeywords = ['agreed', 'decided', 'resolved', 'concluded', 'confirmed'];
+  const decisionKeywords = [
+    'agreed',
+    'decided',
+    'resolved',
+    'concluded',
+    'confirmed',
+  ];
 
-  const decisionSentences = transcript.split(/[.!?]+/)
+  const decisionSentences = transcript
+    .split(/[.!?]+/)
     .filter(s => decisionKeywords.some(k => s.toLowerCase().includes(k)))
     .map(s => s.trim());
 
   // Extract next steps
   const nextStepKeywords = ['next', 'then', 'after', 'following'];
-  const nextSteps = transcript.split(/[.!?]+/)
+  const nextSteps = transcript
+    .split(/[.!?]+/)
     .filter(s => nextStepKeywords.some(k => s.toLowerCase().includes(k)))
     .slice(0, 3)
     .map(s => s.trim());
@@ -149,13 +196,15 @@ export async function generateMeetingSummary(
 export async function convertActionItemsToTasks(
   actionItems: MeetingActionItem[],
   userId?: number
-): Promise<Array<{
-  name: string;
-  description?: string;
-  dueDate?: string;
-  priority: 'high' | 'medium' | 'low';
-  assignee?: string;
-}>> {
+): Promise<
+  Array<{
+    name: string;
+    description?: string;
+    dueDate?: string;
+    priority: 'high' | 'medium' | 'low';
+    assignee?: string;
+  }>
+> {
   return actionItems.map(item => ({
     name: item.description,
     description: item.context,
