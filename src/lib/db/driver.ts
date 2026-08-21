@@ -2,7 +2,10 @@
 
 // SQLite Statement (sync)
 export interface Statement {
-  run(...params: unknown[]): { lastInsertRowid: number | bigint; changes: number };
+  run(...params: unknown[]): {
+    lastInsertRowid: number | bigint;
+    changes: number;
+  };
   get(...params: unknown[]): any;
   all(...params: unknown[]): any[];
 }
@@ -28,7 +31,7 @@ export interface Database {
  * Check if running in browser environment
  */
 function isBrowser(): boolean {
-  return typeof window !== "undefined";
+  return typeof window !== 'undefined';
 }
 
 /**
@@ -45,15 +48,19 @@ export function createDatabase(): Database {
   let config: { database: { url: string }; isProduction: boolean };
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    config = require("@/lib/config").config;
+    config = require('@/lib/config').config;
   } catch {
-    config = { database: { url: "./prisma/dev.db" }, isProduction: false };
+    config = { database: { url: './prisma/dev.db' }, isProduction: false };
   }
 
   const dbUrl = config.database.url;
 
   // Check if this is a PostgreSQL URL
-  if (dbUrl.startsWith("postgresql://") || dbUrl.startsWith("postgres://") || config.isProduction) {
+  if (
+    dbUrl.startsWith('postgresql://') ||
+    dbUrl.startsWith('postgres://') ||
+    config.isProduction
+  ) {
     return createPostgreSQLDatabase(dbUrl);
   }
 
@@ -65,7 +72,7 @@ function createSQLiteDatabase(path: string): Database {
   try {
     // Node.js runtime
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const BetterSqlite3 = require("better-sqlite3");
+    const BetterSqlite3 = require('better-sqlite3');
     const db = new BetterSqlite3(path);
 
     // Wrap the transaction method to properly handle BEGIN/COMMIT/ROLLBACK
@@ -82,7 +89,7 @@ function createSQLiteDatabase(path: string): Database {
     try {
       // Bun runtime
       // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { Database: BunDatabase } = require("bun:sqlite");
+      const { Database: BunDatabase } = require('bun:sqlite');
       const db = new BunDatabase(path);
       return {
         prepare: (sql: string) => db.query(sql),
@@ -103,7 +110,7 @@ function createSQLiteDatabase(path: string): Database {
       };
     } catch {
       throw new Error(
-        "No SQLite driver available. Install better-sqlite3 for Node.js or use Bun for bun:sqlite."
+        'No SQLite driver available. Install better-sqlite3 for Node.js or use Bun for bun:sqlite.'
       );
     }
   }
@@ -111,7 +118,7 @@ function createSQLiteDatabase(path: string): Database {
 
 function createPostgreSQLDatabase(url: string): Database {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { Pool } = require("pg");
+  const { Pool } = require('pg');
   const pool = new Pool({
     connectionString: url,
   });
@@ -129,10 +136,12 @@ function createPostgreSQLDatabase(url: string): Database {
           changes: 0,
         };
       },
-       
-      get: (...params: unknown[]) => pool.query(sql, params).then((r: any) => r.rows[0]),
-       
-      all: (...params: unknown[]) => pool.query(sql, params).then((r: any) => r.rows),
+
+      get: (...params: unknown[]) =>
+        pool.query(sql, params).then((r: any) => r.rows[0]),
+
+      all: (...params: unknown[]) =>
+        pool.query(sql, params).then((r: any) => r.rows),
     }),
     exec: (sql: string) => {
       pool.query(sql);
@@ -143,12 +152,12 @@ function createPostgreSQLDatabase(url: string): Database {
     transaction: async <T>(fn: () => T | Promise<T>): Promise<T> => {
       const client = await pool.connect();
       try {
-        await client.query("BEGIN");
+        await client.query('BEGIN');
         const result = await fn();
-        await client.query("COMMIT");
+        await client.query('COMMIT');
         return result;
       } catch (error) {
-        await client.query("ROLLBACK");
+        await client.query('ROLLBACK');
         throw error;
       } finally {
         client.release();
@@ -168,8 +177,12 @@ function createNoOpDatabase(): Database {
       get: () => undefined,
       all: () => [],
     }),
-    exec: () => { void 0; },
-    close: () => { void 0; },
+    exec: () => {
+      void 0;
+    },
+    close: () => {
+      void 0;
+    },
     transaction: <T>(fn: () => T): T => fn(),
   };
 }
