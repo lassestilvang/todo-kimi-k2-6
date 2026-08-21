@@ -1,7 +1,7 @@
-"use server";
+'use server';
 
-import { getDb } from "@/lib/db";
-import { getCurrentUser } from "@/lib/session";
+import { getDb } from '@/lib/db';
+import { getCurrentUser } from '@/lib/session';
 import type {
   Task,
   TaskWithRelations,
@@ -14,17 +14,22 @@ import type {
   CreateLabelInput,
   FilterPreset,
   Priority,
-} from "@/types";
-import { listSchema, labelSchema, sanitizeString } from "@/lib/validation";
-import { logTaskAction } from "@/lib/actions/task-helpers";
-import { getTaskRelations } from "@/lib/db/relations";
-import { broadcastTaskUpdate, logActivity } from "@/lib/actions/realtime";
+} from '@/types';
+import { listSchema, labelSchema, sanitizeString } from '@/lib/validation';
+import { logTaskAction } from '@/lib/actions/task-helpers';
+import { getTaskRelations } from '@/lib/db/relations';
+import { broadcastTaskUpdate, logActivity } from '@/lib/actions/realtime';
 
 /**
  * Check for potential duplicate tasks by comparing names.
  * Returns similar tasks with similarity score > 0.7
  */
-export async function findSimilarTasks(name: string, excludeTaskId?: number): Promise<Array<{ id: number; name: string; date: string | null; similarity: number }>> {
+export async function findSimilarTasks(
+  name: string,
+  excludeTaskId?: number
+): Promise<
+  Array<{ id: number; name: string; date: string | null; similarity: number }>
+> {
   const db = getDb();
   const user = await getCurrentUser();
 
@@ -34,7 +39,7 @@ export async function findSimilarTasks(name: string, excludeTaskId?: number): Pr
   }
 
   const tasks = db
-    .prepare("SELECT id, name, date FROM tasks WHERE user_id = ?")
+    .prepare('SELECT id, name, date FROM tasks WHERE user_id = ?')
     .all(user.id) as Array<{ id: number; name: string; date: string | null }>;
 
   const normalizedInput = name.toLowerCase().trim();
@@ -48,10 +53,15 @@ export async function findSimilarTasks(name: string, excludeTaskId?: number): Pr
       const existingWords = normalizedExisting.split(/\s+/);
 
       const commonWords = words.filter(w => existingWords.includes(w));
-      const similarity = words.length > 0 ? commonWords.length / words.length : 0;
+      const similarity =
+        words.length > 0 ? commonWords.length / words.length : 0;
 
       // Also check for substring matches
-      const containsMatch = normalizedExisting.includes(normalizedInput) || normalizedInput.includes(normalizedExisting) ? 0.8 : 0;
+      const containsMatch =
+        normalizedExisting.includes(normalizedInput) ||
+        normalizedInput.includes(normalizedExisting)
+          ? 0.8
+          : 0;
 
       return { ...t, similarity: Math.max(similarity, containsMatch) };
     })
@@ -66,14 +76,23 @@ export async function getLists(): Promise<List[]> {
 
   // User isolation: only show lists owned by the user
   if (user?.id) {
-    return db.prepare(
-      "SELECT * FROM lists WHERE user_id = ? ORDER BY is_inbox DESC, name ASC"
-    ).all(user.id) as List[];
+    return db
+      .prepare(
+        'SELECT * FROM lists WHERE user_id = ? ORDER BY is_inbox DESC, name ASC'
+      )
+      .all(user.id) as List[];
   }
 
   // In test/demo mode, return inbox with user_id = 1 or null (for compatibility)
-  if (process.env.NODE_ENV === "test" || process.env.NEXTAUTH_SECRET === "demo-secret") {
-    return db.prepare("SELECT * FROM lists WHERE user_id = 1 OR user_id IS NULL ORDER BY is_inbox DESC, name ASC").all() as List[];
+  if (
+    process.env.NODE_ENV === 'test' ||
+    process.env.NEXTAUTH_SECRET === 'demo-secret'
+  ) {
+    return db
+      .prepare(
+        'SELECT * FROM lists WHERE user_id = 1 OR user_id IS NULL ORDER BY is_inbox DESC, name ASC'
+      )
+      .all() as List[];
   }
 
   return [];
@@ -86,13 +105,17 @@ export async function getListById(id: number): Promise<List | undefined> {
   // User isolation: only show lists owned by the user
   if (user?.id) {
     return db
-      .prepare("SELECT * FROM lists WHERE id = ? AND user_id = ?")
+      .prepare('SELECT * FROM lists WHERE id = ? AND user_id = ?')
       .get(id, user.id) as List | undefined;
   }
 
   // In test/demo mode, allow access to any list
-  if (process.env.NODE_ENV === "test" || process.env.NEXTAUTH_SECRET === "demo-secret") {
-    return db.prepare("SELECT * FROM lists WHERE id = ?").get(id) as List | undefined;
+  if (
+    process.env.NODE_ENV === 'test' ||
+    process.env.NEXTAUTH_SECRET === 'demo-secret'
+  ) {
+    return db.prepare('SELECT * FROM lists WHERE id = ?').get(id) as
+      List | undefined;
   }
 
   return undefined;
@@ -102,19 +125,26 @@ export async function createList(input: CreateListInput): Promise<List> {
   // Validate input
   const parsed = listSchema.safeParse(input);
   if (!parsed.success) {
-    throw new Error(parsed.error.issues[0]?.message || "Invalid list data");
+    throw new Error(parsed.error.issues[0]?.message || 'Invalid list data');
   }
 
   const db = getDb();
   const user = await getCurrentUser();
-  const userId = user?.id ?? (process.env.NODE_ENV === "test" ? 1 : null);
+  const userId = user?.id ?? (process.env.NODE_ENV === 'test' ? 1 : null);
 
   const result = db
-    .prepare("INSERT INTO lists (name, emoji, color, user_id) VALUES (?, ?, ?, ?)")
-    .run(parsed.data.name, parsed.data.emoji || "📋", parsed.data.color || "#6366f1", userId);
+    .prepare(
+      'INSERT INTO lists (name, emoji, color, user_id) VALUES (?, ?, ?, ?)'
+    )
+    .run(
+      parsed.data.name,
+      parsed.data.emoji || '📋',
+      parsed.data.color || '#6366f1',
+      userId
+    );
   const list = await getListById(Number(result.lastInsertRowid));
   if (!list) {
-    throw new Error("Failed to create list");
+    throw new Error('Failed to create list');
   }
   return list;
 }
@@ -127,34 +157,39 @@ export async function updateList(
   const user = await getCurrentUser();
 
   // Verify user owns the list before updating (or test mode)
-  const effectiveUserId = user?.id ?? (process.env.NODE_ENV === "test" ? 1 : null);
-  if (effectiveUserId && process.env.NODE_ENV !== "test") {
-    const existing = db.prepare("SELECT id FROM lists WHERE id = ? AND user_id = ?").get(id, effectiveUserId);
+  const effectiveUserId =
+    user?.id ?? (process.env.NODE_ENV === 'test' ? 1 : null);
+  if (effectiveUserId && process.env.NODE_ENV !== 'test') {
+    const existing = db
+      .prepare('SELECT id FROM lists WHERE id = ? AND user_id = ?')
+      .get(id, effectiveUserId);
     if (!existing) {
-      throw new Error("List not found or access denied");
+      throw new Error('List not found or access denied');
     }
   }
 
   const fields: string[] = [];
   const values: unknown[] = [];
   if (input.name !== undefined) {
-    fields.push("name = ?");
+    fields.push('name = ?');
     values.push(input.name);
   }
   if (input.emoji !== undefined) {
-    fields.push("emoji = ?");
+    fields.push('emoji = ?');
     values.push(input.emoji);
   }
   if (input.color !== undefined) {
-    fields.push("color = ?");
+    fields.push('color = ?');
     values.push(input.color);
   }
-  if (fields.length === 0) throw new Error("No fields to update");
+  if (fields.length === 0) throw new Error('No fields to update');
   values.push(id);
-  db.prepare(`UPDATE lists SET ${fields.join(", ")} WHERE id = ?`).run(...values);
+  db.prepare(`UPDATE lists SET ${fields.join(', ')} WHERE id = ?`).run(
+    ...values
+  );
   const updated = await getListById(id);
   if (!updated) {
-    throw new Error("Failed to update list");
+    throw new Error('Failed to update list');
   }
   return updated;
 }
@@ -164,11 +199,12 @@ export async function deleteList(id: number): Promise<void> {
   const user = await getCurrentUser();
 
   // Verify user owns the list before deleting (or test mode)
-  if (user?.id || process.env.NODE_ENV === "test") {
-    const effectiveUserId = user?.id ?? (process.env.NODE_ENV === "test" ? 1 : null);
+  if (user?.id || process.env.NODE_ENV === 'test') {
+    const effectiveUserId =
+      user?.id ?? (process.env.NODE_ENV === 'test' ? 1 : null);
     if (effectiveUserId) {
-      db.prepare("UPDATE tasks SET list_id = 1 WHERE list_id = ?").run(id);
-      db.prepare("DELETE FROM lists WHERE id = ?").run(id);
+      db.prepare('UPDATE tasks SET list_id = 1 WHERE list_id = ?').run(id);
+      db.prepare('DELETE FROM lists WHERE id = ?').run(id);
     }
   }
 }
@@ -179,14 +215,19 @@ export async function getLabels(): Promise<Label[]> {
 
   // User isolation: only show labels owned by the user
   if (user?.id) {
-    return db.prepare(
-      "SELECT * FROM labels WHERE user_id = ? ORDER BY name ASC"
-    ).all(user.id) as Label[];
+    return db
+      .prepare('SELECT * FROM labels WHERE user_id = ? ORDER BY name ASC')
+      .all(user.id) as Label[];
   }
 
   // In test/demo mode, return all labels
-  if (process.env.NODE_ENV === "test" || process.env.NEXTAUTH_SECRET === "demo-secret") {
-    return db.prepare("SELECT * FROM labels ORDER BY name ASC").all() as Label[];
+  if (
+    process.env.NODE_ENV === 'test' ||
+    process.env.NEXTAUTH_SECRET === 'demo-secret'
+  ) {
+    return db
+      .prepare('SELECT * FROM labels ORDER BY name ASC')
+      .all() as Label[];
   }
 
   return [];
@@ -198,14 +239,18 @@ export async function getLabelById(id: number): Promise<Label | undefined> {
 
   // User isolation: only show labels owned by the user
   if (user?.id) {
-    return db.prepare(
-      "SELECT * FROM labels WHERE id = ? AND user_id = ?"
-    ).get(id, user.id) as Label | undefined;
+    return db
+      .prepare('SELECT * FROM labels WHERE id = ? AND user_id = ?')
+      .get(id, user.id) as Label | undefined;
   }
 
   // In test/demo mode, allow access to any label
-  if (process.env.NODE_ENV === "test" || process.env.NEXTAUTH_SECRET === "demo-secret") {
-    return db.prepare("SELECT * FROM labels WHERE id = ?").get(id) as Label | undefined;
+  if (
+    process.env.NODE_ENV === 'test' ||
+    process.env.NEXTAUTH_SECRET === 'demo-secret'
+  ) {
+    return db.prepare('SELECT * FROM labels WHERE id = ?').get(id) as
+      Label | undefined;
   }
 
   return undefined;
@@ -215,19 +260,26 @@ export async function createLabel(input: CreateLabelInput): Promise<Label> {
   // Validate input
   const parsed = labelSchema.safeParse(input);
   if (!parsed.success) {
-    throw new Error(parsed.error.issues[0]?.message || "Invalid label data");
+    throw new Error(parsed.error.issues[0]?.message || 'Invalid label data');
   }
 
   const db = getDb();
   const user = await getCurrentUser();
-  const userId = user?.id ?? (process.env.NODE_ENV === "test" ? 1 : null);
+  const userId = user?.id ?? (process.env.NODE_ENV === 'test' ? 1 : null);
 
   const result = db
-    .prepare("INSERT INTO labels (name, icon, color, user_id) VALUES (?, ?, ?, ?)")
-    .run(parsed.data.name, parsed.data.icon || "🏷️", parsed.data.color || "#8b5cf6", userId);
+    .prepare(
+      'INSERT INTO labels (name, icon, color, user_id) VALUES (?, ?, ?, ?)'
+    )
+    .run(
+      parsed.data.name,
+      parsed.data.icon || '🏷️',
+      parsed.data.color || '#8b5cf6',
+      userId
+    );
   const label = await getLabelById(Number(result.lastInsertRowid));
   if (!label) {
-    throw new Error("Failed to create label");
+    throw new Error('Failed to create label');
   }
   return label;
 }
@@ -237,11 +289,11 @@ export async function deleteLabel(id: number): Promise<void> {
   const user = await getCurrentUser();
 
   // In test mode or when user has access, allow deletion
-  if (user?.id || process.env.NODE_ENV === "test") {
-    db.prepare("DELETE FROM task_labels WHERE label_id = ?").run(id);
-    db.prepare("DELETE FROM labels WHERE id = ?").run(id);
+  if (user?.id || process.env.NODE_ENV === 'test') {
+    db.prepare('DELETE FROM task_labels WHERE label_id = ?').run(id);
+    db.prepare('DELETE FROM labels WHERE id = ?').run(id);
   } else {
-    throw new Error("Authentication required");
+    throw new Error('Authentication required');
   }
 }
 
@@ -249,16 +301,21 @@ export async function deleteLabel(id: number): Promise<void> {
 // inlined in getTasks for performance (batch queries).
 // function getTaskLabels(db: ReturnType<typeof getDb>, taskId: number): Label[] { ... }
 
-export async function getTaskById(id: number): Promise<TaskWithRelations | undefined> {
+export async function getTaskById(
+  id: number
+): Promise<TaskWithRelations | undefined> {
   const db = getDb();
   const user = await getCurrentUser();
 
   // User isolation: only allow access to user's own tasks
   const task = user?.id
-    ? db.prepare("SELECT * FROM tasks WHERE id = ? AND user_id = ?").get(id, user.id) as Task | undefined
-    : (process.env.NODE_ENV === "production"
-        ? undefined
-        : db.prepare("SELECT * FROM tasks WHERE id = ?").get(id) as Task | undefined);
+    ? (db
+        .prepare('SELECT * FROM tasks WHERE id = ? AND user_id = ?')
+        .get(id, user.id) as Task | undefined)
+    : process.env.NODE_ENV === 'production'
+      ? undefined
+      : (db.prepare('SELECT * FROM tasks WHERE id = ?').get(id) as
+          Task | undefined);
 
   if (!task) return undefined;
 
@@ -294,7 +351,8 @@ export async function getTaskById(id: number): Promise<TaskWithRelations | undef
 }
 
 export interface GetTasksOptions {
-  view?: "today" | "next7" | "upcoming" | "all" | "blocked" | "archived" | undefined;
+  view?:
+    'today' | 'next7' | 'upcoming' | 'all' | 'blocked' | 'archived' | undefined;
   listId?: number | undefined;
   includeCompleted?: boolean;
   searchQuery?: string | undefined;
@@ -304,57 +362,59 @@ export interface GetTasksOptions {
   showArchived?: boolean;
 }
 
-export async function getTasks(options?: GetTasksOptions): Promise<TaskWithRelations[]> {
+export async function getTasks(
+  options?: GetTasksOptions
+): Promise<TaskWithRelations[]> {
   const db = getDb();
   const user = await getCurrentUser();
   const whereClauses: string[] = [];
   const params: unknown[] = [];
-  const today = new Date().toISOString().split("T")[0];
+  const today = new Date().toISOString().split('T')[0];
 
   // Security: Only show tasks owned by authenticated user
   if (!user?.id) {
     return [];
   }
-  whereClauses.push("user_id = ?");
+  whereClauses.push('user_id = ?');
   params.push(user.id);
 
   // Exclude archived tasks by default (show archived: true to include them)
   if (!options?.showArchived) {
-    whereClauses.push("archived = 0");
+    whereClauses.push('archived = 0');
   }
 
   if (!options?.includeCompleted) {
-    whereClauses.push("completed = 0");
+    whereClauses.push('completed = 0');
   }
 
   if (options?.listId !== undefined) {
-    whereClauses.push("list_id = ?");
+    whereClauses.push('list_id = ?');
     params.push(options.listId);
   }
 
   switch (options?.view) {
-    case "today":
-      whereClauses.push("date = ?");
+    case 'today':
+      whereClauses.push('date = ?');
       params.push(today);
       break;
-    case "next7": {
+    case 'next7': {
       const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
         .toISOString()
-        .split("T")[0];
-      whereClauses.push("date >= ? AND date <= ?");
+        .split('T')[0];
+      whereClauses.push('date >= ? AND date <= ?');
       params.push(today, nextWeek);
       break;
     }
-    case "upcoming":
-      whereClauses.push("date >= ?");
+    case 'upcoming':
+      whereClauses.push('date >= ?');
       params.push(today);
       break;
-    case "blocked": {
+    case 'blocked': {
       // Tasks that have dependencies pointing to them (are blocked)
-      whereClauses.push("id IN (SELECT task_id FROM task_dependencies)");
+      whereClauses.push('id IN (SELECT task_id FROM task_dependencies)');
       break;
     }
-    case "all":
+    case 'all':
     default:
       break;
   }
@@ -362,30 +422,38 @@ export async function getTasks(options?: GetTasksOptions): Promise<TaskWithRelat
   // Handle filter presets
   if (options?.filterPreset) {
     switch (options.filterPreset) {
-      case "needs_attention":
+      case 'needs_attention':
         // High priority tasks due today or overdue
-        whereClauses.push("(priority = 'high' AND (date = ? OR (date < ? AND completed = 0)))");
+        whereClauses.push(
+          "(priority = 'high' AND (date = ? OR (date < ? AND completed = 0)))"
+        );
         params.push(today, today);
         break;
-      case "this_week":
-        const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
-        whereClauses.push("date >= ? AND date <= ?");
+      case 'this_week':
+        const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+          .toISOString()
+          .split('T')[0];
+        whereClauses.push('date >= ? AND date <= ?');
         params.push(today, nextWeek);
         break;
-      case "with_labels":
-        whereClauses.push("id IN (SELECT DISTINCT task_id FROM task_labels)");
+      case 'with_labels':
+        whereClauses.push('id IN (SELECT DISTINCT task_id FROM task_labels)');
         break;
-      case "with_subtasks":
-        whereClauses.push("id IN (SELECT DISTINCT task_id FROM subtasks)");
+      case 'with_subtasks':
+        whereClauses.push('id IN (SELECT DISTINCT task_id FROM subtasks)');
         break;
-      case "completed":
-        whereClauses.push("completed = 1");
+      case 'completed':
+        whereClauses.push('completed = 1');
         break;
     }
   }
 
-  const where = whereClauses.length > 0 ? `WHERE ${whereClauses.join(" AND ")}` : "";
-  const orderBy = options?.view === "all" ? "updated_at DESC, sort_order ASC" : "sort_order ASC, date ASC, deadline ASC, priority DESC";
+  const where =
+    whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+  const orderBy =
+    options?.view === 'all'
+      ? 'updated_at DESC, sort_order ASC'
+      : 'sort_order ASC, date ASC, deadline ASC, priority DESC';
 
   // Validate sort field and direction to prevent SQL injection
   const safeOrderBy = orderBy; // Already validated as hardcoded strings above
@@ -394,24 +462,36 @@ export async function getTasks(options?: GetTasksOptions): Promise<TaskWithRelat
   const limit = Math.min(options?.limit || 100, 100);
   const offset = options?.offset || 0;
 
-  const tasks = db.prepare(
-    `SELECT * FROM tasks ${where} ORDER BY ${safeOrderBy} LIMIT ? OFFSET ?`
-  ).all(...params, limit, offset) as Task[];
-  const taskIds = tasks.map((t) => t.id);
+  const tasks = db
+    .prepare(
+      `SELECT * FROM tasks ${where} ORDER BY ${safeOrderBy} LIMIT ? OFFSET ?`
+    )
+    .all(...params, limit, offset) as Task[];
+  const taskIds = tasks.map(t => t.id);
 
   // Batch fetch all relations using shared utility
   const relationsMap = await getTaskRelations(db, taskIds);
 
   // Fetch vote scores for all tasks
-  const voteScores: Record<number, { total: number; count: number; score: number }> = {};
+  const voteScores: Record<
+    number,
+    { total: number; count: number; score: number }
+  > = {};
   if (taskIds.length > 0) {
-    const placeholder = taskIds.map(() => "?").join(",");
-    const votes = db.prepare(
-      `SELECT task_id, SUM(value) as total, COUNT(*) as count,
+    const placeholder = taskIds.map(() => '?').join(',');
+    const votes = db
+      .prepare(
+        `SELECT task_id, SUM(value) as total, COUNT(*) as count,
               CASE WHEN COUNT(*) > 0 THEN SUM(value) * 1.0 / COUNT(*) ELSE 0 END as score
        FROM task_votes WHERE task_id IN (${placeholder})
        GROUP BY task_id`
-    ).all(...taskIds) as Array<{ task_id: number; total: number; count: number; score: number }>;
+      )
+      .all(...taskIds) as Array<{
+      task_id: number;
+      total: number;
+      count: number;
+      score: number;
+    }>;
 
     for (const vote of votes) {
       voteScores[vote.task_id] = {
@@ -422,7 +502,7 @@ export async function getTasks(options?: GetTasksOptions): Promise<TaskWithRelat
     }
   }
 
-  const result: TaskWithRelations[] = tasks.map((task) => {
+  const result: TaskWithRelations[] = tasks.map(task => {
     const relations = relationsMap[task.id] || {
       labels: [],
       subtasks: [],
@@ -457,18 +537,20 @@ export async function getTasks(options?: GetTasksOptions): Promise<TaskWithRelat
   });
 
   if (options?.searchQuery) {
-    const Fuse = (await import("fuse.js")).default;
+    const Fuse = (await import('fuse.js')).default;
     const fuse = new Fuse(result, {
-      keys: ["name", "description"],
+      keys: ['name', 'description'],
       threshold: 0.4,
     });
-    return fuse.search(options.searchQuery).map((r) => r.item);
+    return fuse.search(options.searchQuery).map(r => r.item);
   }
 
   return result;
 }
 
-export async function createTask(input: CreateTaskInput & { sort_order?: number }): Promise<TaskWithRelations> {
+export async function createTask(
+  input: CreateTaskInput & { sort_order?: number }
+): Promise<TaskWithRelations> {
   const db = getDb();
   const user = await getCurrentUser();
   const userId = user?.id ?? 0;
@@ -476,7 +558,7 @@ export async function createTask(input: CreateTaskInput & { sort_order?: number 
   // Sanitize input to prevent XSS
   const sanitizedInput = {
     ...input,
-    name: sanitizeString(input.name) ?? "",
+    name: sanitizeString(input.name) ?? '',
     description: sanitizeString(input.description),
     notes: sanitizeString(input.notes),
   };
@@ -490,8 +572,16 @@ export async function createTask(input: CreateTaskInput & { sort_order?: number 
     } else {
       // Get max sort_order for the list or default to 0
       const maxResult = sanitizedInput.list_id
-        ? db.prepare("SELECT MAX(sort_order) as max FROM tasks WHERE list_id = ? AND user_id = ?").get(sanitizedInput.list_id, userId) as { max: number }
-        : db.prepare("SELECT MAX(sort_order) as max FROM tasks WHERE user_id = ?").get(userId) as { max: number };
+        ? (db
+            .prepare(
+              'SELECT MAX(sort_order) as max FROM tasks WHERE list_id = ? AND user_id = ?'
+            )
+            .get(sanitizedInput.list_id, userId) as { max: number })
+        : (db
+            .prepare(
+              'SELECT MAX(sort_order) as max FROM tasks WHERE user_id = ?'
+            )
+            .get(userId) as { max: number });
       sortOrder = (maxResult?.max ?? -1) + 1;
     }
     const insertResult = db
@@ -509,32 +599,38 @@ export async function createTask(input: CreateTaskInput & { sort_order?: number 
         sanitizedInput.deadline || null,
         sanitizedInput.estimate || null,
         sanitizedInput.actual_time || null,
-        sanitizedInput.priority || "none",
-        sanitizedInput.recurring || "none",
+        sanitizedInput.priority || 'none',
+        sanitizedInput.recurring || 'none',
         sanitizedInput.recurring_config || null,
         sortOrder,
-        sanitizedInput.ai_provider || "keyword-parser",
+        sanitizedInput.ai_provider || 'keyword-parser',
         sanitizedInput.confidence_score ?? 0.5
       );
 
     const taskId = insertResult.lastInsertRowid as number;
 
     if (sanitizedInput.label_ids?.length) {
-      const stmt = db.prepare("INSERT INTO task_labels (task_id, label_id) VALUES (?, ?)");
+      const stmt = db.prepare(
+        'INSERT INTO task_labels (task_id, label_id) VALUES (?, ?)'
+      );
       for (const labelId of sanitizedInput.label_ids) {
         stmt.run(taskId, labelId);
       }
     }
 
     if (sanitizedInput.subtasks?.length) {
-      const stmt = db.prepare("INSERT INTO subtasks (task_id, name) VALUES (?, ?)");
+      const stmt = db.prepare(
+        'INSERT INTO subtasks (task_id, name) VALUES (?, ?)'
+      );
       for (const name of sanitizedInput.subtasks) {
         stmt.run(taskId, sanitizeString(name) ?? name);
       }
     }
 
     if (sanitizedInput.reminders?.length) {
-      const stmt = db.prepare("INSERT INTO reminders (task_id, remind_at) VALUES (?, ?)");
+      const stmt = db.prepare(
+        'INSERT INTO reminders (task_id, remind_at) VALUES (?, ?)'
+      );
       for (const remindAt of sanitizedInput.reminders) {
         stmt.run(taskId, remindAt);
       }
@@ -542,7 +638,9 @@ export async function createTask(input: CreateTaskInput & { sort_order?: number 
 
     // Handle task dependencies (blockers)
     if (sanitizedInput.blocker_ids?.length) {
-      const stmt = db.prepare("INSERT INTO task_dependencies (task_id, depends_on_task_id) VALUES (?, ?)");
+      const stmt = db.prepare(
+        'INSERT INTO task_dependencies (task_id, depends_on_task_id) VALUES (?, ?)'
+      );
       for (const blockingTaskId of sanitizedInput.blocker_ids) {
         stmt.run(taskId, blockingTaskId);
       }
@@ -550,120 +648,144 @@ export async function createTask(input: CreateTaskInput & { sort_order?: number 
 
     // Handle recurring exceptions (dates to skip)
     if (sanitizedInput.recurring_exception_dates?.length) {
-      const stmt = db.prepare("INSERT INTO recurring_exceptions (task_id, exception_date) VALUES (?, ?)");
+      const stmt = db.prepare(
+        'INSERT INTO recurring_exceptions (task_id, exception_date) VALUES (?, ?)'
+      );
       for (const exceptionDate of sanitizedInput.recurring_exception_dates) {
         stmt.run(taskId, exceptionDate);
       }
     }
 
-    logTaskAction(taskId, "created", `Task "${input.name}" created`);
+    logTaskAction(taskId, 'created', `Task "${input.name}" created`);
 
     return taskId;
   });
 
-  const taskId = typeof result === "number" ? result : await result;
+  const taskId = typeof result === 'number' ? result : await result;
   const task = await getTaskById(taskId);
 
   if (task) {
     // Broadcast task creation for real-time updates
-    await broadcastTaskUpdate(taskId, userId, {
-      id: task.id,
-      name: task.name,
-      description: task.description,
-      list_id: task.list_id,
-      date: task.date,
-      deadline: task.deadline,
-      priority: task.priority,
-      completed: task.completed,
-      assignee_id: task.assignee_id,
-      archived: task.archived,
-    }, "created");
+    await broadcastTaskUpdate(
+      taskId,
+      userId,
+      {
+        id: task.id,
+        name: task.name,
+        description: task.description,
+        list_id: task.list_id,
+        date: task.date,
+        deadline: task.deadline,
+        priority: task.priority,
+        completed: task.completed,
+        assignee_id: task.assignee_id,
+        archived: task.archived,
+      },
+      'created'
+    );
   }
 
   return task!;
 }
 
-export async function updateTask(id: number, input: UpdateTaskInput): Promise<TaskWithRelations> {
+export async function updateTask(
+  id: number,
+  input: UpdateTaskInput
+): Promise<TaskWithRelations> {
   const db = getDb();
   const user = await getCurrentUser();
   const existing = user?.id
-    ? db.prepare("SELECT * FROM tasks WHERE id = ? AND user_id = ?").get(id, user.id) as Task | undefined
-    : db.prepare("SELECT * FROM tasks WHERE id = ?").get(id) as Task | undefined;
-  if (!existing) throw new Error("Task not found or access denied");
+    ? (db
+        .prepare('SELECT * FROM tasks WHERE id = ? AND user_id = ?')
+        .get(id, user.id) as Task | undefined)
+    : (db.prepare('SELECT * FROM tasks WHERE id = ?').get(id) as
+        Task | undefined);
+  if (!existing) throw new Error('Task not found or access denied');
 
   const fields: string[] = [];
   const values: unknown[] = [];
 
   if (input.name !== undefined) {
     const sanitizedName = sanitizeString(input.name) ?? input.name;
-    fields.push("name = ?");
+    fields.push('name = ?');
     values.push(sanitizedName);
     if (sanitizedName !== existing.name) {
-      logTaskAction(id, "updated", `Name changed`);
+      logTaskAction(id, 'updated', `Name changed`);
     }
   }
   if (input.description !== undefined) {
-    fields.push("description = ?");
+    fields.push('description = ?');
     values.push(sanitizeString(input.description) || null);
   }
   if (input.list_id !== undefined) {
-    fields.push("list_id = ?");
+    fields.push('list_id = ?');
     values.push(input.list_id);
   }
   if (input.date !== undefined) {
-    fields.push("date = ?");
+    fields.push('date = ?');
     values.push(input.date || null);
   }
   if (input.deadline !== undefined) {
-    fields.push("deadline = ?");
+    fields.push('deadline = ?');
     values.push(input.deadline || null);
   }
   if (input.estimate !== undefined) {
-    fields.push("estimate = ?");
+    fields.push('estimate = ?');
     values.push(input.estimate || null);
   }
   if (input.actual_time !== undefined) {
-    fields.push("actual_time = ?");
+    fields.push('actual_time = ?');
     values.push(input.actual_time || null);
   }
   if (input.priority !== undefined) {
-    fields.push("priority = ?");
+    fields.push('priority = ?');
     values.push(input.priority);
   }
   if (input.recurring !== undefined) {
-    fields.push("recurring = ?");
+    fields.push('recurring = ?');
     values.push(input.recurring);
   }
   if (input.recurring_config !== undefined) {
-    fields.push("recurring_config = ?");
+    fields.push('recurring_config = ?');
     values.push(input.recurring_config || null);
   }
   if (input.completed !== undefined) {
-    fields.push("completed = ?, completed_at = ?");
-    values.push(input.completed ? 1 : 0, input.completed ? new Date().toISOString() : null);
+    fields.push('completed = ?, completed_at = ?');
+    values.push(
+      input.completed ? 1 : 0,
+      input.completed ? new Date().toISOString() : null
+    );
     if (input.completed !== Boolean(existing.completed)) {
-      logTaskAction(id, input.completed ? "completed" : "uncompleted", `Task status updated`);
+      logTaskAction(
+        id,
+        input.completed ? 'completed' : 'uncompleted',
+        `Task status updated`
+      );
     }
   }
   if (input.ai_provider !== undefined) {
-    fields.push("ai_provider = ?");
+    fields.push('ai_provider = ?');
     values.push(input.ai_provider);
   }
   if (input.confidence_score !== undefined) {
-    fields.push("confidence_score = ?");
+    fields.push('confidence_score = ?');
     values.push(input.confidence_score);
   }
 
   if (fields.length > 0) {
-    fields.push("updated_at = CURRENT_TIMESTAMP");
+    fields.push('updated_at = CURRENT_TIMESTAMP');
     values.push(id);
-    db.prepare(`UPDATE tasks SET ${fields.join(", ")} WHERE id = ?`).run(...values);
+    db.prepare(`UPDATE tasks SET ${fields.join(', ')} WHERE id = ?`).run(
+      ...values
+    );
   }
 
   if (input.label_ids !== undefined) {
-    db.prepare("DELETE FROM task_labels WHERE task_id = ?").run(id);
+    db.prepare('DELETE FROM task_labels WHERE task_id = ?').run(id);
     if (input.label_ids.length) {
-      const stmt = db.prepare("INSERT INTO task_labels (task_id, label_id) VALUES (?, ?)");
+      const stmt = db.prepare(
+        'INSERT INTO task_labels (task_id, label_id) VALUES (?, ?)'
+      );
       for (const labelId of input.label_ids) {
         stmt.run(id, labelId);
       }
@@ -671,9 +793,11 @@ export async function updateTask(id: number, input: UpdateTaskInput): Promise<Ta
   }
 
   if (input.subtasks !== undefined) {
-    db.prepare("DELETE FROM subtasks WHERE task_id = ?").run(id);
+    db.prepare('DELETE FROM subtasks WHERE task_id = ?').run(id);
     if (input.subtasks.length) {
-      const stmt = db.prepare("INSERT INTO subtasks (task_id, name) VALUES (?, ?)");
+      const stmt = db.prepare(
+        'INSERT INTO subtasks (task_id, name) VALUES (?, ?)'
+      );
       for (const name of input.subtasks) {
         stmt.run(id, sanitizeString(name) ?? name);
       }
@@ -681,9 +805,11 @@ export async function updateTask(id: number, input: UpdateTaskInput): Promise<Ta
   }
 
   if (input.reminders !== undefined) {
-    db.prepare("DELETE FROM reminders WHERE task_id = ?").run(id);
+    db.prepare('DELETE FROM reminders WHERE task_id = ?').run(id);
     if (input.reminders.length) {
-      const stmt = db.prepare("INSERT INTO reminders (task_id, remind_at) VALUES (?, ?)");
+      const stmt = db.prepare(
+        'INSERT INTO reminders (task_id, remind_at) VALUES (?, ?)'
+      );
       for (const remindAt of input.reminders) {
         stmt.run(id, remindAt);
       }
@@ -692,9 +818,11 @@ export async function updateTask(id: number, input: UpdateTaskInput): Promise<Ta
 
   // Handle task dependencies (blockers)
   if (input.blocker_ids !== undefined) {
-    db.prepare("DELETE FROM task_dependencies WHERE task_id = ?").run(id);
+    db.prepare('DELETE FROM task_dependencies WHERE task_id = ?').run(id);
     if (input.blocker_ids.length) {
-      const stmt = db.prepare("INSERT INTO task_dependencies (task_id, depends_on_task_id) VALUES (?, ?)");
+      const stmt = db.prepare(
+        'INSERT INTO task_dependencies (task_id, depends_on_task_id) VALUES (?, ?)'
+      );
       for (const blockingTaskId of input.blocker_ids) {
         stmt.run(id, blockingTaskId);
       }
@@ -705,18 +833,23 @@ export async function updateTask(id: number, input: UpdateTaskInput): Promise<Ta
 
   if (task) {
     // Broadcast task update for real-time updates
-    await broadcastTaskUpdate(id, user?.id ?? 0, {
-      id: task.id,
-      name: task.name,
-      description: task.description,
-      list_id: task.list_id,
-      date: task.date,
-      deadline: task.deadline,
-      priority: task.priority,
-      completed: task.completed,
-      assignee_id: task.assignee_id,
-      archived: task.archived,
-    }, "updated");
+    await broadcastTaskUpdate(
+      id,
+      user?.id ?? 0,
+      {
+        id: task.id,
+        name: task.name,
+        description: task.description,
+        list_id: task.list_id,
+        date: task.date,
+        deadline: task.deadline,
+        priority: task.priority,
+        completed: task.completed,
+        assignee_id: task.assignee_id,
+        archived: task.archived,
+      },
+      'updated'
+    );
   }
 
   return task!;
@@ -730,23 +863,30 @@ export async function deleteTask(id: number): Promise<void> {
   // Verify user ownership before deleting
   let hasAccess = false;
   if (user?.id) {
-    const existing = db.prepare("SELECT id FROM tasks WHERE id = ? AND user_id = ?").get(id, user.id);
+    const existing = db
+      .prepare('SELECT id FROM tasks WHERE id = ? AND user_id = ?')
+      .get(id, user.id);
     hasAccess = !!existing;
   } else {
     hasAccess = true;
   }
 
   if (!hasAccess) {
-    throw new Error("Task not found or access denied");
+    throw new Error('Task not found or access denied');
   }
 
-  db.prepare("DELETE FROM tasks WHERE id = ? AND user_id = ?").run(id, userId);
+  db.prepare('DELETE FROM tasks WHERE id = ? AND user_id = ?').run(id, userId);
 
   // Broadcast task deletion for real-time updates
-  await broadcastTaskUpdate(id, userId, {
+  await broadcastTaskUpdate(
     id,
-    deleted: true,
-  }, "deleted");
+    userId,
+    {
+      id,
+      deleted: true,
+    },
+    'deleted'
+  );
 }
 
 export async function bulkUpdateTasks(
@@ -763,42 +903,49 @@ export async function bulkUpdateTasks(
 
   if (taskIds.length === 0) return;
 
-  const placeholders = taskIds.map(() => "?").join(",");
+  const placeholders = taskIds.map(() => '?').join(',');
 
   // Build UPDATE SET clause
   const fields: string[] = [];
   const values: unknown[] = [];
 
   if (updates.list_id !== undefined) {
-    fields.push("list_id = ?");
+    fields.push('list_id = ?');
     values.push(updates.list_id);
   }
   if (updates.priority !== undefined) {
-    fields.push("priority = ?");
+    fields.push('priority = ?');
     values.push(updates.priority);
   }
   if (updates.completed !== undefined) {
-    fields.push("completed = ?, completed_at = ?");
-    values.push(updates.completed ? 1 : 0, updates.completed ? new Date().toISOString() : null);
+    fields.push('completed = ?, completed_at = ?');
+    values.push(
+      updates.completed ? 1 : 0,
+      updates.completed ? new Date().toISOString() : null
+    );
   }
 
   if (fields.length > 0) {
-    fields.push("updated_at = CURRENT_TIMESTAMP");
+    fields.push('updated_at = CURRENT_TIMESTAMP');
 
     // Batch update all tasks at once
     const allValues = [...values, ...taskIds];
     if (user?.id) {
       // Filter to only update tasks owned by user
-      db.prepare(`UPDATE tasks SET ${fields.join(", ")} WHERE id IN (${placeholders}) AND user_id = ?`).run(...allValues, user.id);
+      db.prepare(
+        `UPDATE tasks SET ${fields.join(', ')} WHERE id IN (${placeholders}) AND user_id = ?`
+      ).run(...allValues, user.id);
     } else {
-      db.prepare(`UPDATE tasks SET ${fields.join(", ")} WHERE id IN (${placeholders})`).run(...allValues);
+      db.prepare(
+        `UPDATE tasks SET ${fields.join(', ')} WHERE id IN (${placeholders})`
+      ).run(...allValues);
     }
 
     // Log completion for completed tasks
     if (updates.completed) {
       const ownedTaskIds = taskIds;
       for (const taskId of ownedTaskIds) {
-        logTaskAction(taskId, "completed", "Task marked as completed (bulk)");
+        logTaskAction(taskId, 'completed', 'Task marked as completed (bulk)');
       }
     }
   }
@@ -807,14 +954,20 @@ export async function bulkUpdateTasks(
   if (updates.label_ids !== undefined) {
     // Delete all existing labels for the affected tasks
     if (user?.id) {
-      db.prepare(`DELETE FROM task_labels WHERE task_id IN (${placeholders}) AND task_id IN (SELECT id FROM tasks WHERE user_id = ?)`).run(...taskIds, user.id);
+      db.prepare(
+        `DELETE FROM task_labels WHERE task_id IN (${placeholders}) AND task_id IN (SELECT id FROM tasks WHERE user_id = ?)`
+      ).run(...taskIds, user.id);
     } else {
-      db.prepare(`DELETE FROM task_labels WHERE task_id IN (${placeholders})`).run(...taskIds);
+      db.prepare(
+        `DELETE FROM task_labels WHERE task_id IN (${placeholders})`
+      ).run(...taskIds);
     }
 
     // Insert new labels
     if (updates.label_ids.length > 0) {
-      const stmt = db.prepare("INSERT INTO task_labels (task_id, label_id) VALUES (?, ?)");
+      const stmt = db.prepare(
+        'INSERT INTO task_labels (task_id, label_id) VALUES (?, ?)'
+      );
       for (const taskId of taskIds) {
         for (const labelId of updates.label_ids) {
           stmt.run(taskId, labelId);
@@ -833,21 +986,30 @@ export async function bulkDeleteTasks(taskIds: number[]): Promise<void> {
   const userId = user?.id ?? 0;
 
   // Batch delete using IN clause for better performance
-  const placeholders = taskIds.map(() => "?").join(",");
+  const placeholders = taskIds.map(() => '?').join(',');
 
   if (user?.id) {
     // Only delete tasks owned by user
-    db.prepare(`DELETE FROM tasks WHERE id IN (${placeholders}) AND user_id = ?`).run(...taskIds, user.id);
+    db.prepare(
+      `DELETE FROM tasks WHERE id IN (${placeholders}) AND user_id = ?`
+    ).run(...taskIds, user.id);
   } else {
-    db.prepare(`DELETE FROM tasks WHERE id IN (${placeholders})`).run(...taskIds);
+    db.prepare(`DELETE FROM tasks WHERE id IN (${placeholders})`).run(
+      ...taskIds
+    );
   }
 
   // Broadcast task deletions for real-time updates
   for (const taskId of taskIds) {
-    await broadcastTaskUpdate(taskId, userId, {
-      id: taskId,
-      deleted: true,
-    }, "deleted");
+    await broadcastTaskUpdate(
+      taskId,
+      userId,
+      {
+        id: taskId,
+        deleted: true,
+      },
+      'deleted'
+    );
   }
 }
 
@@ -864,29 +1026,35 @@ export interface BatchOperationResult {
 }
 
 export type BatchOperation =
-  | { type: "complete"; ids: number[] }
-  | { type: "uncomplete"; ids: number[] }
-  | { type: "delete"; ids: number[] }
-  | { type: "archive"; ids: number[] }
-  | { type: "unarchive"; ids: number[] }
-  | { type: "move"; ids: number[]; listId: number }
-  | { type: "set-priority"; ids: number[]; priority: Priority }
-  | { type: "add-labels"; ids: number[]; labelIds: number[] }
-  | { type: "remove-labels"; ids: number[]; labelIds: number[] }
-  | { type: "assign"; ids: number[]; assigneeId: number }
-  | { type: "add-dependencies"; ids: number[]; dependsOnIds: number[] }
-  | { type: "set-dates"; ids: number[]; date: string }
-  | { type: "reorder"; orders: { id: number; sort_order: number }[] };
+  | { type: 'complete'; ids: number[] }
+  | { type: 'uncomplete'; ids: number[] }
+  | { type: 'delete'; ids: number[] }
+  | { type: 'archive'; ids: number[] }
+  | { type: 'unarchive'; ids: number[] }
+  | { type: 'move'; ids: number[]; listId: number }
+  | { type: 'set-priority'; ids: number[]; priority: Priority }
+  | { type: 'add-labels'; ids: number[]; labelIds: number[] }
+  | { type: 'remove-labels'; ids: number[]; labelIds: number[] }
+  | { type: 'assign'; ids: number[]; assigneeId: number }
+  | { type: 'add-dependencies'; ids: number[]; dependsOnIds: number[] }
+  | { type: 'set-dates'; ids: number[]; date: string }
+  | { type: 'reorder'; orders: { id: number; sort_order: number }[] };
 
 /**
  * Perform batch operations on multiple tasks
  */
-export async function performBatchOperation(operation: BatchOperation): Promise<BatchOperationResult> {
+export async function performBatchOperation(
+  operation: BatchOperation
+): Promise<BatchOperationResult> {
   const db = getDb();
   const user = await getCurrentUser();
 
-  if (!user?.id && process.env.NODE_ENV !== "test") {
-    return { success: false, affectedCount: 0, message: "Authentication required" };
+  if (!user?.id && process.env.NODE_ENV !== 'test') {
+    return {
+      success: false,
+      affectedCount: 0,
+      message: 'Authentication required',
+    };
   }
 
   // In test mode, user might be null, so use 0 as fallback
@@ -897,361 +1065,617 @@ export async function performBatchOperation(operation: BatchOperation): Promise<
 
   try {
     switch (operation.type) {
-      case "complete": {
+      case 'complete': {
         affectedCount = await completeTasks(operation.ids, userId);
         // Broadcast completion for realtime updates
         for (const id of operation.ids) {
-          await broadcastTaskUpdate(id, userId, {
+          await broadcastTaskUpdate(
             id,
-            completed: true,
-          }, "completed");
+            userId,
+            {
+              id,
+              completed: true,
+            },
+            'completed'
+          );
         }
         break;
       }
-      case "uncomplete": {
+      case 'uncomplete': {
         affectedCount = await uncompleteTasks(operation.ids, userId);
         // Broadcast uncompletion for realtime updates
         for (const id of operation.ids) {
-          await broadcastTaskUpdate(id, userId, {
+          await broadcastTaskUpdate(
             id,
-            completed: false,
-          }, "updated");
+            userId,
+            {
+              id,
+              completed: false,
+            },
+            'updated'
+          );
         }
         break;
       }
-      case "delete": {
+      case 'delete': {
         affectedCount = await deleteTasks(operation.ids, userId);
         // Broadcast deletions for realtime updates
         for (const id of operation.ids) {
-          await broadcastTaskUpdate(id, userId, {
+          await broadcastTaskUpdate(
             id,
-            deleted: true,
-          }, "deleted");
+            userId,
+            {
+              id,
+              deleted: true,
+            },
+            'deleted'
+          );
         }
         break;
       }
-      case "archive": {
+      case 'archive': {
         affectedCount = await archiveTasks(operation.ids, userId);
         // Broadcast archiving for realtime updates
         for (const id of operation.ids) {
-          await broadcastTaskUpdate(id, userId, {
+          await broadcastTaskUpdate(
             id,
-            archived: true,
-          }, "updated");
+            userId,
+            {
+              id,
+              archived: true,
+            },
+            'updated'
+          );
         }
         break;
       }
-      case "unarchive": {
+      case 'unarchive': {
         affectedCount = await unarchiveTasks(operation.ids, userId);
         // Broadcast unarchiving for realtime updates
         for (const id of operation.ids) {
-          await broadcastTaskUpdate(id, userId, {
+          await broadcastTaskUpdate(
             id,
-            archived: false,
-          }, "updated");
+            userId,
+            {
+              id,
+              archived: false,
+            },
+            'updated'
+          );
         }
         break;
       }
-      case "move": {
-        affectedCount = await moveTasks(operation.ids, operation.listId, userId);
+      case 'move': {
+        affectedCount = await moveTasks(
+          operation.ids,
+          operation.listId,
+          userId
+        );
         // Broadcast move for realtime updates
         for (const id of operation.ids) {
-          await broadcastTaskUpdate(id, userId, {
+          await broadcastTaskUpdate(
             id,
-            list_id: operation.listId,
-          }, "updated");
+            userId,
+            {
+              id,
+              list_id: operation.listId,
+            },
+            'updated'
+          );
         }
         break;
       }
-      case "set-priority": {
-        affectedCount = await setTaskPriorities(operation.ids, operation.priority, userId);
+      case 'set-priority': {
+        affectedCount = await setTaskPriorities(
+          operation.ids,
+          operation.priority,
+          userId
+        );
         // Broadcast priority change for realtime updates
         for (const id of operation.ids) {
-          await broadcastTaskUpdate(id, userId, {
+          await broadcastTaskUpdate(
             id,
-            priority: operation.priority,
-          }, "updated");
+            userId,
+            {
+              id,
+              priority: operation.priority,
+            },
+            'updated'
+          );
         }
         break;
       }
-      case "add-labels": {
-        affectedCount = await addLabelsToTasks(operation.ids, operation.labelIds, userId);
+      case 'add-labels': {
+        affectedCount = await addLabelsToTasks(
+          operation.ids,
+          operation.labelIds,
+          userId
+        );
         // Broadcast label addition for realtime updates
         for (const id of operation.ids) {
-          await broadcastTaskUpdate(id, userId, {
+          await broadcastTaskUpdate(
             id,
-            label_ids: operation.labelIds,
-          }, "updated");
+            userId,
+            {
+              id,
+              label_ids: operation.labelIds,
+            },
+            'updated'
+          );
         }
         break;
       }
-      case "remove-labels": {
-        affectedCount = await removeLabelsFromTasks(operation.ids, operation.labelIds, userId);
+      case 'remove-labels': {
+        affectedCount = await removeLabelsFromTasks(
+          operation.ids,
+          operation.labelIds,
+          userId
+        );
         // Broadcast label removal for realtime updates
         for (const id of operation.ids) {
-          await broadcastTaskUpdate(id, userId, {
+          await broadcastTaskUpdate(
             id,
-            label_ids: operation.labelIds,
-          }, "updated");
+            userId,
+            {
+              id,
+              label_ids: operation.labelIds,
+            },
+            'updated'
+          );
         }
         break;
       }
-      case "assign": {
-        affectedCount = await assignTasks(operation.ids, operation.assigneeId, userId);
+      case 'assign': {
+        affectedCount = await assignTasks(
+          operation.ids,
+          operation.assigneeId,
+          userId
+        );
         // Broadcast assignment for realtime updates
         for (const id of operation.ids) {
-          await broadcastTaskUpdate(id, userId, {
+          await broadcastTaskUpdate(
             id,
-            assignee_id: operation.assigneeId,
-          }, "updated");
+            userId,
+            {
+              id,
+              assignee_id: operation.assigneeId,
+            },
+            'updated'
+          );
         }
         break;
       }
-      case "add-dependencies": {
-        affectedCount = await addTaskDependencies(operation.ids, operation.dependsOnIds, userId);
+      case 'add-dependencies': {
+        affectedCount = await addTaskDependencies(
+          operation.ids,
+          operation.dependsOnIds,
+          userId
+        );
         // Broadcast dependency addition for realtime updates
         for (const id of operation.ids) {
-          await broadcastTaskUpdate(id, userId, {
+          await broadcastTaskUpdate(
             id,
-            depends_on_task_ids: operation.dependsOnIds,
-          }, "updated");
+            userId,
+            {
+              id,
+              depends_on_task_ids: operation.dependsOnIds,
+            },
+            'updated'
+          );
         }
         break;
       }
-      case "set-dates": {
-        affectedCount = await setTaskDates(operation.ids, operation.date, userId);
+      case 'set-dates': {
+        affectedCount = await setTaskDates(
+          operation.ids,
+          operation.date,
+          userId
+        );
         // Broadcast date change for realtime updates
         for (const id of operation.ids) {
-          await broadcastTaskUpdate(id, userId, {
+          await broadcastTaskUpdate(
             id,
-            date: operation.date,
-          }, "updated");
+            userId,
+            {
+              id,
+              date: operation.date,
+            },
+            'updated'
+          );
         }
         break;
       }
-      case "reorder": {
+      case 'reorder': {
         affectedCount = await reorderTasks(operation.orders, userId);
         // Broadcast reorder for realtime updates
         for (const { id, sort_order } of operation.orders) {
-          await broadcastTaskUpdate(id, userId, {
+          await broadcastTaskUpdate(
             id,
-            sort_order,
-          }, "updated");
+            userId,
+            {
+              id,
+              sort_order,
+            },
+            'updated'
+          );
         }
         break;
       }
       default:
-        return { success: false, affectedCount: 0, message: "Unknown operation type" };
+        return {
+          success: false,
+          affectedCount: 0,
+          message: 'Unknown operation type',
+        };
     }
 
-    return { success: true, affectedCount, message: `Successfully processed ${affectedCount} tasks` };
+    return {
+      success: true,
+      affectedCount,
+      message: `Successfully processed ${affectedCount} tasks`,
+    };
   } catch (error) {
     return {
       success: false,
       affectedCount,
-      errors: [{ taskId: 0, error: error instanceof Error ? error.message : "Unknown error" }],
-      message: "Operation failed",
+      errors: [
+        {
+          taskId: 0,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        },
+      ],
+      message: 'Operation failed',
     };
   }
 }
 
 // Helper functions for batch operations
 
-export async function completeTasks(ids: number[], userId: number | null): Promise<number> {
+export async function completeTasks(
+  ids: number[],
+  userId: number | null
+): Promise<number> {
   const db = getDb();
-  const placeholders = ids.map(() => "?").join(",");
+  const placeholders = ids.map(() => '?').join(',');
   const now = new Date().toISOString();
 
   if (userId) {
-    const result = db.prepare(`UPDATE tasks SET completed = 1, completed_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders}) AND user_id = ?`).run(...ids, now, userId);
+    const result = db
+      .prepare(
+        `UPDATE tasks SET completed = 1, completed_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders}) AND user_id = ?`
+      )
+      .run(...ids, now, userId);
     const count = result.changes || 0;
     for (const id of ids) {
-      logTaskAction(id, "completed", "Batch completed");
+      logTaskAction(id, 'completed', 'Batch completed');
     }
     return count;
   }
-  return db.prepare(`UPDATE tasks SET completed = 1, completed_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders})`).run(...ids, now).changes || 0;
+  return (
+    db
+      .prepare(
+        `UPDATE tasks SET completed = 1, completed_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders})`
+      )
+      .run(...ids, now).changes || 0
+  );
 }
 
-export async function uncompleteTasks(ids: number[], userId: number | null): Promise<number> {
+export async function uncompleteTasks(
+  ids: number[],
+  userId: number | null
+): Promise<number> {
   const db = getDb();
-  const placeholders = ids.map(() => "?").join(",");
+  const placeholders = ids.map(() => '?').join(',');
 
   if (userId) {
-    return db.prepare(`UPDATE tasks SET completed = 0, completed_at = NULL, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders}) AND user_id = ?`).run(...ids, userId).changes || 0;
+    return (
+      db
+        .prepare(
+          `UPDATE tasks SET completed = 0, completed_at = NULL, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders}) AND user_id = ?`
+        )
+        .run(...ids, userId).changes || 0
+    );
   }
-  return db.prepare(`UPDATE tasks SET completed = 0, completed_at = NULL, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders})`).run(...ids).changes || 0;
+  return (
+    db
+      .prepare(
+        `UPDATE tasks SET completed = 0, completed_at = NULL, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders})`
+      )
+      .run(...ids).changes || 0
+  );
 }
 
-export async function deleteTasks(ids: number[], userId: number | null): Promise<number> {
+export async function deleteTasks(
+  ids: number[],
+  userId: number | null
+): Promise<number> {
   const db = getDb();
-  const placeholders = ids.map(() => "?").join(",");
+  const placeholders = ids.map(() => '?').join(',');
 
   if (userId) {
-    return db.prepare(`DELETE FROM task_labels WHERE task_id IN (${placeholders}) AND task_id IN (SELECT id FROM tasks WHERE user_id = ?)`).run(...ids, userId).changes || 0;
+    return (
+      db
+        .prepare(
+          `DELETE FROM task_labels WHERE task_id IN (${placeholders}) AND task_id IN (SELECT id FROM tasks WHERE user_id = ?)`
+        )
+        .run(...ids, userId).changes || 0
+    );
   }
   return 0;
 }
 
-export async function archiveTasks(ids: number[], userId: number | null): Promise<number> {
+export async function archiveTasks(
+  ids: number[],
+  userId: number | null
+): Promise<number> {
   const db = getDb();
-  const placeholders = ids.map(() => "?").join(",");
+  const placeholders = ids.map(() => '?').join(',');
 
   if (userId) {
-    const result = db.prepare(`UPDATE tasks SET archived = 1, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders}) AND user_id = ?`).run(...ids, userId);
+    const result = db
+      .prepare(
+        `UPDATE tasks SET archived = 1, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders}) AND user_id = ?`
+      )
+      .run(...ids, userId);
     const count = result.changes || 0;
     for (const id of ids) {
-      logTaskAction(id, "archived", "Batch archived");
+      logTaskAction(id, 'archived', 'Batch archived');
     }
     return count;
   }
   return 0;
 }
 
-export async function unarchiveTasks(ids: number[], userId: number | null): Promise<number> {
+export async function unarchiveTasks(
+  ids: number[],
+  userId: number | null
+): Promise<number> {
   const db = getDb();
-  const placeholders = ids.map(() => "?").join(",");
+  const placeholders = ids.map(() => '?').join(',');
 
   if (userId) {
-    return db.prepare(`UPDATE tasks SET archived = 0, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders}) AND user_id = ?`).run(...ids, userId).changes || 0;
+    return (
+      db
+        .prepare(
+          `UPDATE tasks SET archived = 0, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders}) AND user_id = ?`
+        )
+        .run(...ids, userId).changes || 0
+    );
   }
   return 0;
 }
 
-export async function moveTasks(ids: number[], listId: number, userId: number | null): Promise<number> {
+export async function moveTasks(
+  ids: number[],
+  listId: number,
+  userId: number | null
+): Promise<number> {
   const db = getDb();
-  const placeholders = ids.map(() => "?").join(",");
+  const placeholders = ids.map(() => '?').join(',');
 
   if (userId) {
-    return db.prepare(`UPDATE tasks SET list_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders}) AND user_id = ?`).run(listId, ...ids, userId).changes || 0;
+    return (
+      db
+        .prepare(
+          `UPDATE tasks SET list_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders}) AND user_id = ?`
+        )
+        .run(listId, ...ids, userId).changes || 0
+    );
   }
-  return db.prepare(`UPDATE tasks SET list_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders})`).run(listId, ...ids).changes || 0;
+  return (
+    db
+      .prepare(
+        `UPDATE tasks SET list_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders})`
+      )
+      .run(listId, ...ids).changes || 0
+  );
 }
 
-export async function setTaskPriorities(ids: number[], priority: Priority, userId: number | null): Promise<number> {
+export async function setTaskPriorities(
+  ids: number[],
+  priority: Priority,
+  userId: number | null
+): Promise<number> {
   const db = getDb();
-  const placeholders = ids.map(() => "?").join(",");
+  const placeholders = ids.map(() => '?').join(',');
 
   if (userId) {
-    return db.prepare(`UPDATE tasks SET priority = ?, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders}) AND user_id = ?`).run(priority, ...ids, userId).changes || 0;
+    return (
+      db
+        .prepare(
+          `UPDATE tasks SET priority = ?, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders}) AND user_id = ?`
+        )
+        .run(priority, ...ids, userId).changes || 0
+    );
   }
-  return db.prepare(`UPDATE tasks SET priority = ?, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders})`).run(priority, ...ids).changes || 0;
+  return (
+    db
+      .prepare(
+        `UPDATE tasks SET priority = ?, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders})`
+      )
+      .run(priority, ...ids).changes || 0
+  );
 }
 
-export async function addLabelsToTasks(ids: number[], labelIds: number[], userId: number | null): Promise<number> {
+export async function addLabelsToTasks(
+  ids: number[],
+  labelIds: number[],
+  userId: number | null
+): Promise<number> {
   const db = getDb();
   let count = 0;
 
   for (const taskId of ids) {
     let hasAccess = true;
     if (userId) {
-      const task = db.prepare("SELECT id FROM tasks WHERE id = ? AND user_id = ?").get(taskId, userId);
+      const task = db
+        .prepare('SELECT id FROM tasks WHERE id = ? AND user_id = ?')
+        .get(taskId, userId);
       hasAccess = !!task;
     }
     if (!hasAccess) continue;
 
     for (const labelId of labelIds) {
-      db.prepare("INSERT OR IGNORE INTO task_labels (task_id, label_id) VALUES (?, ?)").run(taskId, labelId);
+      db.prepare(
+        'INSERT OR IGNORE INTO task_labels (task_id, label_id) VALUES (?, ?)'
+      ).run(taskId, labelId);
     }
     count++;
   }
   return count;
 }
 
-export async function removeLabelsFromTasks(ids: number[], labelIds: number[], userId: number | null): Promise<number> {
+export async function removeLabelsFromTasks(
+  ids: number[],
+  labelIds: number[],
+  userId: number | null
+): Promise<number> {
   const db = getDb();
   let count = 0;
 
   for (const taskId of ids) {
     let hasAccess = true;
     if (userId) {
-      const task = db.prepare("SELECT id FROM tasks WHERE id = ? AND user_id = ?").get(taskId, userId);
+      const task = db
+        .prepare('SELECT id FROM tasks WHERE id = ? AND user_id = ?')
+        .get(taskId, userId);
       hasAccess = !!task;
     }
     if (!hasAccess) continue;
 
     for (const labelId of labelIds) {
-      db.prepare("DELETE FROM task_labels WHERE task_id = ? AND label_id = ?").run(taskId, labelId);
+      db.prepare(
+        'DELETE FROM task_labels WHERE task_id = ? AND label_id = ?'
+      ).run(taskId, labelId);
     }
     count++;
   }
   return count;
 }
 
-export async function assignTasks(ids: number[], assigneeId: number, userId: number | null): Promise<number> {
+export async function assignTasks(
+  ids: number[],
+  assigneeId: number,
+  userId: number | null
+): Promise<number> {
   const db = getDb();
-  const placeholders = ids.map(() => "?").join(",");
+  const placeholders = ids.map(() => '?').join(',');
 
   if (userId) {
-    return db.prepare(`UPDATE tasks SET assignee_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders}) AND user_id = ?`).run(assigneeId, ...ids, userId).changes || 0;
+    return (
+      db
+        .prepare(
+          `UPDATE tasks SET assignee_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders}) AND user_id = ?`
+        )
+        .run(assigneeId, ...ids, userId).changes || 0
+    );
   }
-  return db.prepare(`UPDATE tasks SET assignee_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders})`).run(assigneeId, ...ids).changes || 0;
+  return (
+    db
+      .prepare(
+        `UPDATE tasks SET assignee_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders})`
+      )
+      .run(assigneeId, ...ids).changes || 0
+  );
 }
 
-async function addTaskDependencies(ids: number[], dependsOnIds: number[], userId: number | null): Promise<number> {
+async function addTaskDependencies(
+  ids: number[],
+  dependsOnIds: number[],
+  userId: number | null
+): Promise<number> {
   const db = getDb();
   let count = 0;
 
   for (const taskId of ids) {
     let hasAccess = true;
     if (userId) {
-      const task = db.prepare("SELECT id FROM tasks WHERE id = ? AND user_id = ?").get(taskId, userId);
+      const task = db
+        .prepare('SELECT id FROM tasks WHERE id = ? AND user_id = ?')
+        .get(taskId, userId);
       hasAccess = !!task;
     }
     if (!hasAccess) continue;
 
     for (const dependsOnId of dependsOnIds) {
-      db.prepare("INSERT OR IGNORE INTO task_dependencies (task_id, depends_on_task_id) VALUES (?, ?)").run(taskId, dependsOnId);
+      db.prepare(
+        'INSERT OR IGNORE INTO task_dependencies (task_id, depends_on_task_id) VALUES (?, ?)'
+      ).run(taskId, dependsOnId);
     }
     count++;
   }
   return count;
 }
 
-export async function setTaskDates(ids: number[], date: string, userId: number | null): Promise<number> {
+export async function setTaskDates(
+  ids: number[],
+  date: string,
+  userId: number | null
+): Promise<number> {
   const db = getDb();
-  const placeholders = ids.map(() => "?").join(",");
+  const placeholders = ids.map(() => '?').join(',');
 
   if (userId) {
-    return db.prepare(`UPDATE tasks SET date = ?, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders}) AND user_id = ?`).run(date, ...ids, userId).changes || 0;
+    return (
+      db
+        .prepare(
+          `UPDATE tasks SET date = ?, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders}) AND user_id = ?`
+        )
+        .run(date, ...ids, userId).changes || 0
+    );
   }
-  return db.prepare(`UPDATE tasks SET date = ?, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders})`).run(date, ...ids).changes || 0;
+  return (
+    db
+      .prepare(
+        `UPDATE tasks SET date = ?, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders})`
+      )
+      .run(date, ...ids).changes || 0
+  );
 }
 
-export async function reorderTasks(taskOrders: { id: number; sort_order: number }[], userId: number | null): Promise<number> {
+export async function reorderTasks(
+  taskOrders: { id: number; sort_order: number }[],
+  userId: number | null
+): Promise<number> {
   const db = getDb();
   let count = 0;
 
   for (const { id, sort_order } of taskOrders) {
     if (userId) {
-      db.prepare("UPDATE tasks SET sort_order = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?").run(sort_order, id, userId);
+      db.prepare(
+        'UPDATE tasks SET sort_order = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?'
+      ).run(sort_order, id, userId);
     } else {
-      db.prepare("UPDATE tasks SET sort_order = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(sort_order, id);
+      db.prepare(
+        'UPDATE tasks SET sort_order = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
+      ).run(sort_order, id);
     }
     count++;
   }
   return count;
 }
 
-export async function getTasksByIds(ids: number[]): Promise<TaskWithRelations[]> {
+export async function getTasksByIds(
+  ids: number[]
+): Promise<TaskWithRelations[]> {
   if (ids.length === 0) return [];
 
   const db = getDb();
 
   // Batch fetch all tasks with their relations in a single query to avoid N+1 problem
-  const placeholders = ids.map(() => "?").join(",");
+  const placeholders = ids.map(() => '?').join(',');
 
   // Fetch tasks
   const tasks = db
     .prepare(`SELECT * FROM tasks WHERE id IN (${placeholders})`)
     .all(...ids) as Task[];
 
-  const taskIds = tasks.map((t) => t.id);
+  const taskIds = tasks.map(t => t.id);
 
   // Batch fetch all relations using shared utility
   const relationsMap = await getTaskRelations(db, taskIds);
 
-  const result: TaskWithRelations[] = tasks.map((task) => {
+  const result: TaskWithRelations[] = tasks.map(task => {
     const relations = relationsMap[task.id] || {
       labels: [],
       subtasks: [],
@@ -1288,21 +1712,26 @@ export async function toggleSubtask(id: number): Promise<Subtask> {
   const user = await getCurrentUser();
 
   // Verify user ownership of the parent task before allowing modification
-  const subtask = db.prepare("SELECT * FROM subtasks WHERE id = ?").get(id) as Subtask;
+  const subtask = db
+    .prepare('SELECT * FROM subtasks WHERE id = ?')
+    .get(id) as Subtask;
   if (!subtask) {
-    throw new Error("Subtask not found");
+    throw new Error('Subtask not found');
   }
 
   // Check if user owns the parent task (or in test mode)
-  const effectiveUserId = user?.id ?? (process.env.NODE_ENV === "test" ? 1 : null);
-  if (effectiveUserId && process.env.NODE_ENV !== "test") {
-    const task = db.prepare("SELECT id FROM tasks WHERE id = ? AND user_id = ?").get(subtask.task_id, effectiveUserId);
+  const effectiveUserId =
+    user?.id ?? (process.env.NODE_ENV === 'test' ? 1 : null);
+  if (effectiveUserId && process.env.NODE_ENV !== 'test') {
+    const task = db
+      .prepare('SELECT id FROM tasks WHERE id = ? AND user_id = ?')
+      .get(subtask.task_id, effectiveUserId);
     if (!task) {
-      throw new Error("Task not found or access denied");
+      throw new Error('Task not found or access denied');
     }
   }
 
-  db.prepare("UPDATE subtasks SET completed = ? WHERE id = ?").run(
+  db.prepare('UPDATE subtasks SET completed = ? WHERE id = ?').run(
     subtask.completed ? 0 : 1,
     id
   );
@@ -1314,14 +1743,17 @@ export async function getOverdueCount(): Promise<number> {
   const user = await getCurrentUser();
 
   // In test mode, use demo user ID; in production require auth
-  const effectiveUserId = user?.id ?? (process.env.NODE_ENV === "test" ? 1 : null);
+  const effectiveUserId =
+    user?.id ?? (process.env.NODE_ENV === 'test' ? 1 : null);
   if (!effectiveUserId) {
     return 0;
   }
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = new Date().toISOString().split('T')[0];
   const result = db
-    .prepare("SELECT COUNT(*) as count FROM tasks WHERE date < ? AND completed = 0 AND user_id = ?")
+    .prepare(
+      'SELECT COUNT(*) as count FROM tasks WHERE date < ? AND completed = 0 AND user_id = ?'
+    )
     .get(today, effectiveUserId) as { count: number };
   return result.count;
 }
@@ -1348,32 +1780,38 @@ export async function generateRecurringTasks(): Promise<number> {
 
   for (const task of recurringTasks) {
     // Parse recurring_config with error handling
-    let config: { interval?: number; unit?: "days" | "weeks" | "months" | "years" } = {};
+    let config: {
+      interval?: number;
+      unit?: 'days' | 'weeks' | 'months' | 'years';
+    } = {};
     try {
-      config = JSON.parse(task.recurring_config || "{}");
-      if (typeof config !== "object" || config === null) {
+      config = JSON.parse(task.recurring_config || '{}');
+      if (typeof config !== 'object' || config === null) {
         config = {};
       }
     } catch (error) {
-      console.warn(`Invalid recurring_config for task ${task.id}, skipping:`, error);
+      console.warn(
+        `Invalid recurring_config for task ${task.id}, skipping:`,
+        error
+      );
       continue;
     }
     let nextDate: string | null = null;
 
     switch (task.recurring) {
-      case "daily":
+      case 'daily':
         nextDate = new Date(Date.now() + 24 * 60 * 60 * 1000)
           .toISOString()
-          .split("T")[0];
+          .split('T')[0];
         break;
 
-      case "weekly":
+      case 'weekly':
         nextDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
           .toISOString()
-          .split("T")[0];
+          .split('T')[0];
         break;
 
-      case "weekdays": {
+      case 'weekdays': {
         const next = new Date(Date.now() + 24 * 60 * 60 * 1000);
         let nextDay = next.getDay();
         // Skip weekends (0 = Sunday, 6 = Saturday)
@@ -1381,35 +1819,37 @@ export async function generateRecurringTasks(): Promise<number> {
           next.setDate(next.getDate() + 1);
           nextDay = next.getDay();
         }
-        nextDate = next.toISOString().split("T")[0];
+        nextDate = next.toISOString().split('T')[0];
         break;
       }
 
-      case "monthly":
+      case 'monthly':
         nextDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
           .toISOString()
-          .split("T")[0];
+          .split('T')[0];
         break;
 
-      case "yearly":
+      case 'yearly':
         nextDate = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
           .toISOString()
-          .split("T")[0];
+          .split('T')[0];
         break;
 
-      case "custom":
+      case 'custom':
         if (config.interval && config.unit) {
           const multiplier =
-            config.unit === "days"
+            config.unit === 'days'
               ? 1
-              : config.unit === "weeks"
-              ? 7
-              : config.unit === "months"
-              ? 30
-              : 365;
-          nextDate = new Date(Date.now() + config.interval * multiplier * 24 * 60 * 60 * 1000)
+              : config.unit === 'weeks'
+                ? 7
+                : config.unit === 'months'
+                  ? 30
+                  : 365;
+          nextDate = new Date(
+            Date.now() + config.interval * multiplier * 24 * 60 * 60 * 1000
+          )
             .toISOString()
-            .split("T")[0];
+            .split('T')[0];
         }
         break;
     }
@@ -1439,17 +1879,21 @@ export async function archiveTask(id: number): Promise<void> {
   const user = await getCurrentUser();
 
   if (!user?.id) {
-    throw new Error("Authentication required");
+    throw new Error('Authentication required');
   }
 
   // Verify user owns the task
-  const existing = db.prepare("SELECT id FROM tasks WHERE id = ? AND user_id = ?").get(id, user.id);
+  const existing = db
+    .prepare('SELECT id FROM tasks WHERE id = ? AND user_id = ?')
+    .get(id, user.id);
   if (!existing) {
-    throw new Error("Task not found or access denied");
+    throw new Error('Task not found or access denied');
   }
 
-  db.prepare("UPDATE tasks SET archived = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(id);
-  logTaskAction(id, "archived", "Task archived");
+  db.prepare(
+    'UPDATE tasks SET archived = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
+  ).run(id);
+  logTaskAction(id, 'archived', 'Task archived');
 }
 
 /**
@@ -1460,17 +1904,21 @@ export async function unarchiveTask(id: number): Promise<void> {
   const user = await getCurrentUser();
 
   if (!user?.id) {
-    throw new Error("Authentication required");
+    throw new Error('Authentication required');
   }
 
   // Verify user owns the task
-  const existing = db.prepare("SELECT id FROM tasks WHERE id = ? AND user_id = ?").get(id, user.id);
+  const existing = db
+    .prepare('SELECT id FROM tasks WHERE id = ? AND user_id = ?')
+    .get(id, user.id);
   if (!existing) {
-    throw new Error("Task not found or access denied");
+    throw new Error('Task not found or access denied');
   }
 
-  db.prepare("UPDATE tasks SET archived = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(id);
-  logTaskAction(id, "unarchived", "Task unarchived");
+  db.prepare(
+    'UPDATE tasks SET archived = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
+  ).run(id);
+  logTaskAction(id, 'unarchived', 'Task unarchived');
 }
 
 /**
@@ -1485,13 +1933,15 @@ export async function getArchivedTasks(): Promise<TaskWithRelations[]> {
   }
 
   const tasks = db
-    .prepare("SELECT * FROM tasks WHERE user_id = ? AND archived = 1 ORDER BY updated_at DESC")
+    .prepare(
+      'SELECT * FROM tasks WHERE user_id = ? AND archived = 1 ORDER BY updated_at DESC'
+    )
     .all(user.id) as Task[];
 
-  const taskIds = tasks.map((t) => t.id);
+  const taskIds = tasks.map(t => t.id);
   const relationsMap = await getTaskRelations(db, taskIds);
 
-  return tasks.map((task) => {
+  return tasks.map(task => {
     const relations = relationsMap[task.id] || {
       labels: [],
       subtasks: [],
@@ -1534,37 +1984,51 @@ export async function getArchivedTasks(): Promise<TaskWithRelations[]> {
  * AI-powered task editing - process natural language commands to modify tasks
  */
 export async function editTaskWithAI(
-  command: { action: string; taskId?: number; updates?: Record<string, unknown> },
-  tasks: Array<{ id: number; name: string; completed: boolean; priority: string }>
+  command: {
+    action: string;
+    taskId?: number;
+    updates?: Record<string, unknown>;
+  },
+  tasks: Array<{
+    id: number;
+    name: string;
+    completed: boolean;
+    priority: string;
+  }>
 ): Promise<{ success: boolean; message: string; task?: TaskWithRelations }> {
   const { action, taskId, updates } = command;
 
-  if (action === "delete" && taskId) {
+  if (action === 'delete' && taskId) {
     await deleteTask(taskId);
-    return { success: true, message: "Task deleted" };
+    return { success: true, message: 'Task deleted' };
   }
 
   if (taskId) {
     const taskInput: Record<string, unknown> = {};
-    if (updates?.priority && ["critical", "high", "medium", "low", "none"].includes(updates.priority as string)) {
+    if (
+      updates?.priority &&
+      ['critical', 'high', 'medium', 'low', 'none'].includes(
+        updates.priority as string
+      )
+    ) {
       taskInput.priority = updates.priority;
     }
-    if (updates?.list_id && typeof updates.list_id === "number") {
+    if (updates?.list_id && typeof updates.list_id === 'number') {
       taskInput.list_id = updates.list_id;
     }
     if (updates?.completed !== undefined) {
       taskInput.completed = updates.completed ? 1 : 0;
     }
-    if (updates?.date && typeof updates.date === "string") {
+    if (updates?.date && typeof updates.date === 'string') {
       taskInput.date = updates.date;
     }
-    if (updates?.deadline && typeof updates.deadline === "string") {
+    if (updates?.deadline && typeof updates.deadline === 'string') {
       taskInput.deadline = updates.deadline;
     }
 
     const updated = await updateTask(taskId, taskInput);
-    return { success: true, message: "Task updated", task: updated };
+    return { success: true, message: 'Task updated', task: updated };
   }
 
-  return { success: false, message: "No valid task specified" };
+  return { success: false, message: 'No valid task specified' };
 }
