@@ -19,9 +19,11 @@ export function generateDailySummary(
   tasks: TaskSummary[],
   userName: string
 ): string {
-  const overdue = tasks.filter((t) => !t.completed && t.daysUntilDue < 0);
-  const dueToday = tasks.filter((t) => !t.completed && t.daysUntilDue === 0);
-  const highPriority = tasks.filter((t) => t.priority === "critical" && !t.completed);
+  const overdue = tasks.filter(t => !t.completed && t.daysUntilDue < 0);
+  const dueToday = tasks.filter(t => !t.completed && t.daysUntilDue === 0);
+  const highPriority = tasks.filter(
+    t => t.priority === 'critical' && !t.completed
+  );
 
   return `
 <!DOCTYPE html>
@@ -51,41 +53,65 @@ export function generateDailySummary(
       <p>Total tasks: ${tasks.length} | Completed: ${tasks.filter(t => t.completed).length} | Overdue: ${overdue.length}</p>
     </div>
 
-    ${overdue.length > 0 ? `
+    ${
+      overdue.length > 0
+        ? `
     <div class="section">
       <h2>⚠️ Overdue Tasks (${overdue.length})</h2>
-      ${overdue.map(t => `
+      ${overdue
+        .map(
+          t => `
         <div class="task priority-${t.priority}">
           <strong>${t.name}</strong>
           <p>Priority: ${t.priority} | Was due: ${Math.abs(t.daysUntilDue)} days ago</p>
         </div>
-      `).join('')}
+      `
+        )
+        .join('')}
     </div>
-    ` : ''}
+    `
+        : ''
+    }
 
-    ${dueToday.length > 0 ? `
+    ${
+      dueToday.length > 0
+        ? `
     <div class="section">
       <h2>📅 Due Today (${dueToday.length})</h2>
-      ${dueToday.map(t => `
+      ${dueToday
+        .map(
+          t => `
         <div class="task priority-${t.priority}">
           <strong>${t.name}</strong>
           <p>Priority: ${t.priority}</p>
         </div>
-      `).join('')}
+      `
+        )
+        .join('')}
     </div>
-    ` : ''}
+    `
+        : ''
+    }
 
-    ${highPriority.length > 0 ? `
+    ${
+      highPriority.length > 0
+        ? `
     <div class="section">
       <h2>🔥 High Priority Tasks (${highPriority.length})</h2>
-      ${highPriority.map(t => `
+      ${highPriority
+        .map(
+          t => `
         <div class="task priority-${t.priority}">
           <strong>${t.name}</strong>
           <p>Due: ${t.dueDate || 'No deadline'}</p>
         </div>
-      `).join('')}
+      `
+        )
+        .join('')}
     </div>
-    ` : ''}
+    `
+        : ''
+    }
 
     <div class="footer">
       <p>TaskFlow - Your productivity companion</p>
@@ -103,8 +129,9 @@ export function generateWeeklySummary(
   tasks: TaskSummary[],
   userName: string
 ): string {
-  const completed = tasks.filter((t) => t.completed);
-  const completionRate = tasks.length > 0 ? (completed.length / tasks.length) * 100 : 0;
+  const completed = tasks.filter(t => t.completed);
+  const completionRate =
+    tasks.length > 0 ? (completed.length / tasks.length) * 100 : 0;
   const streak = Math.floor(completionRate / 20); // Rough streak calculation
 
   return `
