@@ -3,7 +3,7 @@
  * Enhances the basic AI parsing with calendar context, user preferences, and prediction
  */
 
-import type { TaskWithRelations, UserSettings } from "@/types";
+import type { TaskWithRelations, UserSettings } from '@/types';
 
 export interface CalendarEvent {
   id: string;
@@ -55,25 +55,37 @@ export async function analyzeCalendarContext(
   userTasks: TaskWithRelations[]
 ): Promise<EventTask[]> {
   const actionVerbs = [
-    'follow up', 'review', 'prepare', 'create', 'update',
-    'send', 'schedule', 'discuss', 'complete', 'finalize',
-    'call', 'meeting', 'presentation', 'presentation'
+    'follow up',
+    'review',
+    'prepare',
+    'create',
+    'update',
+    'send',
+    'schedule',
+    'discuss',
+    'complete',
+    'finalize',
+    'call',
+    'meeting',
+    'presentation',
+    'presentation',
   ];
 
   const results: EventTask[] = [];
 
   for (const event of events) {
-    const needsAction = actionVerbs.some(verb =>
-      event.title.toLowerCase().includes(verb) ||
-      event.description?.toLowerCase().includes(verb)
+    const needsAction = actionVerbs.some(
+      verb =>
+        event.title.toLowerCase().includes(verb) ||
+        event.description?.toLowerCase().includes(verb)
     );
 
     if (!needsAction) continue;
 
     // Check if a related task already exists
-    const existingTask = userTasks.find(t =>
-      t.name.toLowerCase().includes(event.title.toLowerCase()) &&
-      !t.completed
+    const existingTask = userTasks.find(
+      t =>
+        t.name.toLowerCase().includes(event.title.toLowerCase()) && !t.completed
     );
 
     if (existingTask) continue;
@@ -112,27 +124,38 @@ export async function generateMorningBriefing(
   const todayStr = today.toISOString().split('T')[0];
 
   // Get today's tasks
-  const todaysTasks = tasks.filter(t =>
-    t.date === todayStr ||
-    (t.deadline && new Date(t.deadline) <= today) ||
-    (t.deadline && new Date(t.deadline) >= new Date(todayStr))
-  ).sort((a, b) => {
-    // Sort by priority and deadline
-    const priorityOrder = { critical: 0, high: 1, medium: 2, low: 3, none: 4 };
-    const aPriority = priorityOrder[a.priority as keyof typeof priorityOrder] || 4;
-    const bPriority = priorityOrder[b.priority as keyof typeof priorityOrder] || 4;
+  const todaysTasks = tasks
+    .filter(
+      t =>
+        t.date === todayStr ||
+        (t.deadline && new Date(t.deadline) <= today) ||
+        (t.deadline && new Date(t.deadline) >= new Date(todayStr))
+    )
+    .sort((a, b) => {
+      // Sort by priority and deadline
+      const priorityOrder = {
+        critical: 0,
+        high: 1,
+        medium: 2,
+        low: 3,
+        none: 4,
+      };
+      const aPriority =
+        priorityOrder[a.priority as keyof typeof priorityOrder] || 4;
+      const bPriority =
+        priorityOrder[b.priority as keyof typeof priorityOrder] || 4;
 
-    if (aPriority !== bPriority) return aPriority - bPriority;
+      if (aPriority !== bPriority) return aPriority - bPriority;
 
-    // Then by deadline
-    if (a.deadline && b.deadline) {
-      return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
-    }
-    if (a.deadline) return -1;
-    if (b.deadline) return 1;
+      // Then by deadline
+      if (a.deadline && b.deadline) {
+        return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+      }
+      if (a.deadline) return -1;
+      if (b.deadline) return 1;
 
-    return 0;
-  });
+      return 0;
+    });
 
   // Get top 3 tasks
   const topTasks = todaysTasks.slice(0, 3).map(task => {
@@ -140,7 +163,10 @@ export async function generateMorningBriefing(
     if (task.priority === 'critical') {
       reasoning = 'Critical priority';
     } else if (task.deadline) {
-      const daysUntil = Math.ceil((new Date(task.deadline).getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      const daysUntil = Math.ceil(
+        (new Date(task.deadline).getTime() - today.getTime()) /
+          (1000 * 60 * 60 * 24)
+      );
       reasoning = `Due in ${daysUntil} ${daysUntil === 1 ? 'day' : 'days'}`;
     } else {
       reasoning = 'Scheduled for today';
@@ -167,15 +193,20 @@ export async function generateMorningBriefing(
   }
 
   // Deadline insight
-  const overdue = tasks.filter(t => t.deadline && new Date(t.deadline) < today && !t.completed);
+  const overdue = tasks.filter(
+    t => t.deadline && new Date(t.deadline) < today && !t.completed
+  );
   if (overdue.length > 0) {
-    insights.push(`${overdue.length} task(s) are overdue. Quick review recommended`);
+    insights.push(
+      `${overdue.length} task(s) are overdue. Quick review recommended`
+    );
   }
 
   // Productivity pattern insight
-  const completionRate = tasks.length > 0
-    ? (tasks.filter(t => t.completed).length / tasks.length) * 100
-    : 0;
+  const completionRate =
+    tasks.length > 0
+      ? (tasks.filter(t => t.completed).length / tasks.length) * 100
+      : 0;
 
   if (completionRate > 70) {
     insights.push('Great start yesterday! Keep this momentum going.');
@@ -202,29 +233,37 @@ export async function generateEndOfDaySummary(
   const todayStr = today.toISOString().split('T')[0];
 
   // Completed today
-  const completedToday = tasks.filter(t =>
-    t.completed && t.completed_at &&
-    new Date(t.completed_at).toISOString().split('T')[0] === todayStr
-  ).map(t => t.name);
+  const completedToday = tasks
+    .filter(
+      t =>
+        t.completed &&
+        t.completed_at &&
+        new Date(t.completed_at).toISOString().split('T')[0] === todayStr
+    )
+    .map(t => t.name);
 
   // In progress
   const inProgress = tasks.filter(t => !t.completed).map(t => t.name);
 
   // Upcoming
-  const tomorrowStr = new Date(today.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-  const upcoming = tasks.filter(t =>
-    t.date === tomorrowStr && !t.completed
-  ).map(t => t.name);
+  const tomorrowStr = new Date(today.getTime() + 24 * 60 * 60 * 1000)
+    .toISOString()
+    .split('T')[0];
+  const upcoming = tasks
+    .filter(t => t.date === tomorrowStr && !t.completed)
+    .map(t => t.name);
 
   // Generate reflection prompt based on today's work
-  const reflectionPrompt = completedToday.length > 0
-    ? `What helped you complete ${completedToday.length} task(s) today?`
-    : 'Ready to tackle tomorrow\'s tasks?';
+  const reflectionPrompt =
+    completedToday.length > 0
+      ? `What helped you complete ${completedToday.length} task(s) today?`
+      : "Ready to tackle tomorrow's tasks?";
 
   // Next day preview
-  const nextDayPreview = upcoming.length > 0
-    ? `${upcoming.length} task(s) scheduled for tomorrow`
-    : 'No specific tasks scheduled for tomorrow';
+  const nextDayPreview =
+    upcoming.length > 0
+      ? `${upcoming.length} task(s) scheduled for tomorrow`
+      : 'No specific tasks scheduled for tomorrow';
 
   return {
     completed: completedToday,
@@ -265,12 +304,16 @@ export async function predictTaskCompletion(
 
     // Use historical data for better predictions
     if (userHistoricalData && userHistoricalData.length > 0) {
-      const similarTasks = userHistoricalData.filter(h =>
-        !h.completed && h.task_type === task.name.substring(0, 10).toLowerCase()
+      const similarTasks = userHistoricalData.filter(
+        h =>
+          !h.completed &&
+          h.task_type === task.name.substring(0, 10).toLowerCase()
       );
 
       if (similarTasks.length > 0) {
-        const avgActual = similarTasks.reduce((sum, h) => sum + h.actual_time, 0) / similarTasks.length;
+        const avgActual =
+          similarTasks.reduce((sum, h) => sum + h.actual_time, 0) /
+          similarTasks.length;
         estimatedMinutes = avgActual;
         confidence = 0.8;
         reasoning = `Based on ${similarTasks.length} similar task(s)`;
@@ -343,8 +386,11 @@ export function detectScheduleConflicts(
       const deadlineTime = taskDeadline.getTime();
 
       // Check if conflict exists near deadline
-      return (taskDeadline >= slotStart && taskDeadline <= slotEnd) ||
-             (slotStart >= new Date(deadlineTime - 24 * 60 * 60 * 1000) && slotStart <= new Date(deadlineTime + 24 * 60 * 60 * 1000));
+      return (
+        (taskDeadline >= slotStart && taskDeadline <= slotEnd) ||
+        (slotStart >= new Date(deadlineTime - 24 * 60 * 60 * 1000) &&
+          slotStart <= new Date(deadlineTime + 24 * 60 * 60 * 1000))
+      );
     });
 
     if (conflictingSlots.length > 0) {
