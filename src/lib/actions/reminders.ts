@@ -1,7 +1,7 @@
-"use server";
+'use server';
 
-import { getDb } from "@/lib/db";
-import type { Reminder } from "@/types";
+import { getDb } from '@/lib/db';
+import type { Reminder } from '@/types';
 
 /**
  * Get all reminders for a specific task
@@ -9,16 +9,16 @@ import type { Reminder } from "@/types";
 export async function getReminders(taskId: number): Promise<Reminder[]> {
   const db = getDb();
   return db
-    .prepare("SELECT * FROM reminders WHERE task_id = ? ORDER BY remind_at ASC")
+    .prepare('SELECT * FROM reminders WHERE task_id = ? ORDER BY remind_at ASC')
     .all(taskId) as Reminder[];
 }
 
 /**
  * Get upcoming reminders across all tasks
  */
-export async function getUpcomingReminders(limit = 10): Promise<
-  Array<Reminder & { task_name: string; task_completed: number }>
-> {
+export async function getUpcomingReminders(
+  limit = 10
+): Promise<Array<Reminder & { task_name: string; task_completed: number }>> {
   const db = getDb();
   return db
     .prepare(
@@ -29,7 +29,9 @@ export async function getUpcomingReminders(limit = 10): Promise<
        ORDER BY r.remind_at ASC
        LIMIT ?`
     )
-    .all(limit) as Array<Reminder & { task_name: string; task_completed: number }>;
+    .all(limit) as Array<
+    Reminder & { task_name: string; task_completed: number }
+  >;
 }
 
 /**
@@ -42,13 +44,15 @@ export async function createReminder(input: {
   const db = getDb();
 
   // Verify task exists
-  const task = db.prepare("SELECT id FROM tasks WHERE id = ?").get(input.task_id);
+  const task = db
+    .prepare('SELECT id FROM tasks WHERE id = ?')
+    .get(input.task_id);
   if (!task) {
-    throw new Error("Task not found");
+    throw new Error('Task not found');
   }
 
   const result = db
-    .prepare("INSERT INTO reminders (task_id, remind_at) VALUES (?, ?)")
+    .prepare('INSERT INTO reminders (task_id, remind_at) VALUES (?, ?)')
     .run(input.task_id, input.remind_at);
 
   return {
@@ -62,27 +66,34 @@ export async function createReminder(input: {
 /**
  * Update a reminder
  */
-export async function updateReminder(id: number, updates: Partial<Omit<Reminder, "id" | "task_id" | "created_at">>): Promise<Reminder> {
+export async function updateReminder(
+  id: number,
+  updates: Partial<Omit<Reminder, 'id' | 'task_id' | 'created_at'>>
+): Promise<Reminder> {
   const db = getDb();
 
   const fields: string[] = [];
   const values: unknown[] = [];
 
   if (updates.remind_at !== undefined) {
-    fields.push("remind_at = ?");
+    fields.push('remind_at = ?');
     values.push(updates.remind_at);
   }
 
   if (fields.length === 0) {
-    throw new Error("No fields to update");
+    throw new Error('No fields to update');
   }
 
   values.push(id);
-  db.prepare(`UPDATE reminders SET ${fields.join(", ")} WHERE id = ?`).run(...values);
+  db.prepare(`UPDATE reminders SET ${fields.join(', ')} WHERE id = ?`).run(
+    ...values
+  );
 
-  const reminder = db.prepare("SELECT * FROM reminders WHERE id = ?").get(id) as Reminder;
+  const reminder = db
+    .prepare('SELECT * FROM reminders WHERE id = ?')
+    .get(id) as Reminder;
   if (!reminder) {
-    throw new Error("Reminder not found");
+    throw new Error('Reminder not found');
   }
 
   return reminder;
@@ -93,7 +104,7 @@ export async function updateReminder(id: number, updates: Partial<Omit<Reminder,
  */
 export async function deleteReminder(id: number): Promise<void> {
   const db = getDb();
-  db.prepare("DELETE FROM reminders WHERE id = ?").run(id);
+  db.prepare('DELETE FROM reminders WHERE id = ?').run(id);
 }
 
 /**
@@ -101,7 +112,7 @@ export async function deleteReminder(id: number): Promise<void> {
  */
 export async function deleteRemindersForTask(taskId: number): Promise<void> {
   const db = getDb();
-  db.prepare("DELETE FROM reminders WHERE task_id = ?").run(taskId);
+  db.prepare('DELETE FROM reminders WHERE task_id = ?').run(taskId);
 }
 
 /**
@@ -127,15 +138,22 @@ export async function getDueReminders(): Promise<
 /**
  * Snooze a reminder to a new time
  */
-export async function snoozeReminder(id: number, minutes: number): Promise<Reminder> {
+export async function snoozeReminder(
+  id: number,
+  minutes: number
+): Promise<Reminder> {
   const db = getDb();
-  const current = db.prepare("SELECT remind_at FROM reminders WHERE id = ?").get(id) as Reminder | undefined;
+  const current = db
+    .prepare('SELECT remind_at FROM reminders WHERE id = ?')
+    .get(id) as Reminder | undefined;
 
   if (!current) {
-    throw new Error("Reminder not found");
+    throw new Error('Reminder not found');
   }
 
-  const newTime = new Date(new Date(current.remind_at).getTime() + minutes * 60000);
+  const newTime = new Date(
+    new Date(current.remind_at).getTime() + minutes * 60000
+  );
 
   return updateReminder(id, { remind_at: newTime.toISOString() });
 }
