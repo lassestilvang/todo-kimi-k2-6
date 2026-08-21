@@ -3,22 +3,33 @@
  * No-code automation engine for task management
  */
 
-"use server";
+'use server';
 
-import { getDb } from "@/lib/db";
-import { revalidatePath } from "next/cache";
+import { getDb } from '@/lib/db';
+import { revalidatePath } from 'next/cache';
 
 // Trigger types
-export type TriggerType = "manual" | "cron" | "schedule" | "task_created" | "task_completed" | "due_date";
+export type TriggerType =
+  | 'manual'
+  | 'cron'
+  | 'schedule'
+  | 'task_created'
+  | 'task_completed'
+  | 'due_date';
 
 // Action types
-export type ActionType = "create_task" | "update_task" | "send_notification" | "log_message" | "webhook";
+export type ActionType =
+  | 'create_task'
+  | 'update_task'
+  | 'send_notification'
+  | 'log_message'
+  | 'webhook';
 
 // Workflow status
-export type WorkflowStatus = "active" | "paused" | "error";
+export type WorkflowStatus = 'active' | 'paused' | 'error';
 
 // Workflow execution status
-export type ExecutionStatus = "running" | "completed" | "failed" | "skipped";
+export type ExecutionStatus = 'running' | 'completed' | 'failed' | 'skipped';
 
 // Type for workflow creation data
 export interface CreateWorkflowData {
@@ -56,13 +67,22 @@ export async function getWorkflow(id: number, userId: number) {
 // Create a new workflow
 export async function createWorkflow(
   userId: number,
-  data: { name: string; description?: string; trigger_type: TriggerType; trigger_config?: Record<string, unknown>; action_type: ActionType; action_config?: Record<string, unknown>; condition_json?: Record<string, unknown>; enabled?: boolean }
+  data: {
+    name: string;
+    description?: string;
+    trigger_type: TriggerType;
+    trigger_config?: Record<string, unknown>;
+    action_type: ActionType;
+    action_config?: Record<string, unknown>;
+    condition_json?: Record<string, unknown>;
+    enabled?: boolean;
+  }
 ) {
   const db = getDb();
 
   // Validate required fields
-  if (!data.name || data.name.trim() === "") {
-    throw new Error("Name is required");
+  if (!data.name || data.name.trim() === '') {
+    throw new Error('Name is required');
   }
 
   const stmt = db.prepare(`
@@ -89,12 +109,21 @@ export async function createWorkflow(
 export async function updateWorkflow(
   userId: number,
   id: number,
-  data: Partial<{ name: string; description?: string; trigger_type: TriggerType; trigger_config?: Record<string, unknown>; action_type: ActionType; action_config?: Record<string, unknown>; condition_json?: Record<string, unknown>; enabled?: boolean }>
+  data: Partial<{
+    name: string;
+    description?: string;
+    trigger_type: TriggerType;
+    trigger_config?: Record<string, unknown>;
+    action_type: ActionType;
+    action_config?: Record<string, unknown>;
+    condition_json?: Record<string, unknown>;
+    enabled?: boolean;
+  }>
 ) {
   const db = getDb();
   const workflow = await getWorkflow(id, userId);
   if (!workflow) {
-    throw new Error("Workflow not found");
+    throw new Error('Workflow not found');
   }
 
   const updateStmt = db.prepare(`
@@ -116,10 +145,14 @@ export async function updateWorkflow(
     updateData.name,
     updateData.description,
     updateData.trigger_type,
-    updateData.trigger_config ? JSON.stringify(updateData.trigger_config) : null,
+    updateData.trigger_config
+      ? JSON.stringify(updateData.trigger_config)
+      : null,
     updateData.action_type,
     updateData.action_config ? JSON.stringify(updateData.action_config) : null,
-    updateData.condition_json ? JSON.stringify(updateData.condition_json) : null,
+    updateData.condition_json
+      ? JSON.stringify(updateData.condition_json)
+      : null,
     updateData.enabled,
     id,
     userId
@@ -147,7 +180,7 @@ export async function toggleWorkflow(id: number, userId: number) {
   const db = getDb();
   const workflow = await getWorkflow(id, userId);
   if (!workflow) {
-    throw new Error("Workflow not found");
+    throw new Error('Workflow not found');
   }
 
   const stmt = db.prepare(`
@@ -173,7 +206,7 @@ export async function executeWorkflow(
   // Get workflow
   const workflow = await getWorkflow(workflowId, userId!);
   if (!workflow || !workflow.enabled) {
-    throw new Error("Workflow not found or disabled");
+    throw new Error('Workflow not found or disabled');
   }
 
   // Record execution start
@@ -182,7 +215,10 @@ export async function executeWorkflow(
     VALUES (?, datetime('now'), 'running', ?, datetime('now'))
   `);
 
-  const execResult = execStmt.run(workflowId, inputData ? JSON.stringify(inputData) : null);
+  const execResult = execStmt.run(
+    workflowId,
+    inputData ? JSON.stringify(inputData) : null
+  );
   const executionId = execResult.lastInsertRowid as number;
 
   try {
@@ -196,11 +232,7 @@ export async function executeWorkflow(
       WHERE id = ?
     `);
 
-    updateStmt.run(
-      JSON.stringify(result),
-      Date.now() - startTime,
-      executionId
-    );
+    updateStmt.run(JSON.stringify(result), Date.now() - startTime, executionId);
 
     // Update workflow run count
     const countStmt = db.prepare(`
@@ -237,19 +269,19 @@ export async function executeAction(workflow: any, inputData?: any) {
   const actionConfig = JSON.parse(workflow.action_config || '{}');
 
   switch (actionType) {
-    case "create_task":
+    case 'create_task':
       return await createTaskFromWorkflow(db, actionConfig, inputData);
 
-    case "update_task":
+    case 'update_task':
       return await updateTaskFromWorkflow(db, actionConfig, inputData);
 
-    case "send_notification":
+    case 'send_notification':
       return await sendNotification(actionConfig, inputData);
 
-    case "log_message":
+    case 'log_message':
       return await logMessage(db, actionConfig, inputData);
 
-    case "webhook":
+    case 'webhook':
       return await callWebhook(actionConfig, inputData);
 
     default:
@@ -258,67 +290,84 @@ export async function executeAction(workflow: any, inputData?: any) {
 }
 
 // Create task from workflow
-async function createTaskFromWorkflow(db: ReturnType<typeof getDb>, config: any, inputData?: any) {
-  const name = config.task_name || inputData?.task_name || "Workflow Task";
-  const description = config.description || inputData?.description || "";
+async function createTaskFromWorkflow(
+  db: ReturnType<typeof getDb>,
+  config: any,
+  inputData?: any
+) {
+  const name = config.task_name || inputData?.task_name || 'Workflow Task';
+  const description = config.description || inputData?.description || '';
   const projectId = config.project_id || inputData?.project_id;
   const assigneeId = config.assignee_id || inputData?.assignee_id;
   const dueDate = config.due_date || inputData?.due_date;
-  const priority = config.priority || inputData?.priority || "medium";
+  const priority = config.priority || inputData?.priority || 'medium';
 
   const stmt = db.prepare(`
     INSERT INTO tasks (name, description, list_id, date, deadline, priority, assignee_id, created_at, updated_at)
     VALUES (?, ?, COALESCE(?, 1), NULL, ?, ?, ?, datetime('now'), datetime('now'))
   `);
 
-  const result = stmt.run(name, description, projectId, dueDate, priority, assigneeId);
+  const result = stmt.run(
+    name,
+    description,
+    projectId,
+    dueDate,
+    priority,
+    assigneeId
+  );
 
   return {
     task_id: result.lastInsertRowid,
     name,
-    status: "created"
+    status: 'created',
   };
 }
 
 // Update task from workflow
-async function updateTaskFromWorkflow(db: ReturnType<typeof getDb>, config: any, inputData?: any) {
+async function updateTaskFromWorkflow(
+  db: ReturnType<typeof getDb>,
+  config: any,
+  inputData?: any
+) {
   const taskId = config.task_id || inputData?.task_id;
   if (!taskId) {
-    throw new Error("Task ID is required for update action");
+    throw new Error('Task ID is required for update action');
   }
 
   const updates: string[] = [];
   const values: any[] = [];
 
   if (config.completed !== undefined) {
-    updates.push("completed = ?, completed_at = CASE WHEN ? = 1 THEN datetime('now') ELSE completed_at END");
+    updates.push(
+      "completed = ?, completed_at = CASE WHEN ? = 1 THEN datetime('now') ELSE completed_at END"
+    );
     values.push(config.completed);
   }
 
   if (config.name) {
-    updates.push("name = ?");
+    updates.push('name = ?');
     values.push(config.name);
   }
 
   if (config.priority) {
-    updates.push("priority = ?");
+    updates.push('priority = ?');
     values.push(config.priority);
   }
 
   if (config.due_date) {
-    updates.push("deadline = ?");
+    updates.push('deadline = ?');
     values.push(config.due_date);
   }
 
   if (updates.length === 0) {
-    return { status: "no_updates" };
+    return { status: 'no_updates' };
   }
 
   values.push(taskId);
 
   const stmt = db.prepare(`
     UPDATE tasks
-    SET ${updates.join(", ")}, updated_at = datetime('now')
+    SET ${updates.join(', ')}, updated_at = datetime('now')
     WHERE id = ?
   `);
 
@@ -326,7 +375,7 @@ async function updateTaskFromWorkflow(db: ReturnType<typeof getDb>, config: any,
 
   return {
     task_id: taskId,
-    status: "updated"
+    status: 'updated',
   };
 }
 
@@ -334,21 +383,26 @@ async function updateTaskFromWorkflow(db: ReturnType<typeof getDb>, config: any,
 async function sendNotification(config: any, inputData?: any) {
   // In a real implementation, this would integrate with email, push, or other notification services
   // For now, we return a mock response
-  const message = config.message || inputData?.message || "Workflow notification";
-  const type = config.type || "info";
+  const message =
+    config.message || inputData?.message || 'Workflow notification';
+  const type = config.type || 'info';
 
   return {
     message,
     type,
-    status: "sent",
-    timestamp: new Date().toISOString()
+    status: 'sent',
+    timestamp: new Date().toISOString(),
   };
 }
 
 // Log message
-async function logMessage(db: ReturnType<typeof getDb>, config: any, inputData?: any) {
-  const message = config.message || inputData?.message || "Workflow execution";
-  const level = config.level || "info";
+async function logMessage(
+  db: ReturnType<typeof getDb>,
+  config: any,
+  inputData?: any
+) {
+  const message = config.message || inputData?.message || 'Workflow execution';
+  const level = config.level || 'info';
 
   const stmt = db.prepare(`
     INSERT INTO activity_logs (user_id, entity_type, entity_id, action, details, created_at)
@@ -360,7 +414,7 @@ async function logMessage(db: ReturnType<typeof getDb>, config: any, inputData?:
   return {
     message,
     level,
-    status: "logged"
+    status: 'logged',
   };
 }
 
@@ -368,15 +422,15 @@ async function logMessage(db: ReturnType<typeof getDb>, config: any, inputData?:
 async function callWebhook(config: any, inputData?: any) {
   const url = config.url || inputData?.webhook_url;
   if (!url) {
-    throw new Error("Webhook URL is required");
+    throw new Error('Webhook URL is required');
   }
 
-  const method = config.method || "POST";
-  const headers = { "Content-Type": "application/json", ...config.headers };
+  const method = config.method || 'POST';
+  const headers = { 'Content-Type': 'application/json', ...config.headers };
   const body = JSON.stringify({
     ...config.body,
     ...inputData,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 
   // In a real implementation, this would make an HTTP request
@@ -384,8 +438,8 @@ async function callWebhook(config: any, inputData?: any) {
   return {
     url,
     method,
-    status: "called",
-    response_code: 200
+    status: 'called',
+    response_code: 200,
   };
 }
 
@@ -428,23 +482,23 @@ export async function checkTriggers(
   // For event-based triggers, this would be called when the event occurs
 
   switch (triggerType) {
-    case "manual":
+    case 'manual':
       return true; // Manual triggers are always valid when called
 
-    case "task_created":
+    case 'task_created':
       // Would check if a new task was created
       return true;
 
-    case "task_completed":
+    case 'task_completed':
       // Would check if a task was completed
       return true;
 
-    case "due_date":
+    case 'due_date':
       // Would check if any tasks are due
       return true;
 
-    case "cron":
-    case "schedule":
+    case 'cron':
+    case 'schedule':
       // Would check cron schedule
       return true;
 
@@ -463,7 +517,7 @@ export async function evaluateConditions(
   // Simple condition evaluation
   // In a full implementation, this would support complex AND/OR logic
 
-  if (typeof conditions === "string") {
+  if (typeof conditions === 'string') {
     try {
       conditions = JSON.parse(conditions);
     } catch {
@@ -474,8 +528,16 @@ export async function evaluateConditions(
   // Example: check task priority
   if (conditions.task_priority) {
     if (!context.task_priority) return false;
-    const priorityOrder: Record<string, number> = { low: 1, medium: 2, high: 3, critical: 4 };
-    if (priorityOrder[context.task_priority] < priorityOrder[conditions.task_priority]) {
+    const priorityOrder: Record<string, number> = {
+      low: 1,
+      medium: 2,
+      high: 3,
+      critical: 4,
+    };
+    if (
+      priorityOrder[context.task_priority] <
+      priorityOrder[conditions.task_priority]
+    ) {
       return false;
     }
   }
