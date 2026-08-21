@@ -1,25 +1,25 @@
-import { getDb } from "./db";
-import { logger } from "./logger";
+import { getDb } from './db';
+import { logger } from './logger';
 
 /**
  * Entity types that can be logged in the activity system.
  * This is the unified entity type that covers all entities across the application.
  */
 export type EntityType =
-  | "task"
-  | "list"
-  | "label"
-  | "template"
-  | "user"
-  | "notification"
-  | "comment"
-  | "share"
-  | "habit"
-  | "goal"
-  | "decision"
-  | "insight"
-  | "skill"
-  | "connection";
+  | 'task'
+  | 'list'
+  | 'label'
+  | 'template'
+  | 'user'
+  | 'notification'
+  | 'comment'
+  | 'share'
+  | 'habit'
+  | 'goal'
+  | 'decision'
+  | 'insight'
+  | 'skill'
+  | 'connection';
 
 export interface ActivityLog {
   id: number;
@@ -44,7 +44,9 @@ export interface CreateActivityInput {
 /**
  * Creates an activity log entry with structured logging.
  */
-export async function createActivityLog(input: CreateActivityInput): Promise<ActivityLog> {
+export async function createActivityLog(
+  input: CreateActivityInput
+): Promise<ActivityLog> {
   const db = getDb();
   const result = db
     .prepare(
@@ -85,7 +87,10 @@ export async function createActivityLog(input: CreateActivityInput): Promise<Act
 /**
  * Gets activity logs for a task.
  */
-export async function getTaskActivityLogs(taskId: number, limit = 50): Promise<ActivityLog[]> {
+export async function getTaskActivityLogs(
+  taskId: number,
+  limit = 50
+): Promise<ActivityLog[]> {
   const db = getDb();
   return db
     .prepare(
@@ -100,9 +105,11 @@ export async function getTaskActivityLogs(taskId: number, limit = 50): Promise<A
 export async function getActivityLogsByAction(
   actions: string[],
   limit = 100
-): Promise<Array<ActivityLog & { user_name: string | null; user_email: string | null }>> {
+): Promise<
+  Array<ActivityLog & { user_name: string | null; user_email: string | null }>
+> {
   const db = getDb();
-  const placeholders = actions.map(() => "?").join(",");
+  const placeholders = actions.map(() => '?').join(',');
 
   return db
     .prepare(
@@ -113,13 +120,18 @@ export async function getActivityLogsByAction(
        ORDER BY al.created_at DESC
        LIMIT ?`
     )
-    .all(...actions, limit) as Array<ActivityLog & { user_name: string | null; user_email: string | null }>;
+    .all(...actions, limit) as Array<
+    ActivityLog & { user_name: string | null; user_email: string | null }
+  >;
 }
 
 /**
  * Gets activity logs for a user.
  */
-export async function getUserActivityLogs(userId: number, limit = 50): Promise<ActivityLog[]> {
+export async function getUserActivityLogs(
+  userId: number,
+  limit = 50
+): Promise<ActivityLog[]> {
   const db = getDb();
   return db
     .prepare(
@@ -134,7 +146,11 @@ export async function getUserActivityLogs(userId: number, limit = 50): Promise<A
 /**
  * Get recent activity logs with user details.
  */
-export async function getRecentActivityLogs(limit = 100): Promise<Array<ActivityLog & { user_name: string | null; user_email: string | null }>> {
+export async function getRecentActivityLogs(
+  limit = 100
+): Promise<
+  Array<ActivityLog & { user_name: string | null; user_email: string | null }>
+> {
   const db = getDb();
   return db
     .prepare(
@@ -144,7 +160,9 @@ export async function getRecentActivityLogs(limit = 100): Promise<Array<Activity
        ORDER BY al.created_at DESC
        LIMIT ?`
     )
-    .all(limit) as Array<ActivityLog & { user_name: string | null; user_email: string | null }>;
+    .all(limit) as Array<
+    ActivityLog & { user_name: string | null; user_email: string | null }
+  >;
 }
 
 /**
@@ -178,11 +196,14 @@ export function initializeActivityLogsTable(db: ReturnType<typeof getDb>) {
 /**
  * Log task creation with name
  */
-export async function logTaskCreated(taskId: number, taskName: string): Promise<ActivityLog> {
+export async function logTaskCreated(
+  taskId: number,
+  taskName: string
+): Promise<ActivityLog> {
   return createActivityLog({
     task_id: taskId,
-    action: "task_created",
-    entity_type: "task",
+    action: 'task_created',
+    entity_type: 'task',
     entity_id: taskId,
     details: JSON.stringify({ taskName }),
   });
@@ -194,8 +215,8 @@ export async function logTaskCreated(taskId: number, taskName: string): Promise<
 export async function logTaskCompleted(taskId: number): Promise<ActivityLog> {
   return createActivityLog({
     task_id: taskId,
-    action: "task_completed",
-    entity_type: "task",
+    action: 'task_completed',
+    entity_type: 'task',
     entity_id: taskId,
   });
 }
@@ -209,8 +230,8 @@ export async function logTaskUpdated(
 ): Promise<ActivityLog> {
   return createActivityLog({
     task_id: taskId,
-    action: "task_updated",
-    entity_type: "task",
+    action: 'task_updated',
+    entity_type: 'task',
     entity_id: taskId,
     details: JSON.stringify(changes),
   });
@@ -222,8 +243,8 @@ export async function logTaskUpdated(
 export async function logTaskDeleted(taskId: number): Promise<ActivityLog> {
   return createActivityLog({
     task_id: taskId,
-    action: "task_deleted",
-    entity_type: "task",
+    action: 'task_deleted',
+    entity_type: 'task',
     entity_id: taskId,
   });
 }
@@ -238,8 +259,8 @@ export async function logCommentAdded(
 ): Promise<ActivityLog> {
   return createActivityLog({
     task_id: taskId,
-    action: "comment_added",
-    entity_type: "comment",
+    action: 'comment_added',
+    entity_type: 'comment',
     entity_id: commentId,
     details: JSON.stringify({ author: authorName }),
   });
@@ -255,8 +276,8 @@ export async function logTaskAssigned(
 ): Promise<ActivityLog> {
   return createActivityLog({
     task_id: taskId,
-    action: "task_assigned",
-    entity_type: "task",
+    action: 'task_assigned',
+    entity_type: 'task',
     entity_id: taskId,
     details: JSON.stringify({ assigneeId, assigneeName }),
   });
@@ -268,12 +289,12 @@ export async function logTaskAssigned(
 export async function logTaskShared(
   taskId: number,
   sharedWithUserId: number,
-  permission: "view" | "edit"
+  permission: 'view' | 'edit'
 ): Promise<ActivityLog> {
   return createActivityLog({
     task_id: taskId,
-    action: "task_shared",
-    entity_type: "share",
+    action: 'task_shared',
+    entity_type: 'share',
     entity_id: taskId,
     details: JSON.stringify({ sharedWith: sharedWithUserId, permission }),
   });
@@ -289,8 +310,8 @@ export async function logNotificationSent(
 ): Promise<ActivityLog> {
   return createActivityLog({
     user_id: userId,
-    action: "notification_sent",
-    entity_type: "notification",
+    action: 'notification_sent',
+    entity_type: 'notification',
     details: JSON.stringify({ type, ...data }),
   });
 }
