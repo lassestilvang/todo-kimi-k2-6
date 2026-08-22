@@ -1,5 +1,5 @@
-import { getServerSession } from "next-auth";
-import { UnauthorizedError } from "./error-handler";
+import { getServerSession } from 'next-auth';
+import { UnauthorizedError } from './error-handler';
 
 /**
  * Authentication middleware for API routes
@@ -27,7 +27,7 @@ export async function getUserId(): Promise<number> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const user = (session as any)?.user;
   if (!user?.id) {
-    throw new UnauthorizedError("Authentication required");
+    throw new UnauthorizedError('Authentication required');
   }
   return Number(user.id);
 }
