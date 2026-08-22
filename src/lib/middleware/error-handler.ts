@@ -14,48 +14,48 @@ export class ValidationError extends Error implements ApiError {
 
   constructor(message: string, code?: string) {
     super(message);
-    this.name = "ValidationError";
+    this.name = 'ValidationError';
     this.code = code;
   }
 }
 
 export class UnauthorizedError extends Error implements ApiError {
   status = 401;
-  code = "UNAUTHORIZED";
+  code = 'UNAUTHORIZED';
 
-  constructor(message = "Unauthorized") {
+  constructor(message = 'Unauthorized') {
     super(message);
-    this.name = "UnauthorizedError";
+    this.name = 'UnauthorizedError';
   }
 }
 
 export class ForbiddenError extends Error implements ApiError {
   status = 403;
-  code = "FORBIDDEN";
+  code = 'FORBIDDEN';
 
-  constructor(message = "Forbidden") {
+  constructor(message = 'Forbidden') {
     super(message);
-    this.name = "ForbiddenError";
+    this.name = 'ForbiddenError';
   }
 }
 
 export class NotFoundError extends Error implements ApiError {
   status = 404;
-  code = "NOT_FOUND";
+  code = 'NOT_FOUND';
 
-  constructor(message = "Not Found") {
+  constructor(message = 'Not Found') {
     super(message);
-    this.name = "NotFoundError";
+    this.name = 'NotFoundError';
   }
 }
 
 export class ConflictError extends Error implements ApiError {
   status = 409;
-  code = "CONFLICT";
+  code = 'CONFLICT';
 
-  constructor(message = "Conflict") {
+  constructor(message = 'Conflict') {
     super(message);
-    this.name = "ConflictError";
+    this.name = 'ConflictError';
   }
 }
 
@@ -68,7 +68,7 @@ export function handleApiError(error: unknown): {
   code?: string;
 } {
   if (error instanceof Error) {
-    if ("status" in error) {
+    if ('status' in error) {
       const apiError = error as ApiError;
       return {
         message: error.message,
@@ -82,7 +82,7 @@ export function handleApiError(error: unknown): {
     };
   }
   return {
-    message: "An unexpected error occurred",
+    message: 'An unexpected error occurred',
     status: 500,
   };
 }
@@ -100,7 +100,7 @@ export function withErrorHandling<T extends unknown[]>(
       const { message, status, code } = handleApiError(error);
       return new Response(JSON.stringify({ error: message, code }), {
         status,
-        headers: { "Content-Type": "application/json" },
+        headers: { 'Content-Type': 'application/json' },
       });
     }
   };
