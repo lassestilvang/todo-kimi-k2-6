@@ -40,7 +40,7 @@ interface SyncStatus {
 }
 
 export function CalendarSyncSettings({
-  accessToken,
+  _accessToken,
   provider,
   lastSynced,
   expiresAt,
