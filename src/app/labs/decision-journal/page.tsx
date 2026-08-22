@@ -33,6 +33,18 @@ export default function DecisionJournalPage() {
     }
   }, [status, router]);
 
+  // Fetch a recent task to associate with decisions
+  useEffect(() => {
+    fetch('/api/tasks?limit=1')
+      .then(r => r.json())
+      .then(data => {
+        if (data.tasks?.length > 0) {
+          setTaskId(data.tasks[0].id);
+        }
+      })
+      .catch(console.error);
+  }, []);
+
   if (status === 'loading' || !session) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -43,19 +55,6 @@ export default function DecisionJournalPage() {
       </div>
     );
   }
-
-  // Fetch a recent task to associate with decisions
-  useEffect(() => {
-    // Fetch a recent task to associate with decisions
-    fetch('/api/tasks?limit=1')
-      .then(r => r.json())
-      .then(data => {
-        if (data.tasks?.length > 0) {
-          setTaskId(data.tasks[0].id);
-        }
-      })
-      .catch(console.error);
-  }, []);
 
   const handleRefresh = () => {
     // Refresh logic - could trigger re-fetch of data
