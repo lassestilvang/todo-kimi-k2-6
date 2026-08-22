@@ -1,16 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   Clock,
   Zap,
   Brain,
   Calendar,
   BarChart3,
-  Check,
-  X,
-  List,
   AlertCircle,
   Flame,
 } from 'lucide-react';
@@ -23,13 +20,6 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -73,7 +63,7 @@ interface EnergySchedulerEnhancedProps {
 export function EnergySchedulerEnhanced({
   tasks,
   className,
-  onSchedule,
+  _onSchedule,
 }: EnergySchedulerEnhancedProps) {
   const [recommendations, setRecommendations] =
     useState<EnergyRecommendations | null>(null);
@@ -82,11 +72,6 @@ export function EnergySchedulerEnhanced({
   const [selectedDate, setSelectedDate] = useState(
     new Date().toISOString().split('T')[0]
   );
-  const [selectedListId, setSelectedListId] = useState<number | null>(null);
-
-  useEffect(() => {
-    loadRecommendations();
-  }, [selectedDate]);
 
   const loadRecommendations = async () => {
     setLoading(true);
@@ -103,6 +88,10 @@ export function EnergySchedulerEnhanced({
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadRecommendations();
+  }, [selectedDate]);
 
   const scheduleTasks = async () => {
     if (!tasks.length) return;
