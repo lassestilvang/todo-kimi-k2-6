@@ -1,4 +1,4 @@
-import { logger } from "./logger";
+import { logger } from './logger';
 
 /**
  * Represents a single performance measurement.
@@ -19,7 +19,7 @@ export interface PerformanceMetric {
 /**
  * Input for recording a performance metric (timestamp added automatically)
  */
-export type PerformanceMetricInput = Omit<PerformanceMetric, "timestamp">;
+export type PerformanceMetricInput = Omit<PerformanceMetric, 'timestamp'>;
 
 /**
  * In-memory performance monitoring utility.
@@ -63,7 +63,7 @@ class PerformanceMonitor {
    * @returns Array of matching performance metrics
    */
   getMetrics(name: string): PerformanceMetric[] {
-    return this.metrics.filter((m) => m.name === name);
+    return this.metrics.filter(m => m.name === name);
   }
 
   /**
@@ -108,7 +108,7 @@ export function measurePerformance<T>(
 ): Promise<T> {
   const start = Date.now();
 
-  return fn().then((result) => {
+  return fn().then(result => {
     const duration = Date.now() - start;
     perfMonitor.record({
       name,
