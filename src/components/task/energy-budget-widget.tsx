@@ -1,11 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Battery, Clock, RefreshCw, AlertCircle } from 'lucide-react';
+import { Battery, Clock, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Slider } from '@/components/ui/slider';
 import {
   useEnergyBudget,
   useMoodTracking,
@@ -16,7 +14,7 @@ interface EnergyBudgetWidgetProps {
 }
 
 export function EnergyBudgetWidget({ className }: EnergyBudgetWidgetProps) {
-  const { profile, budget, loading, logEnergy, updateProfile } =
+  const { profile, budget, loading, logEnergy } =
     useEnergyBudget();
   const { getRecommendations } = useMoodTracking();
 
