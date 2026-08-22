@@ -12,10 +12,7 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/hooks/__tests__/setup.ts'],
-    include: [
-      'src/**/*.test.ts',
-      'src/**/*.test.tsx',
-    ],
+    include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
     exclude: [
       // Performance tests - these need real DB for accurate metrics
       '**/performance.test.ts',
