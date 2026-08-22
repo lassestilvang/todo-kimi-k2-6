@@ -3,21 +3,23 @@
  * All queries should use these helpers to ensure users only see their own data.
  */
 
-import { getDb } from "./db";
+import { getDb } from './db';
 
 /**
  * Ensure user owns a resource before allowing modification.
  * Checks database for ownership.
  */
 export async function checkResourceOwnership(
-  resourceType: "task" | "list" | "label" | "template",
+  resourceType: 'task' | 'list' | 'label' | 'template',
   resourceId: number,
   userId: number
 ): Promise<boolean> {
   const db = getDb();
-  const resource = db.prepare(
-    `SELECT id FROM ${resourceType}s WHERE id = ? AND user_id = ? LIMIT 1`
-  ).get(resourceId, userId);
+  const resource = db
+    .prepare(
+      `SELECT id FROM ${resourceType}s WHERE id = ? AND user_id = ? LIMIT 1`
+    )
+    .get(resourceId, userId);
 
   return !!resource;
 }
@@ -37,10 +39,10 @@ export function withUserFilter(
   }
 
   // Add user_id filter for non-demo mode
-  if (baseQuery.toUpperCase().startsWith("SELECT")) {
+  if (baseQuery.toUpperCase().startsWith('SELECT')) {
     // Check if WHERE clause already exists
     const hasWhere = /\bWHERE\b/i.test(baseQuery);
-    const whereClause = hasWhere ? " AND" : " WHERE";
+    const whereClause = hasWhere ? ' AND' : ' WHERE';
     const query = `${baseQuery}${whereClause} user_id = ?`;
     return { query, params: [...params, userId] };
   }
