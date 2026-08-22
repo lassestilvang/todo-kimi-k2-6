@@ -3,7 +3,7 @@
  * Provides type safety for API responses across the application
  */
 
-import type { Task, List, Label, Template, User } from "./index";
+import type { Task, List, Label, Template, User } from './index';
 
 // Common API response wrapper
 export interface ApiResponse<T> {
@@ -39,7 +39,7 @@ export type TaskWithRelationsResponse = Task & {
   comments: CommentResponse[];
   time_entries: TimeEntryResponse[];
   recurring_exceptions: RecurringExceptionResponse[];
-}
+};
 
 export interface SubtaskResponse {
   id: number;
@@ -119,7 +119,12 @@ export interface TimeReportResponse {
 
 // WebSocket message types
 export interface WSMessage {
-  type: "task_update" | "task_created" | "task_deleted" | "presence_change" | "typing";
+  type:
+    | 'task_update'
+    | 'task_created'
+    | 'task_deleted'
+    | 'presence_change'
+    | 'typing';
   taskId?: number;
   userId?: number;
   userName?: string;
