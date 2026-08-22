@@ -1,11 +1,13 @@
- 
 declare module 'better-sqlite3' {
   export interface Database {
     prepare(sql: string): Statement;
     exec(sql: string): void;
     all<T = unknown>(sql: string, ...params: unknown[]): T[];
     get<T = unknown>(sql: string, ...params: unknown[]): T | undefined;
-    run(sql: string, ...params: unknown[]): { changes: number; lastInsertRowid: number };
+    run(
+      sql: string,
+      ...params: unknown[]
+    ): { changes: number; lastInsertRowid: number };
     close(): void;
   }
 
@@ -31,7 +33,6 @@ declare module 'better-sqlite3' {
     verbose?: boolean;
   }
 
-   
   const Database: new (path: string, options?: DatabaseOptions) => Database;
   export default Database;
 }
