@@ -20,7 +20,7 @@ export async function getDriveFiles(
   query?: string
 ): Promise<DriveFile[]> {
   const response = await fetch(
-    `https://www.googleapis.com/drive/v3/files${query ? `?q=${encodeURIComponent(query)}` : ""}`,
+    `https://www.googleapis.com/drive/v3/files${query ? `?q=${encodeURIComponent(query)}` : ''}`,
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -33,7 +33,7 @@ export async function getDriveFiles(
   }
 
   const data = await response.json();
-  return (data.files as DriveFile[]).map((file) => ({
+  return (data.files as DriveFile[]).map(file => ({
     id: file.id,
     name: file.name,
     mimeType: file.mimeType,
@@ -52,19 +52,25 @@ export async function uploadDriveFile(
   parentId?: string
 ): Promise<DriveFile> {
   const formData = new FormData();
-  formData.append("file", file);
-  formData.append("metadata", JSON.stringify({
-    name: file.name,
-    parents: parentId ? [parentId] : undefined,
-  }));
+  formData.append('file', file);
+  formData.append(
+    'metadata',
+    JSON.stringify({
+      name: file.name,
+      parents: parentId ? [parentId] : undefined,
+    })
+  );
 
-  const response = await fetch("https://www.googleapis.com/upload/drive/v3/files", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-    body: formData,
-  });
+  const response = await fetch(
+    'https://www.googleapis.com/upload/drive/v3/files',
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: formData,
+    }
+  );
 
   if (!response.ok) {
     throw new Error(`Failed to upload file: ${response.status}`);
@@ -85,11 +91,13 @@ export async function uploadDriveFile(
  * Get file icon based on MIME type
  */
 export function getFileIcon(mimeType: string): string {
-  if (mimeType.startsWith("image/")) return "🖼️";
-  if (mimeType.includes("pdf")) return "📄";
-  if (mimeType.includes("spreadsheet") || mimeType.includes("sheet")) return "📊";
-  if (mimeType.includes("presentation") || mimeType.includes("powerpoint")) return "📈";
-  if (mimeType.includes("document") || mimeType.includes("word")) return "📝";
-  if (mimeType.includes("zip") || mimeType.includes("archive")) return "📁";
-  return "📎";
+  if (mimeType.startsWith('image/')) return '🖼️';
+  if (mimeType.includes('pdf')) return '📄';
+  if (mimeType.includes('spreadsheet') || mimeType.includes('sheet'))
+    return '📊';
+  if (mimeType.includes('presentation') || mimeType.includes('powerpoint'))
+    return '📈';
+  if (mimeType.includes('document') || mimeType.includes('word')) return '📝';
+  if (mimeType.includes('zip') || mimeType.includes('archive')) return '📁';
+  return '📎';
 }
