@@ -63,7 +63,7 @@ describe('SlackConnector', () => {
 
     it('should throw error when no access token provided', async () => {
       await expect(connector.authenticate({})).rejects.toThrow(
-        'Slack integration requires an access token',
+        'Slack integration requires an access token'
       );
     });
   });
@@ -115,7 +115,7 @@ describe('SlackConnector', () => {
       });
 
       await expect(noChannelConnector.fetchRecords()).rejects.toThrow(
-        'No channel specified for Slack integration',
+        'No channel specified for Slack integration'
       );
     });
 
@@ -230,7 +230,7 @@ describe('SlackConnector', () => {
       });
 
       await expect(connector.fetchRecords()).rejects.toThrow(
-        "Slack API error: channel_not_found",
+        'Slack API error: channel_not_found'
       );
     });
 
@@ -354,22 +354,34 @@ describe('SlackConnector', () => {
 
   describe('extractTitle', () => {
     it('should extract title from todo: prefix', () => {
-      const title = (connector as any).extractTitle('todo: Implement login page', '123456');
+      const title = (connector as any).extractTitle(
+        'todo: Implement login page',
+        '123456'
+      );
       expect(title).toBe('Implement login page');
     });
 
     it('should extract title from @todo mention', () => {
-      const title = (connector as any).extractTitle('@todo fix the memory leak', '123456');
+      const title = (connector as any).extractTitle(
+        '@todo fix the memory leak',
+        '123456'
+      );
       expect(title).toBe('fix the memory leak');
     });
 
     it('should extract title from reminder:', () => {
-      const title = (connector as any).extractTitle('reminder: Update documentation', '123456');
+      const title = (connector as any).extractTitle(
+        'reminder: Update documentation',
+        '123456'
+      );
       expect(title).toBe('Update documentation');
     });
 
     it('should return null for non-task messages', () => {
-      const title = (connector as any).extractTitle('Good morning everyone!', '123456');
+      const title = (connector as any).extractTitle(
+        'Good morning everyone!',
+        '123456'
+      );
       expect(title).toBeNull();
     });
   });
@@ -389,7 +401,7 @@ describe('SlackConnector', () => {
         expect.objectContaining({
           method: 'POST',
           body: expect.any(String),
-        }),
+        })
       );
     });
 
@@ -416,14 +428,18 @@ describe('SlackConnector', () => {
         json: async () => ({ ok: true }),
       });
 
-      const result = await connector.updateMessage('C01234567', '1234567890.123456', 'Updated text');
+      const result = await connector.updateMessage(
+        'C01234567',
+        '1234567890.123456',
+        'Updated text'
+      );
 
       expect(result).toBe(true);
       expect(fetch).toHaveBeenCalledWith(
         'https://slack.com/api/chat.update',
         expect.objectContaining({
           method: 'POST',
-        }),
+        })
       );
     });
   });
@@ -486,7 +502,9 @@ describe('SlackConnector', () => {
         }),
       });
 
-      await expect(connector.getUserInfo('UNOTFOUND')).rejects.toThrow('Slack API error');
+      await expect(connector.getUserInfo('UNOTFOUND')).rejects.toThrow(
+        'Slack API error'
+      );
     });
   });
 
@@ -505,7 +523,10 @@ describe('SlackConnector', () => {
         }),
       });
 
-      const reactions = await connector.getReactions('C01234567', '1234567890.123456');
+      const reactions = await connector.getReactions(
+        'C01234567',
+        '1234567890.123456'
+      );
 
       expect(reactions).toHaveLength(2);
       expect(reactions[0].name).toBe('thumbsup');
@@ -519,7 +540,11 @@ describe('SlackConnector', () => {
         json: async () => ({ ok: true }),
       });
 
-      const result = await connector.addReaction('C01234567', '1234567890.123456', 'thumbsup');
+      const result = await connector.addReaction(
+        'C01234567',
+        '1234567890.123456',
+        'thumbsup'
+      );
 
       expect(result).toBe(true);
     });
@@ -532,7 +557,11 @@ describe('SlackConnector', () => {
         json: async () => ({ ok: true }),
       });
 
-      const result = await connector.removeReaction('C01234567', '1234567890.123456', 'thumbsup');
+      const result = await connector.removeReaction(
+        'C01234567',
+        '1234567890.123456',
+        'thumbsup'
+      );
 
       expect(result).toBe(true);
     });
@@ -569,7 +598,9 @@ describe('SlackConnector', () => {
         status: 401,
       });
 
-      await expect(connector.getUserInfo('U01234567')).rejects.toThrow('Slack API error');
+      await expect(connector.getUserInfo('U01234567')).rejects.toThrow(
+        'Slack API error'
+      );
     });
   });
 
@@ -579,7 +610,10 @@ describe('SlackConnector', () => {
         ok: false,
       });
 
-      const reactions = await connector.getReactions('C01234567', '1234567890.123456');
+      const reactions = await connector.getReactions(
+        'C01234567',
+        '1234567890.123456'
+      );
 
       expect(reactions).toEqual([]);
     });
@@ -612,7 +646,10 @@ describe('SlackConnector', () => {
           }),
         });
 
-      const records = await connector.getMentions({ userId: 'U12345678', channelId: 'C01234567' });
+      const records = await connector.getMentions({
+        userId: 'U12345678',
+        channelId: 'C01234567',
+      });
 
       expect(records).toHaveLength(1);
       expect(records[0].title).toBe('please review this documentation');
@@ -622,7 +659,7 @@ describe('SlackConnector', () => {
           headers: expect.objectContaining({
             Authorization: 'Bearer test-token',
           }),
-        }),
+        })
       );
     });
 
@@ -636,9 +673,9 @@ describe('SlackConnector', () => {
         syncDirection: 'import',
       });
 
-      await expect(noChannelConnector.getMentions({ userId: 'U12345678' })).rejects.toThrow(
-        'No channel specified for Slack mentions',
-      );
+      await expect(
+        noChannelConnector.getMentions({ userId: 'U12345678' })
+      ).rejects.toThrow('No channel specified for Slack mentions');
     });
 
     it('should return empty array when no mentions match', async () => {
@@ -659,7 +696,10 @@ describe('SlackConnector', () => {
         }),
       });
 
-      const records = await connector.getMentions({ userId: 'U99988877', channelId: 'C01234567' });
+      const records = await connector.getMentions({
+        userId: 'U99988877',
+        channelId: 'C01234567',
+      });
 
       expect(records).toHaveLength(0);
     });
@@ -671,7 +711,7 @@ describe('SlackConnector', () => {
       });
 
       await expect(
-        connector.getMentions({ userId: 'U12345678', channelId: 'C01234567' }),
+        connector.getMentions({ userId: 'U12345678', channelId: 'C01234567' })
       ).rejects.toThrow('Slack API error: 500');
     });
   });
