@@ -1,4 +1,4 @@
-import { QueryClient } from "@tanstack/react-query";
+import { QueryClient } from '@tanstack/react-query';
 
 /**
  * Creates a new QueryClient with optimized settings for offline support.
@@ -15,7 +15,7 @@ export function createQueryClient() {
         refetchOnWindowFocus: false,
         refetchOnReconnect: true, // Re-sync when connection returns
         // Offline support: keep data fresh longer when offline
-        retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+        retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
       },
       mutations: {
         retry: 0,
