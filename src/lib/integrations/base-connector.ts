@@ -87,12 +87,18 @@ export interface IntegrationConnector {
   /**
    * Fetch records from the external service
    */
-  fetchRecords(since?: Date, options?: { limit?: number; cursor?: string }): Promise<ExternalRecord[]>;
+  fetchRecords(
+    since?: Date,
+    options?: { limit?: number; cursor?: string }
+  ): Promise<ExternalRecord[]>;
 
   /**
    * Map an external record to a local task
    */
-  mapToTask(record: ExternalRecord, fieldMappings?: Record<string, string>): {
+  mapToTask(
+    record: ExternalRecord,
+    fieldMappings?: Record<string, string>
+  ): {
     title: string;
     description?: string;
     dueDate?: string;
@@ -149,7 +155,11 @@ export abstract class BaseConnector implements IntegrationConnector {
     clientSecret?: string;
     accessToken?: string;
     refreshToken?: string;
-  }): Promise<{ accessToken: string; refreshToken?: string; expiresAt: string }> {
+  }): Promise<{
+    accessToken: string;
+    refreshToken?: string;
+    expiresAt: string;
+  }> {
     // Base implementation - subclasses should override
     if (credentials.accessToken) {
       this.accessToken = credentials.accessToken;
@@ -162,9 +172,15 @@ export abstract class BaseConnector implements IntegrationConnector {
     throw new Error('Authentication failed');
   }
 
-  abstract fetchRecords(since?: Date, options?: { limit?: number; cursor?: string }): Promise<ExternalRecord[]>;
+  abstract fetchRecords(
+    since?: Date,
+    options?: { limit?: number; cursor?: string }
+  ): Promise<ExternalRecord[]>;
 
-  mapToTask(record: ExternalRecord, _fieldMappings?: Record<string, string>): {
+  mapToTask(
+    record: ExternalRecord,
+    _fieldMappings?: Record<string, string>
+  ): {
     title: string;
     description?: string;
     dueDate?: string;
@@ -207,7 +223,9 @@ export abstract class BaseConnector implements IntegrationConnector {
     errors: string[];
   }> {
     return {
-      lastSync: this.config.lastSyncAt ? new Date(this.config.lastSyncAt) : new Date(0),
+      lastSync: this.config.lastSyncAt
+        ? new Date(this.config.lastSyncAt)
+        : new Date(0),
       pendingChanges: 0,
       errors: [],
     };
