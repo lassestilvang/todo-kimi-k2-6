@@ -2,9 +2,9 @@
  * Session utilities for server-side user context
  */
 
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/config";
-import type { User } from "@/types";
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/config';
+import type { User } from '@/types';
 
 /**
  * Get the current user from the session.
@@ -13,14 +13,16 @@ import type { User } from "@/types";
  */
 export async function getCurrentUser(): Promise<User | null> {
   // Check if we're in a test environment or outside request context
-  if (typeof window !== "undefined" || process.env.NODE_ENV === "test") {
+  if (typeof window !== 'undefined' || process.env.NODE_ENV === 'test') {
     // In browser or test environment, return demo user or null
-    const demoMode = process.env.NEXTAUTH_SECRET === "demo-secret" || process.env.NODE_ENV === "development";
+    const demoMode =
+      process.env.NEXTAUTH_SECRET === 'demo-secret' ||
+      process.env.NODE_ENV === 'development';
     if (demoMode) {
       return {
         id: 1,
-        email: "demo@taskflow.app",
-        name: "Demo User",
+        email: 'demo@taskflow.app',
+        name: 'Demo User',
         avatar_url: null,
         created_at: new Date().toISOString(),
       };
@@ -49,12 +51,14 @@ export async function getCurrentUser(): Promise<User | null> {
 
   // Demo mode: return default user for local development
   // In production, this should NOT be used
-  const demoMode = process.env.NEXTAUTH_SECRET === "demo-secret" || process.env.NODE_ENV === "development";
+  const demoMode =
+    process.env.NEXTAUTH_SECRET === 'demo-secret' ||
+    process.env.NODE_ENV === 'development';
   if (demoMode) {
     return {
       id: 1,
-      email: "demo@taskflow.app",
-      name: "Demo User",
+      email: 'demo@taskflow.app',
+      name: 'Demo User',
       avatar_url: null,
       created_at: new Date().toISOString(),
     };
@@ -69,7 +73,7 @@ export async function getCurrentUser(): Promise<User | null> {
 export async function requireUserId(): Promise<number> {
   const user = await getCurrentUser();
   if (!user) {
-    throw new Error("Authentication required");
+    throw new Error('Authentication required');
   }
   return user.id;
 }
