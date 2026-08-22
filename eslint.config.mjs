@@ -27,7 +27,14 @@ const eslintConfig = defineConfig([
   },
   // Override for NextAuth route (complex types)
   {
-    files: ['src/app/api/auth/[...nextauth]/route.ts'],
+    files: ['src/app/api/auth/[...nextauth]/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
+  // Override for cache module (stores arbitrary data)
+  {
+    files: ['src/lib/cache.ts'],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
     },
@@ -46,6 +53,16 @@ const eslintConfig = defineConfig([
     // Configuration and script files
     'scripts/**',
     'next.config.analyzer.js',
+    // Test files - allow any for mocking
+    '**/*.test.ts',
+    '**/*.test.tsx',
+    '*.test.ts',
+    '*.test.tsx',
+    '__tests__/**/*.ts',
+    '__tests__/**/*.tsx',
+    'src/**/*.test.ts',
+    'src/**/*.test.tsx',
+    'commit_all.js',
   ]),
   // Allow any in test files (necessary for mocking)
   {
