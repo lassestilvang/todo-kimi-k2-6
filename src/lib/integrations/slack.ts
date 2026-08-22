@@ -6,7 +6,11 @@
  * Scope: channels:read, chat:write, users:read, groups:read
  */
 
-import { BaseConnector, IntegrationConfig, SlackMessageRecord } from './base-connector';
+import {
+  BaseConnector,
+  IntegrationConfig,
+  SlackMessageRecord,
+} from './base-connector';
 
 export class SlackConnector extends BaseConnector {
   readonly id = 'slack';
@@ -16,18 +20,26 @@ export class SlackConnector extends BaseConnector {
   private apiToken: string;
   private defaultChannelId: string | null = null;
 
-  constructor(config: IntegrationConfig & { apiToken: string; defaultChannelId?: string }) {
+  constructor(
+    config: IntegrationConfig & { apiToken: string; defaultChannelId?: string }
+  ) {
     super(config);
     this.apiToken = config.apiToken;
     this.defaultChannelId = config.defaultChannelId || null;
   }
 
-  async authenticate(credentials: {
-    clientId?: string;
-    clientSecret?: string;
-    accessToken?: string;
+  async authenticate(
+    credentials: {
+      clientId?: string;
+      clientSecret?: string;
+      accessToken?: string;
+      refreshToken?: string;
+    } = {}
+  ): Promise<{
+    accessToken: string;
     refreshToken?: string;
-  } = {}): Promise<{ accessToken: string; refreshToken?: string; expiresAt: string }> {
+    expiresAt: string;
+  }> {
     if (!credentials.accessToken) {
       throw new Error('Slack integration requires an access token');
     }
@@ -48,7 +60,10 @@ export class SlackConnector extends BaseConnector {
   /**
    * Fetch messages from Slack channels
    */
-  async fetchRecords(since?: Date, options?: { channelId?: string; limit?: number }): Promise<SlackMessageRecord[]> {
+  async fetchRecords(
+    since?: Date,
+    options?: { channelId?: string; limit?: number }
+  ): Promise<SlackMessageRecord[]> {
     const channelId = options?.channelId || this.defaultChannelId;
 
     if (!channelId) {
@@ -59,13 +74,16 @@ export class SlackConnector extends BaseConnector {
 
     try {
       // Get channel messages
-      const response = await fetch('https://slack.com/api/conversations.history', {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${this.apiToken}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await fetch(
+        'https://slack.com/api/conversations.history',
+        {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${this.apiToken}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
       if (!response.ok) {
         throw new Error(`Slack API error: ${response.status}`);
@@ -81,8 +99,11 @@ export class SlackConnector extends BaseConnector {
 
       for (const message of messages) {
         try {
-          const mappedRecord = await this.mapSlackMessageToTask(message, channelId);
-          if (mappedRecord && await this.isTaskCandidate(message)) {
+          const mappedRecord = await this.mapSlackMessageToTask(
+            message,
+            channelId
+          );
+          if (mappedRecord && (await this.isTaskCandidate(message))) {
             records.push(mappedRecord);
           }
         } catch (error) {
@@ -100,17 +121,31 @@ export class SlackConnector extends BaseConnector {
   /**
    * Check if a message should be converted to a task
    */
-  private async isTaskCandidate(message: Record<string, unknown>): Promise<boolean> {
+  private async isTaskCandidate(
+    message: Record<string, unknown>
+  ): Promise<boolean> {
     // Check for task-related keywords or mentions
     const text = (message.text as string) || '';
     const lowerText = text.toLowerCase();
 
     // Keywords that indicate task creation
-    const taskKeywords = ['todo:', 'task:', '@todo', '@task', 'reminder:', 'due:'];
+    const taskKeywords = [
+      'todo:',
+      'task:',
+      '@todo',
+      '@task',
+      'reminder:',
+      'due:',
+    ];
 
     // Check for karma-style task markers or @ mentions with action verbs
-    const hasTaskMarker = taskKeywords.some((keyword) => lowerText.includes(keyword));
-    const hasActionVerbs = /\b(assign|complete|schedule|remind|follow up|follow-up)\b/.test(lowerText);
+    const hasTaskMarker = taskKeywords.some(keyword =>
+      lowerText.includes(keyword)
+    );
+    const hasActionVerbs =
+      /\b(assign|complete|schedule|remind|follow up|follow-up)\b/.test(
+        lowerText
+      );
 
     return hasTaskMarker || hasActionVerbs;
   }
@@ -120,7 +155,7 @@ export class SlackConnector extends BaseConnector {
    */
   private async mapSlackMessageToTask(
     message: Record<string, unknown>,
-    channelId: string,
+    channelId: string
   ): Promise<SlackMessageRecord | null> {
     const text = (message.text as string) || '';
 
@@ -135,7 +170,7 @@ export class SlackConnector extends BaseConnector {
     const channel = await this.getChannelName(channelId);
 
     return {
-      id: `${channelId}:${(message.ts as string)}`,
+      id: `${channelId}:${message.ts as string}`,
       title,
       description: this.extractDescription(text),
       labels: this.extractLabels(message),
@@ -146,9 +181,15 @@ export class SlackConnector extends BaseConnector {
       channel,
       user: assignee || 'unknown',
       externalUrl: `https://slack.com/archives/${channelId}/p${(message.ts as string).replace('.', '')}`,
-      createdAt: new Date(parseFloat(message.ts as string) * 1000).toISOString(),
+      createdAt: new Date(
+        parseFloat(message.ts as string) * 1000
+      ).toISOString(),
       updatedAt: message.edited
-        ? new Date(parseFloat((message.edited as Record<string, unknown>).ts as string) * 1000).toISOString()
+        ? new Date(
+            parseFloat(
+              (message.edited as Record<string, unknown>).ts as string
+            ) * 1000
+          ).toISOString()
         : undefined,
     };
   }
@@ -172,8 +213,16 @@ export class SlackConnector extends BaseConnector {
     }
 
     // If no pattern matched, check if message has action verbs
-    const actionVerbs = ['assign', 'complete', 'schedule', 'remind', 'follow up'];
-    const hasActionVerb = actionVerbs.some((verb) => text.toLowerCase().includes(verb));
+    const actionVerbs = [
+      'assign',
+      'complete',
+      'schedule',
+      'remind',
+      'follow up',
+    ];
+    const hasActionVerb = actionVerbs.some(verb =>
+      text.toLowerCase().includes(verb)
+    );
 
     if (hasActionVerb) {
       // Use first line as title
@@ -189,12 +238,18 @@ export class SlackConnector extends BaseConnector {
     const lines = text.split('\n');
 
     // Remove common task prefixes from description
-    const descLines = lines.slice(1).filter((line) => line.trim().length > 0);
+    const descLines = lines.slice(1).filter(line => line.trim().length > 0);
 
-    return descLines.length > 0 ? descLines.join('\n') : (text.length > 100 ? text.substring(0, 200) + '...' : undefined);
+    return descLines.length > 0
+      ? descLines.join('\n')
+      : text.length > 100
+        ? text.substring(0, 200) + '...'
+        : undefined;
   }
 
-  private extractLabels(message: Record<string, unknown>): string[] | undefined {
+  private extractLabels(
+    message: Record<string, unknown>
+  ): string[] | undefined {
     const labels: string[] = [];
 
     // Extract from channel name
@@ -205,7 +260,8 @@ export class SlackConnector extends BaseConnector {
     }
 
     // Extract from emoji reactions (priority)
-    const reactions = (message.reactions as Array<{ name: string; count: number }>) || [];
+    const reactions =
+      (message.reactions as Array<{ name: string; count: number }>) || [];
     const priorityEmojis = {
       urgent: ['😱', '🔥', '⚠️'],
       high: ['🚀', '⭐', '✅'],
@@ -214,7 +270,7 @@ export class SlackConnector extends BaseConnector {
     };
 
     for (const [priority, emojis] of Object.entries(priorityEmojis)) {
-      if (reactions.some((r) => emojis.includes(r.name))) {
+      if (reactions.some(r => emojis.includes(r.name))) {
         labels.push(priority);
         break;
       }
@@ -224,8 +280,9 @@ export class SlackConnector extends BaseConnector {
   }
 
   private extractReactions(message: Record<string, unknown>): string[] {
-    const reactions = (message.reactions as Array<{ name: string; count: number }>) || [];
-    return reactions.map((r) => `:${r.name}: ${r.count}`);
+    const reactions =
+      (message.reactions as Array<{ name: string; count: number }>) || [];
+    return reactions.map(r => `:${r.name}: ${r.count}`);
   }
 
   private async getChannelName(channelId: string): Promise<string> {
@@ -254,7 +311,10 @@ export class SlackConnector extends BaseConnector {
   /**
    * Get unread mentions for a user
    */
-  async getMentions(options?: { userId?: string; channelId?: string }): Promise<SlackMessageRecord[]> {
+  async getMentions(options?: {
+    userId?: string;
+    channelId?: string;
+  }): Promise<SlackMessageRecord[]> {
     const userId = options?.userId || 'U01234567'; // Default to current user
     const channelId = options?.channelId || this.defaultChannelId;
 
@@ -269,7 +329,7 @@ export class SlackConnector extends BaseConnector {
           Authorization: `Bearer ${this.apiToken}`,
           'Content-Type': 'application/json',
         },
-      },
+      }
     );
 
     if (!response.ok) {
@@ -280,22 +340,31 @@ export class SlackConnector extends BaseConnector {
     const messages = data.messages || [];
 
     // Filter for mentions
-    const mentionedMessages = messages.filter((message: Record<string, unknown>) => {
-      const text = (message.text as string) || '';
-      return text.toLowerCase().includes(`<@${userId}>`) || text.includes('<!subteam');
-    });
+    const mentionedMessages = messages.filter(
+      (message: Record<string, unknown>) => {
+        const text = (message.text as string) || '';
+        return (
+          text.toLowerCase().includes(`<@${userId}>`) ||
+          text.includes('<!subteam')
+        );
+      }
+    );
 
     return Promise.all(
       mentionedMessages.map(async (message: Record<string, unknown>) =>
-        this.mapSlackMessageToTask(message, channelId),
-      ),
+        this.mapSlackMessageToTask(message, channelId)
+      )
     );
   }
 
   /**
    * Send a message to a channel
    */
-  async sendMessage(channelId: string, text: string, options?: { threadTs?: string }): Promise<boolean> {
+  async sendMessage(
+    channelId: string,
+    text: string,
+    options?: { threadTs?: string }
+  ): Promise<boolean> {
     const body: Record<string, unknown> = {
       channel: channelId,
       text,
@@ -321,7 +390,11 @@ export class SlackConnector extends BaseConnector {
   /**
    * Update a message
    */
-  async updateMessage(channelId: string, ts: string, text: string): Promise<boolean> {
+  async updateMessage(
+    channelId: string,
+    ts: string,
+    text: string
+  ): Promise<boolean> {
     const response = await fetch('https://slack.com/api/chat.update', {
       method: 'POST',
       headers: {
@@ -342,10 +415,14 @@ export class SlackConnector extends BaseConnector {
   /**
    * Get channel list
    */
-  async getChannelList(types?: Array<'public_channel' | 'private_channel' | 'mpim' | 'im' | 'mpdm'>): Promise<
-    Array<{ id: string; name: string; is_private: boolean }>
-  > {
-    const allChannels: Array<{ id: string; name: string; is_private: boolean }> = [];
+  async getChannelList(
+    types?: Array<'public_channel' | 'private_channel' | 'mpim' | 'im' | 'mpdm'>
+  ): Promise<Array<{ id: string; name: string; is_private: boolean }>> {
+    const allChannels: Array<{
+      id: string;
+      name: string;
+      is_private: boolean;
+    }> = [];
     let cursor: string | undefined;
 
     do {
@@ -356,7 +433,7 @@ export class SlackConnector extends BaseConnector {
             Authorization: `Bearer ${this.apiToken}`,
             'Content-Type': 'application/json',
           },
-        },
+        }
       );
 
       if (!response.ok) break;
@@ -370,7 +447,7 @@ export class SlackConnector extends BaseConnector {
           id: c.id as string,
           name: c.name as string,
           is_private: c.is_private as boolean,
-        })),
+        }))
       );
 
       cursor = data.response_metadata?.next_cursor;
@@ -410,12 +487,15 @@ export class SlackConnector extends BaseConnector {
       image_48?: string;
     };
   }> {
-    const response = await fetch(`https://slack.com/api/users.info?user=${userId}`, {
-      headers: {
-        Authorization: `Bearer ${this.apiToken}`,
-        'Content-Type': 'application/json',
-      },
-    });
+    const response = await fetch(
+      `https://slack.com/api/users.info?user=${userId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${this.apiToken}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
 
     if (!response.ok) {
       throw new Error(`Slack API error: ${response.status}`);
@@ -437,7 +517,10 @@ export class SlackConnector extends BaseConnector {
   /**
    * Get reactions on a message
    */
-  async getReactions(channelId: string, ts: string): Promise<Array<{ name: string; users: string[]; count: number }>> {
+  async getReactions(
+    channelId: string,
+    ts: string
+  ): Promise<Array<{ name: string; users: string[]; count: number }>> {
     const response = await fetch(
       `https://slack.com/api/reactions.get?channel=${channelId}&timestamp=${ts}`,
       {
@@ -445,7 +528,7 @@ export class SlackConnector extends BaseConnector {
           Authorization: `Bearer ${this.apiToken}`,
           'Content-Type': 'application/json',
         },
-      },
+      }
     );
 
     if (!response.ok) {
@@ -459,7 +542,11 @@ export class SlackConnector extends BaseConnector {
   /**
    * Add reaction to a message
    */
-  async addReaction(channelId: string, ts: string, reaction: string): Promise<boolean> {
+  async addReaction(
+    channelId: string,
+    ts: string,
+    reaction: string
+  ): Promise<boolean> {
     const response = await fetch('https://slack.com/api/reactions.add', {
       method: 'POST',
       headers: {
@@ -480,7 +567,11 @@ export class SlackConnector extends BaseConnector {
   /**
    * Remove reaction from a message
    */
-  async removeReaction(channelId: string, ts: string, reaction: string): Promise<boolean> {
+  async removeReaction(
+    channelId: string,
+    ts: string,
+    reaction: string
+  ): Promise<boolean> {
     const response = await fetch('https://slack.com/api/reactions.remove', {
       method: 'POST',
       headers: {
@@ -506,6 +597,8 @@ export class SlackConnector extends BaseConnector {
     assignee?: string;
     priority?: 'low' | 'medium' | 'high' | 'critical';
   }): Promise<SlackMessageRecord> {
-    throw new Error('pushTask not implemented for Slack connector - requires channel configuration');
+    throw new Error(
+      'pushTask not implemented for Slack connector - requires channel configuration'
+    );
   }
 }
