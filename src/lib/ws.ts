@@ -1,5 +1,10 @@
 export interface WSMessage {
-  type: "task_update" | "task_created" | "task_deleted" | "presence_change" | "typing";
+  type:
+    | 'task_update'
+    | 'task_created'
+    | 'task_deleted'
+    | 'presence_change'
+    | 'typing';
   taskId?: number;
   userId?: number;
   userName?: string;
@@ -16,7 +21,8 @@ export interface PresenceUser {
 
 class WebSocketClient {
   private ws: WebSocket | null = null;
-  private listeners: Map<string, Set<(data: unknown | null) => void>> = new Map();
+  private listeners: Map<string, Set<(data: unknown | null) => void>> =
+    new Map();
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private reconnectTimeout: NodeJS.Timeout | null = null;
@@ -29,24 +35,24 @@ class WebSocketClient {
     this.ws = new WebSocket(url);
 
     this.ws.onopen = () => {
-      console.log("WebSocket connected");
+      console.log('WebSocket connected');
       this.reconnectAttempts = 0;
     };
 
-    this.ws.onmessage = (event) => {
+    this.ws.onmessage = event => {
       try {
         const message: WSMessage = JSON.parse(event.data);
         const listeners = this.listeners.get(message.type);
         if (listeners) {
-          listeners.forEach((callback) => callback(message.data));
+          listeners.forEach(callback => callback(message.data));
         }
       } catch (error) {
-        console.error("Failed to parse WebSocket message:", error);
+        console.error('Failed to parse WebSocket message:', error);
       }
     };
 
     this.ws.onclose = () => {
-      console.log("WebSocket disconnected");
+      console.log('WebSocket disconnected');
       this.reconnectAttempts++;
       if (this.reconnectAttempts < this.maxReconnectAttempts) {
         this.reconnectTimeout = setTimeout(() => {
@@ -55,8 +61,8 @@ class WebSocketClient {
       }
     };
 
-    this.ws.onerror = (error) => {
-      console.error("WebSocket error:", error);
+    this.ws.onerror = error => {
+      console.error('WebSocket error:', error);
     };
   }
 
@@ -86,9 +92,11 @@ class WebSocketClient {
     };
   }
 
-  send(message: Omit<WSMessage, "timestamp">) {
+  send(message: Omit<WSMessage, 'timestamp'>) {
     if (this.ws?.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify({ ...message, timestamp: new Date().toISOString() }));
+      this.ws.send(
+        JSON.stringify({ ...message, timestamp: new Date().toISOString() })
+      );
     }
   }
 }
