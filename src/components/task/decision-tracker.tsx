@@ -1,12 +1,11 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Brain,
   CheckCircle2,
   ThumbsUp,
   ThumbsDown,
-  BarChart3,
   History,
   Lightbulb,
   Award,
@@ -116,7 +115,6 @@ const decisionTypes = [
 
 export function DecisionTracker({ taskName, taskId }: DecisionTrackerProps) {
   const [decisions, setDecisions] = useState<DecisionEntry[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingDecision, setEditingDecision] = useState<DecisionEntry | null>(
     null
@@ -132,12 +130,8 @@ export function DecisionTracker({ taskName, taskId }: DecisionTrackerProps) {
     options: [{ option_text: '', pros: '', cons: '' }],
   });
 
-  // Load decisions
-  useEffect(() => {
-    loadDecisions();
-  }, []);
-
-  const loadDecisions = async () => {
+  // Load decisions function (defined before useEffect)
+  const loadDecisions = useCallback(async () => {
     try {
       const url = taskId
         ? `/api/decisions?task_id=${taskId}`
@@ -147,13 +141,16 @@ export function DecisionTracker({ taskName, taskId }: DecisionTrackerProps) {
         const data = await response.json();
         setDecisions(Array.isArray(data) ? data : data.decisions || []);
       }
-    } catch (error) {
-      console.error('Failed to load decisions:', error);
+    } catch (_error) {
+      console.error('Failed to load decisions:', _error);
       toast.error('Failed to load decisions');
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [taskId]);
+
+  // Load decisions
+  useEffect(() => {
+    loadDecisions();
+  }, [loadDecisions]);
 
   // Calculate decision stats
   const decisionStats = useMemo(() => {
@@ -236,7 +233,7 @@ export function DecisionTracker({ taskName, taskId }: DecisionTrackerProps) {
       } else {
         throw new Error('Failed to create decision');
       }
-    } catch (error) {
+    } catch {
       toast.error('Failed to create decision');
     }
   };
@@ -268,21 +265,6 @@ export function DecisionTracker({ taskName, taskId }: DecisionTrackerProps) {
     if (rating > 0.33) return 'text-green-500';
     if (rating < -0.33) return 'text-red-500';
     return 'text-amber-500';
-  };
-
-  const RatingBadge = ({ value }: { value: number | null }) => {
-    if (value === null) return null;
-    const label =
-      value >= 0.5 ? 'Positive' : value <= -0.5 ? 'Negative' : 'Neutral';
-    const color =
-      value > 0.33 ? 'default' : value < -0.33 ? 'destructive' : 'secondary';
-    return (
-      <BadgeComponent
-        className={color === 'default' ? '' : color === 'destructive' ? '' : ''}
-      >
-        {label}
-      </BadgeComponent>
-    );
   };
 
   return (
@@ -403,7 +385,7 @@ export function DecisionTracker({ taskName, taskId }: DecisionTrackerProps) {
                 <Select
                   value={formData.decision_type}
                   onValueChange={v =>
-                    setFormData({ ...formData, decision_type: v as any })
+                    setFormData({ ...formData, decision_type: v as DecisionEntry['decision_type'] })
                   }
                 >
                   <SelectTrigger>
