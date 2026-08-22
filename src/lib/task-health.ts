@@ -2,7 +2,7 @@
  * Task Health Score - A comprehensive metric combining priority, deadline, effort, and importance
  */
 
-export type HealthStatus = "healthy" | "attention" | "critical" | "overdue";
+export type HealthStatus = 'healthy' | 'attention' | 'critical' | 'overdue';
 
 export interface HealthScoreBreakdown {
   priorityScore: number;
@@ -39,13 +39,30 @@ export function calculateTaskHealth(task: {
   blocked_by?: Array<{ id: number }>;
 }): HealthScoreBreakdown {
   const now = new Date();
-  const factors: Array<{ name: string; score: number; weight: number; reason?: string }> = [];
+  const factors: Array<{
+    name: string;
+    score: number;
+    weight: number;
+    reason?: string;
+  }> = [];
 
   // Priority score (0-40 points)
-  const priorityWeights = { critical: 40, high: 30, medium: 20, low: 10, none: 0 };
-  const priorityScore = priorityWeights[task.priority as keyof typeof priorityWeights] ?? 0;
-  if (task.priority === "critical") {
-    factors.push({ name: "Priority", score: priorityScore, weight: 0.25, reason: "Critical priority task" });
+  const priorityWeights = {
+    critical: 40,
+    high: 30,
+    medium: 20,
+    low: 10,
+    none: 0,
+  };
+  const priorityScore =
+    priorityWeights[task.priority as keyof typeof priorityWeights] ?? 0;
+  if (task.priority === 'critical') {
+    factors.push({
+      name: 'Priority',
+      score: priorityScore,
+      weight: 0.25,
+      reason: 'Critical priority task',
+    });
   }
 
   // Deadline score (0-30 points) - based on time remaining
@@ -57,45 +74,100 @@ export function calculateTaskHealth(task: {
 
     if (daysRemaining < 0) {
       deadlineScore = 5; // Overdue gets minimal score
-      factors.push({ name: "Deadline", score: deadlineScore, weight: 0.3, reason: `${Math.abs(daysRemaining)} days overdue` });
+      factors.push({
+        name: 'Deadline',
+        score: deadlineScore,
+        weight: 0.3,
+        reason: `${Math.abs(daysRemaining)} days overdue`,
+      });
     } else if (daysRemaining === 0) {
       deadlineScore = 30; // Due today
-      factors.push({ name: "Deadline", score: deadlineScore, weight: 0.3, reason: "Due today" });
+      factors.push({
+        name: 'Deadline',
+        score: deadlineScore,
+        weight: 0.3,
+        reason: 'Due today',
+      });
     } else if (daysRemaining <= 2) {
       deadlineScore = 25; // Due in 1-2 days
-      factors.push({ name: "Deadline", score: deadlineScore, weight: 0.3, reason: `Due in ${daysRemaining} days` });
+      factors.push({
+        name: 'Deadline',
+        score: deadlineScore,
+        weight: 0.3,
+        reason: `Due in ${daysRemaining} days`,
+      });
     } else if (daysRemaining <= 7) {
       deadlineScore = 20; // Due this week
-      factors.push({ name: "Deadline", score: deadlineScore, weight: 0.3, reason: `Due in ${daysRemaining} days` });
+      factors.push({
+        name: 'Deadline',
+        score: deadlineScore,
+        weight: 0.3,
+        reason: `Due in ${daysRemaining} days`,
+      });
     } else {
       deadlineScore = 10; // Due later
-      factors.push({ name: "Deadline", score: deadlineScore, weight: 0.3, reason: `Due in ${daysRemaining} days` });
+      factors.push({
+        name: 'Deadline',
+        score: deadlineScore,
+        weight: 0.3,
+        reason: `Due in ${daysRemaining} days`,
+      });
     }
   } else {
     deadlineScore = 15; // No deadline but neutral
-    factors.push({ name: "Deadline", score: deadlineScore, weight: 0.3, reason: "No deadline set" });
+    factors.push({
+      name: 'Deadline',
+      score: deadlineScore,
+      weight: 0.3,
+      reason: 'No deadline set',
+    });
   }
 
   // Effort score (0-20 points) - based on estimated time
   let effortScore = 0;
   if (task.estimate) {
-    const hours = parseFloat(task.estimate.replace(":", ".")) || 0;
+    const hours = parseFloat(task.estimate.replace(':', '.')) || 0;
     if (hours > 8) {
       effortScore = 5; // Very large tasks are risky
-      factors.push({ name: "Effort", score: effortScore, weight: 0.2, reason: "Large task (>8h) may need decomposition" });
+      factors.push({
+        name: 'Effort',
+        score: effortScore,
+        weight: 0.2,
+        reason: 'Large task (>8h) may need decomposition',
+      });
     } else if (hours > 4) {
       effortScore = 10;
-      factors.push({ name: "Effort", score: effortScore, weight: 0.2, reason: "Moderate effort task (4-8h)" });
+      factors.push({
+        name: 'Effort',
+        score: effortScore,
+        weight: 0.2,
+        reason: 'Moderate effort task (4-8h)',
+      });
     } else if (hours > 0) {
       effortScore = 15;
-      factors.push({ name: "Effort", score: effortScore, weight: 0.2, reason: "Reasonable effort task (<4h)" });
+      factors.push({
+        name: 'Effort',
+        score: effortScore,
+        weight: 0.2,
+        reason: 'Reasonable effort task (<4h)',
+      });
     } else {
       effortScore = 20;
-      factors.push({ name: "Effort", score: effortScore, weight: 0.2, reason: "Effort estimated well" });
+      factors.push({
+        name: 'Effort',
+        score: effortScore,
+        weight: 0.2,
+        reason: 'Effort estimated well',
+      });
     }
   } else {
     effortScore = 10; // No estimate
-    factors.push({ name: "Effort", score: effortScore, weight: 0.2, reason: "No effort estimate" });
+    factors.push({
+      name: 'Effort',
+      score: effortScore,
+      weight: 0.2,
+      reason: 'No effort estimate',
+    });
   }
 
   // Importance score (0-10 points) - based on description richness and context
@@ -104,43 +176,67 @@ export function calculateTaskHealth(task: {
     const descLength = task.description.length;
     if (descLength > 100) {
       importanceScore = 10;
-      factors.push({ name: "Importance", score: importanceScore, weight: 0.15, reason: "Well described task" });
+      factors.push({
+        name: 'Importance',
+        score: importanceScore,
+        weight: 0.15,
+        reason: 'Well described task',
+      });
     } else if (descLength > 0) {
       importanceScore = 7;
-      factors.push({ name: "Importance", score: importanceScore, weight: 0.15, reason: "Task has description" });
+      factors.push({
+        name: 'Importance',
+        score: importanceScore,
+        weight: 0.15,
+        reason: 'Task has description',
+      });
     }
   } else {
     importanceScore = 4;
-    factors.push({ name: "Importance", score: importanceScore, weight: 0.15, reason: "No description provided" });
+    factors.push({
+      name: 'Importance',
+      score: importanceScore,
+      weight: 0.15,
+      reason: 'No description provided',
+    });
   }
 
   // Blockers penalty (reduces score)
   if (task.blocked_by && task.blocked_by.length > 0) {
     importanceScore -= 3;
-    if (!factors.find(f => f.name === "Importance")) {
-      factors.push({ name: "Importance", score: Math.max(0, importanceScore), weight: 0.15, reason: "Blocked by other tasks" });
+    if (!factors.find(f => f.name === 'Importance')) {
+      factors.push({
+        name: 'Importance',
+        score: Math.max(0, importanceScore),
+        weight: 0.15,
+        reason: 'Blocked by other tasks',
+      });
     } else {
-      factors[factors.findIndex(f => f.name === "Importance")].reason = "Blocked by other tasks";
+      factors[factors.findIndex(f => f.name === 'Importance')].reason =
+        'Blocked by other tasks';
     }
   }
 
   // Calculate total score (sum of all scores, max 100)
-  const totalScore = Math.min(100, priorityScore + deadlineScore + effortScore + importanceScore);
+  const totalScore = Math.min(
+    100,
+    priorityScore + deadlineScore + effortScore + importanceScore
+  );
 
   // Determine status
   let status: HealthStatus;
   if (task.completed) {
-    status = "healthy";
+    status = 'healthy';
   } else {
     const deadline = task.deadline ? new Date(task.deadline) : null;
     if (deadline && deadline < now && !task.completed) {
-      status = "overdue";
+      status = 'overdue';
     } else if (totalScore >= 70) {
-      status = "healthy";
+      status = 'healthy';
     } else if (totalScore >= 40) {
-      status = "attention";
+      status = 'attention';
     } else {
-      status = "critical";
+      status = 'critical';
     }
   }
 
@@ -160,10 +256,14 @@ export function calculateTaskHealth(task: {
  */
 export function getHealthStatusColor(status: HealthStatus): string {
   switch (status) {
-    case "healthy": return "text-green-500 bg-green-100 dark:bg-green-900/20";
-    case "attention": return "text-amber-500 bg-amber-100 dark:bg-amber-900/20";
-    case "critical": return "text-red-500 bg-red-100 dark:bg-red-900/20";
-    case "overdue": return "text-red-600 bg-red-200 dark:bg-red-900/30";
+    case 'healthy':
+      return 'text-green-500 bg-green-100 dark:bg-green-900/20';
+    case 'attention':
+      return 'text-amber-500 bg-amber-100 dark:bg-amber-900/20';
+    case 'critical':
+      return 'text-red-500 bg-red-100 dark:bg-red-900/20';
+    case 'overdue':
+      return 'text-red-600 bg-red-200 dark:bg-red-900/30';
   }
 }
 
@@ -172,9 +272,13 @@ export function getHealthStatusColor(status: HealthStatus): string {
  */
 export function getHealthStatusEmoji(status: HealthStatus): string {
   switch (status) {
-    case "healthy": return "✅";
-    case "attention": return "⚠️";
-    case "critical": return "🔴";
-    case "overdue": return "⏰";
+    case 'healthy':
+      return '✅';
+    case 'attention':
+      return '⚠️';
+    case 'critical':
+      return '🔴';
+    case 'overdue':
+      return '⏰';
   }
 }
