@@ -1,22 +1,17 @@
-import { describe, it, expect, beforeEach } from "vitest";
-import { createTestDb } from "@/lib/db/test-db";
-import { setDb, resetDb } from "@/lib/db";
-import {
-  createTask,
-  getTasks,
-  createLabel,
-  createList,
-} from "./actions/tasks";
+import { describe, it, expect, beforeEach } from 'vitest';
+import { createTestDb } from '@/lib/db/test-db';
+import { setDb, resetDb } from '@/lib/db';
+import { createTask, getTasks, createLabel, createList } from './actions/tasks';
 
-describe("Performance Tests", () => {
+describe('Performance Tests', () => {
   beforeEach(() => {
     resetDb();
     const testDb = createTestDb();
     setDb(testDb);
   });
 
-  describe("Task Creation Performance", () => {
-    it("should create 100 tasks efficiently", async () => {
+  describe('Task Creation Performance', () => {
+    it('should create 100 tasks efficiently', async () => {
       const startTime = Date.now();
 
       const promises = [];
@@ -32,30 +27,30 @@ describe("Performance Tests", () => {
       expect(duration).toBeLessThan(1000);
     });
 
-    it("should create tasks with all relations efficiently", async () => {
-      const label = await createLabel({ name: "Test" });
-      const list = await createList({ name: "Test List" });
+    it('should create tasks with all relations efficiently', async () => {
+      const label = await createLabel({ name: 'Test' });
+      const list = await createList({ name: 'Test List' });
 
       const startTime = Date.now();
 
       const task = await createTask({
-        name: "Complex Task",
+        name: 'Complex Task',
         list_id: list.id,
         label_ids: [label.id],
-        subtasks: ["Step 1", "Step 2", "Step 3"],
-        reminders: ["2026-01-01T00:00:00Z"],
+        subtasks: ['Step 1', 'Step 2', 'Step 3'],
+        reminders: ['2026-01-01T00:00:00Z'],
       });
 
       const endTime = Date.now();
       const duration = endTime - startTime;
 
       expect(duration).toBeLessThan(100);
-      expect(task.name).toBe("Complex Task");
+      expect(task.name).toBe('Complex Task');
     });
   });
 
-  describe("Query Performance", () => {
-    it("should query 1000 tasks efficiently", async () => {
+  describe('Query Performance', () => {
+    it('should query 1000 tasks efficiently', async () => {
       // Create 1000 tasks
       for (let i = 0; i < 1000; i++) {
         await createTask({ name: `Task ${i}` });
@@ -71,7 +66,7 @@ describe("Performance Tests", () => {
       expect(duration).toBeLessThan(500);
     });
 
-    it("should search through 1000 tasks efficiently", async () => {
+    it('should search through 1000 tasks efficiently', async () => {
       // Create 1000 tasks with varying names
       for (let i = 0; i < 1000; i++) {
         await createTask({ name: `UniqueTask${i}` });
@@ -79,19 +74,22 @@ describe("Performance Tests", () => {
 
       const startTime = Date.now();
       // Use a more specific search term to get exact match
-      const results = await getTasks({ searchQuery: "UniqueTask500", includeCompleted: true });
+      const results = await getTasks({
+        searchQuery: 'UniqueTask500',
+        includeCompleted: true,
+      });
       const endTime = Date.now();
       const duration = endTime - startTime;
 
       // Fuse.js is fuzzy search, so it may return multiple results
       expect(results.length).toBeGreaterThanOrEqual(1);
-      expect(results.some(t => t.name === "UniqueTask500")).toBe(true);
+      expect(results.some(t => t.name === 'UniqueTask500')).toBe(true);
       expect(duration).toBeLessThan(500);
     });
   });
 
-  describe("Database Connection Performance", () => {
-    it("should handle concurrent database operations", async () => {
+  describe('Database Connection Performance', () => {
+    it('should handle concurrent database operations', async () => {
       const operations = [];
 
       for (let i = 0; i < 50; i++) {
