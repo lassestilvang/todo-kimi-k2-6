@@ -1,4 +1,4 @@
-import { config } from "./config";
+import { config } from './config';
 
 export interface RateLimitConfig {
   windowMs: number;
@@ -16,7 +16,10 @@ export interface RateLimitResult {
  * Rate Limiter interface - supports both in-memory and Redis backends
  */
 interface RateLimiterBackend {
-  isAllowed(key: string, limitConfig: RateLimitConfig): Promise<RateLimitResult>;
+  isAllowed(
+    key: string,
+    limitConfig: RateLimitConfig
+  ): Promise<RateLimitResult>;
   reset(key: string): Promise<void>;
 }
 
@@ -26,13 +29,16 @@ interface RateLimiterBackend {
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 class DatabaseRateLimiter implements RateLimiterBackend {
-  private db: ReturnType<typeof import("./db").getDb>;
+  private db: ReturnType<typeof import('./db').getDb>;
 
-  constructor(db: ReturnType<typeof import("./db").getDb>) {
+  constructor(db: ReturnType<typeof import('./db').getDb>) {
     this.db = db;
   }
 
-  async isAllowed(key: string, limitConfig: RateLimitConfig): Promise<RateLimitResult> {
+  async isAllowed(
+    key: string,
+    limitConfig: RateLimitConfig
+  ): Promise<RateLimitResult> {
     const now = Date.now();
     const resetTime = now + limitConfig.windowMs;
 
@@ -48,8 +54,12 @@ class DatabaseRateLimiter implements RateLimiterBackend {
       `);
 
       const result = stmt.run(key, resetTime, now, now, resetTime);
-      const newCount = result.changes > 0 ?
-        (this.db.prepare("SELECT count FROM rate_limit_log WHERE key = ?").get(key)?.count || 1) : 1;
+      const newCount =
+        result.changes > 0
+          ? this.db
+              .prepare('SELECT count FROM rate_limit_log WHERE key = ?')
+              .get(key)?.count || 1
+          : 1;
 
       const allowed = newCount <= limitConfig.max;
       const currentCount = allowed ? newCount : limitConfig.max;
@@ -61,14 +71,19 @@ class DatabaseRateLimiter implements RateLimiterBackend {
         limit: limitConfig.max,
       };
     } catch (error) {
-      console.error("Database rate limiter error:", error);
+      console.error('Database rate limiter error:', error);
       // Fall back to allowing the request
-      return { allowed: true, remaining: limitConfig.max, resetTime, limit: limitConfig.max };
+      return {
+        allowed: true,
+        remaining: limitConfig.max,
+        resetTime,
+        limit: limitConfig.max,
+      };
     }
   }
 
   async reset(key: string): Promise<void> {
-    this.db.prepare("DELETE FROM rate_limit_log WHERE key = ?").run(key);
+    this.db.prepare('DELETE FROM rate_limit_log WHERE key = ?').run(key);
   }
 }
 
@@ -92,7 +107,10 @@ class MemoryRateLimiter implements RateLimiterBackend {
     }, 60000);
   }
 
-  async isAllowed(key: string, limitConfig: RateLimitConfig): Promise<RateLimitResult> {
+  async isAllowed(
+    key: string,
+    limitConfig: RateLimitConfig
+  ): Promise<RateLimitResult> {
     const now = Date.now();
     const resetTime = now + limitConfig.windowMs;
 
@@ -100,16 +118,31 @@ class MemoryRateLimiter implements RateLimiterBackend {
 
     if (!record || now > record.resetTime) {
       this.store.set(key, { count: 1, resetTime });
-      return { allowed: true, remaining: limitConfig.max - 1, resetTime, limit: limitConfig.max };
+      return {
+        allowed: true,
+        remaining: limitConfig.max - 1,
+        resetTime,
+        limit: limitConfig.max,
+      };
     }
 
     if (record.count >= limitConfig.max) {
-      return { allowed: false, remaining: 0, resetTime: record.resetTime, limit: limitConfig.max };
+      return {
+        allowed: false,
+        remaining: 0,
+        resetTime: record.resetTime,
+        limit: limitConfig.max,
+      };
     }
 
     record.count++;
     this.store.set(key, record);
-    return { allowed: true, remaining: limitConfig.max - record.count, resetTime, limit: limitConfig.max };
+    return {
+      allowed: true,
+      remaining: limitConfig.max - record.count,
+      resetTime,
+      limit: limitConfig.max,
+    };
   }
 
   async reset(key: string): Promise<void> {
@@ -129,17 +162,22 @@ class RedisRateLimiter implements RateLimiterBackend {
       try {
         // Dynamic import to avoid issues if Redis isn't configured
         // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const Redis = require("ioredis");
+        const Redis = require('ioredis');
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         this.redis = new Redis(redisUrl) as any;
       } catch {
         // Fall back to memory if Redis unavailable
-        console.warn("Redis not available, falling back to in-memory rate limiting");
+        console.warn(
+          'Redis not available, falling back to in-memory rate limiting'
+        );
       }
     }
   }
 
-  async isAllowed(key: string, limitConfig: RateLimitConfig): Promise<RateLimitResult> {
+  async isAllowed(
+    key: string,
+    limitConfig: RateLimitConfig
+  ): Promise<RateLimitResult> {
     if (!this.redis) {
       // Fall back to memory
       return new MemoryRateLimiter().isAllowed(key, limitConfig);
@@ -168,9 +206,14 @@ class RedisRateLimiter implements RateLimiterBackend {
         limit: limitConfig.max,
       };
     } catch (error) {
-      console.error("Redis rate limiter error:", error);
+      console.error('Redis rate limiter error:', error);
       const resetTime = Date.now() + limitConfig.windowMs;
-      return { allowed: true, remaining: limitConfig.max, resetTime, limit: limitConfig.max };
+      return {
+        allowed: true,
+        remaining: limitConfig.max,
+        resetTime,
+        limit: limitConfig.max,
+      };
     }
   }
 
@@ -217,16 +260,19 @@ export async function checkRateLimit(
  */
 export function getClientKey(request: Request): string {
   // Try X-Forwarded-For first (standard proxy header)
-  const forwardedFor = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  const forwardedFor = request.headers
+    .get('x-forwarded-for')
+    ?.split(',')[0]
+    ?.trim();
 
   // Fall back to X-Real-IP (used by some proxies)
-  const realIp = request.headers.get("x-real-ip");
+  const realIp = request.headers.get('x-real-ip');
 
   // Use the first available IP
-  const ip = forwardedFor || realIp || "127.0.0.1";
+  const ip = forwardedFor || realIp || '127.0.0.1';
 
   // Combine with user ID if available (for authenticated users)
-  const userId = request.headers.get("x-user-id") || "anonymous";
+  const userId = request.headers.get('x-user-id') || 'anonymous';
 
   return `${ip}:${userId}`;
 }
@@ -235,7 +281,7 @@ export function getClientKey(request: Request): string {
  * Get just the IP address from the request
  */
 export function getClientIp(request: Request): string {
-  return getClientKey(request).split(":")[0];
+  return getClientKey(request).split(':')[0];
 }
 
 /**
@@ -253,15 +299,17 @@ export async function withRateLimit(
       allowed: false,
       response: new Response(
         JSON.stringify({
-          error: "Too many requests",
-          code: "RATE_LIMITED",
+          error: 'Too many requests',
+          code: 'RATE_LIMITED',
           resetTime: result.resetTime,
         }),
         {
           status: 429,
           headers: {
-            "Content-Type": "application/json",
-            "Retry-After": Math.ceil((result.resetTime - Date.now()) / 1000).toString(),
+            'Content-Type': 'application/json',
+            'Retry-After': Math.ceil(
+              (result.resetTime - Date.now()) / 1000
+            ).toString(),
           },
         }
       ),
