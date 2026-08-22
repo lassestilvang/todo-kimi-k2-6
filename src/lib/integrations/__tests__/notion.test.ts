@@ -39,7 +39,11 @@ describe('NotionConnector', () => {
       });
 
       // Access private property for testing
-      expect((multiDbConnector as any).databaseIds).toEqual(['db1', 'db2', 'db3']);
+      expect((multiDbConnector as any).databaseIds).toEqual([
+        'db1',
+        'db2',
+        'db3',
+      ]);
     });
   });
 
@@ -55,7 +59,7 @@ describe('NotionConnector', () => {
 
     it('should throw error when no access token provided', async () => {
       await expect(connector.authenticate({})).rejects.toThrow(
-        'Notion integration requires an access token',
+        'Notion integration requires an access token'
       );
     });
   });
@@ -169,7 +173,9 @@ describe('NotionConnector', () => {
         statusText: 'Bad Request',
       });
 
-      await expect(connector.fetchRecords()).rejects.toThrow('Notion API error');
+      await expect(connector.fetchRecords()).rejects.toThrow(
+        'Notion API error'
+      );
     });
   });
 
@@ -204,7 +210,7 @@ describe('NotionConnector', () => {
         'https://api.notion.com/v1/pages',
         expect.objectContaining({
           method: 'POST',
-        }),
+        })
       );
     });
 
@@ -220,7 +226,7 @@ describe('NotionConnector', () => {
       });
 
       await expect(noDbConnector.pushTask({ title: 'Test' })).rejects.toThrow(
-        'No database configured for Notion integration',
+        'No database configured for Notion integration'
       );
     });
 
@@ -253,13 +259,13 @@ describe('NotionConnector', () => {
         expect.objectContaining({
           method: 'POST',
           body: expect.any(String),
-        }),
+        })
       );
 
       const body = JSON.parse((fetch as any).mock.calls[0][1].body);
       expect(body.properties.title.title[0].text.content).toBe('Complex Task');
       expect(body.properties.description.rich_text[0].text.content).toBe(
-        'Detailed description',
+        'Detailed description'
       );
     });
 
@@ -280,10 +286,7 @@ describe('NotionConnector', () => {
       const page = {
         properties: {
           title: {
-            title: [
-              { plain_text: 'Task ' },
-              { plain_text: 'Title' },
-            ],
+            title: [{ plain_text: 'Task ' }, { plain_text: 'Title' }],
           },
         },
       };
@@ -325,10 +328,7 @@ describe('NotionConnector', () => {
       const page = {
         properties: {
           Tags: {
-            multi_select: [
-              { name: 'Frontend' },
-              { name: 'UI' },
-            ],
+            multi_select: [{ name: 'Frontend' }, { name: 'UI' }],
           },
         },
       };
@@ -444,9 +444,7 @@ describe('NotionConnector', () => {
       const page = {
         properties: {
           Assignee: {
-            people: [
-              { email: 'assignee@example.com', name: 'Assignee' },
-            ],
+            people: [{ email: 'assignee@example.com', name: 'Assignee' }],
           },
         },
       };
@@ -459,9 +457,7 @@ describe('NotionConnector', () => {
       const page = {
         properties: {
           Assignee: {
-            people: [
-              { name: 'Assignee Name' },
-            ],
+            people: [{ name: 'Assignee Name' }],
           },
         },
       };
