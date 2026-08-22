@@ -3,24 +3,31 @@
  * Handles email and in-app notifications for tasks
  */
 
-import { getDb } from "@/lib/db";
-import { logInfo, logError } from "@/lib/logger";
-import { sendTaskReminderEmail, sendDueSoonEmail, sendWeeklyDigest } from "@/lib/email";
-import type { Reminder, Task, User } from "@/types";
+import { getDb } from '@/lib/db';
+import { logInfo, logError } from '@/lib/logger';
+import {
+  sendTaskReminderEmail,
+  sendDueSoonEmail,
+  sendWeeklyDigest,
+} from '@/lib/email';
+import type { Reminder, Task, User } from '@/types';
 
 /**
  * Get all users who have email notifications enabled
  */
-export async function getUsersWithNotifications(): Promise<Array<User & { preferences: { notifications?: boolean } }>> {
+export async function getUsersWithNotifications(): Promise<
+  Array<User & { preferences: { notifications?: boolean } }>
+> {
   const db = getDb();
 
-   
   const users = db
-    .prepare(`
+    .prepare(
+      `
       SELECT u.*,
              json_extract(u.preferences, '$.notifications') as notifications_enabled
       FROM users u
-    `)
+    `
+    )
     .all() as Array<User & { preferences: { notifications?: boolean } }>;
 
   // Transform to expected format
@@ -47,15 +54,17 @@ export async function getReminderWithDetails(
        JOIN users u ON t.assignee_id = u.id OR t.created_by = u.id
        WHERE r.id = ?`
     )
-    .get(reminderId) as (Reminder & {
-      task_name: string;
-      task_description: string | null;
-      task_deadline: string | null;
-      task_priority: string;
-      user_email: string;
-      user_name: string;
-      preferences: string;
-    }) | null;
+    .get(reminderId) as
+    | (Reminder & {
+        task_name: string;
+        task_description: string | null;
+        task_deadline: string | null;
+        task_priority: string;
+        user_email: string;
+        user_name: string;
+        preferences: string;
+      })
+    | null;
 
   if (!result) return null;
 
@@ -77,7 +86,7 @@ export async function getReminderWithDetails(
       name: result.user_name,
       avatar_url: null,
       created_at: new Date().toISOString(),
-      preferences: JSON.parse(result.preferences || "{}"),
+      preferences: JSON.parse(result.preferences || '{}'),
     },
   } as unknown as Reminder & { task: Task; user: User };
 }
@@ -85,7 +94,10 @@ export async function getReminderWithDetails(
 /**
  * Process due reminders and send notifications
  */
-export async function processDueReminders(): Promise<{ sent: number; failed: number }> {
+export async function processDueReminders(): Promise<{
+  sent: number;
+  failed: number;
+}> {
   const db = getDb();
   const now = new Date().toISOString();
 
@@ -99,7 +111,8 @@ export async function processDueReminders(): Promise<{ sent: number; failed: num
        JOIN users u ON t.assignee_id = u.id OR t.created_by = u.id
        WHERE r.remind_at <= ? AND t.completed = 0`
     )
-    .all(now) as Array<Reminder & {
+    .all(now) as Array<
+    Reminder & {
       task_name: string;
       description: string | null;
       deadline: string | null;
@@ -107,14 +120,15 @@ export async function processDueReminders(): Promise<{ sent: number; failed: num
       user_email: string;
       user_name: string;
       preferences: string;
-    }>;
+    }
+  >;
 
   let sent = 0;
   let failed = 0;
 
   for (const reminder of dueReminders) {
     try {
-      const preferences = JSON.parse(reminder.preferences || "{}");
+      const preferences = JSON.parse(reminder.preferences || '{}');
 
       // Check if user wants email notifications
       if (preferences.notifications !== false) {
@@ -127,11 +141,17 @@ export async function processDueReminders(): Promise<{ sent: number; failed: num
         } as Task;
 
         await sendTaskReminderEmail(reminder.user_email, task);
-        logInfo(`Sent reminder email for task ${reminder.task_name} to ${reminder.user_email}`);
+        logInfo(
+          `Sent reminder email for task ${reminder.task_name} to ${reminder.user_email}`
+        );
         sent++;
       }
     } catch (error) {
-      logError(`Failed to send reminder for task ${reminder.task_name}`, undefined, error instanceof Error ? error : new Error(String(error)));
+      logError(
+        `Failed to send reminder for task ${reminder.task_name}`,
+        undefined,
+        error instanceof Error ? error : new Error(String(error))
+      );
       failed++;
     }
   }
@@ -142,7 +162,10 @@ export async function processDueReminders(): Promise<{ sent: number; failed: num
 /**
  * Send weekly digest to all active users
  */
-export async function sendWeeklyDigestEmails(): Promise<{ sent: number; failed: number }> {
+export async function sendWeeklyDigestEmails(): Promise<{
+  sent: number;
+  failed: number;
+}> {
   const users = await getUsersWithNotifications();
   let sent = 0;
   let failed = 0;
@@ -164,19 +187,22 @@ export async function sendWeeklyDigestEmails(): Promise<{ sent: number; failed: 
              WHERE (assignee_id = ? OR created_by = ?)`
           )
           .all(user.id, user.id) as Array<{
-            id: number;
-            name: string;
-            priority: string;
-            deadline: string | null;
-            completed: number;
-            days_until_due: number;
-          }>;
+          id: number;
+          name: string;
+          priority: string;
+          deadline: string | null;
+          completed: number;
+          days_until_due: number;
+        }>;
 
         const summary = {
           totalTasks: tasks.length,
           completedTasks: tasks.filter(t => t.completed).length,
-          overdueTasks: tasks.filter(t => t.days_until_due < 0 && !t.completed).length,
-          criticalTasks: tasks.filter(t => t.priority === "critical" && !t.completed).length,
+          overdueTasks: tasks.filter(t => t.days_until_due < 0 && !t.completed)
+            .length,
+          criticalTasks: tasks.filter(
+            t => t.priority === 'critical' && !t.completed
+          ).length,
         };
 
         await sendWeeklyDigest(user.email, summary);
@@ -184,7 +210,11 @@ export async function sendWeeklyDigestEmails(): Promise<{ sent: number; failed: 
         sent++;
       }
     } catch (error) {
-      logError(`Failed to send weekly digest to ${user.email}`, undefined, error instanceof Error ? error : new Error(String(error)));
+      logError(
+        `Failed to send weekly digest to ${user.email}`,
+        undefined,
+        error instanceof Error ? error : new Error(String(error))
+      );
       failed++;
     }
   }
@@ -195,7 +225,10 @@ export async function sendWeeklyDigestEmails(): Promise<{ sent: number; failed: 
 /**
  * Check for due dates and send notifications
  */
-export async function checkDueDates(): Promise<{ dueSoon: number; overdue: number }> {
+export async function checkDueDates(): Promise<{
+  dueSoon: number;
+  overdue: number;
+}> {
   const db = getDb();
   const now = new Date();
   const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
@@ -210,7 +243,9 @@ export async function checkDueDates(): Promise<{ dueSoon: number; overdue: numbe
        AND date(t.deadline) BETWEEN date(?) AND date(?)
        AND t.completed = 0`
     )
-    .all(now.toISOString(), tomorrow.toISOString()) as Array<Task & { user_email: string; user_name: string; preferences: string }>;
+    .all(now.toISOString(), tomorrow.toISOString()) as Array<
+    Task & { user_email: string; user_name: string; preferences: string }
+  >;
 
   // Get overdue tasks
   const overdue = db
@@ -222,7 +257,9 @@ export async function checkDueDates(): Promise<{ dueSoon: number; overdue: numbe
        AND date(t.deadline) < date('now')
        AND t.completed = 0`
     )
-    .all() as Array<Task & { user_email: string; user_name: string; preferences: string }>;
+    .all() as Array<
+    Task & { user_email: string; user_name: string; preferences: string }
+  >;
 
   let dueSoonCount = 0;
   let overdueCount = 0;
@@ -230,13 +267,17 @@ export async function checkDueDates(): Promise<{ dueSoon: number; overdue: numbe
   // Send due soon notifications
   for (const task of dueSoon) {
     try {
-      const preferences = JSON.parse(task.preferences || "{}");
+      const preferences = JSON.parse(task.preferences || '{}');
       if (preferences.notifications !== false) {
         await sendDueSoonEmail(task.user_email, task);
         dueSoonCount++;
       }
     } catch (error) {
-      logError(`Failed to send due soon notification`, undefined, error instanceof Error ? error : new Error(String(error)));
+      logError(
+        `Failed to send due soon notification`,
+        undefined,
+        error instanceof Error ? error : new Error(String(error))
+      );
     }
   }
 
