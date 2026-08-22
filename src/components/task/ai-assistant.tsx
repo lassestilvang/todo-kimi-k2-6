@@ -103,6 +103,11 @@ export function AIAssistant({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null);
+  const [workloadSuggestions, setWorkloadSuggestions] = useState<
+    WorkloadSuggestion[]
+  >([]);
+  const [notesInput, setNotesInput] = useState('');
+  const [isGeneratingFromNotes, setIsGeneratingFromNotes] = useState(false);
 
   // Initialize speech recognition
   useEffect(() => {
@@ -197,10 +202,6 @@ export function AIAssistant({
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
-
-  const [workloadSuggestions, setWorkloadSuggestions] = useState<
-    WorkloadSuggestion[]
-  >([]);
 
   // Load workload suggestions on mount
   useEffect(() => {
@@ -572,9 +573,6 @@ export function AIAssistant({
   }, [tasks, lists]);
 
   // Generate tasks from notes/bullet points
-  const [notesInput, setNotesInput] = useState('');
-  const [isGeneratingFromNotes, setIsGeneratingFromNotes] = useState(false);
-
   const handleGenerateFromNotes = async () => {
     if (!notesInput.trim()) return;
 
