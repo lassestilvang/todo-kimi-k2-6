@@ -75,10 +75,12 @@ describe('Google Calendar Sync', () => {
     });
 
     it('returns sync config when it exists', () => {
-      db.prepare(`
+      db.prepare(
+        `
         INSERT INTO calendar_sync (user_id, provider, access_token, refresh_token, expires_at, enabled)
         VALUES (?, 'google', ?, ?, 9999999999, 1)
-      `).run(1, 'test-token', 'refresh-token');
+      `
+      ).run(1, 'test-token', 'refresh-token');
 
       const result = getGoogleCalendarSync(1);
 
@@ -199,7 +201,9 @@ describe('Google Calendar Sync', () => {
         statusText: 'Forbidden',
       });
 
-      await expect(syncTaskToCalendar(task, sync)).rejects.toThrow('Failed to create calendar event');
+      await expect(syncTaskToCalendar(task, sync)).rejects.toThrow(
+        'Failed to create calendar event'
+      );
     });
   });
 
