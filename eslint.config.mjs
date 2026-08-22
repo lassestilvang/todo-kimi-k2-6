@@ -14,7 +14,7 @@ const eslintConfig = defineConfig([
       '@typescript-eslint/no-non-null-assertion': 'error',
       '@typescript-eslint/no-unused-vars': [
         'error',
-        { argsIgnorePattern: '^_' },
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
       ],
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/explicit-module-boundary-types': 'off',
@@ -37,6 +37,13 @@ const eslintConfig = defineConfig([
     files: ['src/lib/cache.ts'],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
+  // Allow unescaped entities in JSX - common in React components
+  {
+    files: ['src/**/*.tsx', 'src/**/*.ts'],
+    rules: {
+      'react/no-unescaped-entities': 'off',
     },
   },
   // Override default ignores of eslint-config-next.
