@@ -3,14 +3,14 @@
  * Allows tasks to be created/modified while offline and synced later
  */
 
-import type { CreateTaskInput } from "../types";
+import type { CreateTaskInput } from '../types';
 
-const OFFLINE_TASKS_KEY = "taskflow_offline_tasks";
-const SYNC_STATUS_KEY = "taskflow_sync_status";
+const OFFLINE_TASKS_KEY = 'taskflow_offline_tasks';
+const SYNC_STATUS_KEY = 'taskflow_sync_status';
 
 export interface OfflineTask {
   id: string;
-  action: "create" | "update" | "delete";
+  action: 'create' | 'update' | 'delete';
   data: CreateTaskInput | Partial<CreateTaskInput> | { id: number };
   timestamp: number;
   synced: boolean;
@@ -28,7 +28,7 @@ export interface SyncStatus {
  * Get the localStorage object (handles SSR)
  */
 function getLocalStorage(): Storage | null {
-  if (typeof window === "undefined") return null;
+  if (typeof window === 'undefined') return null;
   return window.localStorage;
 }
 
@@ -55,11 +55,16 @@ export function getSyncStatus(): SyncStatus {
 /**
  * Save a pending task operation for later sync
  */
-export function saveOfflineTask(action: "create" | "update" | "delete", data: CreateTaskInput | Partial<CreateTaskInput> | { id: number }): void {
+export function saveOfflineTask(
+  action: 'create' | 'update' | 'delete',
+  data: CreateTaskInput | Partial<CreateTaskInput> | { id: number }
+): void {
   const ls = getLocalStorage();
   if (!ls) return;
 
-  const offlineTasks: OfflineTask[] = JSON.parse(ls.getItem(OFFLINE_TASKS_KEY) || "[]");
+  const offlineTasks: OfflineTask[] = JSON.parse(
+    ls.getItem(OFFLINE_TASKS_KEY) || '[]'
+  );
   const newTask: OfflineTask = {
     id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     action,
@@ -80,7 +85,7 @@ export function saveOfflineTask(action: "create" | "update" | "delete", data: Cr
 export function getOfflineTasks(): OfflineTask[] {
   const ls = getLocalStorage();
   if (!ls) return [];
-  return JSON.parse(ls.getItem(OFFLINE_TASKS_KEY) || "[]");
+  return JSON.parse(ls.getItem(OFFLINE_TASKS_KEY) || '[]');
 }
 
 /**
@@ -90,8 +95,10 @@ export function markTaskAsSynced(taskId: string): void {
   const ls = getLocalStorage();
   if (!ls) return;
 
-  const offlineTasks: OfflineTask[] = JSON.parse(ls.getItem(OFFLINE_TASKS_KEY) || "[]");
-  const index = offlineTasks.findIndex((t) => t.id === taskId);
+  const offlineTasks: OfflineTask[] = JSON.parse(
+    ls.getItem(OFFLINE_TASKS_KEY) || '[]'
+  );
+  const index = offlineTasks.findIndex(t => t.id === taskId);
   if (index !== -1) {
     offlineTasks[index].synced = true;
     ls.setItem(OFFLINE_TASKS_KEY, JSON.stringify(offlineTasks));
@@ -105,8 +112,10 @@ export function removeOfflineTask(taskId: string): void {
   const ls = getLocalStorage();
   if (!ls) return;
 
-  const offlineTasks: OfflineTask[] = JSON.parse(ls.getItem(OFFLINE_TASKS_KEY) || "[]");
-  const filtered = offlineTasks.filter((t) => t.id !== taskId);
+  const offlineTasks: OfflineTask[] = JSON.parse(
+    ls.getItem(OFFLINE_TASKS_KEY) || '[]'
+  );
+  const filtered = offlineTasks.filter(t => t.id !== taskId);
   ls.setItem(OFFLINE_TASKS_KEY, JSON.stringify(filtered));
 }
 
@@ -117,8 +126,10 @@ function retryOfflineTask(taskId: string): void {
   const ls = getLocalStorage();
   if (!ls) return;
 
-  const offlineTasks: OfflineTask[] = JSON.parse(ls.getItem(OFFLINE_TASKS_KEY) || "[]");
-  const index = offlineTasks.findIndex((t) => t.id === taskId);
+  const offlineTasks: OfflineTask[] = JSON.parse(
+    ls.getItem(OFFLINE_TASKS_KEY) || '[]'
+  );
+  const index = offlineTasks.findIndex(t => t.id === taskId);
   if (index !== -1) {
     offlineTasks[index].retryCount = (offlineTasks[index].retryCount || 0) + 1;
     ls.setItem(OFFLINE_TASKS_KEY, JSON.stringify(offlineTasks));
@@ -130,7 +141,7 @@ function retryOfflineTask(taskId: string): void {
  */
 export function getPendingOfflineTasks(): OfflineTask[] {
   const offlineTasks = getOfflineTasks();
-  return offlineTasks.filter((t) => !t.synced);
+  return offlineTasks.filter(t => !t.synced);
 }
 
 /**
@@ -140,15 +151,20 @@ export function clearSyncedTasks(): void {
   const ls = getLocalStorage();
   if (!ls) return;
 
-  const offlineTasks: OfflineTask[] = JSON.parse(ls.getItem(OFFLINE_TASKS_KEY) || "[]");
-  const filtered = offlineTasks.filter((t) => !t.synced);
+  const offlineTasks: OfflineTask[] = JSON.parse(
+    ls.getItem(OFFLINE_TASKS_KEY) || '[]'
+  );
+  const filtered = offlineTasks.filter(t => !t.synced);
   ls.setItem(OFFLINE_TASKS_KEY, JSON.stringify(filtered));
 }
 
 /**
  * Sync pending offline tasks with the server
  */
-export async function syncOfflineTasks(): Promise<{ success: number; failed: number }> {
+export async function syncOfflineTasks(): Promise<{
+  success: number;
+  failed: number;
+}> {
   const pendingTasks = getPendingOfflineTasks();
   let success = 0;
   let failed = 0;
@@ -157,10 +173,10 @@ export async function syncOfflineTasks(): Promise<{ success: number; failed: num
 
   for (const task of pendingTasks) {
     try {
-      if (task.action === "create") {
-        const response = await fetch("/api/tasks", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+      if (task.action === 'create') {
+        const response = await fetch('/api/tasks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(task.data),
         });
         if (response.ok) {
@@ -172,11 +188,11 @@ export async function syncOfflineTasks(): Promise<{ success: number; failed: num
             retryOfflineTask(task.id);
           }
         }
-      } else if (task.action === "update") {
+      } else if (task.action === 'update') {
         const { id, ...updates } = task.data as { id: number };
         const response = await fetch(`/api/tasks/${id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(updates),
         });
         if (response.ok) {
@@ -188,10 +204,10 @@ export async function syncOfflineTasks(): Promise<{ success: number; failed: num
             retryOfflineTask(task.id);
           }
         }
-      } else if (task.action === "delete") {
+      } else if (task.action === 'delete') {
         const { id } = task.data as { id: number };
         const response = await fetch(`/api/tasks/${id}`, {
-          method: "DELETE",
+          method: 'DELETE',
         });
         if (response.ok) {
           markTaskAsSynced(task.id);
@@ -242,7 +258,8 @@ export function hasPendingOfflineTasks(): boolean {
 /**
  * Offline conflict resolution strategies
  */
-export type ConflictResolution = "server-wins" | "client-wins" | "merge" | "prompt";
+export type ConflictResolution =
+  'server-wins' | 'client-wins' | 'merge' | 'prompt';
 
 /**
  * Resolve conflicts when syncing offline changes
@@ -250,26 +267,26 @@ export type ConflictResolution = "server-wins" | "client-wins" | "merge" | "prom
 export async function resolveConflicts(
   serverTask: Record<string, unknown>,
   offlineTask: OfflineTask,
-  resolution: ConflictResolution = "server-wins"
+  resolution: ConflictResolution = 'server-wins'
 ): Promise<Record<string, unknown>> {
   switch (resolution) {
-    case "server-wins":
+    case 'server-wins':
       return serverTask;
-    case "client-wins":
+    case 'client-wins':
       return { ...serverTask, ...offlineTask.data };
-    case "merge": {
+    case 'merge': {
       // Merge strategy: prefer offline changes for non-conflicting fields
       const merged = { ...serverTask };
-      if (typeof offlineTask.data === "object" && offlineTask.data !== null) {
+      if (typeof offlineTask.data === 'object' && offlineTask.data !== null) {
         for (const [key, value] of Object.entries(offlineTask.data)) {
-          if (key !== "id" && value !== undefined) {
+          if (key !== 'id' && value !== undefined) {
             merged[key] = value;
           }
         }
       }
       return merged;
     }
-    case "prompt":
+    case 'prompt':
       // In a real implementation, this would trigger a UI prompt
       // For now, default to merge
       return { ...serverTask, ...offlineTask.data };
@@ -291,7 +308,11 @@ export function clearAllOfflineTasks(): void {
 /**
  * Get offline task count by action type
  */
-export function getOfflineTaskCounts(): { create: number; update: number; delete: number } {
+export function getOfflineTaskCounts(): {
+  create: number;
+  update: number;
+  delete: number;
+} {
   const pending = getPendingOfflineTasks();
   return pending.reduce(
     (acc, task) => {
