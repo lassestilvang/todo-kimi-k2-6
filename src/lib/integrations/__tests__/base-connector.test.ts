@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { BaseConnector, type IntegrationConfig, type ExternalRecord } from '../base-connector';
+import {
+  BaseConnector,
+  type IntegrationConfig,
+  type ExternalRecord,
+} from '../base-connector';
 
 // Concrete implementation for testing the abstract class
 class TestConnector extends BaseConnector {
@@ -12,13 +16,13 @@ class TestConnector extends BaseConnector {
   }
 
   async pushTask(_task: {
-      title: string;
-      description?: string;
-      dueDate?: string;
-      labels?: string[];
-      assignee?: string;
-      priority?: 'low' | 'medium' | 'high' | 'critical';
-    }): Promise<ExternalRecord> {
+    title: string;
+    description?: string;
+    dueDate?: string;
+    labels?: string[];
+    assignee?: string;
+    priority?: 'low' | 'medium' | 'high' | 'critical';
+  }): Promise<ExternalRecord> {
     return {
       id: 'test-id',
       title: 'Test Task',
@@ -80,7 +84,9 @@ describe('BaseConnector', () => {
     it('should throw error when no access token provided', async () => {
       const connector = new TestConnector(mockConfig);
 
-      await expect(connector.authenticate({})).rejects.toThrow('Authentication failed');
+      await expect(connector.authenticate({})).rejects.toThrow(
+        'Authentication failed'
+      );
     });
   });
 
@@ -147,7 +153,9 @@ describe('BaseConnector', () => {
         readonly name = 'Success';
 
         async fetchRecords(): Promise<ExternalRecord[]> {
-          return [{ id: '1', title: 'Test', createdAt: new Date().toISOString() }];
+          return [
+            { id: '1', title: 'Test', createdAt: new Date().toISOString() },
+          ];
         }
         async pushTask(): Promise<ExternalRecord> {
           throw new Error('Not implemented');
