@@ -89,7 +89,7 @@ export function DecisionShadowTracker() {
               <p className="text-2xl font-bold">
                 {
                   Object.entries(analysis?.decisionTypes || []).filter(
-                    ([, data]) => (data as any).avgRating >= 4
+                    ([, data]) => (data as { avgRating: number }).avgRating >= 4
                   ).length
                 }
               </p>
@@ -111,7 +111,7 @@ export function DecisionShadowTracker() {
           {analysis?.patternAnalysis && (
             <div className="mt-6">
               <h4 className="font-medium mb-3">Patterns & Insights</h4>
-              {analysis.patternAnalysis.map((p: any, idx: number) => (
+              {analysis.patternAnalysis.map((p: { pattern: string; recommendation: string }, idx: number) => (
                 <div
                   key={idx}
                   className="flex items-start gap-3 p-3 bg-muted rounded-lg mb-2"
@@ -148,7 +148,7 @@ export function DecisionShadowTracker() {
               <Label>Decision Type</Label>
               <Select
                 value={decisionData.decision_type}
-                onValueChange={(v: any) =>
+                onValueChange={(v: string) =>
                   setDecisionData(d => ({ ...d, decision_type: v }))
                 }
               >
