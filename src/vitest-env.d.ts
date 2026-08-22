@@ -2,7 +2,7 @@
 /// <reference types="vitest/globals" />
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-declare module "vitest/globals" {
+declare module 'vitest/globals' {
   export interface Vi {
     fn: <T extends (...args: any[]) => any>(impl?: T) => Mock<T>;
   }
@@ -18,7 +18,9 @@ declare module "vitest/globals" {
 
 // Mock types
 type Mock<T extends (...args: any[]) => any> = {
-  mockResolvedValue(value: ReturnType<T> extends Promise<infer U> ? U : never): void;
+  mockResolvedValue(
+    value: ReturnType<T> extends Promise<infer U> ? U : never
+  ): void;
   mockImplementation(fn: (...args: Parameters<T>) => ReturnType<T>): void;
   mockImplementationOnce(fn: (...args: Parameters<T>) => ReturnType<T>): void;
   mockReturnValue(value: ReturnType<T>): void;
