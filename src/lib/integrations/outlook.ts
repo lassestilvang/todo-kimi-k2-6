@@ -6,7 +6,11 @@
  * Scopes: Calendars.ReadWrite, offline_access
  */
 
-import { BaseConnector, IntegrationConfig, ExternalRecord } from './base-connector';
+import {
+  BaseConnector,
+  IntegrationConfig,
+  ExternalRecord,
+} from './base-connector';
 import type { Task } from '@/types';
 
 export interface OutlookCalendarRecord extends ExternalRecord {
@@ -29,18 +33,22 @@ export class OutlookConnector extends BaseConnector {
   private apiToken: string;
   private refreshTokenValue: string | null = null;
 
-  constructor(config: IntegrationConfig & { apiToken: string; refreshToken?: string }) {
+  constructor(
+    config: IntegrationConfig & { apiToken: string; refreshToken?: string }
+  ) {
     super(config);
     this.apiToken = config.apiToken;
     this.refreshTokenValue = config.refreshToken || null;
   }
 
-  async authenticate(credentials: {
-    clientId?: string;
-    clientSecret?: string;
-    accessToken?: string;
-    refreshToken?: string;
-  } = {}): Promise<{
+  async authenticate(
+    credentials: {
+      clientId?: string;
+      clientSecret?: string;
+      accessToken?: string;
+      refreshToken?: string;
+    } = {}
+  ): Promise<{
     accessToken: string;
     refreshToken?: string;
     expiresAt: string;
@@ -59,9 +67,14 @@ export class OutlookConnector extends BaseConnector {
     };
   }
 
-  async fetchRecords(since?: Date, options?: { limit?: number; cursor?: string }): Promise<OutlookCalendarRecord[]> {
+  async fetchRecords(
+    since?: Date,
+    options?: { limit?: number; cursor?: string }
+  ): Promise<OutlookCalendarRecord[]> {
     const records: OutlookCalendarRecord[] = [];
-    const timeMin = since ? since.toISOString() : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const timeMin = since
+      ? since.toISOString()
+      : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
     const response = await this.graphApiFetch(
       `https://graph.microsoft.com/v1.0/me/events?$filter=start/dateTime ge ${encodeURIComponent(timeMin)} and isCancelled eq false&$orderby=start/dateTime&$top=${options?.limit || 50}`
@@ -69,7 +82,9 @@ export class OutlookConnector extends BaseConnector {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(`Outlook API error: ${error.error?.message || response.statusText}`);
+      throw new Error(
+        `Outlook API error: ${error.error?.message || response.statusText}`
+      );
     }
 
     const data = await response.json();
@@ -85,7 +100,10 @@ export class OutlookConnector extends BaseConnector {
     return records;
   }
 
-  mapToTask(record: ExternalRecord, _fieldMappings?: Record<string, string>): {
+  mapToTask(
+    record: ExternalRecord,
+    _fieldMappings?: Record<string, string>
+  ): {
     title: string;
     description?: string;
     dueDate?: string;
@@ -118,10 +136,12 @@ export class OutlookConnector extends BaseConnector {
 
     const event = {
       subject: task.title,
-      body: task.description ? {
-        contentType: 'HTML',
-        content: `<html><body>${task.description}</body></html>`,
-      } : undefined,
+      body: task.description
+        ? {
+            contentType: 'HTML',
+            content: `<html><body>${task.description}</body></html>`,
+          }
+        : undefined,
       start: {
         dateTime: `${task.dueDate}T09:00:00`,
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
@@ -138,14 +158,19 @@ export class OutlookConnector extends BaseConnector {
       categories: task.priority ? [task.priority.toUpperCase()] : undefined,
     };
 
-    const response = await this.graphApiFetch('https://graph.microsoft.com/v1.0/me/events', {
-      method: 'POST',
-      body: JSON.stringify(event),
-    });
+    const response = await this.graphApiFetch(
+      'https://graph.microsoft.com/v1.0/me/events',
+      {
+        method: 'POST',
+        body: JSON.stringify(event),
+      }
+    );
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(`Failed to create Outlook event: ${error.error?.message || response.statusText}`);
+      throw new Error(
+        `Failed to create Outlook event: ${error.error?.message || response.statusText}`
+      );
     }
 
     const data = await response.json();
@@ -165,7 +190,9 @@ export class OutlookConnector extends BaseConnector {
 
   async testConnection(): Promise<boolean> {
     try {
-      const response = await this.graphApiFetch('https://graph.microsoft.com/v1.0/me');
+      const response = await this.graphApiFetch(
+        'https://graph.microsoft.com/v1.0/me'
+      );
       return response.ok;
     } catch {
       return false;
@@ -178,7 +205,9 @@ export class OutlookConnector extends BaseConnector {
     errors: string[];
   }> {
     return {
-      lastSync: this.config.lastSyncAt ? new Date(this.config.lastSyncAt) : new Date(0),
+      lastSync: this.config.lastSyncAt
+        ? new Date(this.config.lastSyncAt)
+        : new Date(0),
       pendingChanges: 0,
       errors: [],
     };
@@ -192,9 +221,13 @@ export class OutlookConnector extends BaseConnector {
     displayName: string;
     email: string;
   }> {
-    const response = await this.graphApiFetch('https://graph.microsoft.com/v1.0/me');
+    const response = await this.graphApiFetch(
+      'https://graph.microsoft.com/v1.0/me'
+    );
     if (!response.ok) {
-      throw new Error(`Failed to fetch Outlook profile: ${response.statusText}`);
+      throw new Error(
+        `Failed to fetch Outlook profile: ${response.statusText}`
+      );
     }
     const data = await response.json();
     return {
@@ -214,18 +247,21 @@ export class OutlookConnector extends BaseConnector {
     const clientSecret = process.env.OUTLOOK_CLIENT_SECRET;
     if (!clientId || !clientSecret) return null;
 
-    const response = await fetch('https://login.microsoftonline.com/common/oauth2/v2.0/token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        client_id: clientId,
-        client_secret: clientSecret,
-        refresh_token: this.refreshTokenValue,
-        grant_type: 'refresh_token',
-      }).toString(),
-    });
+    const response = await fetch(
+      'https://login.microsoftonline.com/common/oauth2/v2.0/token',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          client_id: clientId,
+          client_secret: clientSecret,
+          refresh_token: this.refreshTokenValue,
+          grant_type: 'refresh_token',
+        }).toString(),
+      }
+    );
 
     if (!response.ok) return null;
 
@@ -246,7 +282,8 @@ export class OutlookConnector extends BaseConnector {
       client_id: process.env.OUTLOOK_CLIENT_ID || '',
       redirect_uri: `${process.env.NEXTAUTH_URL}/api/auth/callback/outlook`,
       response_type: 'code',
-      scope: 'https://graph.microsoft.com/Calendars.ReadWrite offline_access openid profile',
+      scope:
+        'https://graph.microsoft.com/Calendars.ReadWrite offline_access openid profile',
       state,
       prompt: 'consent',
     });
@@ -261,29 +298,37 @@ export class OutlookConnector extends BaseConnector {
     refresh_token: string;
     expires_in: number;
   }> {
-    const response = await fetch('https://login.microsoftonline.com/common/oauth2/v2.0/token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        client_id: process.env.OUTLOOK_CLIENT_ID || '',
-        client_secret: process.env.OUTLOOK_CLIENT_SECRET || '',
-        redirect_uri: `${process.env.NEXTAUTH_URL}/api/auth/callback/outlook`,
-        grant_type: 'authorization_code',
-        code,
-      }).toString(),
-    });
+    const response = await fetch(
+      'https://login.microsoftonline.com/common/oauth2/v2.0/token',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          client_id: process.env.OUTLOOK_CLIENT_ID || '',
+          client_secret: process.env.OUTLOOK_CLIENT_SECRET || '',
+          redirect_uri: `${process.env.NEXTAUTH_URL}/api/auth/callback/outlook`,
+          grant_type: 'authorization_code',
+          code,
+        }).toString(),
+      }
+    );
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(`Token exchange failed: ${error.error_description || response.statusText}`);
+      throw new Error(
+        `Token exchange failed: ${error.error_description || response.statusText}`
+      );
     }
 
     return response.json();
   }
 
-  private graphApiFetch(url: string, options: RequestInit = {}): Promise<Response> {
+  private graphApiFetch(
+    url: string,
+    options: RequestInit = {}
+  ): Promise<Response> {
     return fetch(url, {
       ...options,
       headers: {
@@ -321,11 +366,15 @@ export class OutlookConnector extends BaseConnector {
     };
   }
 
-  private extractDueDateFromEvent(event: OutlookCalendarRecord): string | undefined {
+  private extractDueDateFromEvent(
+    event: OutlookCalendarRecord
+  ): string | undefined {
     return event.dueDate || undefined;
   }
 
-  private extractPriorityFromEvent(event: OutlookCalendarRecord): 'low' | 'medium' | 'high' | 'critical' | undefined {
+  private extractPriorityFromEvent(
+    event: OutlookCalendarRecord
+  ): 'low' | 'medium' | 'high' | 'critical' | undefined {
     const categories = event.categories?.join(' ').toLowerCase() || '';
 
     if (categories.includes('urgent') || categories.includes('critical')) {
