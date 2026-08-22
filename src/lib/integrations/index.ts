@@ -13,7 +13,7 @@ export interface IntegrationConfig {
 export interface TaskNotification {
   taskId: number;
   taskName: string;
-  action: "created" | "updated" | "completed" | "due_soon" | "overdue";
+  action: 'created' | 'updated' | 'completed' | 'due_soon' | 'overdue';
   assignee?: { id: number; name: string; email: string };
   dueDate?: string;
   priority?: string;
@@ -25,7 +25,15 @@ export { NotionConnector } from './notion';
 export { GitHubConnector } from './github';
 export { SlackConnector } from './slack';
 export { GmailConnector } from './gmail';
-export { BaseConnector, type IntegrationConnector, type ExternalRecord, type GitHubIssueRecord, type SlackMessageRecord, type EmailRecord, type NotionPageRecord } from './base-connector';
+export {
+  BaseConnector,
+  type IntegrationConnector,
+  type ExternalRecord,
+  type GitHubIssueRecord,
+  type SlackMessageRecord,
+  type EmailRecord,
+  type NotionPageRecord,
+} from './base-connector';
 
 /**
  * Send notification to Slack webhook
@@ -35,19 +43,19 @@ export async function sendSlackNotification(
   notification: TaskNotification
 ): Promise<boolean> {
   const colorMap = {
-    created: "#36a64f",
-    updated: "#3383cc",
-    completed: "#36a64f",
-    due_soon: "#ff9900",
-    overdue: "#ff0000",
+    created: '#36a64f',
+    updated: '#3383cc',
+    completed: '#36a64f',
+    due_soon: '#ff9900',
+    overdue: '#ff0000',
   };
 
   const titleMap = {
-    created: "Task Created",
-    updated: "Task Updated",
-    completed: "Task Completed",
-    due_soon: "Task Due Soon",
-    overdue: "Task Overdue",
+    created: 'Task Created',
+    updated: 'Task Updated',
+    completed: 'Task Completed',
+    due_soon: 'Task Due Soon',
+    overdue: 'Task Overdue',
   };
 
   const payload = {
@@ -58,21 +66,21 @@ export async function sendSlackNotification(
         text: notification.taskName,
         fields: [
           {
-            title: "Priority",
-            value: notification.priority || "None",
+            title: 'Priority',
+            value: notification.priority || 'None',
             short: true,
           },
           ...(notification.dueDate
             ? [
                 {
-                  title: "Due Date",
+                  title: 'Due Date',
                   value: new Date(notification.dueDate).toLocaleDateString(),
                   short: true,
                 },
               ]
             : []),
         ],
-        footer: "TaskFlow",
+        footer: 'TaskFlow',
         ts: Math.floor(Date.now() / 1000),
       },
     ],
@@ -80,13 +88,13 @@ export async function sendSlackNotification(
 
   try {
     const response = await fetch(webhookUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
     return response.ok;
   } catch (error) {
-    console.error("Slack notification failed:", error);
+    console.error('Slack notification failed:', error);
     return false;
   }
 }
@@ -107,11 +115,11 @@ export async function sendDiscordNotification(
   };
 
   const titleMap = {
-    created: "Task Created",
-    updated: "Task Updated",
-    completed: "Task Completed",
-    due_soon: "Task Due Soon",
-    overdue: "Task Overdue",
+    created: 'Task Created',
+    updated: 'Task Updated',
+    completed: 'Task Completed',
+    due_soon: 'Task Due Soon',
+    overdue: 'Task Overdue',
   };
 
   const payload = {
@@ -122,21 +130,21 @@ export async function sendDiscordNotification(
         color: colorMap[notification.action],
         fields: [
           {
-            name: "Priority",
-            value: notification.priority || "None",
+            name: 'Priority',
+            value: notification.priority || 'None',
             inline: true,
           },
           ...(notification.dueDate
             ? [
                 {
-                  name: "Due Date",
+                  name: 'Due Date',
                   value: new Date(notification.dueDate).toLocaleDateString(),
                   inline: true,
                 },
               ]
             : []),
         ],
-        footer: { text: "TaskFlow" },
+        footer: { text: 'TaskFlow' },
         timestamp: new Date().toISOString(),
       },
     ],
@@ -144,13 +152,13 @@ export async function sendDiscordNotification(
 
   try {
     const response = await fetch(webhookUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
     return response.ok;
   } catch (error) {
-    console.error("Discord notification failed:", error);
+    console.error('Discord notification failed:', error);
     return false;
   }
 }
@@ -164,6 +172,6 @@ export async function sendEmailNotification(
 ): Promise<boolean> {
   // This would integrate with your email service (e.g., SendGrid, Resend)
   // For now, we'll just log it
-  console.log("Email notification to:", to, notification);
+  console.log('Email notification to:', to, notification);
   return true;
 }
