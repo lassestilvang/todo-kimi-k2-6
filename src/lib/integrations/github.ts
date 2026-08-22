@@ -6,7 +6,12 @@
  * Scope: repo (read/write)
  */
 
-import { BaseConnector, IntegrationConfig, ExternalRecord, GitHubIssueRecord } from './base-connector';
+import {
+  BaseConnector,
+  IntegrationConfig,
+  ExternalRecord,
+  GitHubIssueRecord,
+} from './base-connector';
 
 export class GitHubConnector extends BaseConnector {
   readonly id = 'github';
@@ -16,14 +21,20 @@ export class GitHubConnector extends BaseConnector {
   private apiToken: string;
   private repositories: string[];
 
-  constructor(config: IntegrationConfig & { apiToken: string; repositories?: string | string[] }) {
+  constructor(
+    config: IntegrationConfig & {
+      apiToken: string;
+      repositories?: string | string[];
+    }
+  ) {
     super(config);
     this.apiToken = config.apiToken;
     if (typeof config.repositories === 'string') {
-      this.repositories = config.repositories
-        ?.split(',')
-        .map(r => r.trim())
-        .filter(r => r.length > 0) || [];
+      this.repositories =
+        config.repositories
+          ?.split(',')
+          .map(r => r.trim())
+          .filter(r => r.length > 0) || [];
     } else if (Array.isArray(config.repositories)) {
       this.repositories = config.repositories.filter(r => r.length > 0);
     } else {
@@ -31,12 +42,18 @@ export class GitHubConnector extends BaseConnector {
     }
   }
 
-  async authenticate(credentials: {
-    clientId?: string;
-    clientSecret?: string;
-    accessToken?: string;
+  async authenticate(
+    credentials: {
+      clientId?: string;
+      clientSecret?: string;
+      accessToken?: string;
+      refreshToken?: string;
+    } = {}
+  ): Promise<{
+    accessToken: string;
     refreshToken?: string;
-  } = {}): Promise<{ accessToken: string; refreshToken?: string; expiresAt: string }> {
+    expiresAt: string;
+  }> {
     if (!credentials.accessToken) {
       throw new Error('GitHub integration requires an access token');
     }
@@ -57,13 +74,18 @@ export class GitHubConnector extends BaseConnector {
     };
   }
 
-  async fetchRecords(since?: Date, options?: { limit?: number; cursor?: string; labels?: string[] }): Promise<GitHubIssueRecord[]> {
+  async fetchRecords(
+    since?: Date,
+    options?: { limit?: number; cursor?: string; labels?: string[] }
+  ): Promise<GitHubIssueRecord[]> {
     const records: GitHubIssueRecord[] = [];
 
     for (const repo of this.repositories) {
       const [owner, repoName] = repo.split('/');
       if (!owner || !repoName) {
-        console.warn(`Invalid repository format: ${repo}. Expected "owner/repo"`);
+        console.warn(
+          `Invalid repository format: ${repo}. Expected "owner/repo"`
+        );
         continue;
       }
 
@@ -80,7 +102,7 @@ export class GitHubConnector extends BaseConnector {
             Accept: 'application/vnd.github.v3+json',
             'X-GitHub-Api-Version': '2022-11-28',
           },
-        },
+        }
       );
 
       if (!response.ok) {
@@ -92,7 +114,11 @@ export class GitHubConnector extends BaseConnector {
 
       for (const issue of issues) {
         try {
-          const mappedRecord = this.mapGitHubIssueToTask(issue, owner, repoName);
+          const mappedRecord = this.mapGitHubIssueToTask(
+            issue,
+            owner,
+            repoName
+          );
           records.push(mappedRecord);
         } catch (error) {
           console.warn(`Failed to map issue ${issue.id}:`, error);
@@ -120,7 +146,11 @@ export class GitHubConnector extends BaseConnector {
     };
   }
 
-  private mapGitHubIssueToTask(issue: Record<string, unknown>, owner: string, repoName: string): GitHubIssueRecord {
+  private mapGitHubIssueToTask(
+    issue: Record<string, unknown>,
+    owner: string,
+    repoName: string
+  ): GitHubIssueRecord {
     return {
       id: String(issue.id),
       title: String(issue.title || 'Untitled'),
@@ -142,8 +172,8 @@ export class GitHubConnector extends BaseConnector {
     if (!Array.isArray(labels)) return [];
 
     return labels
-      .filter((label) => typeof label === 'object' && label !== null)
-      .map((label) => {
+      .filter(label => typeof label === 'object' && label !== null)
+      .map(label => {
         const l = label as Record<string, unknown>;
         return String(l.name || '');
       })
@@ -158,7 +188,9 @@ export class GitHubConnector extends BaseConnector {
     return (a.login as string) || (a.email as string) || undefined;
   }
 
-  private mapPriority(labels: string[]): 'low' | 'medium' | 'high' | 'critical' | undefined {
+  private mapPriority(
+    labels: string[]
+  ): 'low' | 'medium' | 'high' | 'critical' | undefined {
     const priorityLabels = {
       critical: ['critical', 'urgent', 'blocker', 'p0'],
       high: ['high', 'important', 'p1'],
@@ -166,10 +198,10 @@ export class GitHubConnector extends BaseConnector {
       low: ['low', 'p3', 'trivial'],
     };
 
-    const lowerLabels = labels.map((l) => l.toLowerCase());
+    const lowerLabels = labels.map(l => l.toLowerCase());
 
     for (const [priority, keywords] of Object.entries(priorityLabels)) {
-      if (lowerLabels.some((label) => keywords.includes(label))) {
+      if (lowerLabels.some(label => keywords.includes(label))) {
         return priority as 'low' | 'medium' | 'high' | 'critical';
       }
     }
@@ -177,7 +209,9 @@ export class GitHubConnector extends BaseConnector {
     return undefined;
   }
 
-  private priorityToLevel(priority: 'low' | 'medium' | 'high' | 'critical'): 0 | 1 | 2 | 3 {
+  private priorityToLevel(
+    priority: 'low' | 'medium' | 'high' | 'critical'
+  ): 0 | 1 | 2 | 3 {
     const map: Record<string, number> = {
       low: 0,
       medium: 1,
@@ -187,7 +221,10 @@ export class GitHubConnector extends BaseConnector {
     return map[priority] as 0 | 1 | 2 | 3;
   }
 
-  async searchIssues(query: string, options?: { state?: 'open' | 'closed' | 'all'; labels?: string[] }): Promise<GitHubIssueRecord[]> {
+  async searchIssues(
+    query: string,
+    options?: { state?: 'open' | 'closed' | 'all'; labels?: string[] }
+  ): Promise<GitHubIssueRecord[]> {
     if (this.repositories.length === 0) {
       throw new Error('No repositories configured');
     }
@@ -196,18 +233,21 @@ export class GitHubConnector extends BaseConnector {
     if (options?.state) {
       searchQuery += `+is:${options.state}`;
     }
-    searchQuery += `+repo:${this.repositories.map((r) => `repo:${r}`).join('+repo:')}`;
+    searchQuery += `+repo:${this.repositories.map(r => `repo:${r}`).join('+repo:')}`;
     if (options?.labels?.length) {
       searchQuery += `+labels:${options.labels.join(',')}`;
     }
 
-    const response = await fetch(`https://api.github.com/search/issues?${searchQuery}`, {
-      headers: {
-        Authorization: `token ${this.apiToken}`,
-        Accept: 'application/vnd.github.v3+json',
-        'X-GitHub-Api-Version': '2022-11-28',
-      },
-    });
+    const response = await fetch(
+      `https://api.github.com/search/issues?${searchQuery}`,
+      {
+        headers: {
+          Authorization: `token ${this.apiToken}`,
+          Accept: 'application/vnd.github.v3+json',
+          'X-GitHub-Api-Version': '2022-11-28',
+        },
+      }
+    );
 
     if (!response.ok) {
       const error = await response.text();
@@ -235,7 +275,10 @@ export class GitHubConnector extends BaseConnector {
     }));
   }
 
-  async getPullRequests(options?: { state?: 'open' | 'closed' | 'all'; since?: Date }): Promise<ExternalRecord[]> {
+  async getPullRequests(options?: {
+    state?: 'open' | 'closed' | 'all';
+    since?: Date;
+  }): Promise<ExternalRecord[]> {
     const records: ExternalRecord[] = [];
 
     for (const repo of this.repositories) {
@@ -277,7 +320,15 @@ export class GitHubConnector extends BaseConnector {
     return records;
   }
 
-  async updateIssue(issueId: string, updates: { title?: string; description?: string; labels?: string[]; assignee?: string }): Promise<GitHubIssueRecord> {
+  async updateIssue(
+    issueId: string,
+    updates: {
+      title?: string;
+      description?: string;
+      labels?: string[];
+      assignee?: string;
+    }
+  ): Promise<GitHubIssueRecord> {
     const response = await fetch(`https://api.github.com/issues/${issueId}`, {
       method: 'PATCH',
       headers: {
@@ -337,7 +388,9 @@ export class GitHubConnector extends BaseConnector {
 
     const [owner, repoName] = task.repository.split('/');
     if (!owner || !repoName) {
-      throw new Error(`Invalid repository format: ${task.repository}. Expected "owner/repo"`);
+      throw new Error(
+        `Invalid repository format: ${task.repository}. Expected "owner/repo"`
+      );
     }
 
     // Combine labels with priority label
@@ -352,16 +405,19 @@ export class GitHubConnector extends BaseConnector {
       labels,
     };
 
-    const response = await fetch(`https://api.github.com/repos/${owner}/${repoName}/issues`, {
-      method: 'POST',
-      headers: {
-        Authorization: `token ${this.apiToken}`,
-        Accept: 'application/vnd.github.v3+json',
-        'X-GitHub-Api-Version': '2022-11-28',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(issueData),
-    });
+    const response = await fetch(
+      `https://api.github.com/repos/${owner}/${repoName}/issues`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `token ${this.apiToken}`,
+          Accept: 'application/vnd.github.v3+json',
+          'X-GitHub-Api-Version': '2022-11-28',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(issueData),
+      }
+    );
 
     if (!response.ok) {
       const error = await response.text();
@@ -373,16 +429,19 @@ export class GitHubConnector extends BaseConnector {
   }
 
   async addComment(issueId: string, comment: string): Promise<void> {
-    const response = await fetch(`https://api.github.com/issues/${issueId}/comments`, {
-      method: 'POST',
-      headers: {
-        Authorization: `token ${this.apiToken}`,
-        Accept: 'application/vnd.github.v3+json',
-        'X-GitHub-Api-Version': '2022-11-28',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ body: comment }),
-    });
+    const response = await fetch(
+      `https://api.github.com/issues/${issueId}/comments`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `token ${this.apiToken}`,
+          Accept: 'application/vnd.github.v3+json',
+          'X-GitHub-Api-Version': '2022-11-28',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ body: comment }),
+      }
+    );
 
     if (!response.ok) {
       throw new Error(`GitHub API error: ${response.status}`);
@@ -435,7 +494,10 @@ export class GitHubConnector extends BaseConnector {
     };
   }
 
-  async getRepositoryInfo(owner: string, repoName: string): Promise<{
+  async getRepositoryInfo(
+    owner: string,
+    repoName: string
+  ): Promise<{
     name: string;
     full_name: string;
     description?: string;
@@ -445,13 +507,16 @@ export class GitHubConnector extends BaseConnector {
     issues_count: number;
     pull_requests_count: number;
   }> {
-    const response = await fetch(`https://api.github.com/repos/${owner}/${repoName}`, {
-      headers: {
-        Authorization: `token ${this.apiToken}`,
-        Accept: 'application/vnd.github.v3+json',
-        'X-GitHub-Api-Version': '2022-11-28',
-      },
-    });
+    const response = await fetch(
+      `https://api.github.com/repos/${owner}/${repoName}`,
+      {
+        headers: {
+          Authorization: `token ${this.apiToken}`,
+          Accept: 'application/vnd.github.v3+json',
+          'X-GitHub-Api-Version': '2022-11-28',
+        },
+      }
+    );
 
     if (!response.ok) {
       throw new Error(`GitHub API error: ${response.status}`);
