@@ -7,19 +7,19 @@
 // the @sentry/nextjs package is not installed
 
 export function initSentry() {
-  if (typeof window === "undefined") return;
+  if (typeof window === 'undefined') return;
   const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
   if (!dsn) return;
 
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const Sentry = require("@sentry/nextjs");
+    const Sentry = require('@sentry/nextjs');
     if (Sentry) {
       Sentry.init({
         dsn,
         integrations: [Sentry.integrations.http({ tracing: true })],
-        tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1,
-        debug: process.env.NODE_ENV === "development",
+        tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1,
+        debug: process.env.NODE_ENV === 'development',
         environment: process.env.NODE_ENV,
         release: process.env.NEXT_PUBLIC_APP_VERSION ?? undefined,
       });
@@ -32,26 +32,26 @@ export function initSentry() {
 export function captureError(error: Error, context?: Record<string, unknown>) {
   const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
   if (!dsn) {
-    console.error("Error captured:", error, context);
+    console.error('Error captured:', error, context);
     return;
   }
 
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const Sentry = require("@sentry/nextjs");
+    const Sentry = require('@sentry/nextjs');
     if (Sentry) {
       Sentry.captureException(error, { contexts: { custom: context } });
     } else {
-      console.error("Error captured:", error, context);
+      console.error('Error captured:', error, context);
     }
   } catch {
-    console.error("Error captured:", error, context);
+    console.error('Error captured:', error, context);
   }
 }
 
 export function captureMessage(
   message: string,
-  level = "info",
+  level = 'info',
   context?: Record<string, unknown>
 ) {
   const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
@@ -62,7 +62,7 @@ export function captureMessage(
 
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const Sentry = require("@sentry/nextjs");
+    const Sentry = require('@sentry/nextjs');
     if (Sentry) {
       Sentry.captureMessage(message, { level, contexts: { custom: context } });
     } else {
@@ -83,7 +83,7 @@ export function setUserContext(
 
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const Sentry = require("@sentry/nextjs");
+    const Sentry = require('@sentry/nextjs');
     if (Sentry) {
       Sentry.setUser({ id: String(userId), email, username: name });
     }
@@ -98,7 +98,7 @@ export function clearUserContext() {
 
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const Sentry = require("@sentry/nextjs");
+    const Sentry = require('@sentry/nextjs');
     if (Sentry) {
       Sentry.setUser(null);
     }
