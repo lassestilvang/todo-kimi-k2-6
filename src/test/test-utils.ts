@@ -4,7 +4,9 @@ import { createMockDatabase } from '@/lib/db/mock-driver';
 
 let testDb: ReturnType<typeof createMockDatabase> | null = null;
 
-export async function setupTestDb(): Promise<ReturnType<typeof createMockDatabase>> {
+export async function setupTestDb(): Promise<
+  ReturnType<typeof createMockDatabase>
+> {
   // Always create a fresh database for test isolation
   testDb = createMockDatabase();
   // Use the full schema that includes all tables (including knowledge graph tables)
@@ -57,14 +59,75 @@ export async function createTestTasks(): Promise<Task[]> {
   `);
 
   return [
-    { id: 1, name: 'Design homepage mockup', description: 'Create wireframes', priority: 'high', completed: false, user_id: 1, date: '2024-01-15', list_id: null, notes: null, deadline: null, estimate: null, actual_time: null, recurring: 'none', recurring_config: null, completed_at: null, created_at: '', updated_at: '', sort_order: 0, archived: false },
-    { id: 2, name: 'Write project documentation', description: 'Document API', priority: 'medium', completed: true, user_id: 1, date: '2024-01-16', list_id: null, notes: null, deadline: null, estimate: null, actual_time: null, recurring: 'none', recurring_config: null, completed_at: '2024-01-25', created_at: '', updated_at: '', sort_order: 1, archived: false },
-    { id: 3, name: 'Code review pending PRs', description: 'Review PRs', priority: 'low', completed: true, user_id: 1, date: '2024-01-17', list_id: null, notes: null, deadline: null, estimate: null, actual_time: null, recurring: 'none', recurring_config: null, completed_at: '2024-01-18', created_at: '', updated_at: '', sort_order: 2, archived: false }
+    {
+      id: 1,
+      name: 'Design homepage mockup',
+      description: 'Create wireframes',
+      priority: 'high',
+      completed: false,
+      user_id: 1,
+      date: '2024-01-15',
+      list_id: null,
+      notes: null,
+      deadline: null,
+      estimate: null,
+      actual_time: null,
+      recurring: 'none',
+      recurring_config: null,
+      completed_at: null,
+      created_at: '',
+      updated_at: '',
+      sort_order: 0,
+      archived: false,
+    },
+    {
+      id: 2,
+      name: 'Write project documentation',
+      description: 'Document API',
+      priority: 'medium',
+      completed: true,
+      user_id: 1,
+      date: '2024-01-16',
+      list_id: null,
+      notes: null,
+      deadline: null,
+      estimate: null,
+      actual_time: null,
+      recurring: 'none',
+      recurring_config: null,
+      completed_at: '2024-01-25',
+      created_at: '',
+      updated_at: '',
+      sort_order: 1,
+      archived: false,
+    },
+    {
+      id: 3,
+      name: 'Code review pending PRs',
+      description: 'Review PRs',
+      priority: 'low',
+      completed: true,
+      user_id: 1,
+      date: '2024-01-17',
+      list_id: null,
+      notes: null,
+      deadline: null,
+      estimate: null,
+      actual_time: null,
+      recurring: 'none',
+      recurring_config: null,
+      completed_at: '2024-01-18',
+      created_at: '',
+      updated_at: '',
+      sort_order: 2,
+      archived: false,
+    },
   ];
 }
 
 // Test utilities
-export const waitFor = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+export const waitFor = (ms: number) =>
+  new Promise(resolve => setTimeout(resolve, ms));
 
 export type MockResponse<T = unknown> = {
   ok: boolean;
@@ -73,16 +136,19 @@ export type MockResponse<T = unknown> = {
   text: () => Promise<string>;
 };
 
-export const mockResponse = <T = unknown>(data: T, status = 200): MockResponse<T> => ({
+export const mockResponse = <T = unknown>(
+  data: T,
+  status = 200
+): MockResponse<T> => ({
   ok: status >= 200 && status < 300,
   status,
   json: async () => data,
-  text: async () => JSON.stringify(data)
+  text: async () => JSON.stringify(data),
 });
 
 export const mockError = (message: string, status = 500) => ({
   ok: false,
   status,
   json: async () => ({ error: message }),
-  text: async () => JSON.stringify({ error: message })
+  text: async () => JSON.stringify({ error: message }),
 });
