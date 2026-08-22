@@ -6,7 +6,11 @@
  * Scope: pages:read, pages:write, databases:read
  */
 
-import { BaseConnector, IntegrationConfig, NotionPageRecord } from './base-connector';
+import {
+  BaseConnector,
+  IntegrationConfig,
+  NotionPageRecord,
+} from './base-connector';
 
 export class NotionConnector extends BaseConnector {
   readonly id = 'notion';
@@ -16,14 +20,20 @@ export class NotionConnector extends BaseConnector {
   private apiToken: string;
   private databaseIds: string[];
 
-  constructor(config: IntegrationConfig & { apiToken: string; databaseIds?: string | string[] }) {
+  constructor(
+    config: IntegrationConfig & {
+      apiToken: string;
+      databaseIds?: string | string[];
+    }
+  ) {
     super(config);
     this.apiToken = config.apiToken;
     if (typeof config.databaseIds === 'string') {
-      this.databaseIds = config.databaseIds
-        ?.split(',')
-        .map(d => d.trim())
-        .filter(d => d.length > 0) || [];
+      this.databaseIds =
+        config.databaseIds
+          ?.split(',')
+          .map(d => d.trim())
+          .filter(d => d.length > 0) || [];
     } else if (Array.isArray(config.databaseIds)) {
       this.databaseIds = config.databaseIds.filter(d => d.length > 0);
     } else {
@@ -31,12 +41,18 @@ export class NotionConnector extends BaseConnector {
     }
   }
 
-  async authenticate(credentials: {
-    clientId?: string;
-    clientSecret?: string;
-    accessToken?: string;
+  async authenticate(
+    credentials: {
+      clientId?: string;
+      clientSecret?: string;
+      accessToken?: string;
+      refreshToken?: string;
+    } = {}
+  ): Promise<{
+    accessToken: string;
     refreshToken?: string;
-  } = {}): Promise<{ accessToken: string; refreshToken?: string; expiresAt: string }> {
+    expiresAt: string;
+  }> {
     if (!credentials.accessToken) {
       throw new Error('Notion integration requires an access token');
     }
@@ -53,7 +69,10 @@ export class NotionConnector extends BaseConnector {
     };
   }
 
-  async fetchRecords(since?: Date, options?: { limit?: number; cursor?: string }): Promise<NotionPageRecord[]> {
+  async fetchRecords(
+    since?: Date,
+    options?: { limit?: number; cursor?: string }
+  ): Promise<NotionPageRecord[]> {
     const records: NotionPageRecord[] = [];
 
     // Fetch from configured databases
@@ -66,26 +85,29 @@ export class NotionConnector extends BaseConnector {
       while (hasMore && iterations < maxIterations) {
         iterations++;
 
-        const response = await fetch('https://api.notion.com/v1/databases/' + databaseId + '/query', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${this.apiToken}`,
-            'Notion-Version': '2022-06-28',
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            start_cursor: cursor,
-            page_size: options?.limit || 100,
-            filter: since
-              ? {
-                  property: 'Last edited time',
-                  date: {
-                   greater_than: since.toISOString(),
-                  },
-                }
-              : undefined,
-          }),
-        });
+        const response = await fetch(
+          'https://api.notion.com/v1/databases/' + databaseId + '/query',
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${this.apiToken}`,
+              'Notion-Version': '2022-06-28',
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              start_cursor: cursor,
+              page_size: options?.limit || 100,
+              filter: since
+                ? {
+                    property: 'Last edited time',
+                    date: {
+                      greater_than: since.toISOString(),
+                    },
+                  }
+                : undefined,
+            }),
+          }
+        );
 
         if (!response.ok) {
           throw new Error(`Notion API error: ${response.statusText}`);
@@ -124,7 +146,9 @@ export class NotionConnector extends BaseConnector {
     const labels = this.extractLabels(page);
     const priority = this.extractPriority(page);
     const assignee = this.extractAssignee(page);
-    const parentPage = (page.parent as Record<string, unknown> | undefined)?.database_id as string || '';
+    const parentPage =
+      ((page.parent as Record<string, unknown> | undefined)
+        ?.database_id as string) || '';
 
     return {
       id: page.id as string,
@@ -147,18 +171,25 @@ export class NotionConnector extends BaseConnector {
     // Notion title is in properties.title.title array
     const properties = page.properties as Record<string, unknown>;
     const titleProp = properties?.title as Record<string, unknown> | undefined;
-    const titleArray = (titleProp?.title as Array<Record<string, unknown>>) || [];
+    const titleArray =
+      (titleProp?.title as Array<Record<string, unknown>>) || [];
 
     return titleArray.map(t => t.plain_text).join('') || 'Untitled Page';
   }
 
-  private extractDescription(page: Record<string, unknown>): string | undefined {
+  private extractDescription(
+    page: Record<string, unknown>
+  ): string | undefined {
     const properties = page.properties as Record<string, unknown>;
-    const desciptionProp = properties?.description as Record<string, unknown> | undefined;
+    const desciptionProp = properties?.description as
+      Record<string, unknown> | undefined;
 
     if (!desciptionProp) return undefined;
 
-    const richText = (desciptionProp as Record<string, unknown>).rich_text as Array<Record<string, unknown>> || [];
+    const richText =
+      ((desciptionProp as Record<string, unknown>).rich_text as Array<
+        Record<string, unknown>
+      >) || [];
     return richText.map(t => t.plain_text).join('');
   }
 
@@ -168,7 +199,10 @@ export class NotionConnector extends BaseConnector {
 
     if (!dateProp) return undefined;
 
-    const dateObj = (dateProp as Record<string, unknown>).date as Record<string, unknown> | null;
+    const dateObj = (dateProp as Record<string, unknown>).date as Record<
+      string,
+      unknown
+    > | null;
     if (!dateObj) return undefined;
 
     return dateObj.start as string | undefined;
@@ -180,37 +214,51 @@ export class NotionConnector extends BaseConnector {
 
     if (!tagsProp) return undefined;
 
-    const multiSelect = (tagsProp as Record<string, unknown>).multi_select as Array<Record<string, unknown>> || [];
+    const multiSelect =
+      ((tagsProp as Record<string, unknown>).multi_select as Array<
+        Record<string, unknown>
+      >) || [];
     return multiSelect.map((t: Record<string, unknown>) => t.name as string);
   }
 
-  private extractPriority(page: Record<string, unknown>): 'low' | 'medium' | 'high' | 'critical' | undefined {
+  private extractPriority(
+    page: Record<string, unknown>
+  ): 'low' | 'medium' | 'high' | 'critical' | undefined {
     const properties = page.properties as Record<string, unknown>;
-    const priorityProp = properties?.Priority as Record<string, unknown> | undefined;
+    const priorityProp = properties?.Priority as
+      Record<string, unknown> | undefined;
 
     if (!priorityProp) return undefined;
 
-    const select = (priorityProp as Record<string, unknown>).select as Record<string, unknown> | null;
+    const select = (priorityProp as Record<string, unknown>).select as Record<
+      string,
+      unknown
+    > | null;
     if (!select) return undefined;
 
     const priorityName = select.name as string;
-    const priorityMap: Record<string, 'low' | 'medium' | 'high' | 'critical'> = {
-      '🔴 Critical': 'critical',
-      '🟠 High': 'high',
-      '🟡 Medium': 'medium',
-      '🟢 Low': 'low',
-    };
+    const priorityMap: Record<string, 'low' | 'medium' | 'high' | 'critical'> =
+      {
+        '🔴 Critical': 'critical',
+        '🟠 High': 'high',
+        '🟡 Medium': 'medium',
+        '🟢 Low': 'low',
+      };
 
     return priorityMap[priorityName] || 'medium';
   }
 
   private extractAssignee(page: Record<string, unknown>): string | undefined {
     const properties = page.properties as Record<string, unknown>;
-    const personProp = properties?.Assignee as Record<string, unknown> | undefined;
+    const personProp = properties?.Assignee as
+      Record<string, unknown> | undefined;
 
     if (!personProp) return undefined;
 
-    const people = (personProp as Record<string, unknown>).people as Array<Record<string, unknown>> || [];
+    const people =
+      ((personProp as Record<string, unknown>).people as Array<
+        Record<string, unknown>
+      >) || [];
     if (people.length === 0) return undefined;
 
     // Return the first person's email or name
@@ -262,7 +310,12 @@ export class NotionConnector extends BaseConnector {
     }
 
     if (task.priority) {
-      const priorityMap: Record<typeof task.priority extends 'low' | 'medium' | 'high' | 'critical' ? typeof task.priority : never, Record<string, unknown>> = {
+      const priorityMap: Record<
+        typeof task.priority extends 'low' | 'medium' | 'high' | 'critical'
+          ? typeof task.priority
+          : never,
+        Record<string, unknown>
+      > = {
         low: { name: '🟢 Low', color: 'green' },
         medium: { name: '🟡 Medium', color: 'yellow' },
         high: { name: '🟠 High', color: 'orange' },
@@ -285,7 +338,7 @@ export class NotionConnector extends BaseConnector {
     const response = await fetch(`https://api.notion.com/v1/pages`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${this.apiToken}`,
+        Authorization: `Bearer ${this.apiToken}`,
         'Notion-Version': '2022-06-28',
         'Content-Type': 'application/json',
       },
@@ -307,7 +360,7 @@ export class NotionConnector extends BaseConnector {
     try {
       const response = await fetch('https://api.notion.com/v1/users/me', {
         headers: {
-          'Authorization': `Bearer ${this.apiToken}`,
+          Authorization: `Bearer ${this.apiToken}`,
           'Notion-Version': '2022-06-28',
         },
       });
