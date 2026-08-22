@@ -63,7 +63,7 @@ export async function logCognitiveLoad(
 
 export async function getCognitiveLoadAnalysis(
   userId: number,
-  days: number = 7
+  days = 7
 ): Promise<{
   avgTaskCount: number;
   completionRate: number;
@@ -498,7 +498,7 @@ export async function createSyncConnection(
   return { id: result.lastInsertRowid as number };
 }
 
-export async function getExternalTasks(status: string = 'pending'): Promise<
+export async function getExternalTasks(status = 'pending'): Promise<
   Array<{
     id: number;
     external_id: string;
@@ -704,7 +704,7 @@ export async function createDecisionShadow(
 
 export async function getDecisions(
   userId: number,
-  limit: number = 50
+  limit = 50
 ): Promise<
   Array<{
     id: number;
@@ -746,7 +746,7 @@ export async function getDecisions(
 
 export async function getDecisionAnalysis(
   userId: number,
-  limit: number = 20
+  limit = 20
 ): Promise<{
   totalDecisions: number;
   avgOutcomeRating: number;
