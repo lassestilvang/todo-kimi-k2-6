@@ -7,7 +7,11 @@
  *        https://www.googleapis.com/auth/gmail.modify
  */
 
-import { BaseConnector, IntegrationConfig, EmailRecord } from './base-connector';
+import {
+  BaseConnector,
+  IntegrationConfig,
+  EmailRecord,
+} from './base-connector';
 
 export class GmailConnector extends BaseConnector {
   readonly id = 'gmail';
@@ -17,7 +21,9 @@ export class GmailConnector extends BaseConnector {
   private apiToken: string;
   private userId = 'me';
 
-  constructor(config: IntegrationConfig & { apiToken: string; userId?: string }) {
+  constructor(
+    config: IntegrationConfig & { apiToken: string; userId?: string }
+  ) {
     super(config);
     this.apiToken = config.apiToken;
     if (config.userId) {
@@ -25,12 +31,18 @@ export class GmailConnector extends BaseConnector {
     }
   }
 
-  async authenticate(credentials: {
-    clientId?: string;
-    clientSecret?: string;
-    accessToken?: string;
+  async authenticate(
+    credentials: {
+      clientId?: string;
+      clientSecret?: string;
+      accessToken?: string;
+      refreshToken?: string;
+    } = {}
+  ): Promise<{
+    accessToken: string;
     refreshToken?: string;
-  } = {}): Promise<{ accessToken: string; refreshToken?: string; expiresAt: string }> {
+    expiresAt: string;
+  }> {
     if (!credentials.accessToken) {
       throw new Error('Gmail integration requires an access token');
     }
@@ -43,14 +55,19 @@ export class GmailConnector extends BaseConnector {
     };
   }
 
-  async fetchRecords(since?: Date, options?: { limit?: number; cursor?: string }): Promise<EmailRecord[]> {
+  async fetchRecords(
+    since?: Date,
+    options?: { limit?: number; cursor?: string }
+  ): Promise<EmailRecord[]> {
     const records: EmailRecord[] = [];
 
     // Build query for messages
     const query = `newer_than:${this.formatDateDelta(since)}`;
 
     // List messages
-    const listResponse = await this.gmailApiFetch(`https://gmail.googleapis.com/gmail/v1/users/${this.userId}/messages?q=${encodeURIComponent(query)}${options?.limit ? `&maxResults=${options.limit}` : ''}`);
+    const listResponse = await this.gmailApiFetch(
+      `https://gmail.googleapis.com/gmail/v1/users/${this.userId}/messages?q=${encodeURIComponent(query)}${options?.limit ? `&maxResults=${options.limit}` : ''}`
+    );
 
     if (!listResponse.ok) {
       const error = await listResponse.text();
@@ -58,13 +75,14 @@ export class GmailConnector extends BaseConnector {
     }
 
     const listData = await listResponse.json();
-    const messageIds = listData.messages?.map((m: { id: string }) => m.id) || [];
+    const messageIds =
+      listData.messages?.map((m: { id: string }) => m.id) || [];
 
     // Fetch message details in batches
     for (const msgId of messageIds) {
       try {
         const msgResponse = await this.gmailApiFetch(
-          `https://gmail.googleapis.com/gmail/v1/users/${this.userId}/messages/${msgId}?format=FULL`,
+          `https://gmail.googleapis.com/gmail/v1/users/${this.userId}/messages/${msgId}?format=FULL`
         );
 
         if (msgResponse.ok) {
@@ -85,7 +103,9 @@ export class GmailConnector extends BaseConnector {
   private formatDateDelta(since?: Date): string {
     if (!since) return '1d';
 
-    const days = Math.ceil((Date.now() - since.getTime()) / (1000 * 60 * 60 * 24));
+    const days = Math.ceil(
+      (Date.now() - since.getTime()) / (1000 * 60 * 60 * 24)
+    );
     return `${days}d`;
   }
 
@@ -115,16 +135,21 @@ export class GmailConnector extends BaseConnector {
     assignee?: string;
     priority?: 'low' | 'medium' | 'high' | 'critical';
   }): Promise<EmailRecord> {
-    throw new Error('pushTask not implemented for Gmail connector - requires email service integration');
+    throw new Error(
+      'pushTask not implemented for Gmail connector - requires email service integration'
+    );
   }
 
-  private mapGmailMessageToTask(message: Record<string, unknown>): EmailRecord | null {
+  private mapGmailMessageToTask(
+    message: Record<string, unknown>
+  ): EmailRecord | null {
     const payload = message.payload as Record<string, unknown>;
-    const headers = (payload.headers as Array<{ name: string; value: string }>) || [];
+    const headers =
+      (payload.headers as Array<{ name: string; value: string }>) || [];
 
     // Extract headers
     const getHeader = (name: string): string => {
-      const header = headers.find((h) => h.name === name);
+      const header = headers.find(h => h.name === name);
       return header?.value || '';
     };
 
@@ -138,7 +163,10 @@ export class GmailConnector extends BaseConnector {
     const sender = senderMatch?.[1] || from;
 
     // Parse recipients
-    const recipients = to.split(',').map((r) => r.trim()).filter(Boolean);
+    const recipients = to
+      .split(',')
+      .map(r => r.trim())
+      .filter(Boolean);
 
     // Get body content
     const body = this.extractBody(payload);
@@ -214,13 +242,25 @@ export class GmailConnector extends BaseConnector {
     const text = (subject + ' ' + body).toLowerCase();
 
     // Task-related keywords
-    const taskKeywords = ['task:', 'todo:', 'action:', 'follow up', 'follow-up', 'please', 'help', 'need'];
+    const taskKeywords = [
+      'task:',
+      'todo:',
+      'action:',
+      'follow up',
+      'follow-up',
+      'please',
+      'help',
+      'need',
+    ];
 
     // Check for task markers
-    const hasTaskMarker = taskKeywords.some((keyword) => text.includes(keyword));
+    const hasTaskMarker = taskKeywords.some(keyword => text.includes(keyword));
 
     // Check for action verbs
-    const hasActionVerb = /\b(create|implement|review|fix|deploy|schedule|assign|complete)\b/.test(text);
+    const hasActionVerb =
+      /\b(create|implement|review|fix|deploy|schedule|assign|complete)\b/.test(
+        text
+      );
 
     return hasTaskMarker || hasActionVerb;
   }
@@ -248,7 +288,9 @@ export class GmailConnector extends BaseConnector {
     return undefined;
   }
 
-  private extractLabels(message: Record<string, unknown>): string[] | undefined {
+  private extractLabels(
+    message: Record<string, unknown>
+  ): string[] | undefined {
     const labels: string[] = [];
 
     // Extract from Gmail labels
@@ -273,10 +315,17 @@ export class GmailConnector extends BaseConnector {
     return labels.length > 0 ? labels : undefined;
   }
 
-  private extractPriority(subject: string, recipients: string[]): 'low' | 'medium' | 'high' | 'critical' | undefined {
+  private extractPriority(
+    subject: string,
+    recipients: string[]
+  ): 'low' | 'medium' | 'high' | 'critical' | undefined {
     const text = (subject + ' ' + recipients.join(' ')).toLowerCase();
 
-    if (text.includes('urgent') || text.includes('asap') || text.includes('critical')) {
+    if (
+      text.includes('urgent') ||
+      text.includes('asap') ||
+      text.includes('critical')
+    ) {
       return 'critical';
     }
     if (text.includes('high') || text.includes('important')) {
@@ -301,7 +350,12 @@ export class GmailConnector extends BaseConnector {
   /**
    * Get threads for a user
    */
-  async getThreads(options?: { maxResults?: number; q?: string }): Promise<Array<{ id: string; subject: string; snippet: string; messages: number }>> {
+  async getThreads(options?: {
+    maxResults?: number;
+    q?: string;
+  }): Promise<
+    Array<{ id: string; subject: string; snippet: string; messages: number }>
+  > {
     const url = `https://gmail.googleapis.com/gmail/v1/users/${this.userId}/threads${options?.maxResults ? `?maxResults=${options.maxResults}` : ''}${options?.q ? `?q=${encodeURIComponent(options.q)}` : ''}`;
 
     const response = await this.gmailApiFetch(url);
@@ -310,18 +364,29 @@ export class GmailConnector extends BaseConnector {
     }
 
     const data = await response.json();
-    return data.threads?.map((t: Record<string, unknown>) => ({
-      id: t.id as string,
-      subject: (t as Record<string, unknown>).subject as string,
-      snippet: (t as Record<string, unknown>).snippet as string,
-      messages: ((t as Record<string, unknown>).messages as Array<Record<string, unknown>>)?.length || 0,
-    })) || [];
+    return (
+      data.threads?.map((t: Record<string, unknown>) => ({
+        id: t.id as string,
+        subject: (t as Record<string, unknown>).subject as string,
+        snippet: (t as Record<string, unknown>).snippet as string,
+        messages:
+          (
+            (t as Record<string, unknown>).messages as Array<
+              Record<string, unknown>
+            >
+          )?.length || 0,
+      })) || []
+    );
   }
 
   /**
    * Create draft email
    */
-  async createDraft(to: string, subject: string, body: string): Promise<{ id: string; draftId: string }> {
+  async createDraft(
+    to: string,
+    subject: string,
+    body: string
+  ): Promise<{ id: string; draftId: string }> {
     const emailHeaders = [
       `To: ${to}`,
       `Subject: ${subject}`,
@@ -333,18 +398,21 @@ export class GmailConnector extends BaseConnector {
       .replace(/-/g, '+')
       .replace(/_/g, '/');
 
-    const response = await fetch(`https://gmail.googleapis.com/gmail/v1/users/${this.userId}/drafts`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.apiToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        message: {
-          raw,
+    const response = await fetch(
+      `https://gmail.googleapis.com/gmail/v1/users/${this.userId}/drafts`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.apiToken}`,
+          'Content-Type': 'application/json',
         },
-      }),
-    });
+        body: JSON.stringify({
+          message: {
+            raw,
+          },
+        }),
+      }
+    );
 
     if (!response.ok) {
       throw new Error(`Gmail API error: ${response.status}`);
@@ -360,7 +428,11 @@ export class GmailConnector extends BaseConnector {
   /**
    * Send email
    */
-  async sendEmail(to: string, subject: string, body: string): Promise<{ id: string }> {
+  async sendEmail(
+    to: string,
+    subject: string,
+    body: string
+  ): Promise<{ id: string }> {
     const emailHeaders = [
       `To: ${to}`,
       `Subject: ${subject}`,
@@ -372,16 +444,19 @@ export class GmailConnector extends BaseConnector {
       .replace(/-/g, '+')
       .replace(/_/g, '/');
 
-    const response = await fetch(`https://gmail.googleapis.com/gmail/v1/users/${this.userId}/messages?labelIds=INBOX`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.apiToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        raw,
-      }),
-    });
+    const response = await fetch(
+      `https://gmail.googleapis.com/gmail/v1/users/${this.userId}/messages?labelIds=INBOX`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.apiToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          raw,
+        }),
+      }
+    );
 
     if (!response.ok) {
       throw new Error(`Gmail API error: ${response.status}`);
@@ -395,16 +470,19 @@ export class GmailConnector extends BaseConnector {
    * Add label to message
    */
   async addLabel(messageId: string, label: string): Promise<boolean> {
-    const response = await fetch(`https://gmail.googleapis.com/gmail/v1/users/${this.userId}/messages/${messageId}/modify`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.apiToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        addLabelIds: [label],
-      }),
-    });
+    const response = await fetch(
+      `https://gmail.googleapis.com/gmail/v1/users/${this.userId}/messages/${messageId}/modify`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.apiToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          addLabelIds: [label],
+        }),
+      }
+    );
 
     const data = await response.json();
     return response.ok && !data.error;
@@ -414,16 +492,19 @@ export class GmailConnector extends BaseConnector {
    * Remove label from message
    */
   async removeLabel(messageId: string, label: string): Promise<boolean> {
-    const response = await fetch(`https://gmail.googleapis.com/gmail/v1/users/${this.userId}/messages/${messageId}/modify`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.apiToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        removeLabelIds: [label],
-      }),
-    });
+    const response = await fetch(
+      `https://gmail.googleapis.com/gmail/v1/users/${this.userId}/messages/${messageId}/modify`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.apiToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          removeLabelIds: [label],
+        }),
+      }
+    );
 
     const data = await response.json();
     return response.ok && !data.error;
@@ -432,20 +513,26 @@ export class GmailConnector extends BaseConnector {
   /**
    * Create a label
    */
-  async createLabel(name: string, labelListName?: string): Promise<{ id: string; name: string }> {
-    const response = await fetch(`https://gmail.googleapis.com/gmail/v1/users/${this.userId}/labels`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.apiToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        name: name,
-        labelListName: labelListName || name,
-        labelListVisibility: 'labelShow',
-        messageListVisibility: 'show',
-      }),
-    });
+  async createLabel(
+    name: string,
+    labelListName?: string
+  ): Promise<{ id: string; name: string }> {
+    const response = await fetch(
+      `https://gmail.googleapis.com/gmail/v1/users/${this.userId}/labels`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.apiToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: name,
+          labelListName: labelListName || name,
+          labelListVisibility: 'labelShow',
+          messageListVisibility: 'show',
+        }),
+      }
+    );
 
     if (!response.ok) {
       throw new Error(`Gmail API error: ${response.status}`);
@@ -462,12 +549,15 @@ export class GmailConnector extends BaseConnector {
     displayName: string;
     pictureUrl: string;
   }> {
-    const response = await fetch(`https://gmail.googleapis.com/gmail/v1/users/profile`, {
-      headers: {
-        Authorization: `Bearer ${this.apiToken}`,
-        'Content-Type': 'application/json',
-      },
-    });
+    const response = await fetch(
+      `https://gmail.googleapis.com/gmail/v1/users/profile`,
+      {
+        headers: {
+          Authorization: `Bearer ${this.apiToken}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
 
     if (!response.ok) {
       throw new Error(`Gmail API error: ${response.status}`);
