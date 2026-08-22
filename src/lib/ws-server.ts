@@ -3,10 +3,10 @@
  * Handles real-time updates for task collaboration
  */
 
-import { createServer } from "http";
-import { WebSocketServer, WebSocket } from "ws";
-import { getDb } from "@/lib/db";
-import { logInfo, logError } from "@/lib/logger";
+import { createServer } from 'http';
+import { WebSocketServer, WebSocket } from 'ws';
+import { getDb } from '@/lib/db';
+import { logInfo, logError } from '@/lib/logger';
 
 // Connection management
 interface ClientInfo {
@@ -33,10 +33,7 @@ class WSHub {
   private clients: Map<string, ExtendedWebSocket> = new Map();
   private channels: Map<string, Set<string>> = new Map();
 
-  addClient(
-    ws: ExtendedWebSocket,
-    taskId?: number
-  ): string {
+  addClient(ws: ExtendedWebSocket, taskId?: number): string {
     const clientId = `client_${Date.now()}_${Math.random().toString(36).substring(2)}`;
     ws.clientId = clientId;
     ws.taskId = taskId;
@@ -47,12 +44,15 @@ class WSHub {
     // Subscribe to task channel
     if (taskId) {
       this.subscribeToChannel(clientId, `task:${taskId}`);
-      this.subscribeToChannel(clientId, "global");
+      this.subscribeToChannel(clientId, 'global');
     }
 
     // Subscribe to user's workspace channels
     this.subscribeToChannel(clientId, `user:${ws.userId}`);
-    this.subscribeToChannel(clientId, `workspace:${taskId ? Math.floor(Math.random() * 1000) : 1}`);
+    this.subscribeToChannel(
+      clientId,
+      `workspace:${taskId ? Math.floor(Math.random() * 1000) : 1}`
+    );
 
     // Update presence
     this.broadcastPresence(clientId, ws.userId, ws.userName, taskId, 'joined');
@@ -65,12 +65,18 @@ class WSHub {
     if (!client) return;
 
     // Remove from all channels
-    client.subscribedChannels?.forEach((channel) => {
+    client.subscribedChannels?.forEach(channel => {
       this.channels.get(channel)?.delete(clientId);
     });
 
     this.clients.delete(clientId);
-    this.broadcastPresence(clientId, client.userId, client.userName, client.taskId, 'left');
+    this.broadcastPresence(
+      clientId,
+      client.userId,
+      client.userName,
+      client.taskId,
+      'left'
+    );
   }
 
   subscribeToChannel(clientId: string, channel: string) {
@@ -91,7 +97,10 @@ class WSHub {
     client?.subscribedChannels?.delete(channel);
   }
 
-  broadcastToChannel(channel: string, message: { type: string; [key: string]: unknown }) {
+  broadcastToChannel(
+    channel: string,
+    message: { type: string; [key: string]: unknown }
+  ) {
     const clients = this.channels.get(channel);
     if (!clients) return;
 
@@ -100,7 +109,7 @@ class WSHub {
       timestamp: new Date().toISOString(),
     });
 
-    clients.forEach((clientId) => {
+    clients.forEach(clientId => {
       const client = this.clients.get(clientId);
       if (client?.readyState === WebSocket.OPEN) {
         client.send(payload);
@@ -177,7 +186,11 @@ class WSHub {
           break;
       }
     } catch (error) {
-      logError('Failed to parse WebSocket message', undefined, error instanceof Error ? error : new Error(String(error)));
+      logError(
+        'Failed to parse WebSocket message',
+        undefined,
+        error instanceof Error ? error : new Error(String(error))
+      );
     }
   }
 
@@ -206,7 +219,9 @@ export function startWebSocketServer(port = 8080) {
     const taskId = taskIdMatch ? parseInt(taskIdMatch, 10) : undefined;
 
     // Extract user info from request headers or query params
-    const token = new URLSearchParams(url.includes('?') ? url.split('?')[1] : '').get('token');
+    const token = new URLSearchParams(
+      url.includes('?') ? url.split('?')[1] : ''
+    ).get('token');
 
     if (!token) {
       ws.close(1008, 'Authentication required');
@@ -232,7 +247,9 @@ export function startWebSocketServer(port = 8080) {
   httpServer.on('upgrade', (request, socket, head) => {
     // Authenticate via token
     const url = request.url || '';
-    const params = new URLSearchParams(url.includes('?') ? url.split('?')[1] : '');
+    const params = new URLSearchParams(
+      url.includes('?') ? url.split('?')[1] : ''
+    );
     const token = params.get('token');
 
     if (!token) {
@@ -240,7 +257,7 @@ export function startWebSocketServer(port = 8080) {
       return;
     }
 
-    wss.handleUpgrade(request, socket, head, (ws) => {
+    wss.handleUpgrade(request, socket, head, ws => {
       wss.emit('connection', ws, request);
     });
   });
