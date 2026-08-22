@@ -1,9 +1,33 @@
-export type Priority = "critical" | "high" | "medium" | "low" | "none";
-export type Recurring = "none" | "daily" | "weekly" | "weekdays" | "monthly" | "yearly" | "custom";
-export type ViewType = "today" | "next7" | "upcoming" | "all" | "list" | "blocked" | "kanban" | "gantt" | "matrix" | "calendar" | "graph" | "analytics" | "ai" | "goals" | "focus" | "calendar_sync" | "investment";
-export type FilterPreset = "needs_attention" | "this_week" | "with_labels" | "with_subtasks" | "completed";
-export type SortField = "name" | "date" | "deadline" | "priority" | "created_at" | "updated_at";
-export type SortDirection = "asc" | "desc";
+export type Priority = 'critical' | 'high' | 'medium' | 'low' | 'none';
+export type Recurring =
+  'none' | 'daily' | 'weekly' | 'weekdays' | 'monthly' | 'yearly' | 'custom';
+export type ViewType =
+  | 'today'
+  | 'next7'
+  | 'upcoming'
+  | 'all'
+  | 'list'
+  | 'blocked'
+  | 'kanban'
+  | 'gantt'
+  | 'matrix'
+  | 'calendar'
+  | 'graph'
+  | 'analytics'
+  | 'ai'
+  | 'goals'
+  | 'focus'
+  | 'calendar_sync'
+  | 'investment';
+export type FilterPreset =
+  | 'needs_attention'
+  | 'this_week'
+  | 'with_labels'
+  | 'with_subtasks'
+  | 'completed';
+export type SortField =
+  'name' | 'date' | 'deadline' | 'priority' | 'created_at' | 'updated_at';
+export type SortDirection = 'asc' | 'desc';
 
 // Notification settings
 export interface NotificationPrefs {
@@ -14,7 +38,7 @@ export interface NotificationPrefs {
   dailySummary: boolean;
   pushEnabled: boolean;
   soundEnabled: boolean;
-  position: "top" | "bottom";
+  position: 'top' | 'bottom';
 }
 
 // Recurring task exceptions
@@ -142,14 +166,14 @@ export interface TaskShare {
   id: number;
   task_id: number;
   user_id: number;
-  permission: "view" | "edit";
+  permission: 'view' | 'edit';
   created_at: string;
 }
 
 export interface CalendarSync {
   id: number;
   user_id: number;
-  provider: "google" | "outlook";
+  provider: 'google' | 'outlook';
   access_token: string;
   refresh_token: string | null;
   expires_at: string | null;
@@ -194,7 +218,7 @@ export interface Task {
   recurring_exceptions?: RecurringException[];
   archived: boolean;
   health_score?: number;
-  health_status?: "healthy" | "attention" | "critical" | "overdue";
+  health_status?: 'healthy' | 'attention' | 'critical' | 'overdue';
   vote_score?: number;
   ai_provider?: string;
   confidence_score?: number;
@@ -226,8 +250,8 @@ export {
   getHealthStatusColor,
   getHealthStatusEmoji,
   type HealthStatus,
-  type HealthScoreBreakdown
-} from "@/lib/task-health";
+  type HealthScoreBreakdown,
+} from '@/lib/task-health';
 
 export interface CreateTaskInput {
   name: string;
@@ -250,7 +274,9 @@ export interface CreateTaskInput {
   confidence_score?: number;
 }
 
-export interface UpdateTaskInput extends Partial<Omit<CreateTaskInput, 'completed'>> {
+export interface UpdateTaskInput extends Partial<
+  Omit<CreateTaskInput, 'completed'>
+> {
   completed?: boolean;
   blocker_ids?: number[];
   ai_provider?: string;
@@ -324,7 +350,7 @@ export interface CreateCommentInput {
 }
 
 export interface BulkAction {
-  type: "delete" | "move" | "label" | "priority";
+  type: 'delete' | 'move' | 'label' | 'priority';
   value?: number; // list_id for move, label_id for label, priority for priority
 }
 
@@ -363,7 +389,7 @@ export interface NotificationSettings {
 }
 
 // Goal Tracking Types
-export type GoalPeriod = "daily" | "weekly" | "monthly" | "yearly";
+export type GoalPeriod = 'daily' | 'weekly' | 'monthly' | 'yearly';
 
 export interface Goal {
   id: number;
@@ -414,7 +440,13 @@ export interface TaskConnection {
   id: number;
   source_task_id: number;
   target_task_id: number;
-  connection_type: "prerequisite" | "inspiration" | "similar" | "contrast" | "related" | "learned_from";
+  connection_type:
+    | 'prerequisite'
+    | 'inspiration'
+    | 'similar'
+    | 'contrast'
+    | 'related'
+    | 'learned_from';
   strength: number; // 0 to 1
   notes: string | null;
   created_at: string;
@@ -424,7 +456,8 @@ export interface TaskInsight {
   id: number;
   task_id: number;
   user_id: number;
-  insight_type: "lesson_learned" | "pattern_observed" | "success_factor" | "failure_reason";
+  insight_type:
+    'lesson_learned' | 'pattern_observed' | 'success_factor' | 'failure_reason';
   content: string;
   context_tags: string | null; // JSON array
   confidence: number; // 0 to 1
@@ -446,7 +479,8 @@ export interface HabitContext {
   id: number;
   task_id: number;
   user_id: number;
-  context_type: "time_of_day" | "location" | "mood" | "energy_level" | "external_trigger";
+  context_type:
+    'time_of_day' | 'location' | 'mood' | 'energy_level' | 'external_trigger';
   context_value: string;
   frequency: number;
   success_rate: number;
@@ -457,7 +491,13 @@ export interface DecisionEntry {
   id: number;
   task_id: number | null;
   user_id: number;
-  decision_type: "priority" | "approach" | "tool" | "timeline" | "allocation" | "cancellation";
+  decision_type:
+    | 'priority'
+    | 'approach'
+    | 'tool'
+    | 'timeline'
+    | 'allocation'
+    | 'cancellation';
   question: string;
   chosen_option_id: number | null;
   rationale: string;
@@ -546,7 +586,7 @@ export interface CreateIntegrationInput {
   type: IntegrationType;
   name: string;
   config?: Record<string, unknown>;
-  sync_direction?: "import" | "export" | "bidirectional";
+  sync_direction?: 'import' | 'export' | 'bidirectional';
 }
 
 export interface CreateTaskMappingInput {
@@ -579,7 +619,7 @@ export interface UserSettings {
   work_end_hour: number;
   preferred_pomodoro_minutes: number;
   preferred_break_minutes: number;
-  theme: "light" | "dark" | "system";
+  theme: 'light' | 'dark' | 'system';
   language: string;
   timezone: string;
   created_at: string;
@@ -601,7 +641,7 @@ export interface WorkspaceUser {
   id: number;
   workspace_id: number;
   user_id: number;
-  role: "owner" | "admin" | "member" | "viewer";
+  role: 'owner' | 'admin' | 'member' | 'viewer';
   joined_at: string;
 }
 
@@ -610,7 +650,7 @@ export interface CreateWorkspaceInput {
   description?: string;
 }
 
-export type WorkspaceRole = "owner" | "admin" | "member" | "viewer";
+export type WorkspaceRole = 'owner' | 'admin' | 'member' | 'viewer';
 
 // Custom View Sharing Types
 export interface CustomViewShare {
@@ -619,7 +659,7 @@ export interface CustomViewShare {
   shared_by: number;
   shared_with: number | null;
   share_token: string | null;
-  permission: "view" | "edit";
+  permission: 'view' | 'edit';
   created_at: string;
 }
 
@@ -627,11 +667,19 @@ export interface CustomViewShare {
 export interface Integration {
   id: number;
   user_id: number;
-  type: "github" | "slack" | "notion" | "trello" | "linear" | "asana" | "clickup" | "todoist";
+  type:
+    | 'github'
+    | 'slack'
+    | 'notion'
+    | 'trello'
+    | 'linear'
+    | 'asana'
+    | 'clickup'
+    | 'todoist';
   name: string;
   config: string | null; // JSON configuration
   enabled: boolean;
-  sync_direction: "import" | "export" | "bidirectional";
+  sync_direction: 'import' | 'export' | 'bidirectional';
   last_sync_at: string | null;
   created_at: string;
 }
@@ -662,15 +710,21 @@ export interface CognitiveLoadLog {
 export interface KnowledgeGraphActivity {
   id: number;
   user_id: number;
-  activity_type: "task_connected" | "insight_extracted" | "skill_updated" | "context_recorded" | "decision_made" | "integration_synced";
+  activity_type:
+    | 'task_connected'
+    | 'insight_extracted'
+    | 'skill_updated'
+    | 'context_recorded'
+    | 'decision_made'
+    | 'integration_synced';
   task_id: number | null;
   details: string | null; // JSON with activity details
   created_at: string;
 }
 
-export type TaskConnectionType = TaskConnection["connection_type"];
-export type TaskInsightType = TaskInsight["insight_type"];
-export type HabitContextType = HabitContext["context_type"];
-export type DecisionType = DecisionEntry["decision_type"];
-export type IntegrationType = Integration["type"];
-export type ActivityType = KnowledgeGraphActivity["activity_type"];
+export type TaskConnectionType = TaskConnection['connection_type'];
+export type TaskInsightType = TaskInsight['insight_type'];
+export type HabitContextType = HabitContext['context_type'];
+export type DecisionType = DecisionEntry['decision_type'];
+export type IntegrationType = Integration['type'];
+export type ActivityType = KnowledgeGraphActivity['activity_type'];
