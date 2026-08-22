@@ -3,7 +3,7 @@
  * Uses jsPDF for client-side PDF generation
  */
 
-import type { TaskWithRelations, List } from "@/types";
+import type { TaskWithRelations, List } from '@/types';
 
 interface ExportOptions {
   tasks: TaskWithRelations[];
@@ -15,9 +15,13 @@ interface ExportOptions {
  * Export tasks to a PDF file
  * Note: This runs in the browser and uses the jsPDF library
  */
-export async function exportToPdf({ tasks, lists, filename }: ExportOptions): Promise<void> {
+export async function exportToPdf({
+  tasks,
+  lists,
+  filename,
+}: ExportOptions): Promise<void> {
   // Dynamic import for jsPDF (only available in browser)
-  const jsPDF = (await import("jspdf")).jsPDF;
+  const jsPDF = (await import('jspdf')).jsPDF;
   const doc = new jsPDF();
 
   const pageSize = doc.internal.pageSize;
@@ -25,15 +29,15 @@ export async function exportToPdf({ tasks, lists, filename }: ExportOptions): Pr
   let y = 20;
 
   // Title
-  doc.setFont("helvetica", "bold");
+  doc.setFont('helvetica', 'bold');
   doc.setFontSize(18);
-  doc.text("TaskFlow Export", 20, y);
+  doc.text('TaskFlow Export', 20, y);
   y += 10;
 
   // Metadata
-  doc.setFont("helvetica", "normal");
+  doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
-  doc.text(`Generated: ${new Date().toISOString().split("T")[0]}`, 20, y);
+  doc.text(`Generated: ${new Date().toISOString().split('T')[0]}`, 20, y);
   y += 5;
   doc.text(`Total Tasks: ${tasks.length}`, 20, y);
   y += 5;
@@ -41,21 +45,26 @@ export async function exportToPdf({ tasks, lists, filename }: ExportOptions): Pr
   y += 10;
 
   // Tasks section
-  doc.setFont("helvetica", "bold");
+  doc.setFont('helvetica', 'bold');
   doc.setFontSize(14);
-  doc.text("Tasks", 20, y);
+  doc.text('Tasks', 20, y);
   y += 8;
 
-  doc.setFont("helvetica", "normal");
+  doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
 
   const getPriorityColor = (priority: string): [number, number, number] => {
     switch (priority) {
-      case "critical": return [220, 38, 38]; // red-500
-      case "high": return [234, 88, 88]; // red-400
-      case "medium": return [245, 130, 40]; // amber
-      case "low": return [59, 130, 255]; // blue-500
-      default: return [100, 100, 100]; // gray
+      case 'critical':
+        return [220, 38, 38]; // red-500
+      case 'high':
+        return [234, 88, 88]; // red-400
+      case 'medium':
+        return [245, 130, 40]; // amber
+      case 'low':
+        return [59, 130, 255]; // blue-500
+      default:
+        return [100, 100, 100]; // gray
     }
   };
 
@@ -67,7 +76,7 @@ export async function exportToPdf({ tasks, lists, filename }: ExportOptions): Pr
     }
 
     // Task name with status
-    const status = task.completed ? "✓" : "○";
+    const status = task.completed ? '✓' : '○';
     const prefix = `[${status}] `;
     const priorityColor = getPriorityColor(task.priority);
 
@@ -79,7 +88,10 @@ export async function exportToPdf({ tasks, lists, filename }: ExportOptions): Pr
 
     // Description
     if (task.description) {
-      const descLines = doc.splitTextToSize(`  ${task.description}`, pageSize.getWidth() - 30);
+      const descLines = doc.splitTextToSize(
+        `  ${task.description}`,
+        pageSize.getWidth() - 30
+      );
       doc.text(descLines, 25, y);
       y += descLines.length * 4;
     }
@@ -87,11 +99,11 @@ export async function exportToPdf({ tasks, lists, filename }: ExportOptions): Pr
     // Date and priority
     const infoParts: string[] = [];
     if (task.date) infoParts.push(`Date: ${task.date}`);
-    if (task.priority !== "none") infoParts.push(`Priority: ${task.priority}`);
+    if (task.priority !== 'none') infoParts.push(`Priority: ${task.priority}`);
 
     if (infoParts.length > 0) {
       doc.setTextColor(100, 100, 100);
-      doc.text(`  ${infoParts.join(" | ")}`, 25, y);
+      doc.text(`  ${infoParts.join(' | ')}`, 25, y);
       doc.setTextColor(0, 0, 0);
     }
 
@@ -106,12 +118,12 @@ export async function exportToPdf({ tasks, lists, filename }: ExportOptions): Pr
       y = 20;
     }
 
-    doc.setFont("helvetica", "bold");
+    doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
-    doc.text("Lists", 20, y);
+    doc.text('Lists', 20, y);
     y += 8;
 
-    doc.setFont("helvetica", "normal");
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
     for (const list of lists) {
       doc.text(`${list.emoji} ${list.name}`, 20, y);
@@ -120,6 +132,6 @@ export async function exportToPdf({ tasks, lists, filename }: ExportOptions): Pr
   }
 
   // Save the PDF
-  const defaultFilename = `taskflow-export-${new Date().toISOString().split("T")[0]}.pdf`;
+  const defaultFilename = `taskflow-export-${new Date().toISOString().split('T')[0]}.pdf`;
   doc.save(filename || defaultFilename);
 }
