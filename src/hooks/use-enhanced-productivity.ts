@@ -133,7 +133,7 @@ export function useEnergyBudget() {
 // EXTERNAL TASKS HOOK (Cross-App Sync)
 // ============================================================================
 
-export function useExternalTasks(status: string = 'pending') {
+export function useExternalTasks(status = 'pending') {
   const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = useState<any[]>([]);
 
@@ -179,7 +179,7 @@ export function useDecisionShadow() {
   const [loading, setLoading] = useState(true);
   const [analysis, setAnalysis] = useState<any>(null);
 
-  const fetchAnalysis = useCallback(async (limit: number = 20) => {
+  const fetchAnalysis = useCallback(async (limit = 20) => {
     setLoading(true);
     try {
       const res = await fetch(
