@@ -38,7 +38,11 @@ describe('GitHubConnector', () => {
         syncDirection: 'import',
       });
 
-      expect((multiRepoConnector as any).repositories).toEqual(['repo1', 'repo2', 'repo3']);
+      expect((multiRepoConnector as any).repositories).toEqual([
+        'repo1',
+        'repo2',
+        'repo3',
+      ]);
     });
   });
 
@@ -63,7 +67,7 @@ describe('GitHubConnector', () => {
 
     it('should throw error when no access token provided', async () => {
       await expect(connector.authenticate({})).rejects.toThrow(
-        'GitHub integration requires an access token',
+        'GitHub integration requires an access token'
       );
     });
   });
@@ -202,7 +206,9 @@ describe('GitHubConnector', () => {
         text: async () => 'Forbidden',
       });
 
-      await expect(connector.fetchRecords()).rejects.toThrow('GitHub API error');
+      await expect(connector.fetchRecords()).rejects.toThrow(
+        'GitHub API error'
+      );
     });
   });
 
@@ -239,19 +245,19 @@ describe('GitHubConnector', () => {
         'https://api.github.com/repos/owner/repo1/issues',
         expect.objectContaining({
           method: 'POST',
-        }),
+        })
       );
     });
 
     it('should throw error when no repository configured', async () => {
       await expect(connector.pushTask({ title: 'Test' })).rejects.toThrow(
-        'Repository is required to create a GitHub issue',
+        'Repository is required to create a GitHub issue'
       );
     });
 
     it('should throw error when repository format is invalid', async () => {
       await expect(
-        connector.pushTask({ title: 'Test', repository: 'invalid-format' }),
+        connector.pushTask({ title: 'Test', repository: 'invalid-format' })
       ).rejects.toThrow('Invalid repository format');
     });
 
@@ -290,7 +296,7 @@ describe('GitHubConnector', () => {
       });
 
       await expect(
-        connector.pushTask({ title: 'Test', repository: 'owner/repo1' }),
+        connector.pushTask({ title: 'Test', repository: 'owner/repo1' })
       ).rejects.toThrow('GitHub API error');
     });
   });
@@ -372,12 +378,21 @@ describe('GitHubConnector', () => {
 
   describe('mapPriority', () => {
     it('should map critical labels to critical priority', () => {
-      const result = (connector as any).mapPriority(['critical', 'urgent', 'blocker', 'p0']);
+      const result = (connector as any).mapPriority([
+        'critical',
+        'urgent',
+        'blocker',
+        'p0',
+      ]);
       expect(result).toBe('critical');
     });
 
     it('should map high priority labels', () => {
-      const result = (connector as any).mapPriority(['high', 'important', 'p1']);
+      const result = (connector as any).mapPriority([
+        'high',
+        'important',
+        'p1',
+      ]);
       expect(result).toBe('high');
     });
 
@@ -392,7 +407,10 @@ describe('GitHubConnector', () => {
     });
 
     it('should return undefined for unknown labels', () => {
-      const result = (connector as any).mapPriority(['enhancement', 'refactor']);
+      const result = (connector as any).mapPriority([
+        'enhancement',
+        'refactor',
+      ]);
       expect(result).toBeUndefined();
     });
   });
@@ -430,13 +448,16 @@ describe('GitHubConnector', () => {
         json: async () => mockSearchResult,
       });
 
-      const results = await connector.searchIssues('query', { state: 'open', labels: ['bug'] });
+      const results = await connector.searchIssues('query', {
+        state: 'open',
+        labels: ['bug'],
+      });
 
       expect(results).toHaveLength(1);
       expect(results[0].title).toBe('Found Issue');
       expect(fetch).toHaveBeenCalledWith(
         expect.stringContaining('search/issues'),
-        expect.any(Object),
+        expect.any(Object)
       );
     });
 
@@ -451,7 +472,9 @@ describe('GitHubConnector', () => {
         syncDirection: 'import',
       });
 
-      await expect(noRepoConnector.searchIssues('query')).rejects.toThrow('No repositories configured');
+      await expect(noRepoConnector.searchIssues('query')).rejects.toThrow(
+        'No repositories configured'
+      );
     });
   });
 
@@ -479,7 +502,7 @@ describe('GitHubConnector', () => {
         'https://api.github.com/issues/123',
         expect.objectContaining({
           method: 'PATCH',
-        }),
+        })
       );
     });
 
@@ -490,7 +513,9 @@ describe('GitHubConnector', () => {
         text: async () => 'Not Found',
       });
 
-      await expect(connector.updateIssue('999', { title: 'Test' })).rejects.toThrow('GitHub API error');
+      await expect(
+        connector.updateIssue('999', { title: 'Test' })
+      ).rejects.toThrow('GitHub API error');
     });
   });
 
@@ -524,7 +549,7 @@ describe('GitHubConnector', () => {
         'https://api.github.com/issues/123/comments',
         expect.objectContaining({
           method: 'POST',
-        }),
+        })
       );
     });
 
@@ -535,7 +560,9 @@ describe('GitHubConnector', () => {
         text: async () => 'Forbidden',
       });
 
-      await expect(connector.addComment('123', 'comment')).rejects.toThrow('GitHub API error');
+      await expect(connector.addComment('123', 'comment')).rejects.toThrow(
+        'GitHub API error'
+      );
     });
   });
 
@@ -559,7 +586,9 @@ describe('GitHubConnector', () => {
 
       expect(profile.login).toBe('testuser');
       expect(profile.name).toBe('Test User');
-      expect(profile.avatarUrl).toBe('https://avatars.githubusercontent.com/u/123');
+      expect(profile.avatarUrl).toBe(
+        'https://avatars.githubusercontent.com/u/123'
+      );
       expect(profile.publicRepos).toBe(42);
     });
 
@@ -570,7 +599,9 @@ describe('GitHubConnector', () => {
         text: async () => 'Unauthorized',
       });
 
-      await expect(connector.getUserProfile()).rejects.toThrow('GitHub API error');
+      await expect(connector.getUserProfile()).rejects.toThrow(
+        'GitHub API error'
+      );
     });
   });
 
