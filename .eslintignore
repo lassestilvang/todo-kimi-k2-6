@@ -1,0 +1,47 @@
+# Test files
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+__tests__/
+**/__tests__/
+test/
+**/test/
+
+# Build outputs
+.next/
+out/
+dist/
+.vercel/
+
+# SQLite database
+data/*.db
+
+# Environment files
+.env.local
+.env.development
+.env.test
+.env.staging
+
+# IDE and OS files
+*.swp
+*.swo
+*~
+.DS_Store
+.idea/
+.vscode/
+
+# Generated files
+.vitest/
+coverage/
+
+# Commit hooks
+.husky/
+
+# Vite related
+vite.config.ts
+vitest.config.ts
+vitest.config.node.ts
+
+# Types
+src/types/
