@@ -16,9 +16,6 @@ import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -147,7 +144,7 @@ export function DecisionTemplateBuilder({
         });
         toast.success('Template created');
       }
-    } catch (error) {
+    } catch {
       toast.error('Failed to create template');
     }
   };
@@ -172,7 +169,7 @@ export function DecisionTemplateBuilder({
         setTemplates(prev => [...prev, data.template]);
         toast.success('AI-generated template saved');
       }
-    } catch (error) {
+    } catch {
       toast.error('Failed to generate template');
     }
   };
@@ -203,7 +200,7 @@ export function DecisionTemplateBuilder({
       await fetch(`/api/decision-templates/${id}`, { method: 'DELETE' });
       setTemplates(prev => prev.filter(t => t.id !== id));
       toast.success('Template deleted');
-    } catch (error) {
+    } catch {
       toast.error('Failed to delete template');
     }
   };
