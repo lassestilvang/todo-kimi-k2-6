@@ -3,7 +3,7 @@
  * Replaces console.error with proper logging for production
  */
 
-type LogLevel = "error" | "warn" | "info" | "debug";
+type LogLevel = 'error' | 'warn' | 'info' | 'debug';
 
 interface LogEntry {
   level: LogLevel;
@@ -21,7 +21,7 @@ class Logger {
   private isDevelopment: boolean;
 
   constructor() {
-    this.isDevelopment = process.env.NODE_ENV === "development";
+    this.isDevelopment = process.env.NODE_ENV === 'development';
   }
 
   private formatEntry(entry: LogEntry): string {
@@ -46,32 +46,39 @@ class Logger {
     return base;
   }
 
-  private log(level: LogLevel, message: string, context?: Record<string, unknown>, error?: Error) {
+  private log(
+    level: LogLevel,
+    message: string,
+    context?: Record<string, unknown>,
+    error?: Error
+  ) {
     const entry: LogEntry = {
       level,
       message,
       timestamp: new Date().toISOString(),
       context,
-      error: error ? {
-        name: error.name || "Error",
-        message: error.message || "Unknown error",
-        stack: this.isDevelopment ? error.stack : undefined,
-      } : undefined,
+      error: error
+        ? {
+            name: error.name || 'Error',
+            message: error.message || 'Unknown error',
+            stack: this.isDevelopment ? error.stack : undefined,
+          }
+        : undefined,
     };
 
     const formatted = this.formatEntry(entry);
 
     switch (level) {
-      case "error":
+      case 'error':
         console.error(formatted);
         break;
-      case "warn":
+      case 'warn':
         console.warn(formatted);
         break;
-      case "info":
+      case 'info':
         console.info(formatted);
         break;
-      case "debug":
+      case 'debug':
         if (this.isDevelopment) {
           console.debug(formatted);
         }
@@ -80,26 +87,33 @@ class Logger {
   }
 
   error(message: string, context?: Record<string, unknown>, error?: Error) {
-    this.log("error", message, context, error);
+    this.log('error', message, context, error);
   }
 
   warn(message: string, context?: Record<string, unknown>) {
-    this.log("warn", message, context);
+    this.log('warn', message, context);
   }
 
   info(message: string, context?: Record<string, unknown>) {
-    this.log("info", message, context);
+    this.log('info', message, context);
   }
 
   debug(message: string, context?: Record<string, unknown>) {
-    this.log("debug", message, context);
+    this.log('debug', message, context);
   }
 }
 
 export const logger = new Logger();
 
 // Convenience functions
-export const logError = (message: string, context?: Record<string, unknown>, error?: Error) => logger.error(message, context, error);
-export const logWarn = (message: string, context?: Record<string, unknown>) => logger.warn(message, context);
-export const logInfo = (message: string, context?: Record<string, unknown>) => logger.info(message, context);
-export const logDebug = (message: string, context?: Record<string, unknown>) => logger.debug(message, context);
+export const logError = (
+  message: string,
+  context?: Record<string, unknown>,
+  error?: Error
+) => logger.error(message, context, error);
+export const logWarn = (message: string, context?: Record<string, unknown>) =>
+  logger.warn(message, context);
+export const logInfo = (message: string, context?: Record<string, unknown>) =>
+  logger.info(message, context);
+export const logDebug = (message: string, context?: Record<string, unknown>) =>
+  logger.debug(message, context);
