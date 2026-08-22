@@ -109,10 +109,9 @@ export function CareerCompass({ skills = [] }: CareerCompassProps) {
   const [recommendations, setRecommendations] = useState<CareerPath[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const skillNames = new Set(skills.map(s => s.skill_name.toLowerCase()));
-
   const generateCareerPaths = useMemo(() => {
-    const paths = Object.entries(careerPaths).map(([key, path]) => {
+    const skillNames = new Set(skills.map(s => s.skill_name.toLowerCase()));
+    const paths = Object.entries(careerPaths).map(([_key, path]) => {
       // Calculate match score
       const matchedSkills = path.requiredSkills.filter(skill =>
         skillNames.has(skill)
@@ -142,7 +141,7 @@ export function CareerCompass({ skills = [] }: CareerCompassProps) {
 
     // Sort by match score
     return paths.sort((a, b) => b.matchScore - a.matchScore);
-  }, [skillNames]);
+  }, [skills]);
 
   useEffect(() => {
     setRecommendations(generateCareerPaths);
