@@ -77,10 +77,12 @@ describe('Outlook Calendar Sync', () => {
     });
 
     it('returns sync config when it exists', () => {
-      db.prepare(`
+      db.prepare(
+        `
         INSERT INTO calendar_sync (user_id, provider, access_token, refresh_token, expires_at, enabled, tenant_id)
         VALUES (?, 'outlook', ?, ?, 9999999999, 1, 'tenant-123')
-      `).run(1, 'test-token', 'refresh-token');
+      `
+      ).run(1, 'test-token', 'refresh-token');
 
       const result = getOutlookCalendarSync(1);
 
@@ -103,7 +105,13 @@ describe('Outlook Calendar Sync', () => {
     });
 
     it('includes tenant_id when provided', () => {
-      enableOutlookCalendarSync(1, 'access-token', 'refresh-token', 9999999999, 'tenant-456');
+      enableOutlookCalendarSync(
+        1,
+        'access-token',
+        'refresh-token',
+        9999999999,
+        'tenant-456'
+      );
 
       const result = getOutlookCalendarSync(1);
       expect(result?.tenant_id).toBe('tenant-456');
@@ -226,7 +234,9 @@ describe('Outlook Calendar Sync', () => {
         json: async () => ({}),
       });
 
-      await expect(syncTaskToCalendar(task, sync)).rejects.toThrow('Failed to create Outlook event');
+      await expect(syncTaskToCalendar(task, sync)).rejects.toThrow(
+        'Failed to create Outlook event'
+      );
     });
 
     it('handles error response with error message', async () => {
@@ -373,7 +383,9 @@ describe('Outlook Calendar Sync', () => {
         json: async () => ({ error_description: 'Invalid code' }),
       });
 
-      await expect(exchangeOutlookCodeForTokens('invalid-code')).rejects.toThrow('Token exchange failed');
+      await expect(
+        exchangeOutlookCodeForTokens('invalid-code')
+      ).rejects.toThrow('Token exchange failed');
 
       process.env.OUTLOOK_CLIENT_ID = originalClientId;
       process.env.OUTLOOK_CLIENT_SECRET = originalClientSecret;
@@ -413,7 +425,9 @@ describe('Outlook Calendar Sync', () => {
         }),
       });
 
-      const profile = await import('../outlook-calendar').then(m => m.getOutlookUserProfile('test-token'));
+      const profile = await import('../outlook-calendar').then(m =>
+        m.getOutlookUserProfile('test-token')
+      );
 
       expect(profile.id).toBe('user-123');
       expect(profile.displayName).toBe('Test User');
@@ -427,7 +441,9 @@ describe('Outlook Calendar Sync', () => {
       });
 
       const { getOutlookUserProfile } = await import('../outlook-calendar');
-      await expect(getOutlookUserProfile('invalid-token')).rejects.toThrow('Failed to fetch Outlook profile');
+      await expect(getOutlookUserProfile('invalid-token')).rejects.toThrow(
+        'Failed to fetch Outlook profile'
+      );
     });
   });
 });
