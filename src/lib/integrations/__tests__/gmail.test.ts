@@ -67,7 +67,7 @@ describe('GmailConnector', () => {
 
     it('should throw error when no access token provided', async () => {
       await expect(connector.authenticate({})).rejects.toThrow(
-        'Gmail integration requires an access token',
+        'Gmail integration requires an access token'
       );
     });
   });
@@ -88,22 +88,26 @@ describe('GmailConnector', () => {
             {
               mimeType: 'text/plain',
               body: {
-                data: Buffer.from('Please review the PR when you have time.\nThanks!').toString('base64'),
+                data: Buffer.from(
+                  'Please review the PR when you have time.\nThanks!'
+                ).toString('base64'),
               },
             },
           ],
         },
       };
 
-      (fetch as any).mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          messages: [{ id: 'msg123' }],
-        }),
-      }).mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockMessage,
-      });
+      (fetch as any)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            messages: [{ id: 'msg123' }],
+          }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => mockMessage,
+        });
 
       const records = await connector.fetchRecords();
 
@@ -138,22 +142,34 @@ describe('GmailConnector', () => {
 
   describe('isTaskCandidate', () => {
     it('should return true for task: prefix', async () => {
-      const isTask = await (connector as any).isTaskCandidate('Task: Implement feature X', '');
+      const isTask = await (connector as any).isTaskCandidate(
+        'Task: Implement feature X',
+        ''
+      );
       expect(isTask).toBe(true);
     });
 
     it('should return true for todo: prefix', async () => {
-      const isTask = await (connector as any).isTaskCandidate('Todo: Fix bug in auth', '');
+      const isTask = await (connector as any).isTaskCandidate(
+        'Todo: Fix bug in auth',
+        ''
+      );
       expect(isTask).toBe(true);
     });
 
     it('should return true for action verbs', async () => {
-      const isTask = await (connector as any).isTaskCandidate('Please implement the feature', '');
+      const isTask = await (connector as any).isTaskCandidate(
+        'Please implement the feature',
+        ''
+      );
       expect(isTask).toBe(true);
     });
 
     it('should return false for regular emails', async () => {
-      const isTask = await (connector as any).isTaskCandidate('Weekly meeting notes', '');
+      const isTask = await (connector as any).isTaskCandidate(
+        'Weekly meeting notes',
+        ''
+      );
       expect(isTask).toBe(false);
     });
   });
@@ -177,7 +193,9 @@ describe('GmailConnector', () => {
 
   describe('extractDueDate', () => {
     it('should return undefined for no due date pattern', () => {
-      const dueDate = (connector as any).extractDueDate('No deadline mentioned');
+      const dueDate = (connector as any).extractDueDate(
+        'No deadline mentioned'
+      );
       expect(dueDate).toBeUndefined();
     });
   });
@@ -205,12 +223,18 @@ describe('GmailConnector', () => {
     });
 
     it('should return high for important keywords', () => {
-      const priority = (connector as any).extractPriority('Important document', []);
+      const priority = (connector as any).extractPriority(
+        'Important document',
+        []
+      );
       expect(priority).toBe('high');
     });
 
     it('should return low for low priority keywords', () => {
-      const priority = (connector as any).extractPriority('Low priority item', []);
+      const priority = (connector as any).extractPriority(
+        'Low priority item',
+        []
+      );
       expect(priority).toBe('low');
     });
 
@@ -222,12 +246,19 @@ describe('GmailConnector', () => {
 
   describe('base64Decode', () => {
     it('should decode base64 string', () => {
-      const decoded = (connector as any).base64Decode(Buffer.from('Hello World').toString('base64'));
+      const decoded = (connector as any).base64Decode(
+        Buffer.from('Hello World').toString('base64')
+      );
       expect(decoded).toBe('Hello World');
     });
 
     it('should handle URL-safe base64', () => {
-      const decoded = (connector as any).base64Decode(Buffer.from('Test+Data').toString('base64').replace('+', '-').replace('/', '_'));
+      const decoded = (connector as any).base64Decode(
+        Buffer.from('Test+Data')
+          .toString('base64')
+          .replace('+', '-')
+          .replace('/', '_')
+      );
       expect(decoded).toBe('Test+Data');
     });
   });
@@ -271,14 +302,18 @@ describe('GmailConnector', () => {
         }),
       });
 
-      const result = await connector.createDraft('to@example.com', 'Test Subject', 'Test body');
+      const result = await connector.createDraft(
+        'to@example.com',
+        'Test Subject',
+        'Test body'
+      );
 
       expect(result.id).toBe('draft123');
       expect(fetch).toHaveBeenCalledWith(
         'https://gmail.googleapis.com/gmail/v1/users/me/drafts',
         expect.objectContaining({
           method: 'POST',
-        }),
+        })
       );
     });
   });
@@ -292,7 +327,11 @@ describe('GmailConnector', () => {
         }),
       });
 
-      const result = await connector.sendEmail('to@example.com', 'Test Subject', 'Test body');
+      const result = await connector.sendEmail(
+        'to@example.com',
+        'Test Subject',
+        'Test body'
+      );
 
       expect(result.id).toBe('msg123');
     });
