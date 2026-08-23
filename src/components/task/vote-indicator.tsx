@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ThumbsUp, ThumbsDown, ChevronUp, ChevronDown } from 'lucide-react';
+import { ChevronUp, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
@@ -199,12 +199,12 @@ export function VoteButton({
   taskId,
   score = 0,
   userVote = 0,
-  onVote,
+  _onVote,
 }: {
   taskId: number;
   score?: number;
   userVote?: -1 | 1 | 0;
-  onVote?: (newScore: number, newVote: -1 | 1 | 0) => void;
+  _onVote?: (newScore: number, newVote: -1 | 1 | 0) => void;
 }) {
   const handleVote = async (value: -1 | 1) => {
     try {
@@ -215,7 +215,7 @@ export function VoteButton({
       });
 
       if (response.ok) {
-        const result: VoteResponse = await response.json();
+        await response.json();
       }
     } catch (error) {
       console.error('Vote error:', error);
