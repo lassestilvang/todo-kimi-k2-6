@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -12,7 +12,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Tag, Save, Trash2, X } from 'lucide-react';
+import { Plus, Tag, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { CreateTaskInput } from '@/types';
 
@@ -82,7 +82,7 @@ export function TaskSnippets({
     saveSnippets(snippets.filter(s => s.id !== id));
   };
 
-  const useSnippet = (snippet: TaskSnippet) => {
+  const handleSnippetUse = (snippet: TaskSnippet) => {
     // Increment use count
     const updated = snippets.map(s =>
       s.id === snippet.id ? { ...s, useCount: s.useCount + 1 } : s
@@ -91,7 +91,7 @@ export function TaskSnippets({
     onInsertSnippet(snippet.template);
   };
 
-  const captureCurrentAsSnippet = (task: Partial<CreateTaskInput>) => {
+  const _captureCurrentAsSnippet = (task: Partial<CreateTaskInput>) => {
     setCurrentTask(task);
     setIsCreating(true);
   };
@@ -152,7 +152,7 @@ export function TaskSnippets({
                 className="cursor-pointer hover:bg-muted/30 transition-colors"
               >
                 <CardContent className="p-3 flex items-center justify-between">
-                  <div onClick={() => useSnippet(snippet)} className="flex-1">
+                  <div onClick={() => handleSnippetUse(snippet)} className="flex-1">
                     <div className="font-medium text-sm">{snippet.name}</div>
                     {snippet.template.priority && (
                       <Badge variant="secondary" className="mt-1 text-xs">
