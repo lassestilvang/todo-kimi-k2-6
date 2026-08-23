@@ -116,7 +116,7 @@ export async function updateSkill(
     }
 
     const setClauses: string[] = [];
-    const values: any[] = [];
+    const values: unknown[] = [];
 
     if (updates.skill_name !== undefined) {
       setClauses.push('skill_name = ?');
@@ -198,7 +198,7 @@ export async function incrementSkillExperience(
   userId: number,
   skillName: string,
   taskId: number,
-  experience = 1
+  _experience = 1
 ): Promise<UserSkill | null> {
   try {
     const db = getDb();
@@ -349,7 +349,7 @@ export async function getSkillRecommendations(
         }
 
         // Calculate recommendation score based on keywords and task count
-        const keywordString = keywords[0].join(' ');
+        const _keywordString = keywords[0].join(' ');
         const score = currentTasks > 3 ? true : Math.random() > 0.5;
 
         return {
