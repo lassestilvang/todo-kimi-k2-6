@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Users,
   Clock,
@@ -18,21 +18,8 @@ import {
   CardDescription,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 import {
   ResponsiveContainer,
   LineChart,
@@ -41,10 +28,8 @@ import {
   YAxis,
   Tooltip as ReTooltip,
   CartesianGrid,
-  BarChart as ReBarChart,
-  Bar,
 } from 'recharts';
-import { format, subWeeks, startOfWeek, parseISO } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 
 interface TeamVelocityDashboardProps {
@@ -76,33 +61,17 @@ interface VelocityReport {
   burndown: Array<{ day: string; remaining: number; ideal: number }>;
 }
 
-interface TeamMember {
-  id: number;
-  name: string;
-  email: string;
-  avatarUrl?: string;
-  taskCount: number;
-  completionRate?: number;
-}
-
 export function TeamVelocityDashboard({
   workspaceId,
-  teamMembers: initialMembers,
+  teamMembers: _initialMembers,
 }: TeamVelocityDashboardProps) {
   const [report, setReport] = useState<VelocityReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [timeframe, setTimeframe] = useState<
     'week' | 'month' | 'quarter' | 'year'
   >('month');
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>(
-    initialMembers || []
-  );
 
-  useEffect(() => {
-    fetchTeamVelocityReport();
-  }, [timeframe, workspaceId]);
-
-  const fetchTeamVelocityReport = async () => {
+  const fetchTeamVelocityReport = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -116,13 +85,16 @@ export function TeamVelocityDashboard({
       } else {
         throw new Error('Failed to fetch report');
       }
-    } catch (error) {
+    } catch {
       toast.error('Failed to load team velocity data');
-      console.error(error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [timeframe, workspaceId]);
+
+  useEffect(() => {
+    fetchTeamVelocityReport();
+  }, [fetchTeamVelocityReport]);
 
   // Calculate team health score
   const teamHealth = useMemo(() => {
@@ -138,18 +110,6 @@ export function TeamVelocityDashboard({
       100,
       Math.round(avgCompletion * 0.7 + Math.min(100, velocityConsistency * 30))
     );
-  }, [report]);
-
-  // Calculate individual member stats
-  const memberStats = useMemo(() => {
-    if (!report) return [];
-
-    return report.sprints.map((sprint, index) => ({
-      name: sprint.name,
-      planned: sprint.planned_points,
-      completed: sprint.completed_points,
-      avgBurndown: sprint.burn_rate,
-    }));
   }, [report]);
 
   // Get the last 6 sprints for visualization
@@ -180,17 +140,16 @@ export function TeamVelocityDashboard({
           </p>
         </div>
         <div className="flex items-center gap-4">
-          <Select value={timeframe} onValueChange={v => setTimeframe(v as any)}>
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="Select timeframe" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="week">This Week</SelectItem>
-              <SelectItem value="month">This Month</SelectItem>
-              <SelectItem value="quarter">This Quarter</SelectItem>
-              <SelectItem value="year">This Year</SelectItem>
-            </SelectContent>
-          </Select>
+          <select
+            value={timeframe}
+            onChange={e => setTimeframe(e.target.value as 'week' | 'month' | 'quarter' | 'year')}
+            className="px-3 py-2 border rounded-md"
+          >
+            <option value="week">This Week</option>
+            <option value="month">This Month</option>
+            <option value="quarter">This Quarter</option>
+            <option value="year">This Year</option>
+          </select>
           <Badge variant="outline">
             {report?.sprints.length || 0} sprint(s) analyzed
           </Badge>
@@ -327,7 +286,7 @@ export function TeamVelocityDashboard({
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {report.sprints.slice(-5).map((sprint, idx) => (
+              {report.sprints.slice(-5).map(sprint => (
                 <div
                   key={sprint.id}
                   className="border rounded-lg p-4 hover:shadow-sm transition-shadow"
@@ -449,22 +408,21 @@ export function TeamVelocityDashboard({
                     {report.predictedVelocity > report.velocity && (
                       <div className="p-3 bg-green-500/10 rounded-lg">
                         <p className="text-sm text-green-800">
-                          🎯 Velocity is increasing! Consider adding more
-                          capacity
+                          Velocity is increasing! Consider adding more capacity
                         </p>
                       </div>
                     )}
                     {report.velocity < report.predictedVelocity * 0.8 && (
                       <div className="p-3 bg-amber-500/10 rounded-lg">
                         <p className="text-sm text-amber-800">
-                          ⚠️ Velocity below prediction. Review sprint planning.
+                          Velocity below prediction. Review sprint planning.
                         </p>
                       </div>
                     )}
                     {report.velocity > report.capacity * 0.9 && (
                       <div className="p-3 bg-red-500/10 rounded-lg">
                         <p className="text-sm text-red-800">
-                          ⚠️ Team is over capacity. Consider reducing sprint
+                          Team is over capacity. Consider reducing sprint
                           commitment.
                         </p>
                       </div>
