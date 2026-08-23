@@ -91,7 +91,7 @@ export function useAIConversationMemory(userId?: number) {
 
   // Get relevant context for a query
   const getContextForQuery = useCallback(
-    (currentQuery: string): string => {
+    (_currentQuery: string): string => {
       const relevantMessages = context.messages
         .slice(-5)
         .filter(m => m.role === 'user' || m.role === 'assistant')
@@ -106,8 +106,6 @@ export function useAIConversationMemory(userId?: number) {
   // Resolve task references in natural language
   const resolveTaskReference = useCallback(
     (query: string, tasks: TaskWithRelations[]): TaskWithRelations | null => {
-      const queryLower = query.toLowerCase();
-
       // Look for explicit task references
       if (context.messages.length > 0) {
         // Find most recently mentioned task
