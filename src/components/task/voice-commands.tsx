@@ -1,15 +1,11 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Mic,
   MicOff,
-  Send,
-  Check,
-  X,
   Volume2,
   VolumeX,
-  Settings,
   History,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -21,8 +17,6 @@ import {
   CardDescription,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -86,97 +80,22 @@ const COMMANDS: Record<
 };
 
 export function VoiceCommands({ className, onTaskCreate }: VoiceCommandsProps) {
-  const [recording, setRecording] = useState(false);
   const [listening, setListening] = useState(false);
   const [lastCommand, setLastCommand] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<VoiceCommand | null>(null);
   const [history, setHistory] = useState<VoiceCommandHistory[]>([]);
-  const [speaking, setSpeaking] = useState(false);
-  const [recognition, setRecognition] = useState<any>(null);
   const [muted, setMuted] = useState(false);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
-
-  useEffect(() => {
-    // Check if SpeechRecognition is available
-    const SpeechRecognitionAPI =
-      window.SpeechRecognition || (window as any).webkitSpeechRecognition;
-
-    if (!SpeechRecognitionAPI) {
-      console.warn('Speech Recognition not supported in this browser');
-      return;
-    }
-
-    const recognitionInstance = new SpeechRecognitionAPI();
-    recognitionInstance.continuous = true;
-    recognitionInstance.interimResults = true;
-    recognitionInstance.lang = 'en-US';
-
-    recognitionInstance.onresult = (event: any) => {
-      const transcript = Array.from(event.results)
-        .map((result: any) => result[0])
-        .map((result: any) => result.transcript)
-        .join('');
-
-      if (event.results[0].isFinal) {
-        handleVoiceCommand(transcript);
-      }
-    };
-
-    recognitionInstance.onerror = (event: any) => {
-      console.error('Speech recognition error:', event.error);
-      toast.error(`Speech recognition error: ${event.error}`);
-    };
-
-    setRecognition(recognitionInstance);
-
-    return () => {
-      recognitionInstance.stop();
-    };
-  }, []);
-
-  const handleVoiceCommand = (command: string) => {
-    const parsed = parseCommand(command.toLowerCase().trim());
-
-    if (parsed) {
-      setLastCommand(command);
-      setLastResult(parsed);
-
-      // Add to history
-      const newEntry: VoiceCommandHistory = {
-        id: Date.now(),
-        command,
-        result: parsed,
-        timestamp: new Date().toISOString(),
-      };
-      setHistory(prev => [newEntry, ...prev.slice(0, 9)]);
-
-      // Execute the action
-      executeAction(parsed);
-
-      // Provide feedback via speech
-      if (!muted) {
-        speak(`Executed: ${parsed.intent}`);
-      }
-    } else {
-      setLastCommand(command);
-      setLastResult(null);
-
-      if (!muted) {
-        speak("Sorry, I didn't understand that command");
-      }
-    }
-  };
+  const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
 
   const parseCommand = (command: string): VoiceCommand | null => {
-    for (const [key, handler] of Object.entries(COMMANDS)) {
+    for (const [_key, handler] of Object.entries(COMMANDS)) {
       if (handler.pattern.test(command)) {
         // Extract entities from command
         const entities: Record<string, string> = {};
 
         // Extract task name if present
         const taskNameMatch = command.match(
-          /(?:task |called |named |'"([^"]+)'")/i
+          /(?:task |called |named |'"([^\"]+)"')/i
         );
         if (taskNameMatch) {
           entities.taskName = taskNameMatch[1] || 'New Task';
@@ -199,7 +118,34 @@ export function VoiceCommands({ className, onTaskCreate }: VoiceCommandsProps) {
     return null;
   };
 
-  const executeAction = async (parsed: VoiceCommand) => {
+  const speak = (text: string) => {
+    if (!window.speechSynthesis) return;
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const showHelp = useCallback(() => {
+    const helpText = `
+Available voice commands:
+• "Create a task called [name]" - Create a new task
+• "Complete [task name]" - Mark task as complete
+• "Show my tasks for today" - View today's tasks
+• "List all my tasks" - Show all tasks
+• "Find tasks with [keyword]" - Search for tasks
+• "Help" - Show this help
+`;
+    if (!muted) {
+      speak(helpText);
+    }
+    toast.info(helpText, {
+      duration: 10000,
+    });
+  }, [muted]);
+
+  const executeAction = useCallback(async (parsed: VoiceCommand) => {
     switch (parsed.intent) {
       case 'create_task':
         const taskName = parsed.entities.taskName || 'Voice Created Task';
@@ -231,34 +177,80 @@ export function VoiceCommands({ className, onTaskCreate }: VoiceCommandsProps) {
       default:
         toast.info(`Executed: ${parsed.intent}`);
     }
-  };
+  }, [onTaskCreate, showHelp]);
 
-  const showHelp = () => {
-    const helpText = `
-Available voice commands:
-• "Create a task called [name]" - Create a new task
-• "Complete [task name]" - Mark task as complete
-• "Show my tasks for today" - View today's tasks
-• "List all my tasks" - Show all tasks
-• "Find tasks with [keyword]" - Search for tasks
-• "Help" - Show this help
-`;
-    if (!muted) {
-      speak(helpText);
+  const handleVoiceCommand = useCallback((command: string) => {
+    const parsed = parseCommand(command.toLowerCase().trim());
+
+    if (parsed) {
+      setLastCommand(command);
+      setLastResult(parsed);
+
+      // Add to history using timestamp-based ID
+      const timestamp = performance.now();
+      const isoTimestamp = new Date(timestamp).toISOString();
+      const newEntry: VoiceCommandHistory = {
+        id: Math.round(timestamp),
+        command,
+        result: parsed,
+        timestamp: isoTimestamp,
+      };
+      setHistory(prev => [newEntry, ...prev.slice(0, 9)]);
+
+      // Execute the action
+      executeAction(parsed);
+
+      // Provide feedback via speech
+      if (!muted) {
+        speak(`Executed: ${parsed.intent}`);
+      }
+    } else {
+      setLastCommand(command);
+      setLastResult(null);
+
+      if (!muted) {
+        speak("Sorry, I didn't understand that command");
+      }
     }
-    toast.info(helpText, {
-      duration: 10000,
-    });
-  };
+  }, [muted, executeAction]);
 
-  const speak = (text: string) => {
-    if (!window.speechSynthesis) return;
+  useEffect(() => {
+    // Check if SpeechRecognition is available
+    const SpeechRecognitionAPI =
+      window.SpeechRecognition || (window as unknown as { webkitSpeechRecognition: SpeechRecognition }).webkitSpeechRecognition;
 
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 1.0;
-    utterance.pitch = 1.0;
-    window.speechSynthesis.speak(utterance);
-  };
+    if (!SpeechRecognitionAPI) {
+      console.warn('Speech Recognition not supported in this browser');
+      return;
+    }
+
+    const recognitionInstance = new SpeechRecognitionAPI();
+    recognitionInstance.continuous = true;
+    recognitionInstance.interimResults = true;
+    recognitionInstance.lang = 'en-US';
+
+    recognitionInstance.onresult = (event: SpeechRecognitionEvent) => {
+      const transcript = Array.from(event.results)
+        .map((result) => result[0])
+        .map((result) => result.transcript)
+        .join('');
+
+      if (event.results[0].isFinal) {
+        handleVoiceCommand(transcript);
+      }
+    };
+
+    recognitionInstance.onerror = (event: SpeechRecognitionErrorEvent) => {
+      console.error('Speech recognition error:', event.error);
+      toast.error(`Speech recognition error: ${event.error}`);
+    };
+
+    setRecognition(recognitionInstance);
+
+    return () => {
+      recognitionInstance.stop();
+    };
+  }, [handleVoiceCommand]);
 
   const startListening = () => {
     if (!recognition) {
@@ -269,7 +261,7 @@ Available voice commands:
     try {
       recognition.start();
       setListening(true);
-    } catch (error) {
+    } catch {
       toast.error('Failed to start speech recognition');
     }
   };
@@ -385,7 +377,7 @@ Available voice commands:
                 </div>
 
                 <div className="space-y-2 max-h-60 overflow-y-auto">
-                  {history.map((entry, idx) => (
+                  {history.map((entry) => (
                     <div
                       key={entry.id}
                       className="text-xs p-2 border rounded bg-muted/20"
