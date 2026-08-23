@@ -5,10 +5,8 @@ import {
   Coffee,
   Clock,
   MapPin,
-  Smile,
   Battery,
   Brain,
-  TrendingUp,
   Moon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -22,7 +20,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
 import { toast } from 'sonner';
 
 interface HabitContext {
@@ -159,7 +156,7 @@ export function HabitContextTracker({
             <Label>Context Type</Label>
             <Select
               value={selectedContextType}
-              onValueChange={setSelectedContextType as any}
+              onValueChange={(v: string) => setSelectedContextType(v as HabitContext['context_type'])}
             >
               <SelectTrigger>
                 <SelectValue />
