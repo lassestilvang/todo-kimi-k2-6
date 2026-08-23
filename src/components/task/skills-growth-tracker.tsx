@@ -9,7 +9,6 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -26,7 +25,6 @@ import {
 } from '@/components/ui/collapsible';
 import { Label } from '@/components/ui/label';
 import { format } from 'date-fns';
-import { toast } from 'sonner';
 
 interface Skill {
   id: number;
@@ -49,19 +47,6 @@ interface Task {
 
 interface SkillsGrowthTrackerProps {
   tasks?: Task[];
-}
-
-interface SkillRecommendation {
-  skill_name: string;
-  recommended: boolean;
-  reason: string;
-}
-
-interface CareerPath {
-  role: string;
-  matchScore: number;
-  requiredSkills: string[];
-  yourSkills: number;
 }
 
 const skillKeywords: Record<string, string[]> = {
@@ -143,7 +128,7 @@ export function SkillsGrowthTracker({ tasks = [] }: SkillsGrowthTrackerProps) {
       .filter(t => t.completed && t.completed_at)
       .forEach(task => {
         const taskName = task.name.toLowerCase();
-        const taskDesc = ((task as any).description || '').toLowerCase();
+        const taskDesc = ((task.description ?? '') || '').toLowerCase();
         const combined = `${taskName} ${taskDesc}`;
 
         Object.entries(skillKeywords).forEach(([skill, keywords]) => {
