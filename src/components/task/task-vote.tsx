@@ -108,7 +108,7 @@ export function TaskVote({
     return 'text-red-600';
   };
 
-  const getScoreEmoji = (score: number) => {
+  const _getScoreEmoji = (score: number) => {
     if (score >= 5) return <Smile className="h-4 w-4" />;
     if (score >= 2) return <Smile className="h-4 w-4" />;
     if (score >= 0) return <Smile className="h-4 w-4" />;
