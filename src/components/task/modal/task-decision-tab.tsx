@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Trash2, Edit, Star, CheckCircle2, MoreVertical } from 'lucide-react';
+import { Trash2, Edit, Star } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface TaskDecisionTabProps {
@@ -39,7 +39,6 @@ export function TaskDecisionTab({
   onDecisionsChange,
 }: TaskDecisionTabProps) {
   const [showAddForm, setShowAddForm] = useState(false);
-  const [showOutcomeForm, setShowOutcomeForm] = useState<number | null>(null);
   const [newDecision, setNewDecision] = useState({
     decision_type: 'approach' as const,
     question: '',
@@ -78,7 +77,9 @@ export function TaskDecisionTab({
       } else {
         toast.error('Failed to record decision');
       }
-    } catch (error) {
+    } catch (_error: unknown) {
+      // Error is intentionally unused - we just show a toast
+      void _error;
       toast.error('Failed to record decision');
     }
   };
@@ -113,35 +114,10 @@ export function TaskDecisionTab({
       await fetch(`/api/decisions/${decisionId}`, { method: 'DELETE' });
       onDecisionsChange?.(decisions.filter(d => d.id !== decisionId));
       toast.success('Decision removed');
-    } catch (error) {
+    } catch (_error: unknown) {
+      // Error is intentionally unused - we just show a toast
+      void _error;
       toast.error('Failed to remove decision');
-    }
-  };
-
-  const handleOutcomeSave = async (
-    decisionId: number,
-    rating: number,
-    outcome: string,
-    notes?: string
-  ) => {
-    try {
-      const response = await fetch(`/api/decisions/${decisionId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          outcome_rating: rating,
-          outcome,
-          outcome_notes: notes,
-        }),
-      });
-
-      if (response.ok) {
-        toast.success('Outcome recorded');
-        onDecisionsChange?.([]);
-        setShowOutcomeForm(null);
-      }
-    } catch (error) {
-      toast.error('Failed to save outcome');
     }
   };
 
@@ -172,7 +148,7 @@ export function TaskDecisionTab({
                 onValueChange={value =>
                   setNewDecision({
                     ...newDecision,
-                    decision_type: value as any,
+                    decision_type: value as typeof newDecision.decision_type,
                   })
                 }
               >
@@ -297,7 +273,7 @@ export function TaskDecisionTab({
                     <div className="mt-2">
                       <p className="text-xs font-medium">Options:</p>
                       <ul className="text-xs text-muted-foreground list-disc list-inside">
-                        {decision.options.map((opt: any, i: number) => (
+                        {decision.options.map((opt: { option_text: string }, i: number) => (
                           <li key={i}>{opt.option_text}</li>
                         ))}
                       </ul>
@@ -332,18 +308,6 @@ export function TaskDecisionTab({
                         <p className="mt-1">{decision.outcome}</p>
                       )}
                     </div>
-                  )}
-
-                  {/* Rating for pending outcomes */}
-                  {decision.outcome_rating === null && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="mt-2"
-                      onClick={() => setShowOutcomeForm(decision.id)}
-                    >
-                      Add Outcome
-                    </Button>
                   )}
 
                   {/* Action buttons */}
