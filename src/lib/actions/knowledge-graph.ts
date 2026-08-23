@@ -5,6 +5,27 @@ import { getCurrentUser } from '@/lib/session';
 import type { TaskWithRelations } from '@/types';
 import { aiCache } from '@/lib/ai/providers';
 
+interface TaskConnection {
+  id: number;
+  source_task_id: number;
+  target_task_id: number;
+  connection_type: string;
+  strength: number;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface KnowledgeGraphStats {
+  total_tasks: number;
+  total_connections: number;
+  avg_connection_strength: number;
+  insight_count: number;
+  skill_count: number;
+  pattern_matches: number;
+  recommendations_generated: number;
+}
+
 /**
  * Create a new connection between two tasks in the knowledge graph
  */
@@ -14,15 +35,7 @@ export async function createTaskConnection(
   connectionType: string,
   strength = 0.5,
   notes?: string
-): Promise<{
-  id: number;
-  source_task_id: number;
-  target_task_id: number;
-  connection_type: string;
-  strength: number;
-  notes: string | null;
-  created_at: string;
-}> {
+): Promise<Omit<TaskConnection, 'updated_at'>> {
   const db = getDb();
   const user = await getCurrentUser();
 
@@ -88,8 +101,9 @@ export async function createTaskConnection(
 
     const updated = db
       .prepare('SELECT * FROM task_connections WHERE id = ?')
-      .get(existing.id);
-    return updated as any;
+      .get(existing.id) as TaskConnection;
+    const { updated_at, ...result } = updated;
+    return result;
   }
 
   // Create new connection
@@ -102,8 +116,9 @@ export async function createTaskConnection(
 
   const connection = db
     .prepare('SELECT * FROM task_connections WHERE id = ?')
-    .get(result.lastInsertRowid as number);
-  return connection as any;
+    .get(result.lastInsertRowid as number) as TaskConnection;
+  const { updated_at, ...result } = connection;
+  return result;
 }
 
 /**
@@ -335,7 +350,7 @@ export async function extractInsightsFromTask(
 
   // Store insights in database
   for (const insight of result) {
-    await createTaskInsight(taskId, 'lesson_learned' as any, insight);
+    await createTaskInsight(taskId, 'lesson_learned', insight);
   }
 
   aiCache.set(cacheKey, result);
@@ -440,18 +455,8 @@ export async function recordHabitContext(
 /**
  * Get aggregated statistics for user's knowledge graph
  */
-export async function getKnowledgeGraphStats(userId: number): Promise<any> {
+export async function getKnowledgeGraphStats(userId: number): Promise<KnowledgeGraphStats> {
   const db = getDb();
-
-  const stats = {
-    total_tasks: 0,
-    total_connections: 0,
-    avg_connection_strength: 0,
-    insight_count: 0,
-    skill_count: 0,
-    pattern_matches: 0,
-    recommendations_generated: 0,
-  };
 
   // Get basic counts
   const basicStats = db
