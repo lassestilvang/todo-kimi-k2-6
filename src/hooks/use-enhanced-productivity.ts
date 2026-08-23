@@ -14,9 +14,16 @@ export interface CognitiveLoadState {
   avgTimePerTask: number;
 }
 
+export interface CognitiveLoadAnalysis {
+  totalTasks: number;
+  completedTasks: number;
+  avgFocusBlocks: number;
+  interruptionRate: number;
+}
+
 export function useCognitiveLoad() {
   const [loading, setLoading] = useState(true);
-  const [analysis, setAnalysis] = useState<any>(null);
+  const [analysis, setAnalysis] = useState<CognitiveLoadAnalysis | null>(null);
 
   const fetchAnalysis = useCallback(async () => {
     setLoading(true);
@@ -65,16 +72,27 @@ export interface EnergyProfile {
   energy_budget: { daily: number; balance: number };
 }
 
+export interface EnergyBudget {
+  daily: number;
+  balance: number;
+  spent?: number;
+}
+
+export interface EnergyData {
+  profile: EnergyProfile;
+  budget: EnergyBudget;
+}
+
 export function useEnergyBudget() {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<EnergyProfile | null>(null);
-  const [budget, setBudget] = useState<any>(null);
+  const [budget, setBudget] = useState<EnergyBudget | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch('/api/enhanced-productivity/energy-budget');
-      const data = await res.json();
+      const data: EnergyData = await res.json();
       setProfile(data.profile);
       setBudget(data.budget);
     } catch (error) {
@@ -99,7 +117,7 @@ export function useEnergyBudget() {
     []
   );
 
-  const logEnergy = useCallback(async (data: any) => {
+  const logEnergy = useCallback(async (data: Partial<EnergyBudget>) => {
     const res = await fetch('/api/enhanced-productivity/energy-budget', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -110,7 +128,7 @@ export function useEnergyBudget() {
     });
     const result = await res.json();
     if (result.balance !== undefined) {
-      setBudget((prev: any) => ({ ...prev, balance: result.balance }));
+      setBudget((prev: EnergyBudget | null) => prev ? { ...prev, balance: result.balance } : result);
     }
     return result;
   }, []);
@@ -133,9 +151,18 @@ export function useEnergyBudget() {
 // EXTERNAL TASKS HOOK (Cross-App Sync)
 // ============================================================================
 
+export interface ExternalTask {
+  id: number;
+  title: string;
+  description?: string;
+  status: 'pending' | 'completed' | 'cancelled';
+  dueDate?: string;
+  createdAt: string;
+}
+
 export function useExternalTasks(status = 'pending') {
   const [loading, setLoading] = useState(true);
-  const [tasks, setTasks] = useState<any[]>([]);
+  const [tasks, setTasks] = useState<ExternalTask[]>([]);
 
   const fetchTasks = useCallback(async () => {
     setLoading(true);
@@ -175,9 +202,30 @@ export function useExternalTasks(status = 'pending') {
 // DECISION SHADOW HOOK
 // ============================================================================
 
+export interface DecisionAnalysisItem {
+  id: number;
+  decision: string;
+  outcome?: string;
+  confidence: number;
+  timestamp: string;
+}
+
+export interface DecisionAnalysis {
+  items: DecisionAnalysisItem[];
+  total: number;
+  accuracy: number;
+}
+
+export interface DecisionData {
+  decision: string;
+  options?: string[];
+  context?: string;
+  confidence?: number;
+}
+
 export function useDecisionShadow() {
   const [loading, setLoading] = useState(true);
-  const [analysis, setAnalysis] = useState<any>(null);
+  const [analysis, setAnalysis] = useState<DecisionAnalysis | null>(null);
 
   const fetchAnalysis = useCallback(async (limit = 20) => {
     setLoading(true);
@@ -194,7 +242,7 @@ export function useDecisionShadow() {
     }
   }, []);
 
-  const createDecision = useCallback(async (decisionData: any) => {
+  const createDecision = useCallback(async (decisionData: DecisionData) => {
     const res = await fetch('/api/enhanced-productivity/decisions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -214,9 +262,23 @@ export function useDecisionShadow() {
 // MOOD TRACKING HOOK
 // ============================================================================
 
+export interface MoodData {
+  mood: number;
+  energy: number;
+  stress?: number;
+  notes?: string;
+  timestamp?: string;
+}
+
+export interface MoodRecommendations {
+  suggestions: string[];
+  focusTime: string;
+  breakInterval: number;
+}
+
 export function useMoodTracking() {
   const [loading, setLoading] = useState(true);
-  const [recommendations, setRecommendations] = useState<any>(null);
+  const [recommendations, setRecommendations] = useState<MoodRecommendations | null>(null);
 
   const fetchRecommendations = useCallback(async (date?: string) => {
     setLoading(true);
@@ -234,7 +296,7 @@ export function useMoodTracking() {
     }
   }, []);
 
-  const logMood = useCallback(async (moodData: any) => {
+  const logMood = useCallback(async (moodData: MoodData) => {
     const res = await fetch('/api/enhanced-productivity/mood', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
