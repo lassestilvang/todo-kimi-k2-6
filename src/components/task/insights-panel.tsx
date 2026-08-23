@@ -46,6 +46,22 @@ interface InsightsPanelProps {
   className?: string;
 }
 
+const getMostCommon = (arr: string[]): string => {
+  const frequency: Record<string, number> = {};
+  let maxFreq = 0;
+  let mostCommon = arr[0];
+
+  arr.forEach(item => {
+    frequency[item] = (frequency[item] || 0) + 1;
+    if (frequency[item] > maxFreq) {
+      maxFreq = frequency[item];
+      mostCommon = item;
+    }
+  });
+
+  return mostCommon;
+};
+
 export function InsightsPanel({
   tasks,
   userId,
@@ -58,26 +74,6 @@ export function InsightsPanel({
   const [activeView, setActiveView] = useState<
     'insights' | 'skills' | 'analytics'
   >('insights');
-
-  useEffect(() => {
-    loadInsightsAndSkills();
-  }, [userId]);
-
-  const loadInsightsAndSkills = async () => {
-    try {
-      setLoading(true);
-      // Simulate loading - in real implementation, call API
-      const mockInsights: Insight[] = generateMockInsights(tasks);
-      const mockSkills: Skill[] = generateMockSkills(tasks);
-
-      setInsights(mockInsights);
-      setSkills(mockSkills);
-    } catch (error) {
-      console.error('Failed to load insights:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const getInsightIcon = (type: Insight['type']) => {
     switch (type) {
@@ -193,8 +189,6 @@ export function InsightsPanel({
   };
 
   const generateMockSkills = (taskList: TaskWithRelations[]): Skill[] => {
-    const skills: Skill[] = [];
-
     // Infer skills from task names and descriptions
     const skillPatterns: Record<string, string[]> = {
       design: ['design', 'ui', 'ux', 'interface', 'layout', 'visual'],
@@ -225,17 +219,18 @@ export function InsightsPanel({
           combinedText.includes(keyword)
         );
         if (matchedKeywords.length > 0) {
-          if (!skillsMap.has(skillKey)) {
-            skillsMap.set(skillKey, {
+          let skill = skillsMap.get(skillKey);
+          if (!skill) {
+            skill = {
               id: skillsMap.size + 1,
               name:
                 skillKey.charAt(0).toUpperCase() + skillKey.slice(1) + ' Work',
               proficiency_level: 1,
               evidence_task_ids: [],
-            });
+            };
+            skillsMap.set(skillKey, skill);
           }
 
-          const skill = skillsMap.get(skillKey)!;
           skill.evidence_task_ids.push(task.id);
           skill.proficiency_level = Math.min(5, skill.evidence_task_ids.length);
         }
@@ -245,21 +240,24 @@ export function InsightsPanel({
     return Array.from(skillsMap.values());
   };
 
-  const getMostCommon = (arr: string[]): string => {
-    const frequency: Record<string, number> = {};
-    let maxFreq = 0;
-    let mostCommon = arr[0];
-
-    arr.forEach(item => {
-      frequency[item] = (frequency[item] || 0) + 1;
-      if (frequency[item] > maxFreq) {
-        maxFreq = frequency[item];
-        mostCommon = item;
+  // Load insights and skills on mount
+  useEffect(() => {
+    const loadInsightsAndSkills = async () => {
+      try {
+        setLoading(true);
+        const mockInsights: Insight[] = generateMockInsights(tasks);
+        const mockSkills: Skill[] = generateMockSkills(tasks);
+        setInsights(mockInsights);
+        setSkills(mockSkills);
+      } catch (_error) {
+        console.error('Failed to load insights:', _error);
+      } finally {
+        setLoading(false);
       }
-    });
+    };
 
-    return mostCommon;
-  };
+    loadInsightsAndSkills();
+  }, [userId, tasks]);
 
   if (loading) {
     return (
