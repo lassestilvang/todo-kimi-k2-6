@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   ThumbsUp,
   ThumbsDown,
@@ -9,19 +9,12 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 
 interface TaskVotingProps {
   taskId: number;
-  initialScore?: number;
   initialVote?: -1 | 1 | null;
   disabled?: boolean;
 }
@@ -34,7 +27,6 @@ interface VoteStats {
 
 export function TaskVoting({
   taskId,
-  initialScore = 0,
   initialVote = null,
   disabled = false,
 }: TaskVotingProps) {
@@ -46,11 +38,7 @@ export function TaskVoting({
   });
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    loadVoteData();
-  }, [taskId]);
-
-  const loadVoteData = async () => {
+  const loadVoteData = useCallback(async () => {
     try {
       const response = await fetch(`/api/task-votes?task_id=${taskId}`);
       if (response.ok) {
@@ -67,12 +55,16 @@ export function TaskVoting({
           setVote(votes[0].value);
         }
       }
-    } catch (error) {
-      console.error('Failed to load vote data:', error);
+    } catch {
+      console.error('Failed to load vote data');
     }
-  };
+  }, [taskId]);
 
-  const handleVote = async (value: -1 | 1) => {
+  useEffect(() => {
+    loadVoteData();
+  }, [taskId, loadVoteData]);
+
+  const handleVote = useCallback(async (value: -1 | 1) => {
     if (disabled || loading) return;
 
     setLoading(true);
@@ -94,14 +86,14 @@ export function TaskVoting({
       } else {
         throw new Error('Failed to vote');
       }
-    } catch (error) {
+    } catch {
       toast.error('Failed to vote on task');
     } finally {
       setLoading(false);
     }
-  };
+  }, [taskId, disabled, loading]);
 
-  const handleRemoveVote = async () => {
+  const handleRemoveVote = useCallback(async () => {
     if (disabled || loading) return;
 
     setLoading(true);
@@ -116,12 +108,12 @@ export function TaskVoting({
         await loadVoteData();
         toast.success('Vote removed');
       }
-    } catch (error) {
+    } catch {
       toast.error('Failed to remove vote');
     } finally {
       setLoading(false);
     }
-  };
+  }, [taskId, disabled, loading, loadVoteData]);
 
   const getScoreColor = (score: number) => {
     if (score > 0.5) return 'text-green-500';
