@@ -23,8 +23,6 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import {
   ResponsiveContainer,
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   Tooltip,
@@ -33,9 +31,6 @@ import {
   PieChart as RechartsPieChart,
   Pie,
   Cell,
-  Legend,
-  RadialBarChart,
-  RadialBar,
 } from 'recharts';
 import { format, addDays, startOfWeek, parseISO, subDays } from 'date-fns';
 import type { TaskWithRelations } from '@/types';
@@ -169,9 +164,10 @@ export function PredictiveAnalytics({ tasks }: PredictiveAnalyticsProps) {
     );
 
     const upcomingDeadlines = tasks.filter(t => {
-      if (t.completed || t.deadline) return false;
+      if (t.completed) return false;
+      if (!t.deadline) return false;
       const daysUntil = Math.ceil(
-        (new Date(t.deadline!).getTime() - new Date().getTime()) /
+        (new Date(t.deadline).getTime() - new Date().getTime()) /
           (1000 * 60 * 60 * 24)
       );
       return daysUntil > 0 && daysUntil <= 3;
@@ -258,18 +254,6 @@ export function PredictiveAnalytics({ tasks }: PredictiveAnalyticsProps) {
         return 'text-yellow-600';
       default:
         return 'text-green-600';
-    }
-  };
-
-  // Get risk background
-  const getRiskBg = (level: string) => {
-    switch (level) {
-      case 'high':
-        return 'bg-red-500/10';
-      case 'medium':
-        return 'bg-yellow-500/10';
-      default:
-        return 'bg-green-500/10';
     }
   };
 
