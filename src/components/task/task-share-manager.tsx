@@ -12,7 +12,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 import type { TaskShare } from '@/types';
@@ -32,7 +31,6 @@ export function TaskShareManager({
 }: TaskShareManagerProps) {
   const [email, setEmail] = useState('');
   const [permission, setPermission] = useState<'view' | 'edit'>('view');
-  const [isPublic, setIsPublic] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
 
@@ -164,7 +162,7 @@ export function TaskShareManager({
         <div>
           <Label className="text-sm font-medium">Current shares</Label>
           <div className="mt-2 space-y-2">
-            {shares.map((share: any) => (
+            {shares.map((share: TaskShare) => (
               <Card key={share.id} className="p-3">
                 <div className="flex items-center justify-between">
                   <div>
@@ -177,11 +175,11 @@ export function TaskShareManager({
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    {share.share_token && (
+                    {share.share_token && typeof share.share_token === 'string' && (
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => copyShareLink(share.share_token!)}
+                        onClick={() => copyShareLink(share.share_token)}
                       >
                         {copiedToken === share.share_token ? (
                           <Check className="h-3 w-3 text-green-500" />
