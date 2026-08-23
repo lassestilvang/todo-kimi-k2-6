@@ -1,7 +1,6 @@
 'use client';
 
 import { NextIntlClientProvider } from 'next-intl';
-import { useLocale } from 'next-intl';
 import type { Locale } from './config';
 import { useMemo } from 'react';
 
@@ -61,10 +60,11 @@ export function I18nProvider({
 
   const messages = useMemo(() => {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
       const msgs = require(`../../messages/${activeLocale}.json`);
       // Merge with defaults to ensure all keys exist
       return { ...defaultMessages, ...msgs };
-    } catch (e) {
+    } catch {
       // Return defaults during build or if locale file not found
       return defaultMessages;
     }
