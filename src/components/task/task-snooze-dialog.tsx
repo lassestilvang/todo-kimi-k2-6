@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import {
   Clock,
   Calendar as CalendarIcon,
@@ -17,7 +17,6 @@ import {
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { format, addDays, addHours, parseISO } from 'date-fns';
-import { cn } from '@/lib/utils';
 import type { TaskWithRelations } from '@/types';
 
 interface TaskSnoozeDialogProps {
@@ -25,14 +24,6 @@ interface TaskSnoozeDialogProps {
   onSnooze: (taskId: number, newDate: string, time?: string) => void;
   allTasks: TaskWithRelations[];
 }
-
-const SNOOZE_PRESETS = [
-  { label: 'Tomorrow', value: 1 },
-  { label: '2 Days', value: 2 },
-  { label: '3 Days', value: 3 },
-  { label: 'Next Week', value: 7 },
-  { label: '2 Weeks', value: 14 },
-];
 
 export function TaskSnoozeDialog({
   task,
@@ -147,7 +138,7 @@ export function TaskSnoozeDialog({
     onSnooze(task.id, date, time);
   };
 
-  const handleCustomDate = () => {
+  const _handleCustomDate = () => {
     if (customDate) {
       onSnooze(task.id, format(customDate, 'yyyy-MM-dd'));
     }
