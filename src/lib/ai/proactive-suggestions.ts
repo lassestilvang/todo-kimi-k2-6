@@ -104,7 +104,8 @@ export async function generateProactiveSuggestions(
     .filter(t => !t.completed && t.date)
     .reduce(
       (acc, task) => {
-        const date = task.date!;
+        // task.date is guaranteed by the filter above
+        const date = task.date as string;
         acc[date] = (acc[date] || 0) + 1;
         return acc;
       },
