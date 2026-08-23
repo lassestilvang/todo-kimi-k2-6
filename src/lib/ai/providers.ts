@@ -11,10 +11,39 @@ import type {
   DecisionContext,
   GeneratedDecisionTemplate,
 } from './index';
+
+/**
+ * Task details for duration prediction
+ */
+export interface TaskDurationInput {
+  name: string;
+  description?: string;
+  priority?: 'critical' | 'high' | 'medium' | 'low' | 'none';
+  estimate?: string;
+  date?: string;
+  deadline?: string;
+}
+
+/**
+ * Context for duration prediction
+ */
+export interface DurationPredictionContext {
+  userId?: number;
+  taskHistory?: Array<{
+    task_type: string;
+    estimated_time: number;
+    actual_time: number;
+    completed: boolean;
+  }>;
+  factors?: {
+    taskComplexity?: 'simple' | 'moderate' | 'complex';
+    energyLevel?: 'high' | 'medium' | 'low';
+    deadlineUrgency?: number;
+  };
+}
 import { logError, logWarn } from '@/lib/logger';
 import { taskSuggestionSchema, aiInsightsSchema } from './index';
 import {
-  formatMinutesToTime,
   parseTimeToMinutes,
   getNextDay,
   parseTimeRange,
@@ -63,8 +92,8 @@ export interface AIProvider {
     context: DecisionContext
   ): Promise<GeneratedDecisionTemplate>;
   predictTaskDuration?(
-    task: any,
-    context?: any
+    task: TaskDurationInput,
+    context?: DurationPredictionContext
   ): Promise<{
     estimated_duration: number;
     confidence: number;
@@ -1071,23 +1100,8 @@ export class KeywordParser implements AIProvider {
   }
 
   async predictTaskDuration(
-    task: {
-      name: string;
-      description?: string;
-      priority?: string;
-      estimate?: string;
-      date?: string;
-      deadline?: string;
-    },
-    context?: {
-      userId?: number;
-      taskHistory?: any[];
-      factors?: {
-        taskComplexity?: 'simple' | 'moderate' | 'complex';
-        energyLevel?: 'high' | 'medium' | 'low';
-        deadlineUrgency?: number;
-      };
-    }
+    task: TaskDurationInput,
+    context?: DurationPredictionContext
   ): Promise<{
     estimated_duration: number;
     confidence: number;
@@ -2105,8 +2119,8 @@ export class AIManager {
    * Predict task duration
    */
   async predictTaskDuration(
-    task: any,
-    context?: any
+    task: TaskDurationInput,
+    context?: DurationPredictionContext
   ): Promise<{
     estimated_duration: number;
     confidence: number;
