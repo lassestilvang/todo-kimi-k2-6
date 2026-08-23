@@ -16,12 +16,8 @@ import {
 } from '@/components/ui/select';
 import {
   Link,
-  Filter,
-  ExternalLink,
   Lightbulb,
   BookOpen,
-  AlertTriangle,
-  RefreshCw,
   X,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -69,7 +65,7 @@ const connectionTypes = [
 export function TaskConnectionsTab({
   task,
   connections = [],
-  relatedTasks = [],
+  _relatedTasks = [],
   onConnectionsChange,
 }: TaskConnectionsTabProps) {
   const [showAddConnection, setShowAddConnection] = useState(false);
@@ -81,21 +77,9 @@ export function TaskConnectionsTab({
   });
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
-
-  // Filter tasks (excluding current task)
-  const availableTasks = relatedTasks.filter(t => t.id !== task.id);
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
-    if (query) {
-      const filtered = availableTasks.filter(t =>
-        t.name.toLowerCase().includes(query.toLowerCase())
-      );
-      setFilteredTasks(filtered);
-    } else {
-      setFilteredTasks(availableTasks);
-    }
   };
 
   const handleAddConnection = async () => {
@@ -126,7 +110,9 @@ export function TaskConnectionsTab({
         setShowAddConnection(false);
         toast.success('Connection added');
       }
-    } catch (error) {
+    } catch (_error: unknown) {
+      // Error is intentionally unused - we just show a toast
+      void _error;
       toast.error('Failed to add connection');
     }
   };
@@ -138,7 +124,9 @@ export function TaskConnectionsTab({
       });
       onConnectionsChange?.(connections.filter(c => c.id !== connectionId));
       toast.success('Connection removed');
-    } catch (error) {
+    } catch (_error: unknown) {
+      // Error is intentionally unused - we just show a toast
+      void _error;
       toast.error('Failed to remove connection');
     }
   };
@@ -172,7 +160,7 @@ export function TaskConnectionsTab({
                   onValueChange={value =>
                     setNewConnection({
                       ...newConnection,
-                      connectionType: value as any,
+                      connectionType: value as (typeof newConnection.connectionType),
                     })
                   }
                 >
@@ -235,11 +223,6 @@ export function TaskConnectionsTab({
       {connections.length > 0 ? (
         <div className="space-y-3">
           {connections.map(connection => {
-            const targetTask = relatedTasks.find(
-              t =>
-                t.id === (connection as any).target_task_id ||
-                (connection as any).source_task_id
-            );
             return (
               <Card key={connection.id}>
                 <CardContent className="pt-4">
@@ -252,8 +235,8 @@ export function TaskConnectionsTab({
                           )?.label || connection.connection_type}
                         </Badge>
                         <Badge variant="secondary" className="text-xs">
-                          {(connection as any).target_task_id ||
-                            (connection as any).source_task_id}
+                          {connection.target_task_id ||
+                            connection.source_task_id}
                         </Badge>
                       </div>
                       {connection.notes && (
