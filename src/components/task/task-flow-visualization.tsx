@@ -3,19 +3,13 @@
 import { useState, useMemo } from 'react';
 import {
   Workflow,
-  GitBranch,
-  ArrowRight,
-  CheckSquare,
   AlertCircle,
   CheckCircle2,
-  Clock,
   Brain,
-  TrendingUp,
-  Filter,
-  Search,
-  LayoutGrid,
   Layers,
-  Zap,
+  Search,
+  Filter,
+  TrendingUp,
 } from 'lucide-react';
 import {
   Card,
@@ -35,14 +29,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
-import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
@@ -212,15 +200,6 @@ const mockConnections: TaskConnection[] = [
   },
 ];
 
-interface Node {
-  task: Task;
-  level: number;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
 type ViewMode = 'timeline' | 'matrix' | 'dependencies' | 'connections';
 
 export function TaskFlowVisualization({
@@ -251,72 +230,6 @@ export function TaskFlowVisualization({
       return matchesSearch && matchesFilter;
     });
   }, [tasks, searchTerm, filter]);
-
-  // Calculate flow layout
-  const nodes = useMemo(() => {
-    const nodes: Node[] = [];
-    const taskMap = new Map(tasks.map(t => [t.id, t]));
-    const dependencies = new Map<number, number[]>([]);
-
-    // Build dependency graph
-    connections.forEach(conn => {
-      if (!dependencies.has(conn.source_task_id)) {
-        dependencies.set(conn.source_task_id, []);
-      }
-      dependencies.get(conn.source_task_id)!.push(conn.target_task_id);
-    });
-
-    // Calculate levels (topological sort)
-    const levels = new Map<number, number>();
-    const visited = new Set<number>();
-
-    const calculateLevel = (taskId: number): number => {
-      if (levels.has(taskId)) return levels.get(taskId)!;
-      if (!visited.has(taskId)) {
-        visited.add(taskId);
-        const deps = dependencies.get(taskId) || [];
-        if (deps.length === 0) {
-          levels.set(taskId, 0);
-        } else {
-          const maxDepLevel = Math.max(...deps.map(calculateLevel));
-          levels.set(taskId, maxDepLevel + 1);
-        }
-      }
-      return levels.get(taskId)!;
-    };
-
-    tasks.forEach(task => calculateLevel(task.id));
-
-    // Group tasks by level
-    const levelGroups: Map<number, Task[]> = new Map();
-    tasks.forEach(task => {
-      const level = levels.get(task.id) || 0;
-      if (!levelGroups.has(level)) {
-        levelGroups.set(level, []);
-      }
-      levelGroups.get(level)!.push(task);
-    });
-
-    // Calculate positions
-    let nodeId = 0;
-    levelGroups.forEach((levelTasks, level) => {
-      const count = levelTasks.length;
-      levelTasks.forEach((task, index) => {
-        const x = ((index + 1) / (count + 1)) * 100;
-        nodes.push({
-          task,
-          level,
-          x,
-          y: level * 200,
-          width: 200,
-          height: 80,
-        });
-        nodeId++;
-      });
-    });
-
-    return nodes;
-  }, [tasks, connections]);
 
   // Calculate blockers for each task
   const calculateBlockers = (taskId: number): Task[] => {
@@ -419,7 +332,7 @@ export function TaskFlowVisualization({
 
         {/* Tasks as timeline nodes */}
         <div className="space-y-8">
-          {filteredTasks.map((task, index) => {
+          {filteredTasks.map((task, _index) => {
             const blockers = calculateBlockers(task.id);
             const dependents = calculateDependents(task.id);
 
