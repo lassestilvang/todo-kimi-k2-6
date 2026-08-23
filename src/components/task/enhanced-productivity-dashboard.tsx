@@ -6,15 +6,8 @@ import {
   Battery,
   Lightbulb,
   Calendar,
-  Settings,
-  RefreshCw,
-  Heart,
-  Target,
-  Clock,
-  AlertCircle,
   CheckCircle,
-  BarChart3,
-  Activity,
+  AlertCircle,
 } from 'lucide-react';
 import {
   Card,
@@ -24,7 +17,6 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -32,9 +24,7 @@ import {
   useEnergyBudget,
   useExternalTasks,
   useDecisionShadow,
-  useMoodTracking,
 } from '@/hooks/use-enhanced-productivity';
-import { format } from 'date-fns';
 
 // Re-export components for centralized imports
 export { CognitiveLoadIndicator } from './cognitive-load-indicator';
@@ -68,7 +58,7 @@ export function EnhancedProductivityDashboard({
       });
     };
     logDefaultLoad();
-  }, []);
+  }, [cognitiveLoad]);
 
   return (
     <div className={`space-y-6 ${className}`}>
