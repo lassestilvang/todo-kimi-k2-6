@@ -3,8 +3,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useTheme } from 'next-themes';
 
-type Theme = 'light' | 'dark' | 'system';
-
 interface ThemeScheduledProviderProps {
   children: React.ReactNode;
 }
@@ -24,7 +22,7 @@ export function ThemeScheduledProvider({
   }, []);
 
   const calculateSunriseSunset = useCallback(
-    (lat: number, lng: number): { sunrise: number; sunset: number } => {
+    (lat: number, _lng: number): { sunrise: number; sunset: number } => {
       // Simplified sunrise/sunset calculation (approximate)
       const now = new Date();
       const dayOfYear = now.getDate();
