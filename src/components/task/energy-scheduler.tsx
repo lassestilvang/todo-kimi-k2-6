@@ -3,14 +3,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
   Zap,
-  Clock,
-  TrendingUp,
   Brain,
   Timer,
-  Settings,
-  BarChart2,
-  CheckCircle2,
-  AlertCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -20,7 +14,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import {
@@ -60,28 +53,10 @@ interface EnergySchedulerProps {
   }>;
 }
 
-const taskTypeEnergyMap: Record<
-  string,
-  { morning: number[]; afternoon: number[]; evening: number[] }
-> = {
-  creative: { morning: [9, 10], afternoon: [14, 15, 16], evening: [19, 20] },
-  analytical: { morning: [10, 11], afternoon: [13, 14, 15], evening: [18, 19] },
-  collaborative: { morning: [10, 11, 12], afternoon: [14, 15], evening: [] },
-  administrative: {
-    morning: [8, 9, 10],
-    afternoon: [13, 14, 15],
-    evening: [17, 18],
-  },
-  physical: { morning: [7, 8, 9], afternoon: [], evening: [18, 19] },
-  learning: { morning: [8, 9, 10], afternoon: [15, 16, 17], evening: [20, 21] },
-};
-
 export function EnergyScheduler({ tasks = [] }: EnergySchedulerProps) {
   const [energyData, setEnergyData] = useState<EnergyEntry[]>([]);
   const [showingSuggestions, setShowingSuggestions] = useState(false);
   const [suggestions, setSuggestions] = useState<EnergySuggestion[]>([]);
-  const [sleepHours, setSleepHours] = useState(7.5);
-  const [energyPattern, setEnergyPattern] = useState('morning-peak');
   const [currentEnergyLevel, setCurrentEnergyLevel] = useState<number>(5);
 
   // Load energy data from localStorage
@@ -394,7 +369,7 @@ export function EnergyScheduler({ tasks = [] }: EnergySchedulerProps) {
                       setEnergyData(prev =>
                         prev.map(e =>
                           e.id === latest.id
-                            ? { ...e, time_of_day: v as any }
+                            ? { ...e, time_of_day: v as EnergyEntry['time_of_day'] }
                             : e
                         )
                       );
