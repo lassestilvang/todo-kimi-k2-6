@@ -5,7 +5,6 @@ import { Edit, Trash2, Plus, FolderTree } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -53,7 +52,7 @@ export function TemplateCategoriesManager({
       setNewName('');
       setNewDescription('');
       toast.success('Category created');
-    } catch (error) {
+    } catch {
       toast.error('Failed to create category');
     } finally {
       setIsCreating(false);
@@ -69,7 +68,7 @@ export function TemplateCategoriesManager({
       });
       setEditingCategory(null);
       toast.success('Category updated');
-    } catch (error) {
+    } catch {
       toast.error('Failed to update category');
     }
   };
@@ -78,7 +77,7 @@ export function TemplateCategoriesManager({
     try {
       await onDelete(id);
       toast.success('Category deleted');
-    } catch (error) {
+    } catch {
       toast.error('Failed to delete category');
     }
   };
