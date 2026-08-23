@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Target, Award, TrendingUp, Zap } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Target, Zap } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -32,24 +32,6 @@ interface SkillTrackerProps {
 export function SkillTracker({ tasks, userId, className }: SkillTrackerProps) {
   const [skills, setSkills] = useState<Skill[]>([]);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    loadSkills();
-  }, [userId]);
-
-  const loadSkills = async () => {
-    try {
-      setLoading(true);
-      // In a real implementation, this would call the knowledge graph API
-      // For now, simulate loading from tasks
-      const inferredSkills = inferSkillsFromTasks(tasks);
-      setSkills(inferredSkills);
-    } catch (error) {
-      console.error('Failed to load skills:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const inferSkillsFromTasks = (taskList: TaskWithRelations[]): Skill[] => {
     const skillPatterns: Record<string, string[]> = {
@@ -105,16 +87,36 @@ export function SkillTracker({ tasks, userId, className }: SkillTrackerProps) {
             });
           }
 
-          const skill = skillsMap.get(skillName)!;
-          skill.evidence_task_ids.push(task.id);
-          // Increment proficiency based on completion count
-          skill.proficiency_level = Math.min(5, skill.evidence_task_ids.length);
+          const skill = skillsMap.get(skillName);
+          if (skill) {
+            skill.evidence_task_ids.push(task.id);
+            // Increment proficiency based on completion count
+            skill.proficiency_level = Math.min(5, skill.evidence_task_ids.length);
+          }
         }
       });
     });
 
     return Array.from(skillsMap.values());
   };
+
+  const loadSkills = useCallback(async () => {
+    try {
+      setLoading(true);
+      // In a real implementation, this would call the knowledge graph API
+      // For now, simulate loading from tasks
+      const inferredSkills = inferSkillsFromTasks(tasks);
+      setSkills(inferredSkills);
+    } catch (error) {
+      console.error('Failed to load skills:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [tasks]);
+
+  useEffect(() => {
+    loadSkills();
+  }, [userId, loadSkills]);
 
   const getProficiencyColor = (level: number) => {
     const colors = {
