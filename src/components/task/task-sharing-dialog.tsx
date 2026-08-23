@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Share2, Copy, UserPlus, Link, ExternalLink } from 'lucide-react';
+import { Share2, Copy, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -60,7 +60,7 @@ export function TaskSharingDialog({
       await onShare(taskId, selectedUser, permission);
       setSelectedUser(null);
       toast.success('Task shared successfully');
-    } catch (error) {
+    } catch {
       toast.error('Failed to share task');
     } finally {
       setIsSharing(false);
