@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Mic, MicOff, StopCircle, Check, Loader2 } from 'lucide-react';
+import { Mic, StopCircle, Check, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -48,7 +48,6 @@ export function MeetingRecorder({ onTranscription }: MeetingRecorderProps) {
       };
 
       mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
         // In a real implementation, this would upload to a transcription service
         // For demo purposes, we'll generate mock transcription
         const mockTranscript = generateMockTranscript(duration);
@@ -67,7 +66,9 @@ export function MeetingRecorder({ onTranscription }: MeetingRecorderProps) {
       }, 1000);
 
       toast.success('Recording started');
-    } catch (error) {
+    } catch (_error: unknown) {
+      // Error is intentionally unused - we just show a toast
+      void _error;
       toast.error(
         'Failed to start recording. Please check microphone permissions.'
       );
@@ -101,7 +102,9 @@ export function MeetingRecorder({ onTranscription }: MeetingRecorderProps) {
       const transcript = generateMockTranscript(duration);
       onTranscription(transcript);
       toast.success(`Transcribed ${duration} seconds of audio`);
-    } catch (error) {
+    } catch (_error: unknown) {
+      // Error is intentionally unused - we just show a toast
+      void _error;
       toast.error('Failed to transcribe');
     } finally {
       setTranscribing(false);
