@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import {
-  Calendar,
   Download,
   BarChart3,
   Clock,
@@ -25,7 +24,6 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-  Legend,
   LineChart,
   Line,
   CartesianGrid,
@@ -35,7 +33,7 @@ import type { TimeEntry, TaskWithRelations } from '@/types';
 interface TimeTrackingReportsProps {
   tasks: TaskWithRelations[];
   timeEntries: TimeEntry[];
-  onLoadData: () => Promise<{
+  _onLoadData?: () => Promise<{
     tasks: TaskWithRelations[];
     timeEntries: TimeEntry[];
   }>;
@@ -44,10 +42,10 @@ interface TimeTrackingReportsProps {
 export function TimeTrackingReports({
   tasks,
   timeEntries,
-  onLoadData,
 }: TimeTrackingReportsProps) {
   const [period, setPeriod] = useState<'week' | 'month' | 'quarter'>('week');
-  const [isLoading, setIsLoading] = useState(false);
+
+  // Calculate time by task
 
   // Calculate time by task
   const timeByTask = timeEntries.reduce(
@@ -85,7 +83,6 @@ export function TimeTrackingReports({
     (sum, entry) => sum + (entry.duration_seconds || 0),
     0
   );
-  const totalHours = Math.round((totalSeconds / 3600) * 100) / 100;
   const averagePomodoros = Math.round((totalSeconds / 25 / 60) * 10) / 10;
 
   const formatTime = (seconds: number) => {
