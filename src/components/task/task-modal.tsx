@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -45,16 +45,10 @@ import type {
 import {
   createTask as createTaskAction,
   updateTask as updateTaskAction,
-  addTaskComment,
-  saveTemplateFromTask,
   getTemplateCategories,
 } from '@/lib/actions';
 import {
-  TaskBasicInfo,
   TaskSchedule,
-  TaskLabels,
-  TaskSubtasks,
-  TaskDependencies,
   TaskAttachments,
   TaskCommentsTab,
   TaskCollaborateTab,
@@ -182,9 +176,6 @@ export function TaskModal({
   );
   const [blockSearchQuery, setBlockSearchQuery] = useState('');
 
-  // Comments
-  const [newComment, setNewComment] = useState('');
-
   const isEditing = !!task;
 
   // Get available tasks for blocking (exclude self and already completed)
@@ -194,7 +185,7 @@ export function TaskModal({
     .slice(0, 20);
 
   // Initialize form state when modal opens
-  const initializeForm = () => {
+  const initializeForm = useCallback(() => {
     if (task) {
       setName(task.name);
       setDescription(task.description || '');
@@ -254,7 +245,29 @@ export function TaskModal({
       }
     }
     setSelectedTemplate(null);
-  };
+  }, [
+    task,
+    selectedTemplate,
+    setName,
+    setDescription,
+    setNotes,
+    setListId,
+    setDate,
+    setDeadline,
+    setEstimate,
+    setActualTime,
+    setPriority,
+    setRecurring,
+    setSelectedLabels,
+    setSubtasks,
+    setReminders,
+    setSelectedBlocks,
+    setRecurringConfig,
+    setAssignees,
+    setSelectedTemplate,
+    setSubtaskInput,
+    setReminderInput,
+  ]);
 
   useEffect(() => {
     if (open) {
@@ -265,7 +278,7 @@ export function TaskModal({
     }
 
     return undefined;
-  }, [open]);
+  }, [open, initializeForm]);
 
   const handleSubmit = async () => {
     if (!name.trim()) return;
@@ -368,7 +381,7 @@ export function TaskModal({
         const offlineData = isEditing
           ? { id: task.id, ...parsed.data }
           : parsed.data;
-        saveOfflineTask(isEditing ? 'update' : 'create', offlineData as any);
+        saveOfflineTask(isEditing ? 'update' : 'create', offlineData as TaskWithRelations & { id?: number });
         toast.success('Task saved locally. Will sync when online.');
         onSuccess();
         onOpenChange(false);
@@ -425,19 +438,6 @@ export function TaskModal({
     setSelectedLabels(template.label_ids || []);
     setSubtasks(template.subtasks || []);
     setActiveTab('task');
-  };
-
-  const handleAddComment = async () => {
-    if (!newComment.trim() || !task) return;
-    try {
-      const comment = await addTaskComment(task.id, { content: newComment });
-      // Refresh task to show the new comment
-      onSuccess();
-      setNewComment('');
-      toast.success('Comment added');
-    } catch {
-      toast.error('Failed to add comment');
-    }
   };
 
   return (
@@ -1093,17 +1093,17 @@ export function TaskModal({
           )}
 
           {activeTab === 'context' && isEditing && task && (
-            <TaskContextTab task={task} contexts={task.habit_contexts as any} />
+            <TaskContextTab task={task} contexts={task.habit_contexts as unknown as Array<{ id: number; context: string; scheduled_time: string | null }>} />
           )}
 
           {activeTab === 'decision' && isEditing && task && (
-            <TaskDecisionTab task={task} decisions={task.decisions as any} />
+            <TaskDecisionTab task={task} decisions={task.decisions as unknown as Array<{ id: number; decision_point: string; outcome?: string }>} />
           )}
 
           {activeTab === 'connections' && isEditing && task && (
             <TaskConnectionsTab
               task={task}
-              connections={task.connections as any}
+              connections={task.connections as unknown as Array<{ id: number; source_task_id: number; target_task_id: number; connection_type: string }>}
               relatedTasks={allTasks}
             />
           )}
