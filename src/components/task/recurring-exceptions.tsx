@@ -12,7 +12,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { toast } from 'sonner';
 import type { RecurringException } from '@/types';
 
 interface RecurringExceptionsProps {
