@@ -7,15 +7,12 @@ import { createDatabase } from '../lib/db/driver';
 import { readdir } from 'fs/promises';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
-import { config } from '../lib/config';
 
 /**
  * Run all pending migrations
  */
 export async function runMigrations(): Promise<number> {
   // Create database connection
-  const dbPath =
-    config.database.url || join(process.cwd(), 'data', 'planner.db');
   const db = createDatabase();
 
   // Ensure migrations table exists
