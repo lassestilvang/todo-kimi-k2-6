@@ -2,12 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import {
-  Brain,
   Heart,
   Zap,
   Cloud,
-  Filter,
-  SortAsc,
   Lightbulb,
   Activity,
   CheckCircle,
@@ -24,7 +21,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select,
   SelectContent,
@@ -52,7 +48,6 @@ interface MoodAdaptiveTaskViewsProps {
 }
 
 type MoodType = 'energized' | 'balanced' | 'tired' | 'stressed' | 'inspired';
-type EnergyType = 'high' | 'medium' | 'low';
 
 interface Task {
   id: number;
@@ -79,19 +74,15 @@ export function MoodAdaptiveTaskViews({
   const energyPercent =
     (currentEnergy / (energyBudget.budget?.dailyLimit ?? 100)) * 100;
 
-  const deriveMoodFromEnergy = (): MoodType => {
-    if (energyPercent > 70) return 'energized';
-    if (energyPercent > 40) return 'balanced';
-    return 'tired';
-  };
-
   useEffect(() => {
     if (recommendations?.primary_mood) {
       setActiveMoodView(recommendations.primary_mood);
     } else {
-      setActiveMoodView(deriveMoodFromEnergy());
+      if (energyPercent > 70) setActiveMoodView('energized');
+      else if (energyPercent > 40) setActiveMoodView('balanced');
+      else setActiveMoodView('tired');
     }
-  }, [recommendations]);
+  }, [recommendations, energyPercent]);
 
   const getMoodColor = (mood: MoodType): string => {
     const colors: Record<MoodType, string> = {
@@ -193,7 +184,7 @@ export function MoodAdaptiveTaskViews({
             </div>
             <Select
               value={activeMoodView}
-              onValueChange={(v: any) => setActiveMoodView(v)}
+              onValueChange={(v: MoodType) => setActiveMoodView(v)}
             >
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Select mood view" />
@@ -297,7 +288,6 @@ export function MoodAdaptiveTaskViews({
                     <TaskGridItem
                       key={task.id}
                       task={task}
-                      mood={activeMoodView}
                     />
                   ))}
                 </div>
@@ -386,10 +376,9 @@ function TaskItem({ task, mood }: TaskItemProps) {
 
 interface TaskGridItemProps {
   task: Task;
-  mood: MoodType;
 }
 
-function TaskGridItem({ task, mood }: TaskGridItemProps) {
+function TaskGridItem({ task }: TaskGridItemProps) {
   return (
     <div className="border rounded-lg p-3 hover:shadow-sm transition-shadow">
       <div className="flex items-start justify-between mb-2">
