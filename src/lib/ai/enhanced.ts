@@ -1,8 +1,18 @@
 'use server';
 
 import { z } from 'zod';
-import { getAIManager } from './providers';
-import type { TaskWithRelations, DecisionOption } from '@/types';
+import { getAIManager, TaskDurationInput, DurationPredictionContext } from './providers';
+
+/**
+ * Basic task structure for enhanced edit context
+ */
+export interface EnhancedTask {
+  id: number;
+  name: string;
+  completed: boolean;
+  priority: string;
+  [key: string]: unknown;
+}
 
 // Zod schema for enhanced task editing with decision tracking
 export const enhancedEditCommandSchema = z.object({
@@ -45,11 +55,11 @@ export type EnhancedEditCommand = z.infer<typeof enhancedEditCommandSchema>;
  */
 export async function enhancedEditTask(
   input: EnhancedEditCommand,
-  context: { tasks: any[]; userId: number }
+  context: { tasks: EnhancedTask[]; userId: number }
 ): Promise<{
   success: boolean;
   message: string;
-  task?: any;
+  task?: EnhancedTask;
   decisionId?: number;
 }> {
   switch (input.action) {
@@ -79,11 +89,11 @@ export async function enhancedEditTask(
 async function processEditCommand(
   ai: Awaited<ReturnType<typeof getAIManager>>,
   input: EnhancedEditCommand,
-  context: { tasks: any[]; userId: number }
+  context: { tasks: EnhancedTask[]; userId: number }
 ): Promise<{
   success: boolean;
   message: string;
-  task?: any;
+  task?: EnhancedTask;
   decisionId?: number;
 }> {
   const typedTasks = context.tasks as {
@@ -109,11 +119,11 @@ async function processEditCommand(
  */
 async function recordDecisionWithAI(
   input: EnhancedEditCommand,
-  context: { tasks: any[]; userId: number }
+  context: { tasks: EnhancedTask[]; userId: number }
 ): Promise<{
   success: boolean;
   message: string;
-  task?: any;
+  task?: EnhancedTask;
   decisionId?: number;
 }> {
   if (!input.decisionContext) {
@@ -130,7 +140,7 @@ async function recordDecisionWithAI(
       option_text: opt.text,
       pros: opt.pros,
       cons: opt.cons,
-    })) as any,
+    })),
   });
 
   const { entry, optionIds } = result;
@@ -161,18 +171,27 @@ async function recordDecisionWithAI(
 }
 
 /**
+ * Task insights return type
+ */
+export interface TaskInsights {
+  analysis: string;
+  insights?: string[];
+}
+
+/**
  * Generate insights from completed tasks
  */
 export async function generateDecisionInsights(
-  tasks: any[],
+  tasks: EnhancedTask[],
   options?: {
     userId: number;
     timeFrame?: { start: string; end: string };
     includeCompletedOnly?: boolean;
   }
-): Promise<any> {
+): Promise<TaskInsights> {
   const ai = getAIManager();
   return (
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (ai as any).generateDecisionAnalysis?.(tasks, options) ?? {
       analysis: 'limited ai not available',
     }
@@ -184,25 +203,24 @@ export async function generateDecisionInsights(
  */
 export async function predictTaskCompletion(
   taskId: number,
-  context: {
-    userId: number;
-    factors?: {
-      taskComplexity?: 'simple' | 'moderate' | 'complex';
-      energyLevel?: 'high' | 'medium' | 'low';
-      deadlineUrgency?: number;
-      availableTime?: number;
-    };
-  }
-): Promise<any> {
+  context: DurationPredictionContext
+): Promise<{
+  estimated_duration: number;
+  confidence: number;
+  factors: string[];
+}> {
   const ai = getAIManager();
-  return ai.predictTaskDuration(taskId, context);
+  return ai.predictTaskDuration({
+    name: `Task ${taskId}`,
+    ...context,
+  } as TaskDurationInput, context);
 }
 
 /**
  * Suggest task dependencies based on patterns
  */
 export async function suggestTaskDependencies(
-  tasks: any[],
+  tasks: EnhancedTask[],
   userId: number,
   options?: {
     similarityThreshold?: number;
@@ -221,18 +239,27 @@ export async function suggestTaskDependencies(
 }
 
 /**
+ * Retrospective analysis result type
+ */
+export interface RetrospectiveAnalysis {
+  analysis: string;
+  insights?: string[];
+}
+
+/**
  * Generate retrospective analysis from completed tasks
  */
 export async function generateRetrospective(
-  tasks: any[],
+  tasks: EnhancedTask[],
   userId: number,
   options?: {
     timeRange?: { start: string; end: string };
     focusAreas?: string[];
   }
-): Promise<any> {
+): Promise<RetrospectiveAnalysis> {
   const ai = getAIManager();
   return (
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (ai as any).generateRetrospective?.(tasks, userId, options) ?? {
       analysis: 'limited ai not available',
     }
@@ -274,7 +301,7 @@ function determineDecisionType(
 /**
  * Helper function to get task by ID
  */
-async function getTaskById(taskId: number): Promise<any> {
+async function getTaskById(taskId: number): Promise<EnhancedTask | null> {
   const { getTaskById } = await import('@/lib/actions/tasks');
   return getTaskById(taskId);
 }
