@@ -79,6 +79,7 @@ export function NotificationSettings({
     }
   }, []);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updatePref = (key: keyof NotificationPrefs, value: any) => {
     setPrefs(prev => ({ ...prev, [key]: value }));
   };
