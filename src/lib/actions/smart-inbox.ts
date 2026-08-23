@@ -48,8 +48,8 @@ export interface SmartInboxResponse {
   converted_count: number;
 }
 
-// Source type display names
-const SOURCE_NAMES: Record<InboxSourceType, string> = {
+// Source type display names (used in client components)
+const _SOURCE_NAMES: Record<InboxSourceType, string> = {
   calendar: 'Calendar',
   email: 'Email',
   slack: 'Slack',
@@ -82,7 +82,7 @@ export async function getSmartInbox(options?: {
 
   const limit = options?.limit || 50;
   let whereClause = 'WHERE user_id = ?';
-  const params: any[] = [user.id];
+  const params: (string | number)[] = [user.id];
 
   if (options?.status) {
     whereClause += ' AND status = ?';
@@ -169,7 +169,7 @@ export async function upsertInboxSource(data: {
   due_date?: string;
   priority?: 'critical' | 'high' | 'medium' | 'low' | 'none';
   confidence?: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }): Promise<InboxSource> {
   const db = getDb();
 
@@ -206,7 +206,7 @@ export async function upsertInboxSource(data: {
 
   if (existing) {
     // Update existing
-    const result = await db
+    await db
       .prepare(
         `
       UPDATE smart_inbox_sources
