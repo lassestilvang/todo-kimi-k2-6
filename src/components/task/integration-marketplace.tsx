@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import {
   Plug2,
   CheckCircle,
@@ -31,9 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { cn } from '@/lib/utils';
 
 interface Integration {
   id: number;
@@ -68,7 +66,7 @@ interface IntegrationMarketplaceProps {
 }
 
 export function IntegrationMarketplace({
-  userId = 1,
+  _userId = 1,
 }: IntegrationMarketplaceProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -83,11 +81,7 @@ export function IntegrationMarketplace({
     'marketplace'
   );
 
-  useEffect(() => {
-    loadData();
-  }, [selectedCategory, searchQuery]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
       const [installedRes, marketplaceRes] = await Promise.all([
@@ -113,7 +107,11 @@ export function IntegrationMarketplace({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [selectedCategory, searchQuery]);
+
+  useEffect(() => {
+    loadData();
+  }, [selectedCategory, searchQuery, loadData]);
 
   const handleInstall = async (integrationId: string) => {
     try {
@@ -238,7 +236,7 @@ export function IntegrationMarketplace({
       </div>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab as any}>
+      <Tabs value={activeTab} onValueChange={(value: string) => setActiveTab(value as 'installed' | 'marketplace')}>
         <TabsList>
           <TabsTrigger value="marketplace">Marketplace</TabsTrigger>
           <TabsTrigger value="installed">Installed</TabsTrigger>
@@ -261,7 +259,7 @@ export function IntegrationMarketplace({
 
               <Select
                 value={selectedCategory}
-                onValueChange={setSelectedCategory as any}
+                onValueChange={setSelectedCategory}
               >
                 <SelectTrigger className="w-[180px]">
                   <Filter className="h-4 w-4 mr-2" />
@@ -292,12 +290,12 @@ export function IntegrationMarketplace({
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredMarketplace.map(integration => (
+                {filteredMarketplace.map((integration, index) => (
                   <motion.div
                     key={integration.id}
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: Math.random() * 0.1 }}
+                    transition={{ delay: (index * 0.05) % 0.1 }}
                   >
                     <Card>
                       <CardHeader>
@@ -366,7 +364,7 @@ export function IntegrationMarketplace({
                 </p>
                 <Button
                   className="mt-4"
-                  onClick={() => setActiveTab('marketplace' as any)}
+                  onClick={() => setActiveTab('marketplace')}
                 >
                   Browse Marketplace
                 </Button>
