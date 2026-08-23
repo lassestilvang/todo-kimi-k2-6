@@ -63,9 +63,11 @@ export async function analyzeProductivityPatterns(
     LIMIT 100
   `
     )
-    .all(userId) as any[];
+    .all(userId) as Array<Record<string, unknown>>;
 
-  if (completedTasks.length < 5) {
+  const completedTaskRows = completedTasks as Array<{ completed_at: string }>;
+
+  if (completedTaskRows.length < 5) {
     return {
       patternType: 'spreader',
       confidence: 0.3,
@@ -77,7 +79,7 @@ export async function analyzeProductivityPatterns(
 
   // Analyze completion times
   const byHour = new Map<number, number>();
-  completedTasks.forEach(task => {
+  completedTaskRows.forEach(task => {
     const hour = new Date(task.completed_at).getHours();
     const current = byHour.get(hour) || 0;
     byHour.set(hour, current + 1);
@@ -116,7 +118,7 @@ export async function analyzeProductivityPatterns(
 
 function getPatternRecommendation(
   type: ProductivityPattern['patternType'],
-  patternType: string
+  _patternType: string
 ): string {
   const recommendations: Record<string, string> = {
     morning_person:
@@ -150,7 +152,7 @@ export async function getCognitiveLoadMetrics(
     WHERE user_id = ? AND completed = 0
   `
     )
-    .all(userId) as any[];
+    .all(userId) as Array<Record<string, unknown>>;
 
   // Get recent completion rate
   const recentCompleted = db
@@ -173,7 +175,7 @@ export async function getCognitiveLoadMetrics(
     )
     .get(userId) as { count: number };
 
-  const completionRate =
+  const _completionRate =
     recentTotal.count > 0 ? recentCompleted.count / recentTotal.count : 0;
 
   // Calculate current load (4-5 tasks = 100%, each additional task adds 20%)
@@ -216,7 +218,7 @@ export async function generateTaskDNA(
     WHERE id = ? AND user_id = ?
   `
     )
-    .get(taskId, userId) as any | undefined;
+    .get(taskId, userId) as Record<string, unknown> | undefined;
 
   if (!task) {
     throw new Error('Task not found');
@@ -314,7 +316,7 @@ export async function predictTaskCompletion(
     WHERE t.id = ? AND t.user_id = ?
   `
     )
-    .get(taskId, userId) as any | undefined;
+    .get(taskId, userId) as Record<string, unknown> | undefined;
 
   if (!task) {
     throw new Error('Task not found');
@@ -493,7 +495,7 @@ export async function getTrendAnalysis(
     ORDER BY date
   `
     )
-    .all(userId, userId, startDate.toISOString()) as any[];
+    .all(userId, userId, startDate.toISOString()) as Array<Record<string, unknown>>;
 
   const data = dailyData.map(d => ({
     date: d.date,
