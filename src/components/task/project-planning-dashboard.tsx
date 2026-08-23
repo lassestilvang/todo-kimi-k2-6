@@ -10,9 +10,6 @@ import {
   RefreshCw,
   CheckCircle2,
   Plus,
-  ChevronDown,
-  ChevronUp,
-  AlertCircle,
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -34,13 +31,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { format, addDays, eachDayOfInterval, parseISO } from 'date-fns';
 import { toast } from 'sonner';
@@ -82,7 +72,6 @@ export function ProjectPlanningDashboard({
   projectName,
   projectDescription,
 }: ProjectPlanningDashboardProps) {
-  const [projects, setProjects] = useState<ProjectPlan[]>([]);
   const [activeProject, setActiveProject] = useState<ProjectPlan | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -128,7 +117,7 @@ export function ProjectPlanningDashboard({
           id: Date.now(),
           name: localName,
           description: localDescription,
-          phases: data.phases.map((p: any, i: number) => ({
+          phases: data.phases.map((p: { name: string; description: string; duration_days: number; priority: string }, i: number) => ({
             id: i + 1,
             name: p.name,
             description: p.description,
@@ -149,7 +138,6 @@ export function ProjectPlanningDashboard({
           currentStart = endDate;
         });
 
-        setProjects(prev => [...prev, newProject]);
         setActiveProject(newProject);
         setShowCreateDialog(false);
         toast.success(
@@ -159,9 +147,10 @@ export function ProjectPlanningDashboard({
         const error = await response.json().catch(() => ({}));
         throw new Error(error.message || 'Failed to generate plan');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast.error(
-        `Failed to generate project plan: ${error.message || 'Unknown error'}`
+        `Failed to generate project plan: ${errorMessage}`
       );
     } finally {
       setIsGenerating(false);
@@ -178,7 +167,6 @@ export function ProjectPlanningDashboard({
     });
 
     return days.map(day => {
-      const dateStr = format(day, 'yyyy-MM-dd');
       const phase = activeProject.phases.find(
         p =>
           p.start_date &&
@@ -414,10 +402,10 @@ export function ProjectPlanningDashboard({
                     )}
                     <div className="flex items-center gap-4 text-xs text-muted-foreground">
                       <span>Duration: {phase.duration_days} days</span>
-                      {phase.start_date && (
+                      {phase.start_date && phase.end_date && (
                         <span>
                           {format(parseISO(phase.start_date), 'MMM d')} -{' '}
-                          {format(parseISO(phase.end_date!), 'MMM d')}
+                          {format(parseISO(phase.end_date), 'MMM d')}
                         </span>
                       )}
                     </div>
@@ -435,9 +423,6 @@ export function ProjectPlanningDashboard({
                         ),
                       };
                       setActiveProject(updated);
-                      setProjects(prev =>
-                        prev.map(p => (p.id === activeProject.id ? updated : p))
-                      );
                     }}
                   >
                     {phase.completed ? (
@@ -497,9 +482,6 @@ export function ProjectPlanningDashboard({
               })),
             };
             setActiveProject(updated);
-            setProjects(prev =>
-              prev.map(p => (p.id === activeProject.id ? updated : p))
-            );
           }}
         >
           <RefreshCw className="h-4 w-4 mr-2" />
