@@ -3,7 +3,7 @@
  * Analyzes task distribution and suggests optimal reassignments
  */
 
-import { getAIManager } from './providers';
+// getAIManager import removed - not used in this file
 
 /**
  * Task schedule conflict detection
@@ -53,7 +53,7 @@ export function detectScheduleConflicts(
     .filter(t => !t.completed && t.date)
     .reduce(
       (acc, task) => {
-        const date = task.date!;
+        const date = task.date as string; // Safe after filter
         if (!acc[date]) acc[date] = [];
         acc[date].push(task);
         return acc;
@@ -91,7 +91,7 @@ export function detectScheduleConflicts(
       taskId: task.id,
       taskName: task.name,
       conflictType: 'missing_deadline',
-      date: task.date!,
+      date: task.date as string,
     });
   }
 
@@ -152,19 +152,6 @@ export function analyzeProductivityPatterns(
     {} as Record<number, { completed: number; total: number }>
   );
 
-  // Count total tasks by date and estimate hour
-  const tasksByHour = tasks.reduce(
-    (acc, task) => {
-      if (task.date) {
-        const hour = 10; // Default estimated hour
-        if (!acc[hour]) acc[hour] = { completed: 0, total: 0 };
-        acc[hour].total++;
-      }
-      return acc;
-    },
-    {} as Record<number, { completed: number; total: number }>
-  );
-
   // Merge statistics
   for (const hour of Object.keys(completedByHour)) {
     const h = parseInt(hour);
@@ -206,7 +193,7 @@ export function suggestOptimalRescheduling(
     .filter(t => t.date && !t.estimate) // Tasks without estimates need rescheduling
     .reduce(
       (acc, task) => {
-        const date = task.date!;
+        const date = task.date as string; // Safe after filter
         if (!acc[date]) acc[date] = [];
         acc[date].push(task);
         return acc;
@@ -385,10 +372,16 @@ export async function generateWorkloadSuggestions(
 
   // Find overloaded and underloaded users
   const overloadedUsers = users.filter(
-    u => workloadMap.get(u.userId)! > avgWorkload * 1.3
+    u => {
+      const score = workloadMap.get(u.userId);
+      return score !== undefined && score > avgWorkload * 1.3;
+    }
   );
   const underloadedUsers = users.filter(
-    u => workloadMap.get(u.userId)! < avgWorkload * 0.7
+    u => {
+      const score = workloadMap.get(u.userId);
+      return score !== undefined && score < avgWorkload * 0.7;
+    }
   );
 
   // Check for overdue high-priority tasks that could be reassigned
@@ -403,15 +396,19 @@ export async function generateWorkloadSuggestions(
   for (const task of overdueHighPriority) {
     if (overloadedUsers.length > 0 && underloadedUsers.length > 0) {
       const currentAssignee = users.find(u => u.userId === task.assignee_id);
+      const currentWorkload = currentAssignee ? workloadMap.get(currentAssignee.userId) : undefined;
       if (
         currentAssignee &&
-        workloadMap.get(currentAssignee.userId)! > avgWorkload
+        currentWorkload !== undefined &&
+        currentWorkload > avgWorkload
       ) {
-        const bestCandidate = underloadedUsers.reduce((best, user) =>
-          workloadMap.get(user.userId)! < workloadMap.get(best.userId)!
+        const bestCandidate = underloadedUsers.reduce((best, user) => {
+          const userWorkload = workloadMap.get(user.userId);
+          const bestWorkload = workloadMap.get(best.userId);
+          return userWorkload !== undefined && (bestWorkload === undefined || userWorkload < bestWorkload)
             ? user
-            : best
-        );
+            : best;
+        });
 
         suggestions.push({
           type: 'reassign',
