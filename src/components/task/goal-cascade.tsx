@@ -1,13 +1,12 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { Layers, Plus, CheckCircle2, Calendar, Lightbulb } from 'lucide-react';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -201,16 +200,10 @@ export function GoalCascade({
   dailyTasks = mockDailyTasks,
 }: GoalCascadeProps) {
   const [expandedVisions, setExpandedVisions] = useState<boolean>(true);
-  const [expandedYears, setExpandedYears] = useState<Set<number>>(
-    new Set([2025])
-  );
-  const [expandedQuarters, setExpandedQuarters] = useState<Set<number>>(
-    new Set(quarterlyGoals.map(g => g.id))
-  );
 
   const calculateProgress = (
     goals: GoalNode[],
-    timeframe: 'annual' | 'quarterly' | 'monthly' | 'weekly' = 'annual'
+    _timeframe: 'annual' | 'quarterly' | 'monthly' | 'weekly' = 'annual'
   ) => {
     if (goals.length === 0) return { overall: 0, completed: 0, total: 0 };
 
@@ -258,14 +251,6 @@ export function GoalCascade({
     }
 
     return progress > 0.7 ? 'low' : 'medium';
-  };
-
-  const riskColors = {
-    completed: 'bg-green-500 text-green-700',
-    low: 'bg-green-100 text-green-700',
-    medium: 'bg-amber-100 text-amber-700',
-    high: 'bg-orange-100 text-orange-700',
-    overdue: 'bg-red-100 text-red-700',
   };
 
   const currentYear = new Date().getFullYear();
@@ -321,7 +306,6 @@ export function GoalCascade({
                         <GoalItem
                           key={goal.id}
                           goal={goal}
-                          level="annual"
                           isCompleted={goal.completed}
                           progress={Math.round(
                             (goal.current_value / goal.target_value) * 100
@@ -551,14 +535,12 @@ const riskColors = {
 
 function GoalItem({
   goal,
-  level,
   isCompleted,
   progress,
   daysRemaining,
   riskLevel,
 }: {
   goal: GoalNode;
-  level: string;
   isCompleted: boolean;
   progress: number;
   daysRemaining: number | null;
