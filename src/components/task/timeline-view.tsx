@@ -1,9 +1,8 @@
 'use client';
 
 import { useMemo } from 'react';
-import { ChevronRight, Clock, Calendar, FileText } from 'lucide-react';
+import { ChevronRight, Calendar } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
 import {
   format,
   parseISO,
@@ -89,27 +88,6 @@ export function TimelineView({ tasks, onTaskClick }: TimelineViewProps) {
     };
   }, [timelineTasks]);
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'critical':
-        return 'border-l-red-500 bg-red-50 dark:bg-red-900/20';
-      case 'high':
-        return 'border-l-orange-500 bg-orange-50 dark:bg-orange-900/20';
-      case 'medium':
-        return 'border-l-amber-500 bg-amber-50 dark:bg-amber-900/20';
-      case 'low':
-        return 'border-l-blue-500 bg-blue-50 dark:bg-blue-900/20';
-      default:
-        return 'border-l-gray-500 bg-gray-50 dark:bg-gray-900/20';
-    }
-  };
-
-  const getDependencyIcon = (task: TimelineTask) => {
-    if (task.blockers > 0) return 'depends-on';
-    if (task.blockedBy > 0) return 'blocking';
-    return null;
-  };
-
   const timelinePosition = (date: Date) => {
     const totalDays =
       (dateRange.end.getTime() - dateRange.start.getTime()) /
@@ -126,6 +104,12 @@ export function TimelineView({ tasks, onTaskClick }: TimelineViewProps) {
       (dateRange.end.getTime() - dateRange.start.getTime()) /
       (1000 * 60 * 60 * 24);
     return (task.duration / totalDays) * 100;
+  };
+
+  const getDependencyIcon = (task: TimelineTask) => {
+    if (task.blockers > 0) return 'depends-on';
+    if (task.blockedBy > 0) return 'blocking';
+    return null;
   };
 
   return (
@@ -189,6 +173,37 @@ export function TimelineView({ tasks, onTaskClick }: TimelineViewProps) {
               const width = timelineWidth(task);
               const depType = getDependencyIcon(task);
 
+              const handleTaskClick = () => {
+                const originalTask = tasks.find(t => t.id === task.id);
+                if (!originalTask) return;
+                onTaskClick({
+                  ...originalTask,
+                  id: task.id,
+                  name: task.name,
+                  description: originalTask.description ?? null,
+                  list_id: originalTask.list_id ?? null,
+                  date: task.start.toISOString().split('T')[0],
+                  deadline: task.end.toISOString().split('T')[0],
+                  priority: task.priority as 'critical' | 'high' | 'medium' | 'low' | 'none',
+                  recurring: 'none',
+                  completed: false,
+                  created_at: '',
+                  updated_at: '',
+                  sort_order: 0,
+                  archived: false,
+                  labels: [],
+                  subtasks: [],
+                  reminders: [],
+                  logs: [],
+                  comments: [],
+                  attachments: [],
+                  blockers: [],
+                  blocked_by: [],
+                  time_entries: [],
+                  recurring_exceptions: [],
+                });
+              };
+
               return (
                 <div key={task.id} className="flex items-start gap-3">
                   <div className="w-48 flex-shrink-0">
@@ -223,37 +238,7 @@ export function TimelineView({ tasks, onTaskClick }: TimelineViewProps) {
                                   ? '#3b82f6'
                                   : '#9ca3af',
                       }}
-                      onClick={() =>
-                        onTaskClick({
-                          ...tasks.find(t => t.id === task.id)!,
-                          id: task.id,
-                          name: task.name,
-                          description:
-                            tasks.find(t => t.id === task.id)?.description ??
-                            null,
-                          list_id:
-                            tasks.find(t => t.id === task.id)?.list_id ?? null,
-                          date: task.start.toISOString().split('T')[0],
-                          deadline: task.end.toISOString().split('T')[0],
-                          priority: task.priority as any,
-                          recurring: 'none',
-                          completed: false,
-                          created_at: '',
-                          updated_at: '',
-                          sort_order: 0,
-                          archived: false,
-                          labels: [],
-                          subtasks: [],
-                          reminders: [],
-                          logs: [],
-                          comments: [],
-                          attachments: [],
-                          blockers: [],
-                          blocked_by: [],
-                          time_entries: [],
-                          recurring_exceptions: [],
-                        })
-                      }
+                      onClick={handleTaskClick}
                     >
                       <div
                         className="h-full bg-card border-r border-border/50 relative"
