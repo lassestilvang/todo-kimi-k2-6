@@ -7,11 +7,8 @@ import {
   MapPin,
   Smile,
   Battery,
-  Coffee,
-  Globe,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
   Select,
@@ -89,10 +86,6 @@ export function TaskContextTab({
   >(null);
   const [success, setSuccess] = useState(true);
 
-  const currentContext = contexts.find(
-    c => c.context_type === selectedContextType
-  );
-
   const handleRecordContext = async () => {
     if (!selectedContextValue) return;
 
@@ -113,8 +106,8 @@ export function TaskContextTab({
         const newContext = await response.json();
         onContextUpdate?.(newContext);
       }
-    } catch (error) {
-      console.error('Failed to record context:', error);
+    } catch (_error: unknown) {
+      console.error('Failed to record context:', _error);
     }
   };
 
