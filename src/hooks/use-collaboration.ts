@@ -39,7 +39,7 @@ export function useCollaboration({
   taskId,
   userId,
   userName,
-  enabled = true,
+  enabled,
 }: UseCollaborationProps = {}) {
   const [connected, setConnected] = useState(false);
   const [presenceUsers, setPresenceUsers] = useState<PresenceUser[]>([]);
@@ -50,6 +50,7 @@ export function useCollaboration({
 
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const handleMessageRef = useRef<((data: CollaborationEvent) => void) | null>(null);
 
   useEffect(() => {
     if (!enabled || !userId) {
@@ -79,7 +80,7 @@ export function useCollaboration({
 
         wsRef.current.onmessage = event => {
           const data: CollaborationEvent = JSON.parse(event.data);
-          handleMessage(data);
+          handleMessageRef.current?.(data);
         };
 
         wsRef.current.onclose = () => {
@@ -111,7 +112,7 @@ export function useCollaboration({
         wsRef.current.close();
       }
     };
-  }, [enabled, userId, userName, taskId]);
+  }, [enabled, userId, userName, taskId, handleMessageRef]);
 
   const handleMessage = useCallback(
     (data: CollaborationEvent) => {
@@ -121,8 +122,8 @@ export function useCollaboration({
             setPresenceUsers(prev => [
               ...prev,
               {
-                userId: data.userId!,
-                userName: data.userName!,
+                userId: data.userId,
+                userName: data.userName,
                 joinedAt: new Date(),
               },
             ]);
@@ -137,9 +138,9 @@ export function useCollaboration({
               const result: Record<number, { line: number; column: number }> =
                 {};
               for (const key in prev) {
-                const userId = Number(key);
-                if (userId !== leftUserId && prev[key]) {
-                  result[userId] = prev[key]!;
+                const uid = Number(key);
+                if (uid !== leftUserId && prev[key as unknown as number]) {
+                  result[uid] = prev[key as unknown as number];
                 }
               }
               return result;
@@ -179,6 +180,11 @@ export function useCollaboration({
     },
     [taskId]
   );
+
+  // Update ref after each render for onmessage handler
+  useEffect(() => {
+    handleMessageRef.current = handleMessage;
+  }, [handleMessage]);
 
   const sendCursorPosition = useCallback(
     (cursor: { line: number; column: number }) => {
