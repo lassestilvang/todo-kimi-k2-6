@@ -13,7 +13,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import type { TaskLog, User as UserType } from '@/types';
+import type { User as UserType } from '@/types';
 
 interface ActivityLog {
   id: number;
@@ -23,11 +23,6 @@ interface ActivityLog {
   entity_id: number;
   details: string;
   created_at: string;
-}
-
-interface TeamActivityFeedProps {
-  workspaceId?: number | null;
-  className?: string;
 }
 
 interface TeamActivityFeedProps {
