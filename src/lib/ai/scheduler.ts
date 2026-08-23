@@ -3,8 +3,6 @@
  */
 
 import { getDb } from '@/lib/db';
-import { parseNaturalLanguageTask } from './index';
-import { getAIManager } from './providers';
 
 export interface EnergyLevel {
   time: string; // "09:00"
@@ -124,7 +122,7 @@ export async function calculateOptimalSchedule(
       AND user_id = ?
     `
     )
-    .all(...taskIds, userId) as any[];
+    .all(...taskIds, userId) as any[]; // better-sqlite3 row type
 
   if (tasks.length === 0) {
     return {
@@ -143,7 +141,7 @@ export async function calculateOptimalSchedule(
       WHERE user_id = ? AND date = ?
     `
     )
-    .all(userId, targetDate) as any[];
+    .all(userId, targetDate) as unknown as Record<string, unknown>[]; // better-sqlite3 row type
 
   // Calculate blocked time
   const blockedTime: { start: string; end: string }[] = [];
