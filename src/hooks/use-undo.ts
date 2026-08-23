@@ -7,7 +7,7 @@ import { toast } from 'sonner';
  * Hook for undo functionality on destructive actions
  * Provides a toast with undo button that can reverse the action
  */
-export function useUndo<T>() {
+export function useUndo<_T>() {
   const [pendingAction, setPendingAction] = useState<{
     undo: () => void;
     timeoutId: ReturnType<typeof setTimeout>;
