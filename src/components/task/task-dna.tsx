@@ -5,12 +5,7 @@ import { motion } from 'framer-motion';
 import {
   Brain,
   Clock,
-  TrendingUp,
   Target,
-  Zap,
-  Activity,
-  BarChart3,
-  CheckCircle,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -306,7 +301,7 @@ export function PersonaMatchDashboard({ tasks }: PersonaMatchDashboardProps) {
             <Target className="h-5 w-5" />
             <span>Task Matching</span>
           </CardTitle>
-          <Select value={sortBy} onValueChange={setSortBy as any}>
+          <Select value={sortBy} onValueChange={(v: 'match' | 'complexity' | 'time') => setSortBy(v)}>
             <SelectTrigger className="w-[120px] h-8">
               <SelectValue placeholder="Sort by..." />
             </SelectTrigger>
