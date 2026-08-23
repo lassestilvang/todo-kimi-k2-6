@@ -3,21 +3,9 @@
  * Handles real-time updates for task collaboration
  */
 
-import { createServer } from 'http';
+import { createServer, IncomingMessage } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
-import { getDb } from '@/lib/db';
 import { logInfo, logError } from '@/lib/logger';
-
-// Connection management
-interface ClientInfo {
-  id: string;
-  userId: number;
-  userName: string;
-  userEmail: string;
-  taskId?: number;
-  subscribedChannels: Set<string>;
-  lastPing: number;
-}
 
 // Extended WebSocket with custom properties
 interface ExtendedWebSocket extends WebSocket {
@@ -27,6 +15,7 @@ interface ExtendedWebSocket extends WebSocket {
   userName: string;
   userEmail: string;
   subscribedChannels?: Set<string>;
+  lastPing?: number;
 }
 
 class WSHub {
@@ -134,10 +123,10 @@ class WSHub {
   }
 
   pingClients() {
-    this.clients.forEach((client, clientId) => {
+    this.clients.forEach((client, _clientId) => {
       if (client.readyState === WebSocket.OPEN) {
         client.ping();
-        (client as any).lastPing = Date.now();
+        client.lastPing = Date.now();
       }
     });
   }
@@ -213,7 +202,7 @@ export function startWebSocketServer(port = 8080) {
   const httpServer = createServer();
   const wss = new WebSocketServer({ noServer: true });
 
-  wss.on('connection', (ws: ExtendedWebSocket, request?: any) => {
+  wss.on('connection', (ws: ExtendedWebSocket, request?: IncomingMessage) => {
     const url = request?.url || '';
     const taskIdMatch = url.split('taskId=')[1]?.split('&')[0];
     const taskId = taskIdMatch ? parseInt(taskIdMatch, 10) : undefined;
@@ -231,9 +220,9 @@ export function startWebSocketServer(port = 8080) {
     // In a real app, validate the token and get user info
     // For now, use placeholder values
     const clientId = wsHub.addClient(ws, taskId);
-    (ws as any).userId = 1;
-    (ws as any).userName = 'User';
-    (ws as any).userEmail = 'user@example.com';
+    ws.userId = 1;
+    ws.userName = 'User';
+    ws.userEmail = 'user@example.com';
 
     ws.on('close', () => {
       wsHub.removeClient(clientId);
