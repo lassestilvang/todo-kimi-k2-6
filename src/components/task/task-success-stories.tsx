@@ -3,12 +3,8 @@
 import { useState } from 'react';
 import {
   Smile,
-  Lightbulb,
-  CheckCircle2,
   Star,
-  ThumbsUp,
   Share2,
-  Bookmark,
   Trophy,
   RefreshCw,
 } from 'lucide-react';
@@ -16,7 +12,6 @@ import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -80,14 +75,6 @@ export function TaskSuccessStories({
   });
 
   const [savedStories, setSavedStories] = useState<SuccessStory[]>([]);
-
-  // Load saved stories from localStorage
-  const loadSavedStories = () => {
-    const saved = localStorage.getItem('task_success_stories');
-    if (saved) {
-      setSavedStories(JSON.parse(saved));
-    }
-  };
 
   // Save stories to localStorage
   const saveStories = (stories: SuccessStory[]) => {
@@ -232,7 +219,7 @@ export function TaskSuccessStories({
                 <Select
                   value={story.difficulty_level}
                   onValueChange={v =>
-                    setStory({ ...story, difficulty_level: v as any })
+                    setStory({ ...story, difficulty_level: v as 'easy' | 'medium' | 'hard' })
                   }
                 >
                   <SelectTrigger>
@@ -285,7 +272,7 @@ export function TaskSuccessStories({
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {savedStories.map((story, index) => (
+              {savedStories.map((story, _index) => (
                 <div key={story.id} className="border rounded-lg p-3">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
