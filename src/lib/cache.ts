@@ -33,8 +33,8 @@ async function initRedis() {
     const redisModule = require('redis');
     redis = redisModule.createClient({ url: redisUrl });
     redisModule.on('error', (err: Error) => console.error('Redis error:', err));
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (redis as any).connect();
+     
+    await (redis as any).connect(); // redis client typing
     return redis;
   } catch (error) {
     console.warn(
@@ -62,8 +62,8 @@ export async function set<T>(
   // Try Redis first
   const redisClient = await initRedis();
   if (redisClient) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (redisClient as any).setEx(key, Math.ceil(ttl / 1000), serialized);
+     
+    await (redisClient as any).setEx(key, Math.ceil(ttl / 1000), serialized); // redis typing
     return;
   }
 
@@ -84,8 +84,8 @@ export async function get<T>(key: string): Promise<T | null> {
   // Try Redis first
   const redisClient = await initRedis();
   if (redisClient) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const serialized = await (redisClient as any).get(key);
+     
+    const serialized = await (redisClient as any).get(key); // redis typing
     if (!serialized) return null;
     try {
       return JSON.parse(serialized) as T;
@@ -114,8 +114,8 @@ export async function del(key: string): Promise<void> {
   // Try Redis first
   const redisClient = await initRedis();
   if (redisClient) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (redisClient as any).del(key);
+     
+    await (redisClient as any).del(key); // redis typing
     return;
   }
 
@@ -130,8 +130,8 @@ export async function clear(): Promise<void> {
   // Try Redis first
   const redisClient = await initRedis();
   if (redisClient) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (redisClient as any).flushAll();
+     
+    await (redisClient as any).flushAll(); // redis typing
     return;
   }
 
@@ -163,9 +163,9 @@ export const taskCache = {
       // Invalidate all task-related cache keys
       const redisClient = await initRedis();
       if (redisClient) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const keys = await (redisClient as any).keys('tasks:*');
-        if (keys.length > 0) await (redisClient as any).del(...keys);
+         
+        const keys = await (redisClient as any).keys('tasks:*'); // redis typing
+        if (keys.length > 0) await (redisClient as any).del(...keys); // redis typing
       } else {
         for (const key of memoryCache.keys()) {
           if (key.startsWith('tasks:')) memoryCache.delete(key);
@@ -237,8 +237,8 @@ export const aiCache = {
   clear: async () => {
     const redisClient = await initRedis();
     if (redisClient) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (redisClient as any).del('ai:*');
+       
+      await (redisClient as any).del('ai:*'); // redis typing
     } else {
       for (const key of memoryCache.keys()) {
         if (key.startsWith('ai:')) memoryCache.delete(key);
@@ -248,7 +248,6 @@ export const aiCache = {
 };
 
 // Cache decorator for async functions
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function cached<T extends (...args: any[]) => Promise<any>>(
   fn: T,
   keyGenerator: (...args: Parameters<T>) => string,
