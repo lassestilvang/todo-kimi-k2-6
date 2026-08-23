@@ -6,24 +6,32 @@ import {
   Plus,
   MoreHorizontal,
   Trash2,
-  Edit,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 import type { CustomView, ViewType } from '@/types';
 
 interface SavedViewsProps {
@@ -175,14 +183,3 @@ function CreateViewForm({ onSubmit, onCancel }: CreateViewFormProps) {
     </form>
   );
 }
-
-import { cn } from '@/lib/utils';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { DialogFooter } from '@/components/ui/dialog';
