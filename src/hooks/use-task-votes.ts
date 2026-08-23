@@ -47,7 +47,7 @@ export function useTaskVotes(taskIds: number[]) {
     };
 
     fetchVotes();
-  }, [taskIds]);
+  }, [taskIds, voteCache]);
 
   const vote = async (taskId: number, value: -1 | 1) => {
     try {
