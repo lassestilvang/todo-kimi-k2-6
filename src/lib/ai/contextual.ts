@@ -118,7 +118,7 @@ export async function generateMorningBriefing(
   userId: number,
   tasks: TaskWithRelations[],
   settings?: UserSettings,
-  calendarEvents?: CalendarEvent[]
+  _calendarEvents?: CalendarEvent[] // Reserved for future use
 ): Promise<MorningBriefing> {
   const today = new Date();
   const todayStr = today.toISOString().split('T')[0];
@@ -174,7 +174,6 @@ export async function generateMorningBriefing(
 
     // Suggest optimal time based on user's work hours
     const workStart = settings?.work_start_hour || 9;
-    const workEnd = settings?.work_end_hour || 17;
     const hour = Math.floor(workStart + (task.priority === 'critical' ? 0 : 2));
 
     return {
