@@ -1,25 +1,101 @@
 'use server';
 
-import { getCurrentUser } from '@/lib/session';
 import { aiCache } from './providers';
+
+interface TaskLog {
+  action: string;
+  created_at: string;
+}
+
+interface Task {
+  id: number;
+  name: string;
+  description?: string;
+  completed: boolean;
+  priority: 'critical' | 'high' | 'medium' | 'low' | 'none';
+  date?: string;
+  deadline?: string;
+  logs?: TaskLog[];
+  time_entries?: Array<{ duration_seconds?: number }>;
+  estimated_duration?: number;
+}
+
+interface DailyPattern {
+  date: string;
+  total_tasks: number;
+  completed_tasks: number;
+  completion_rate: number;
+  average_task_duration: number;
+  peak_productivity_hour: number | null;
+  task_types_completed: string[];
+  energy_indicators: {
+    high_tasks_completed: number;
+    complex_tasks_handled: number;
+  };
+}
+
+interface EnergyProfile {
+  peak_hours: Array<{ hour: number; productivity_score: number }>;
+  preferred_task_types_by_time: Array<{ hour: number; typical_tasks: Record<string, number> }>;
+  energy_cycles: {
+    weekly_patterns: Array<{ day_of_week: number; average_completion_rate: number; typical_task_count: number }>;
+    recovery_days: Array<{ day_name: string; recovery_score: number }>;
+    suggested_rest_days: string[];
+  };
+  burnout_risks: {
+    daily_risk_assessments: Array<{ date: string; risk_score: number; risk_level: string; contributing_factors: string[] }>;
+    overall_burnout_risk: 'high' | 'medium' | 'low';
+    recommendations: Array<{ priority: string; message: string; actions: string[] }>;
+  };
+  productivity_windows: {
+    optimal_hours: Array<{ hour: number; productivity_rating: number }>;
+    preferred_pattern: 'morning' | 'afternoon' | 'evening' | 'balanced';
+    suggested_work_hours: { start: number; end: number };
+    recommended_breaks: Array<{ hour: number; duration: number; type: string; reason: string }>;
+  };
+  recovery_needs: {
+    daily_recommendations: Array<{ date: string; type: string; recommendation: string; reason: string }>;
+    general_recovery_strategies: string[];
+  };
+}
+
+interface OptimalWorkHours {
+  start: number;
+  end: number;
+}
+
+interface Constraints {
+  workHours?: OptimalWorkHours;
+  existingTasks?: Task[];
+  energyLevel?: 'high' | 'medium' | 'low';
+  deadlinePressure?: number;
+}
+
+interface TimeSuggestion {
+  date: string;
+  start_time: string;
+  end_time: string;
+  confidence: number;
+  reason: string;
+}
 
 /**
  * Analyze user's energy patterns based on task completion data
  */
 export async function analyzeUserEnergyPatterns(
   userId: number,
-  tasks: any[],
+  tasks: Task[],
   dateRange?: { start: string; end: string }
-): Promise<any> {
+): Promise<EnergyProfile> {
   const cacheKey = `energy-patterns:${userId}:${dateRange?.start || 'all'}`;
-  const cached = aiCache.get<any>(cacheKey);
+  const cached = aiCache.get<EnergyProfile>(cacheKey);
   if (cached) {
     return cached;
   }
 
   // Process tasks to extract energy patterns
   const tasksByDate = groupTasksByDate(tasks);
-  const dailyPatterns: any[] = [];
+  const dailyPatterns: DailyPattern[] = [];
 
   for (const [date, dayTasks] of Object.entries(tasksByDate)) {
     const pattern = analyzeDayPattern(dayTasks, date);
@@ -27,7 +103,7 @@ export async function analyzeUserEnergyPatterns(
   }
 
   // Calculate comprehensive energy profile
-  const energyProfile = {
+  const energyProfile: EnergyProfile = {
     peak_hours: identifyPeakHours(dailyPatterns),
     preferred_task_types_by_time: analyzeTaskTypesByTime(dailyPatterns),
     energy_cycles: detectEnergyCycles(dailyPatterns),
@@ -44,17 +120,12 @@ export async function analyzeUserEnergyPatterns(
  * Suggest optimal times for specific task types based on user patterns
  */
 export async function suggestOptimalTaskTimes(
-  task: any,
+  task: Task,
   userId: number,
-  constraints?: {
-    workHours?: { start: number; end: number };
-    existingTasks?: any[];
-    energyLevel?: 'high' | 'medium' | 'low';
-    deadlinePressure?: number; // 0-1 scale
-  }
-): Promise<any[]> {
+  constraints?: Constraints
+): Promise<TimeSuggestion[]> {
   const cacheKey = `optimal-times:${userId}:${task.id}`;
-  const cached = aiCache.get<any[]>(cacheKey);
+  const cached = aiCache.get<TimeSuggestion[]>(cacheKey);
   if (cached) {
     return cached;
   }
@@ -83,11 +154,11 @@ export async function suggestOptimalTaskTimes(
  */
 export async function detectEnergyPeaks(
   userId: number,
-  tasks: any[],
+  tasks: Task[],
   timeWindow: 'day' | 'week' | 'month' = 'day'
-): Promise<any> {
+): Promise<{ peak_hours: Array<{ hour: number; productivity_score: number }>; energy_cycles: EnergyProfile['energy_cycles']; productivity_windows: EnergyProfile['productivity_windows']; recommended_breaks: EnergyProfile['recovery_needs']['daily_recommendations']; energy_recovery_recommendations: EnergyProfile['recovery_needs']['daily_recommendations'] }> {
   const cacheKey = `energy-peaks:${userId}:${timeWindow}`;
-  const cached = aiCache.get<any>(cacheKey);
+  const cached = aiCache.get(cacheKey);
   if (cached) {
     return cached;
   }
@@ -108,7 +179,7 @@ export async function detectEnergyPeaks(
 /**
  * Analyze task completion patterns to extract circadian rhythms
  */
-function analyzeDayPattern(dayTasks: any[], date: string): any {
+function analyzeDayPattern(dayTasks: Task[], date: string): DailyPattern {
   const completedTasks = dayTasks.filter(task => task.completed);
   const pendingTasks = dayTasks.filter(task => !task.completed);
 
@@ -125,7 +196,7 @@ function analyzeDayPattern(dayTasks: any[], date: string): any {
     .filter((time): time is number => time !== null);
 
   // Calculate pattern metrics
-  const pattern = {
+  const pattern: DailyPattern = {
     date,
     total_tasks: dayTasks.length,
     completed_tasks: completedTasks.length,
@@ -148,10 +219,33 @@ function analyzeDayPattern(dayTasks: any[], date: string): any {
 }
 
 /**
+ * Extract task completion time from logs
+ */
+function extractTaskTimeFromLogs(task: Task): number | null {
+  if (!task.logs || task.logs.length === 0) return null;
+
+  // Find completion time
+  const completionLog = task.logs.find(
+    (log: TaskLog) => log.action === 'completed'
+  );
+  if (completionLog) {
+    return new Date(completionLog.created_at).getHours();
+  }
+
+  // Find last update time
+  const lastLog = task.logs[task.logs.length - 1];
+  if (lastLog) {
+    return new Date(lastLog.created_at).getHours();
+  }
+
+  return null;
+}
+
+/**
  * Group tasks by date for pattern analysis
  */
-function groupTasksByDate(tasks: any[]): Record<string, any[]> {
-  const grouped: Record<string, any[]> = {};
+function groupTasksByDate(tasks: Task[]): Record<string, Task[]> {
+  const grouped: Record<string, Task[]> = {};
 
   tasks.forEach(task => {
     let date: string;
@@ -161,7 +255,7 @@ function groupTasksByDate(tasks: any[]): Record<string, any[]> {
     } else if (task.logs && task.logs.length > 0) {
       // Extract date from task logs (most recent completion)
       const completionLogs = task.logs.filter(
-        (log: { action: string }) => log.action === 'completed'
+        (log: TaskLog) => log.action === 'completed'
       );
       if (completionLogs.length > 0) {
         date = new Date(completionLogs[0].created_at)
@@ -184,32 +278,9 @@ function groupTasksByDate(tasks: any[]): Record<string, any[]> {
 }
 
 /**
- * Extract task completion time from logs
- */
-function extractTaskTimeFromLogs(task: any): number | null {
-  if (!task.logs || task.logs.length === 0) return null;
-
-  // Find completion time
-  const completionLog = task.logs.find(
-    (log: { action: string }) => log.action === 'completed'
-  );
-  if (completionLog) {
-    return new Date(completionLog.created_at).getHours();
-  }
-
-  // Find last update time
-  const lastLog = task.logs[task.logs.length - 1];
-  if (lastLog) {
-    return new Date(lastLog.created_at).getHours();
-  }
-
-  return null;
-}
-
-/**
  * Calculate average task duration from time entries
  */
-function calculateAverageTaskDuration(tasks: any[]): number {
+function calculateAverageTaskDuration(tasks: Task[]): number {
   if (tasks.length === 0) return 0;
 
   let totalDuration = 0;
@@ -262,7 +333,7 @@ function mostFrequent(arr: number[]): number | null {
 /**
  * Identify peak productivity hours from daily patterns
  */
-function identifyPeakHours(dailyPatterns: any[]): any {
+function identifyPeakHours(dailyPatterns: DailyPattern[]): Array<{ hour: number; productivity_score: number }> {
   // Count task completions by hour across all days
   const hourCounts: Record<number, number> = {};
 
@@ -288,7 +359,7 @@ function identifyPeakHours(dailyPatterns: any[]): any {
 /**
  * Analyze task types by time of day
  */
-function analyzeTaskTypesByTime(dailyPatterns: any[]): any {
+function analyzeTaskTypesByTime(dailyPatterns: DailyPattern[]): Array<{ hour: number; typical_tasks: Record<string, number> }> {
   const taskTypesByHour: Record<number, Record<string, number>> = {};
 
   dailyPatterns.forEach(pattern => {
@@ -318,9 +389,9 @@ function analyzeTaskTypesByTime(dailyPatterns: any[]): any {
 /**
  * Detect energy cycles and patterns
  */
-function detectEnergyCycles(dailyPatterns: any[]): any {
+function detectEnergyCycles(dailyPatterns: DailyPattern[]): EnergyProfile['energy_cycles'] {
   // Look for weekly patterns
-  const dayOfWeekPatterns: Record<number, any> = {};
+  const dayOfWeekPatterns: Record<number, DailyPattern[]> = {};
 
   dailyPatterns.forEach(pattern => {
     const date = new Date(pattern.date);
@@ -338,7 +409,7 @@ function detectEnergyCycles(dailyPatterns: any[]): any {
     ([dayOfWeek, patterns]) => {
       const avgCompletionRate =
         patterns.reduce(
-          (sum: number, p: { completion_rate: number }) =>
+          (sum: number, p: DailyPattern) =>
             sum + p.completion_rate,
           0
         ) / patterns.length;
@@ -348,7 +419,7 @@ function detectEnergyCycles(dailyPatterns: any[]): any {
         average_completion_rate: Math.round(avgCompletionRate * 100),
         typical_task_count:
           patterns.reduce(
-            (sum: number, p: { total_tasks: number }) => sum + p.total_tasks,
+            (sum: number, p: DailyPattern) => sum + p.total_tasks,
             0
           ) / patterns.length,
       };
@@ -380,14 +451,14 @@ function detectEnergyCycles(dailyPatterns: any[]): any {
   return {
     weekly_patterns: weeklyCycles,
     recovery_days: recoveryDays,
-    suggested_rest_days: recoveryDays.slice(0, 2).map((d: any) => d.day_name),
+    suggested_rest_days: recoveryDays.slice(0, 2).map(d => d.day_name),
   };
 }
 
 /**
  * Calculate burnout risk based on daily patterns
  */
-function calculateBurnoutRisk(dailyPatterns: any[]): any {
+function calculateBurnoutRisk(dailyPatterns: DailyPattern[]): EnergyProfile['burnout_risks'] {
   // High risk factors:
   // 1. Consistently high task load with low completion
   // 2. Very long working hours
@@ -431,7 +502,7 @@ function calculateBurnoutRisk(dailyPatterns: any[]): any {
 /**
  * Identify optimal work windows for productivity
  */
-function identifyOptimalWorkWindows(dailyPatterns: any[]): any {
+function identifyOptimalWorkWindows(dailyPatterns: DailyPattern[]): EnergyProfile['productivity_windows'] {
   const allHours: number[] = [];
 
   dailyPatterns.forEach(pattern => {
@@ -495,8 +566,8 @@ function identifyOptimalWorkWindows(dailyPatterns: any[]): any {
 /**
  * Analyze recovery needs based on task patterns
  */
-function analyzeRecoveryNeeds(dailyPatterns: any[]): any {
-  const recoveryRecommendations: any[] = [];
+function analyzeRecoveryNeeds(dailyPatterns: DailyPattern[]): EnergyProfile['recovery_needs'] {
+  const recoveryRecommendations: Array<{ date: string; type: string; recommendation: string; reason: string }> = [];
 
   dailyPatterns.forEach(pattern => {
     // Days with high completion but little rest
@@ -537,12 +608,12 @@ function analyzeRecoveryNeeds(dailyPatterns: any[]): any {
 /**
  * Calculate optimal break times based on productivity patterns
  */
-function calculateOptimalBreakTimes(energyProfile: any): any[] {
-  const breakTimes: any[] = [];
+function calculateOptimalBreakTimes(energyProfile: EnergyProfile): Array<{ hour: number; duration: number; type: string; reason: string }> {
+  const breakTimes: Array<{ hour: number; duration: number; type: string; reason: string }> = [];
 
   // If user has identified peak hours, schedule breaks around them
   if (energyProfile.peak_hours && energyProfile.peak_hours.length > 0) {
-    energyProfile.peak_hours.forEach((peak: any) => {
+    energyProfile.peak_hours.forEach((peak) => {
       const hour = peak.hour;
       const suggestedBreakHour = hour + 2; // 2 hours after peak
 
@@ -569,8 +640,8 @@ function calculateOptimalBreakTimes(energyProfile: any): any[] {
 /**
  * Generate burnout recommendations based on risk assessments
  */
-function generateBurnoutRecommendations(burnoutIndicators: any[]): any[] {
-  const recommendations: any[] = [];
+function generateBurnoutRecommendations(burnoutIndicators: Array<{ risk_level: string; risk_score: number; date: string }>): Array<{ priority: string; message: string; actions: string[] }> {
+  const recommendations: Array<{ priority: string; message: string; actions: string[] }> = [];
 
   const highRiskDays = burnoutIndicators.filter(
     indicator => indicator.risk_level === 'high'
@@ -607,14 +678,14 @@ function generateBurnoutRecommendations(burnoutIndicators: any[]): any[] {
  * Generate time suggestions for a task based on patterns and constraints
  */
 function generateTimeSuggestions(
-  task: any,
-  energyProfile: any,
-  constraints?: any
-): any[] {
-  const suggestions: any[] = [];
+  task: Task,
+  energyProfile: EnergyProfile,
+  constraints?: Constraints
+): TimeSuggestion[] {
+  const suggestions: TimeSuggestion[] = [];
 
   // Base suggestion using optimal work hours
-  const optimalHours = energyProfile.optimal_work_hours || {
+  const optimalHours = energyProfile.productivity_windows.suggested_work_hours || {
     start: 9,
     end: 17,
   };
@@ -666,9 +737,9 @@ function generateTimeSuggestions(
  * Calculate confidence score for time suggestion
  */
 function calculateTimeConfidence(
-  task: any,
-  energyProfile: any,
-  constraints?: any
+  task: Task,
+  energyProfile: EnergyProfile,
+  constraints?: Constraints
 ): number {
   let confidence = 0.7; // Base confidence
 
@@ -690,9 +761,9 @@ function calculateTimeConfidence(
  * Generate human-readable reason for time suggestion
  */
 function generateTimeReason(
-  task: any,
-  energyProfile: any,
-  constraints?: any,
+  task: Task,
+  energyProfile: EnergyProfile,
+  constraints?: Constraints,
   suggestionIndex?: number
 ): string {
   const reasons: string[] = [];
