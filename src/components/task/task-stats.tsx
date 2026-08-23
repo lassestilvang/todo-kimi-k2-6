@@ -2,7 +2,6 @@
 
 import { useMemo } from 'react';
 import {
-  CheckCircle2,
   Clock,
   TrendingUp,
   Calendar,
