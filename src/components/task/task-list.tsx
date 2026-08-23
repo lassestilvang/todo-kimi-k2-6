@@ -17,8 +17,6 @@ import {
   Paperclip,
   Archive,
   ArchiveRestore,
-  ThumbsUp,
-  ThumbsDown,
 } from 'lucide-react';
 import { AIStatusIndicator } from '@/components/task/ai-status-indicator';
 import { format, parseISO } from 'date-fns';
@@ -49,7 +47,6 @@ import type {
 import { updateTask, deleteTask } from '@/lib/actions';
 import { toast } from 'sonner';
 import { calculateTaskHealth } from '@/lib/task-health';
-import { useTaskVotes } from '@/hooks/use-task-votes';
 import { VoteIndicator } from '@/components/task/vote-indicator';
 
 interface TaskListProps {
