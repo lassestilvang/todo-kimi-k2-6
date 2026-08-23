@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { Users, AlertCircle, CheckCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
@@ -106,8 +105,6 @@ export function WorkloadDashboard({
 
   // Calculate workloads
   const calculatedWorkloads = useMemo(() => {
-    // Get assigned users with their tasks
-    const assignedUsers = users.filter(u => u.id);
     const userTaskCounts: Record<number, number> = {};
     const userCompletedCounts: Record<number, number> = {};
     const userOverdueCounts: Record<number, number> = {};
