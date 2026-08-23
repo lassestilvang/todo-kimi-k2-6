@@ -43,37 +43,36 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
     }
   }, []);
 
-  const showBrowserNotification = (
-    title: string,
-    body: string,
-    tag: string
-  ) => {
-    if (!('Notification' in window)) return;
+  const showBrowserNotification = useCallback(
+    (title: string, body: string, tag: string) => {
+      if (!('Notification' in window)) return;
 
-    if (Notification.permission === 'granted') {
-      try {
-        new Notification('TaskFlow', {
-          body,
-          tag,
-          icon: '/favicon.ico',
-        } as NotificationOptions);
-      } catch {
-        // Fallback to toast
+      if (Notification.permission === 'granted') {
+        try {
+          new Notification('TaskFlow', {
+            body,
+            tag,
+            icon: '/favicon.ico',
+          } as NotificationOptions);
+        } catch {
+          // Fallback to toast
+        }
       }
-    }
 
-    // Always show toast as well
-    toast(title, {
-      description: body,
-      action: {
-        label: 'View',
-        onClick: () => {
-          window.location.href = `/?highlight=${tag.replace('task-', '')}`;
+      // Always show toast as well
+      toast(title, {
+        description: body,
+        action: {
+          label: 'View',
+          onClick: () => {
+            window.location.href = `/?highlight=${tag.replace('task-', '')}`;
+          },
         },
-      },
-      duration: 10000,
-    });
-  };
+        duration: 10000,
+      });
+    },
+    [] // toast is stable from sonner, window is stable
+  );
 
   const checkReminders = useCallback(async () => {
     const now = new Date();
