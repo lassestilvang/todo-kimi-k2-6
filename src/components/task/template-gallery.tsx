@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { LayoutTemplate, Search, Plus, Tag, Grid, List } from 'lucide-react';
+import { LayoutTemplate, Search, Plus, Grid, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -304,7 +304,7 @@ function CreateTemplateForm({
     onSubmit({
       name,
       description,
-      priority: priority as any,
+      priority: priority as 'none' | 'low' | 'medium' | 'high' | 'critical',
       list_id: selectedList || undefined,
       category_id: selectedCategory || undefined,
     });
@@ -334,7 +334,7 @@ function CreateTemplateForm({
           <label className="text-sm font-medium">Priority</label>
           <Select
             value={priority}
-            onValueChange={value => setPriority(value as any)}
+            onValueChange={value => setPriority(value as 'none' | 'low' | 'medium' | 'high' | 'critical')}
           >
             <SelectTrigger>
               <SelectValue />
