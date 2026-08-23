@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import {
   format,
   startOfMonth,
@@ -22,8 +22,8 @@ interface StreakCalendarProps {
 }
 
 export function StreakCalendar({
-  taskId,
-  taskName,
+  taskId: _taskId,
+  taskName: _taskName,
   currentDate: _currentDate,
   completedDates,
   onDateToggle,
