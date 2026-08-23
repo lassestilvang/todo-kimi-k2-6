@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Inbox,
   Calendar,
@@ -12,9 +12,6 @@ import {
   Trash2,
   RefreshCw,
   Plus,
-  Filter,
-  Search,
-  Clock,
   AlertCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -50,7 +47,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
@@ -70,7 +66,7 @@ interface SmartInboxItem {
     priority: 'critical' | 'high' | 'medium' | 'low' | 'none';
     confidence: number;
     status: 'pending' | 'processing' | 'converted' | 'dismissed';
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
     created_at: string;
     updated_at: string;
   };
@@ -118,12 +114,7 @@ export function SmartInbox({ className }: SmartInboxProps) {
   const [selectedItem, setSelectedItem] = useState<SmartInboxItem | null>(null);
   const [showConvertDialog, setShowConvertDialog] = useState(false);
 
-  // Fetch inbox items
-  useEffect(() => {
-    fetchInboxItems();
-  }, [filter]);
-
-  const fetchInboxItems = async () => {
+  const fetchInboxItems = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -137,12 +128,16 @@ export function SmartInbox({ className }: SmartInboxProps) {
       } else {
         throw new Error('Failed to fetch inbox');
       }
-    } catch (error) {
+    } catch {
       toast.error('Failed to load smart inbox');
     } finally {
       setLoading(false);
     }
-  };
+  }, [filter]);
+
+  useEffect(() => {
+    fetchInboxItems();
+  }, [fetchInboxItems]);
 
   // Filter and search items
   const filteredItems = useMemo(() => {
@@ -180,7 +175,7 @@ export function SmartInbox({ className }: SmartInboxProps) {
       } else {
         throw new Error('Conversion failed');
       }
-    } catch (error) {
+    } catch {
       toast.error('Failed to convert item');
     }
   };
@@ -197,43 +192,8 @@ export function SmartInbox({ className }: SmartInboxProps) {
       });
 
       setItems(prev => prev.filter(i => i.id !== item.id));
-    } catch (error) {
+    } catch {
       toast.error('Failed to dismiss item');
-    }
-  };
-
-  const handleBulkConvert = async () => {
-    const selectedIds = filteredItems
-      .filter(i => {
-        // In real implementation, track selected items
-        return true;
-      })
-      .map(i => i.id);
-
-    if (selectedIds.length === 0) {
-      toast.error('No items selected');
-      return;
-    }
-
-    try {
-      const response = await fetch('/api/smart-inbox', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'bulkConvert',
-          sourceIds: selectedIds,
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        toast.success(`Converted ${data.result.created} items`);
-        fetchInboxItems();
-      } else {
-        throw new Error('Bulk conversion failed');
-      }
-    } catch (error) {
-      toast.error('Failed to convert items');
     }
   };
 
