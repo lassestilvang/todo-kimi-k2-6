@@ -7,21 +7,13 @@ import {
   Flame,
   Award,
   UserCheck,
-  TrendingUp,
-  BarChart3,
-  Clock,
-  CheckCircle2,
-  AlertCircle,
 } from 'lucide-react';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import {
   ResponsiveContainer,
   LineChart,
@@ -31,11 +23,8 @@ import {
   Tooltip,
   BarChart,
   Bar,
-  CartesianGrid,
-  AreaChart,
-  Area,
 } from 'recharts';
-import { format, subDays, startOfWeek, parseISO, getWeek } from 'date-fns';
+import { format, subDays, startOfWeek, parseISO } from 'date-fns';
 import type { TaskWithRelations } from '@/types';
 
 interface ProductivityDashboardProps {
