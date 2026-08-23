@@ -20,11 +20,11 @@ export function useKeyboardNavigation({
 
   const goToNext = useCallback(() => {
     setSelectedIndex(prev => Math.min(prev + 1, items.length - 1));
-  }, [items.length]);
+  }, [items]);
 
   const goToPrevious = useCallback(() => {
     setSelectedIndex(prev => Math.max(prev - 1, 0));
-  }, [items.length]);
+  }, []);
 
   const goToFirst = useCallback(() => setSelectedIndex(0), []);
   const goToLast = useCallback(
@@ -86,11 +86,11 @@ export function useTaskKeyboardNavigation(
 
   const goToNext = useCallback(() => {
     setSelectedIndex(prev => Math.min(prev + 1, items.length - 1));
-  }, [items.length]);
+  }, [items]);
 
   const goToPrevious = useCallback(() => {
     setSelectedIndex(prev => Math.max(prev - 1, 0));
-  }, [items.length]);
+  }, []);
 
   const goToFirst = useCallback(() => setSelectedIndex(0), []);
   const goToLast = useCallback(
