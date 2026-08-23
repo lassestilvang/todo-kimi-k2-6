@@ -34,6 +34,8 @@ export function useRealtime(token?: string): UseRealtimeReturn {
   const maxReconnectAttempts = 5;
   const reconnectDelay = 1000;
 
+  const connectRef = useRef<(() => void) | null>(null);
+
   const connect = useCallback(() => {
     if (!token) return;
 
@@ -68,7 +70,7 @@ export function useRealtime(token?: string): UseRealtimeReturn {
         if (reconnectAttemptsRef.current < maxReconnectAttempts) {
           reconnectAttemptsRef.current++;
           setTimeout(() => {
-            connect();
+            connectRef.current?.();
           }, reconnectDelay * reconnectAttemptsRef.current);
         }
       };
@@ -117,6 +119,11 @@ export function useRealtime(token?: string): UseRealtimeReturn {
     },
     [connected]
   );
+
+  // Update ref after each render for self-referencing in setTimeout
+  useEffect(() => {
+    connectRef.current = connect;
+  }, [connect]);
 
   // Auto-connect when token is available
   useEffect(() => {
