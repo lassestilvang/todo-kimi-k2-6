@@ -1,11 +1,16 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { Play, Pause, StopCircle, Clock, Edit, Trash2 } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Play, Pause, StopCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
+import type { TaskWithRelations, TimeEntry } from '@/types';
+import {
+  addTimeEntry,
+  getTimeEntries,
+  deleteTimeEntry,
+} from '@/lib/actions/time';
 import {
   Dialog,
   DialogContent,
@@ -13,14 +18,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import type { TaskWithRelations, TimeEntry } from '@/types';
-import { toast } from 'sonner';
-import {
-  addTimeEntry,
-  getTimeEntries,
-  updateTimeEntry,
-  deleteTimeEntry,
-} from '@/lib/actions/time';
 
 interface TimeTrackerProps {
   task: TaskWithRelations;
@@ -36,75 +33,16 @@ export function TimeTracker({ task, open, onOpenChange }: TimeTrackerProps) {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const loadTimeEntries = async () => {
-    const entries = await getTimeEntries(task.id);
-    setTimeEntries(entries);
-  };
-
-  useEffect(() => {
-    if (open) {
-      loadTimeEntries();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
-
-  useEffect(() => {
-    if (isRunning && intervalRef.current === null) {
-      intervalRef.current = setInterval(() => {
-        if (currentStart) {
-          setElapsedSeconds(
-            Math.floor((Date.now() - currentStart.getTime()) / 1000)
-          );
-        }
-      }, 1000);
-    } else if (!isRunning && intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    };
-  }, [isRunning, currentStart]);
-
-  // Activity detection - pause timer when user switches tabs or leaves the page
-  useEffect(() => {
-    if (!isRunning) return;
-
-    const handleVisibilityChange = () => {
-      if (document.hidden && currentStart) {
-        handlePause();
-      }
-    };
-
-    const handleBeforeUnload = () => {
-      if (isRunning && currentStart) {
-        // Log time up to this point before unloading
-        handleStop();
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, [isRunning, currentStart]);
-
-  const handleStart = () => {
+  const handleStart = useCallback(() => {
     setIsRunning(true);
     setCurrentStart(new Date());
-  };
+  }, []);
 
-  const handlePause = () => {
+  const handlePause = useCallback(() => {
     setIsRunning(false);
-  };
+  }, []);
 
-  const handleStop = async () => {
+  const handleStop = useCallback(async () => {
     if (!currentStart) return;
 
     const endTime = new Date();
@@ -128,12 +66,12 @@ export function TimeTracker({ task, open, onOpenChange }: TimeTrackerProps) {
       toast.success(
         `Logged ${Math.floor(durationSeconds / 60)}m ${durationSeconds % 60}s`
       );
-    } catch (error) {
+    } catch {
       toast.error('Failed to log time');
     }
-  };
+  }, [currentStart, description, timeEntries, task]);
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = useCallback(async (id: number) => {
     try {
       await deleteTimeEntry(id);
       setTimeEntries(timeEntries.filter(e => e.id !== id));
@@ -141,7 +79,12 @@ export function TimeTracker({ task, open, onOpenChange }: TimeTrackerProps) {
     } catch {
       toast.error('Failed to delete time entry');
     }
-  };
+  }, [timeEntries]);
+
+  const loadTimeEntries = useCallback(async () => {
+    const entries = await getTimeEntries(task.id);
+    setTimeEntries(entries);
+  }, [task.id]);
 
   const formatDuration = (seconds: number) => {
     const hrs = Math.floor(seconds / 3600);
@@ -149,6 +92,57 @@ export function TimeTracker({ task, open, onOpenChange }: TimeTrackerProps) {
     const secs = seconds % 60;
     return `${hrs}h ${mins}m ${secs}s`;
   };
+
+  useEffect(() => {
+    if (open) {
+      loadTimeEntries();
+    }
+  }, [open, loadTimeEntries]);
+
+  useEffect(() => {
+    if (isRunning && intervalRef.current === null) {
+      intervalRef.current = setInterval(() => {
+        if (currentStart) {
+          setElapsedSeconds(
+            Math.floor((Date.now() - currentStart.getTime()) / 1000)
+          );
+        }
+      }, 1000);
+    } else if (!isRunning && intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [isRunning, currentStart]);
+
+  useEffect(() => {
+    if (!isRunning) return;
+
+    const handleVisibilityChange = () => {
+      if (document.hidden && currentStart) {
+        handlePause();
+      }
+    };
+
+    const handleBeforeUnload = () => {
+      if (isRunning && currentStart) {
+        handleStop();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [isRunning, currentStart, handlePause, handleStop]);
 
   const totalTime = timeEntries
     .filter(e => e.duration_seconds)
