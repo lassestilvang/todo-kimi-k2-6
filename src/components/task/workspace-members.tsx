@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Users,
   User,
@@ -9,7 +9,6 @@ import {
   Crown,
   UserPlus,
   X,
-  Mail,
   Copy,
   Check,
 } from 'lucide-react';
@@ -234,7 +233,7 @@ export function WorkspaceMembers({
                     <Label>Role</Label>
                     <Select
                       value={newMemberRole}
-                      onValueChange={value => setNewMemberRole(value as any)}
+                      onValueChange={value => setNewMemberRole(value as 'admin' | 'member' | 'viewer')}
                     >
                       <SelectTrigger>
                         <SelectValue />
