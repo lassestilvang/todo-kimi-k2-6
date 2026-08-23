@@ -1,12 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import {
   Clock,
   Calendar,
-  Tag,
-  Repeat,
   CheckCircle2,
   ThumbsUp,
   ThumbsDown,
