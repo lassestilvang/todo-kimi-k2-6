@@ -1,25 +1,20 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Inbox,
   Calendar,
   Mail,
   MessageSquare,
-  GitBranch,
-  Check,
-  X,
-  Trash2,
   RefreshCw,
   Plus,
-  Filter,
-  Search,
-  Clock,
   AlertCircle,
   Brain,
   Lightbulb,
   Tag,
-  List as ListIcon,
+  GitBranch,
+  Check,
+  X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -84,6 +79,15 @@ interface SmartInboxEnhancedProps {
   onTaskCreated?: (taskId: number) => void;
 }
 
+interface TaskUpdate {
+  id: number;
+  priority?: string;
+  due_date?: string;
+  description?: string;
+  status?: string;
+  [key: string]: unknown;
+}
+
 const SOURCE_ICONS: Record<InboxSourceType, React.ReactNode> = {
   calendar: <Calendar className="h-4 w-4" />,
   email: <Mail className="h-4 w-4" />,
@@ -112,30 +116,24 @@ const PRIORITY_COLORS: Record<string, string> = {
 
 export function SmartInbox({
   className,
-  lists = [],
-  labels = [],
+  lists: _lists = [],
+  labels: _labels = [],
   onTaskCreated,
 }: SmartInboxEnhancedProps) {
   const [items, setItems] = useState<SmartInboxItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [processingBatch, setProcessingBatch] = useState(false);
+  const [_processingBatch, setProcessingBatch] = useState(false);
   const [filter, setFilter] = useState<{
     sourceType?: InboxSourceType;
     priority?: string;
     search?: string;
     sortBy?: 'priority' | 'date' | 'confidence';
   }>({});
-  const [selectedItem, setSelectedItem] = useState<SmartInboxItem | null>(null);
   const [showConvertDialog, setShowConvertDialog] = useState(false);
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
   const [autoTriageEnabled, setAutoTriageEnabled] = useState(true);
 
-  // Fetch inbox items
-  useEffect(() => {
-    fetchInboxItems();
-  }, [filter]);
-
-  const fetchInboxItems = async () => {
+  const fetchInboxItems = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -150,12 +148,17 @@ export function SmartInbox({
       } else {
         throw new Error('Failed to fetch inbox');
       }
-    } catch (error) {
+    } catch {
       toast.error('Failed to load smart inbox');
     } finally {
       setLoading(false);
     }
-  };
+  }, [filter]);
+
+  // Fetch inbox items
+  useEffect(() => {
+    fetchInboxItems();
+  }, [filter, fetchInboxItems]);
 
   // Filter and search items
   const filteredItems = useMemo(() => {
@@ -183,7 +186,7 @@ export function SmartInbox({
         deadline: item.predicted_due_date || item.source.due_date,
         priority: item.predicted_priority || item.source.priority,
         list_id: 1,
-        label_ids: (item.suggested_labels || []) as any,
+        label_ids: item.suggested_labels ?? [],
         metadata: {
           from_smart_inbox: true,
           source_type: item.source.source_type,
@@ -206,7 +209,7 @@ export function SmartInbox({
       } else {
         throw new Error('Conversion failed');
       }
-    } catch (error) {
+    } catch {
       toast.error('Failed to convert item');
     }
   };
@@ -223,7 +226,7 @@ export function SmartInbox({
       });
 
       setItems(prev => prev.filter(i => i.id !== item.id));
-    } catch (error) {
+    } catch {
       toast.error('Failed to dismiss item');
     }
   };
@@ -240,7 +243,7 @@ export function SmartInbox({
         await handleConvert(item);
       }
       toast.success(`Converted ${selectedItems.size} items to tasks`);
-    } catch (error) {
+    } catch {
       toast.error('Failed to convert items');
     } finally {
       setProcessingBatch(false);
@@ -258,7 +261,7 @@ export function SmartInbox({
         await handleDismiss(item);
       }
       toast.success(`Dismissed ${selectedItems.size} items`);
-    } catch (error) {
+    } catch {
       toast.error('Failed to dismiss items');
     }
   };
@@ -301,7 +304,7 @@ export function SmartInbox({
     return 'text-red-600';
   };
 
-  const runAutoTriage = async () => {
+  const runAutoTriage = useCallback(async () => {
     if (items.length === 0) return;
 
     try {
@@ -319,7 +322,7 @@ export function SmartInbox({
         if (data.updates) {
           setItems(prev =>
             prev.map(item => {
-              const update = data.updates.find((u: any) => u.id === item.id);
+              const update = (data.updates as TaskUpdate[]).find((u) => u.id === item.id);
               return update ? { ...item, ...update } : item;
             })
           );
@@ -328,14 +331,14 @@ export function SmartInbox({
     } catch (error) {
       console.error('AutoTriage failed:', error);
     }
-  };
+  }, [items]);
 
   // Run auto-triage on load
   useEffect(() => {
     if (autoTriageEnabled && items.length > 0) {
       runAutoTriage();
     }
-  }, [items, autoTriageEnabled]);
+  }, [items, autoTriageEnabled, runAutoTriage]);
 
   return (
     <div className={className}>
