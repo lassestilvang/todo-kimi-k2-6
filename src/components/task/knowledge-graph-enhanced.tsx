@@ -5,8 +5,6 @@ import {
   Brain,
   Network,
   Link,
-  Search,
-  TrendingUp,
   BookOpen,
   Lightbulb,
   Target,
@@ -19,22 +17,7 @@ import {
   CardDescription,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-  ResponsiveContainer,
-  ScatterChart,
-  XAxis,
-  YAxis,
-  Tooltip,
-  BarChart,
-  Bar,
-  PieChart as RechartsPieChart,
-  Pie,
-  Cell,
-  Legend,
-} from 'recharts';
-import type { TaskWithRelations } from '@/types';
+import type { TaskWithRelations, Label } from '@/types';
 
 interface KnowledgeGraphEnhancedProps {
   tasks: TaskWithRelations[];
@@ -63,8 +46,8 @@ export function KnowledgeGraphEnhanced({ tasks }: KnowledgeGraphEnhancedProps) {
     // Group tasks by labels
     const labelGroups: Record<number, number[]> = {};
     tasks.forEach(task => {
-      if ((task as any).labels) {
-        (task as any).labels.forEach((label: any) => {
+      if (task.labels) {
+        task.labels.forEach((label: Label) => {
           if (!labelGroups[label.id]) labelGroups[label.id] = [];
           labelGroups[label.id].push(task.id);
         });
@@ -162,7 +145,8 @@ export function KnowledgeGraphEnhanced({ tasks }: KnowledgeGraphEnhancedProps) {
           });
         }
 
-        const pattern = patternMap.get(word)!;
+        const pattern = patternMap.get(word);
+        if (!pattern) continue;
         pattern.relatedTasks.push(task.id);
 
         if (pattern.relatedTasks.length >= 3) {
@@ -177,24 +161,6 @@ export function KnowledgeGraphEnhanced({ tasks }: KnowledgeGraphEnhancedProps) {
       .sort((a, b) => b.confidence - a.confidence)
       .slice(0, 5);
   }, [tasks]);
-
-  // Calculate task strength (centrality in graph)
-  const taskStrengths = useMemo(() => {
-    const strengths: Record<number, number> = {};
-
-    tasks.forEach(task => {
-      strengths[task.id] = 0;
-    });
-
-    connections.forEach(conn => {
-      strengths[conn.sourceId] =
-        (strengths[conn.sourceId] || 0) + conn.strength;
-      strengths[conn.targetId] =
-        (strengths[conn.targetId] || 0) + conn.strength;
-    });
-
-    return strengths;
-  }, [tasks, connections]);
 
   // Get insights
   const insights = useMemo(() => {
@@ -225,40 +191,6 @@ export function KnowledgeGraphEnhanced({ tasks }: KnowledgeGraphEnhancedProps) {
 
     return insights;
   }, [tasks, patterns]);
-
-  // Prepare data for scatter chart
-  const chartData = useMemo(() => {
-    return tasks
-      .map(task => ({
-        name: task.name.substring(0, 20),
-        // X: task age (days since creation)
-        x: task.created_at
-          ? (new Date().getTime() - new Date(task.created_at).getTime()) /
-            (1000 * 60 * 60 * 24)
-          : 0,
-        // Y: completion probability (based on strength)
-        y: taskStrengths[task.id] || 0,
-        completed: task.completed ? 1 : 0,
-        priority: task.priority,
-      }))
-      .sort((a, b) => a.x - b.x);
-  }, [tasks, taskStrengths]);
-
-  // Get priority color
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'critical':
-        return '#ef4444';
-      case 'high':
-        return '#f97316';
-      case 'medium':
-        return '#eab308';
-      case 'low':
-        return '#3b82f6';
-      default:
-        return '#6b7280';
-    }
-  };
 
   return (
     <div className="space-y-6">
