@@ -6,7 +6,6 @@ import {
   Target,
   Flame,
   Award,
-  UserCheck,
   TrendingUp,
   BarChart3,
   Clock,
@@ -18,14 +17,11 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import {
   ResponsiveContainer,
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   Tooltip as ReTooltip,
@@ -111,13 +107,6 @@ export function ProductivityDashboardEnhanced({
 
   // Completion rate trend over time
   const completionTrend = useMemo(() => {
-    const lastMonth = tasks.filter(
-      t =>
-        t.completed &&
-        t.completed_at &&
-        new Date(t.completed_at) >= subWeeks(new Date(), 4)
-    );
-
     const weekData = [];
     for (let i = 3; i >= 0; i--) {
       const weekStart = subWeeks(new Date(), i);
@@ -167,8 +156,8 @@ export function ProductivityDashboardEnhanced({
   }, [tasks]);
 
   // Goal progress tracking
-  const activeGoals = goals || [];
   const goalProgress = useMemo(() => {
+    const activeGoals = goals || [];
     return activeGoals.map(goal => ({
       ...goal,
       progress:
@@ -178,7 +167,7 @@ export function ProductivityDashboardEnhanced({
       remaining: Math.max(0, goal.target_count - goal.current_count),
       isCompleted: goal.current_count >= goal.target_count,
     }));
-  }, [activeGoals]);
+  }, [goals]);
 
   // Weekly goal
   const weeklyGoal = 25;
@@ -195,33 +184,16 @@ export function ProductivityDashboardEnhanced({
     100
   );
 
-  // Heatmap for daily activity
-  const heatmapData = useMemo(() => {
-    const heatmap: Record<string, number> = {};
-    const today = new Date();
-
-    for (let i = 0; i < 30; i++) {
-      const date = format(subDays(today, i), 'yyyy-MM-dd');
-      const count = tasks.filter(
-        t => t.completed && t.completed_at && t.completed_at.startsWith(date)
-      ).length;
-      heatmap[date] = count;
-    }
-
-    return heatmap;
-  }, [tasks]);
-
   // Completion rate by day of week
   const dayOfWeekStats = useMemo(() => {
     const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     const dayStats = dayNames.map((day, index) => {
       const dayTasks = tasks.filter(t => t.completed && t.completed_at);
       const dayCompletions = dayTasks.filter(t => {
-        const taskDate = new Date(t.completed_at!);
-        return (
-          taskDate.getDay() === index + 1 ||
-          (index === 0 && taskDate.getDay() === 1)
-        );
+        if (!t.completed_at) return false;
+        const taskDate = new Date(t.completed_at);
+        const dayMap: Record<number, number> = { 1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 0: 6 };
+        return dayMap[taskDate.getDay()] === index;
       });
       return { day, count: dayCompletions.length };
     });
@@ -626,13 +598,3 @@ function AchievementBadge({ title, achieved, icon }: AchievementBadgeProps) {
   );
 }
 
-// Day of Week Stats helper
-const dayOfWeekStats = [
-  { day: 'Mon', count: 0 },
-  { day: 'Tue', count: 0 },
-  { day: 'Wed', count: 0 },
-  { day: 'Thu', count: 0 },
-  { day: 'Fri', count: 0 },
-  { day: 'Sat', count: 0 },
-  { day: 'Sun', count: 0 },
-];
