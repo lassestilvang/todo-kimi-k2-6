@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import {
   format,
   subDays,
@@ -635,7 +635,7 @@ function useAIInsights(
   }>({ tips: [], suggestions: [], trends: [] });
   const [isFetching, setIsFetching] = useState(false);
 
-  const fetchInsights = async () => {
+  const fetchInsights = useCallback(async () => {
     setIsFetching(true);
     try {
       const result = await fetch('/api/ai', {
@@ -665,23 +665,23 @@ function useAIInsights(
     } finally {
       setIsFetching(false);
     }
-  };
+  }, [tasks]);
 
   useEffect(() => {
     if (tasks.length > 0) {
       fetchInsights();
     }
-  }, [tasks.length]);
+  }, [tasks, fetchInsights]);
 
   return { insights, isFetching, refetch: fetchInsights };
 }
 
 // Productivity Heatmap Component
 function ProductivityHeatmap({
-  tasks,
+  _tasks,
   completedTasks,
 }: {
-  tasks: TaskWithRelations[];
+  _tasks: TaskWithRelations[];
   completedTasks: TaskWithRelations[];
 }) {
   const heatmapData = useMemo(() => {
@@ -702,7 +702,7 @@ function ProductivityHeatmap({
       date,
       count: completionByDay[date] || 0,
     }));
-  }, [tasks, completedTasks]);
+  }, [completedTasks]);
 
   const getColor = (count: number) => {
     if (count === 0) return 'bg-muted/30';
