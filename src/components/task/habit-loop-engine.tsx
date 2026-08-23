@@ -1,13 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import {
   Flame,
   CheckCircle2,
   Brain,
   Target,
   RefreshCw,
-  BarChart3,
   Award,
   Activity,
 } from 'lucide-react';
@@ -21,21 +19,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { cn } from '@/lib/utils';
 
 interface HabitLoopProps {
-  tasks: Array<{
+  _tasks: Array<{
     id: number;
     name: string;
     completed: boolean;
@@ -43,15 +31,7 @@ interface HabitLoopProps {
   }>;
 }
 
-export function HabitLoopEngine({ tasks }: HabitLoopProps) {
-  const [habitLoops, setHabitLoops] = useState([]);
-  const [activeLoop, setActiveLoop] = useState<null | number>(null);
-  const [reflection, setReflection] = useState({
-    rating: 3,
-    notes: '',
-    energy_level: 5 as 1 | 2 | 3 | 4 | 5,
-  });
-
+export function HabitLoopEngine({ _tasks }: HabitLoopProps) {
   // Habit Loop data (simplified for demo)
   const defaultHabits = [
     {
@@ -104,12 +84,6 @@ export function HabitLoopEngine({ tasks }: HabitLoopProps) {
   const getCurrentStreak = (habits: typeof defaultHabits) => {
     const activeStreaks = habits.filter(h => h.streak > 0);
     return activeStreaks.reduce((sum, h) => sum + h.streak, 0);
-  };
-
-  const handleCompleteHabit = (loopId: number) => {
-    // In real implementation, this would call the server action
-    console.log('Complete habit:', loopId, reflection);
-    // Refresh habit data
   };
 
   const getSuccessLevel = (score: number) => {
