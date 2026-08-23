@@ -17,8 +17,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   ResponsiveContainer,
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   Tooltip,
@@ -33,11 +31,6 @@ import {
 } from 'recharts';
 import { format, parseISO, startOfWeek, endOfWeek } from 'date-fns';
 import type { TaskWithRelations } from '@/types';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
 
 interface TaskInvestmentPortfolioProps {
   tasks: TaskWithRelations[];
@@ -74,7 +67,7 @@ export function TaskInvestmentPortfolio({
   const weeklyCompletionData = useMemo(() => {
     const now = new Date();
     const weekStart = startOfWeek(now);
-    const weekEnd = endOfWeek(now);
+    const _weekEnd = endOfWeek(now);
 
     return Array.from({ length: 7 }, (_, i) => {
       const day = new Date(weekStart);
@@ -137,16 +130,9 @@ export function TaskInvestmentPortfolio({
     }));
   }, [portfolio.highROI, portfolio.mediumROI, portfolio.lowROI]);
 
-  // Category colors for scatter plot
-  const categoryColors: Record<string, string> = {
-    high_investment: '#22c55e',
-    medium_investment: '#f59e0b',
-    low_investment: '#6b7280',
-  };
-
   // Portfolio health analysis
   const portfolioHealth = useMemo(() => {
-    const totalTasks = tasks.length;
+    const _totalTasks = tasks.length;
     const completedHighROI = completedTasks.filter(t =>
       portfolio.highROI.some(h => h.taskId === t.id)
     ).length;
@@ -278,7 +264,7 @@ export function TaskInvestmentPortfolio({
               <LineChart data={weeklyCompletionData}>
                 <XAxis dataKey="day" />
                 <YAxis domain={[0, 100]} hide />
-                <Tooltip formatter={(value: any) => `${value}%`} />
+                <Tooltip formatter={(value: number) => `${value}%`} />
                 <Line
                   type="monotone"
                   dataKey="rate"
@@ -369,7 +355,7 @@ export function TaskInvestmentPortfolio({
                   domain={[0, 100]}
                 />
                 <Tooltip
-                  content={(props: any) => (
+                  content={(props: { payload?: { name: string; x: number; y: number }; active?: boolean }) => (
                     <div className="bg-background border rounded p-2">
                       {props.payload && (
                         <>
