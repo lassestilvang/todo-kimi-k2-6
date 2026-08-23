@@ -4,16 +4,10 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   Clock,
   Brain,
-  Sun,
-  Moon,
-  Cloud,
-  TrendingUp,
   Lightbulb,
   History,
   Zap,
-  Calendar,
   BarChart3,
-  CheckCircle2,
   Target,
 } from 'lucide-react';
 import {
@@ -23,18 +17,10 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
-import {
-  format,
-  addHours,
-  subHours,
-  isSameDay,
-  isToday,
-  isTomorrow,
-} from 'date-fns';
+import { format } from 'date-fns';
 
 interface TemporalContextAIProps {
   currentTasks?: Array<{
@@ -67,7 +53,7 @@ interface TemporalSuggestion {
   suggested_at: Date;
   action?: {
     type: 'create_task' | 'reschedule' | 'mark_complete' | 'add_note';
-    payload: any;
+    payload: Record<string, unknown>;
   };
 }
 
@@ -123,11 +109,10 @@ export function TemporalContextAI({
   currentTasks = mockTasks,
   className,
 }: TemporalContextAIProps) {
-  const [suggestions, setSuggestions] = useState<TemporalSuggestion[]>([]);
   const [context, setContext] = useState<TimeContext>(() =>
     getCurrentContext()
   );
-  const [energyReading, setEnergyReading] = useState<number>(7);
+  const [energyReading] = useState<number>(7);
 
   // Recalculate context when time changes or in 15-minute intervals
   useEffect(() => {
@@ -284,7 +269,7 @@ export function TemporalContextAI({
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {suggestions.length === 0 ? (
+            {temporalSuggestions.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Brain className="h-12 w-12 mx-auto mb-4 opacity-30" />
                 <p>No suggestions at this moment</p>
@@ -293,7 +278,7 @@ export function TemporalContextAI({
                 </p>
               </div>
             ) : (
-              suggestions.map(suggestion => (
+              temporalSuggestions.map(suggestion => (
                 <div
                   key={suggestion.id}
                   className="border rounded-lg p-3 hover:shadow-sm transition-shadow"
@@ -658,7 +643,6 @@ export function useTemporalTaskSelection(
   >(null);
 
   const getNextBestTask = useCallback(() => {
-    const now = new Date();
     const context = getCurrentContext();
 
     const pendingTasks = tasks?.filter(t => !t.completed) || [];
