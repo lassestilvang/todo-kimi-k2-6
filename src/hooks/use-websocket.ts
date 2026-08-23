@@ -6,7 +6,7 @@ interface UseWebSocketOptions {
   onMessage?: (message: WSMessage) => void;
 }
 
-export function useWebSocket({ taskId, onMessage }: UseWebSocketOptions = {}) {
+export function useWebSocket({ taskId: _taskId, onMessage }: UseWebSocketOptions = {}) {
   const [isConnected, setIsConnected] = useState(false);
   const [presence, setPresence] = useState<
     Map<number, { userName: string; lastSeen: string }>
