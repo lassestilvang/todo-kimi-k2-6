@@ -5,9 +5,10 @@ import { Download, X, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
+import type { Task } from '@/types';
 
 interface BeforeInstallPromptEvent extends Event {
-  promise: Promise<any>;
+  promise: Promise<void>;
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
 }
@@ -281,8 +282,7 @@ export class OfflineDataManager {
     });
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  static async saveTask(task: any) {
+  static async saveTask(task: Task) {
     const db = await this.init();
     if (!db) return;
 
