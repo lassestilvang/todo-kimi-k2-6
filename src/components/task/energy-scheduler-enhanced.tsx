@@ -63,7 +63,6 @@ interface EnergySchedulerEnhancedProps {
 export function EnergySchedulerEnhanced({
   tasks,
   className,
-  _onSchedule,
 }: EnergySchedulerEnhancedProps) {
   const [recommendations, setRecommendations] =
     useState<EnergyRecommendations | null>(null);
