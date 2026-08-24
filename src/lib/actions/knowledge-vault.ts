@@ -135,7 +135,7 @@ export async function getKnowledgeEntries(
     SELECT * FROM knowledge_entries
     WHERE user_id = ?
   `;
-  const params: any[] = [userId];
+  const params: unknown[] = [userId];
 
   if (options?.type) {
     query += ' AND type = ?';
@@ -297,7 +297,15 @@ export async function extractLessonsLearned(
     ORDER BY de.created_at DESC
   `
     )
-    .all(userId) as any[];
+    .all(userId) as Array<{
+      id: number;
+      name: string;
+      description: string | null;
+      outcome: string | null;
+      outcome_notes: string | null;
+      outcome_rating: number | null;
+      created_at: string;
+    }>;
 
   return lessons.map(l => ({
     id: l.id,
