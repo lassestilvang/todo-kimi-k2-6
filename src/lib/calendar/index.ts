@@ -53,7 +53,6 @@ import {
   deleteOutlookEvent as outlookDeleteEvent,
   getOutlookAuthUrl,
   exchangeOutlookCodeForTokens,
-  type OutlookEvent,
 } from './outlook';
 
 // Extend OutlookSyncConfig type
