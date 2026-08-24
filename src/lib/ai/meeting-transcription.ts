@@ -195,7 +195,7 @@ export async function generateMeetingSummary(
 // Convert meeting action items to tasks
 export async function convertActionItemsToTasks(
   actionItems: MeetingActionItem[],
-  userId?: number
+  _userId?: number
 ): Promise<
   Array<{
     name: string;
