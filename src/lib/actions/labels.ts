@@ -29,7 +29,11 @@ export async function createLabel(input: CreateLabelInput): Promise<Label> {
       parsed.data.icon || '🏷️',
       parsed.data.color || '#8b5cf6'
     );
-  return (await getLabelById(result.lastInsertRowid as number))!;
+  const label = await getLabelById(result.lastInsertRowid as number);
+  if (!label) {
+    throw new Error('Failed to create label');
+  }
+  return label;
 }
 
 export async function deleteLabel(id: number): Promise<void> {
