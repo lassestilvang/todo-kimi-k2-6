@@ -111,24 +111,29 @@ export function DecisionShadowTracker() {
           {analysis?.patternAnalysis && (
             <div className="mt-6">
               <h4 className="font-medium mb-3">Patterns & Insights</h4>
-              {analysis.patternAnalysis.map((p: { pattern: string; recommendation: string }, idx: number) => (
-                <div
-                  key={idx}
-                  className="flex items-start gap-3 p-3 bg-muted rounded-lg mb-2"
-                >
-                  {p.pattern.includes('High') || p.pattern.includes('Low') ? (
-                    <AlertCircle className="h-5 w-5 text-amber-500 mt-0.5" />
-                  ) : (
-                    <Lightbulb className="h-5 w-5 text-blue-500 mt-0.5" />
-                  )}
-                  <div>
-                    <p className="font-medium text-sm">{p.pattern}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {p.recommendation}
-                    </p>
+              {analysis.patternAnalysis.map(
+                (
+                  p: { pattern: string; recommendation: string },
+                  idx: number
+                ) => (
+                  <div
+                    key={idx}
+                    className="flex items-start gap-3 p-3 bg-muted rounded-lg mb-2"
+                  >
+                    {p.pattern.includes('High') || p.pattern.includes('Low') ? (
+                      <AlertCircle className="h-5 w-5 text-amber-500 mt-0.5" />
+                    ) : (
+                      <Lightbulb className="h-5 w-5 text-blue-500 mt-0.5" />
+                    )}
+                    <div>
+                      <p className="font-medium text-sm">{p.pattern}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {p.recommendation}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              )}
             </div>
           )}
         </CardContent>
@@ -150,7 +155,7 @@ export function DecisionShadowTracker() {
                 value={decisionData.decision_type}
                 onValueChange={v => {
                   if (v) {
-                    setDecisionData(d => ({ ...d, decision_type: v }))
+                    setDecisionData(d => ({ ...d, decision_type: v }));
                   }
                 }}
               >
