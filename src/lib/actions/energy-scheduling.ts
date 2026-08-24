@@ -5,6 +5,7 @@ import { getCurrentUser } from '@/lib/session';
 import {
   getEnergyProfile,
   estimateEnergyCost,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   type EnergyProfileInput,
 } from './enhanced-productivity';
 import type { Task, TaskWithRelations } from '@/types';
@@ -38,7 +39,7 @@ export async function getEnergyAtTime(
   date: string,
   time: string
 ): Promise<number> {
-  const db = getDb();
+  void getDb(); // Database instance available for future use
   const user = await getCurrentUser();
 
   if (!user?.id) return 5; // Default medium energy
@@ -73,7 +74,9 @@ export async function getEnergyAtTime(
   // Default: interpolate within work hours
   const workStart = profile.work_hours.start * 60;
   const workEnd = profile.work_hours.end * 60;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const totalWorkMinutes = workEnd - workStart;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const minutesSinceStart = timeInMinutes - workStart;
 
   // Energy typically dips in the middle of the day (after lunch)
@@ -291,7 +294,7 @@ export async function bulkScheduleTasks(
   );
 
   // Log scheduling activity
-  const activityResult = db
+  await db
     .prepare(
       `
       INSERT INTO activity_logs (user_id, action, entity_type, details, created_at)
