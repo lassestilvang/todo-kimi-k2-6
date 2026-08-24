@@ -60,8 +60,9 @@ export function I18nProvider({
 
   const messages = useMemo(() => {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const msgs = require(`../../messages/${activeLocale}.json`);
+      // Dynamic import for locale messages - required for client-side i18n
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const msgs = require(`../../messages/${activeLocale}.json` as string);
       // Merge with defaults to ensure all keys exist
       return { ...defaultMessages, ...msgs };
     } catch {
