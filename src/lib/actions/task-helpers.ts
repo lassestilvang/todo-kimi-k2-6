@@ -11,10 +11,9 @@ export async function logTaskAction(
   if (typeof window !== 'undefined') {
     return;
   }
-  // Dynamic import to avoid loading native modules in browser
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { getDb } = require('@/lib/db');
-  const { sanitizeString } = require('@/lib/validation');
+  // Server-side only - use dynamic import
+  const { getDb } = await import('@/lib/db');
+  const { sanitizeString } = await import('@/lib/validation');
 
   const db = getDb();
   db.prepare(
