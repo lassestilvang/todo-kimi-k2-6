@@ -18,22 +18,18 @@ vi.mock('@/lib/api-middleware', () => ({
 
 vi.mock('@/lib/actions/time', () => ({
   getTimeEntries: vi.fn().mockResolvedValue([]),
-  addTimeEntry: vi
-    .fn()
-    .mockResolvedValue({
-      id: 1,
-      task_id: 1,
-      start_time: '2024-01-01',
-      duration: 3600,
-    }),
-  updateTimeEntry: vi
-    .fn()
-    .mockResolvedValue({
-      id: 1,
-      task_id: 1,
-      start_time: '2024-01-01',
-      duration: 7200,
-    }),
+  addTimeEntry: vi.fn().mockResolvedValue({
+    id: 1,
+    task_id: 1,
+    start_time: '2024-01-01',
+    duration: 3600,
+  }),
+  updateTimeEntry: vi.fn().mockResolvedValue({
+    id: 1,
+    task_id: 1,
+    start_time: '2024-01-01',
+    duration: 7200,
+  }),
   deleteTimeEntry: vi.fn().mockResolvedValue(undefined),
   createTimeEntry: vi.fn(),
 }));
