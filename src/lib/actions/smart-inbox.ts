@@ -230,7 +230,7 @@ export async function upsertInboxSource(data: {
   }
 
   // Insert new
-  const result = await db
+  await db
     .prepare(
       `
     INSERT INTO smart_inbox_sources
