@@ -181,7 +181,7 @@ export async function detectEnergyPeaks(
  */
 function analyzeDayPattern(dayTasks: Task[], date: string): DailyPattern {
   const completedTasks = dayTasks.filter(task => task.completed);
-  const pendingTasks = dayTasks.filter(task => !task.completed);
+  const _pendingTasks = dayTasks.filter(task => !task.completed);
 
   // Extract time-based patterns from task logs
   const taskTimes = dayTasks
