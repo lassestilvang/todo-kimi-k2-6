@@ -1,7 +1,6 @@
 'use server';
 
 import { getDb } from '@/lib/db';
-import type { Goal } from '@/types';
 
 export interface TeamMember {
   id: number;
@@ -93,7 +92,15 @@ async function getTeamMembers(
       ORDER BY task_count DESC
     `
       )
-      .all(workspaceId)) as any[];
+      .all(workspaceId)) as Array<{
+      id: number;
+      name: string | null;
+      email: string;
+      avatar_url: string | null;
+      task_count: number;
+      completion_rate: number;
+      last_active: string | null;
+    }>;
 
     return results.map(r => ({
       id: r.id,
@@ -124,7 +131,15 @@ async function getTeamMembers(
       ORDER BY task_count DESC
     `
       )
-      .all()) as any[];
+      .all()) as Array<{
+      id: number;
+      name: string | null;
+      email: string;
+      avatar_url: string | null;
+      task_count: number;
+      completion_rate: number;
+      last_active: string | null;
+    }>;
 
     return results.map(r => ({
       id: r.id,
@@ -249,7 +264,7 @@ async function getCapacityUtilization(
     ${whereClause ? `WHERE ${whereClause}` : ''}
   `
     )
-    .all(...params)) as any[];
+    .all(...params)) as Array<{ deadline: string | null; duration_seconds: number | null }>;
 
   // Get user count
   const userCount = workspaceId
@@ -320,7 +335,13 @@ async function getUpcomingDeadlines(
     LIMIT 10
   `
     )
-    .all(...params)) as any[];
+    .all(...params)) as Array<{
+      task_id: number;
+      task_name: string;
+      assignee: string | null;
+      deadline: string;
+      days_until: number;
+    }>;
 
   return results.map(r => ({
     task_id: r.task_id,
@@ -360,7 +381,11 @@ async function getBlockers(
     LIMIT 10
   `
     )
-    .all(...params)) as any[];
+    .all(...params)) as Array<{
+      task_id: number;
+      task_name: string;
+      blocked_by: number;
+    }>;
 
   return results.map(r => ({
     task_id: r.task_id,
@@ -411,7 +436,14 @@ export async function getSprintHistory(
     LIMIT ${limit}
   `
     )
-    .all(...params)) as any[];
+    .all(...params)) as Array<{
+      sprint_id: string;
+      start_date: string;
+      end_date: string;
+      planned: number;
+      completed: number;
+      completion_rate: number;
+    }>;
 
   return results.map(r => ({
     sprint_id: parseInt(r.sprint_id),
