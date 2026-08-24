@@ -65,11 +65,11 @@ interface IntegrationMarketplaceProps {
   userId?: number;
 }
 
-export function IntegrationMarketplace({
-  _userId = 1,
-}: IntegrationMarketplaceProps) {
+export function IntegrationMarketplace(
+  _props: IntegrationMarketplaceProps
+) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>('all');
   const [installedIntegrations, setInstalledIntegrations] = useState<
     Integration[]
   >([]);
@@ -89,7 +89,7 @@ export function IntegrationMarketplace({
           json: () => ({ integrations: [] }),
         })),
         fetch(
-          `/api/integrations/marketplace?category=${selectedCategory}${searchQuery ? `&q=${searchQuery}` : ''}`
+          `/api/integrations/marketplace?category=${selectedCategory ?? 'all'}${searchQuery ? `&q=${searchQuery}` : ''}`
         ),
       ]);
 
