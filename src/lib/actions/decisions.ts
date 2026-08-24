@@ -107,7 +107,7 @@ export async function getUserDecisionHistory(
   const db = getDb();
 
   let query = 'SELECT * FROM decision_entries WHERE user_id = ?';
-  const params: any[] = [userId];
+  const params: (string | number)[] = [userId];
 
   if (options?.taskId) {
     query += ' AND (task_id = ? OR task_id IS NULL)';
@@ -141,7 +141,7 @@ export async function getUserDecisionHistory(
   // For each entry, get the associated options
   for (const entry of entries) {
     entry.options = await getDecisionOptionsForEntry(entry.id);
-    (entry as any).tasks = await getTaskForDecision(entry.id);
+    entry.tasks = await getTaskForDecision(entry.id);
   }
 
   return entries;
@@ -168,7 +168,7 @@ export async function getTaskDecisions(
 
   for (const entry of entries) {
     entry.options = await getDecisionOptionsForEntry(entry.id);
-    (entry as any).tasks = await getTaskForDecision(entry.id);
+    entry.tasks = await getTaskForDecision(entry.id);
   }
 
   return entries;
@@ -195,7 +195,7 @@ export async function updateDecisionEntry(
 
   // Build update query dynamically
   const fields: string[] = [];
-  const values: any[] = [];
+  const values: (string | number | null)[] = [];
 
   if (updates.question !== undefined) {
     fields.push('question = ?');
@@ -285,7 +285,46 @@ export async function analyzeDecisionOutcomes(
     decisionType?: string;
     timeFrame?: string;
   }
-): Promise<any> {
+): Promise<{
+  total_decisions: number;
+  decision_types: Record<string, number>;
+  outcome_quality: {
+    total_decisions: number;
+    outcomes_with_rating: number;
+    average_rating: number | null;
+    positive_outcomes: number;
+    negative_outcomes: number;
+  };
+  patterns: {
+    by_decision_type: Record<string, { count: number; outcome_quality: number[]; average_outcome?: number }>;
+    by_time_of_day: Record<string, { count: number; outcome_quality: number[]; average_outcome?: number }>;
+    by_task_context: Record<string, { count: number; outcome_quality: number[]; average_outcome?: number }>;
+  };
+  learning_insights: {
+    good_decision_makers: Array<{
+      decision_type: string;
+      success_rate: number;
+    }>;
+    learning_opportunities: Array<{
+      decision_type: string;
+      success_rate: number;
+      improvement_areas: string[];
+    }>;
+    timing_insights: Array<{
+      hour: number;
+      success_rate: number;
+    }>;
+    context_insights: Array<{
+      context_type: string;
+      success_rate: number;
+    }>;
+  };
+  recommendations: {
+    immediate_actions: string[];
+    long_term_goals: string[];
+    quick_tips: string[];
+  };
+}> {
   const cacheKey = `decision-analysis:${userId}:${options?.decisionType || 'all'}`;
   const cached = aiCache.get(cacheKey);
   if (cached) {
@@ -412,7 +451,7 @@ async function getDecisionEntryById(
   if (!entry) return null;
 
   entry.options = await getDecisionOptionsForEntry(entry.id);
-  (entry as any).tasks = await getTaskForDecision(entry.id);
+  entry.tasks = await getTaskForDecision(entry.id);
 
   return entry;
 }
@@ -478,7 +517,13 @@ function countDecisionTypes(
 /**
  * Calculate outcome quality for decisions
  */
-function calculateOutcomeQuality(decisions: DecisionEntry[]): any {
+function calculateOutcomeQuality(decisions: DecisionEntry[]): {
+  total_decisions: number;
+  outcomes_with_rating: number;
+  average_rating: number | null;
+  positive_outcomes: number;
+  negative_outcomes: number;
+} {
   const outcomes = decisions.filter(d => d.outcome_rating !== null);
 
   if (outcomes.length === 0) {
@@ -509,7 +554,23 @@ function calculateOutcomeQuality(decisions: DecisionEntry[]): any {
 /**
  * Identify patterns in decision-making
  */
-function identifyDecisionPatterns(decisions: DecisionEntry[]): any {
+function identifyDecisionPatterns(decisions: DecisionEntry[]): {
+  by_decision_type: Record<string, {
+    count: number;
+    outcome_quality: number[];
+    average_outcome?: number;
+  }>;
+  by_time_of_day: Record<string, {
+    count: number;
+    outcome_quality: number[];
+    average_outcome?: number;
+  }>;
+  by_task_context: Record<string, {
+    count: number;
+    outcome_quality: number[];
+    average_outcome?: number;
+  }>;
+} {
   // Group decisions by type and analyze patterns
   interface PatternType {
     count: number;
@@ -581,7 +642,25 @@ function identifyDecisionPatterns(decisions: DecisionEntry[]): any {
 /**
  * Extract learning insights from decisions
  */
-function extractLearningInsights(decisions: DecisionEntry[]): any {
+function extractLearningInsights(decisions: DecisionEntry[]): {
+  good_decision_makers: Array<{
+    decision_type: string;
+    success_rate: number;
+  }>;
+  learning_opportunities: Array<{
+    decision_type: string;
+    success_rate: number;
+    improvement_areas: string[];
+  }>;
+  timing_insights: Array<{
+    hour: number;
+    success_rate: number;
+  }>;
+  context_insights: Array<{
+    context_type: string;
+    success_rate: number;
+  }>;
+} {
   const insights = {
     good_decision_makers: [] as Array<{
       decision_type: string;
@@ -592,8 +671,14 @@ function extractLearningInsights(decisions: DecisionEntry[]): any {
       success_rate: number;
       improvement_areas: string[];
     }>,
-    timing_insights: [], // Best times to make certain decisions
-    context_insights: [], // When certain contexts lead to better outcomes
+    timing_insights: [] as Array<{
+      hour: number;
+      success_rate: number;
+    }>,
+    context_insights: [] as Array<{
+      context_type: string;
+      success_rate: number;
+    }>,
   };
 
   // Get unique decision types
@@ -631,11 +716,23 @@ function extractLearningInsights(decisions: DecisionEntry[]): any {
 /**
  * Generate recommendations based on decision analysis
  */
+interface Recommendation {
+  priority: 'immediate' | 'maintain';
+  message: string;
+  strategies: string[];
+}
+
+interface DecisionRecommendationsResult {
+  immediate_actions: string[];
+  long_term_goals: string[];
+  quick_tips: string[];
+}
+
 function generateDecisionRecommendations(
   decisions: DecisionEntry[],
-  options?: any
-): any {
-  const recommendations = [];
+  _options?: Record<string, unknown>
+): DecisionRecommendationsResult {
+  const recommendations: Recommendation[] = [];
 
   const outcomes = decisions.filter(d => d.outcome_rating !== null);
 
@@ -645,6 +742,12 @@ function generateDecisionRecommendations(
         'Start tracking decision outcomes to get personalized insights',
       ],
       long_term_goals: ['Build a consistent decision-making framework'],
+      quick_tips: [
+        'Document your decision rationale for better learning',
+        'Set deadlines for time-sensitive decisions',
+        'Use decision checklists for complex choices',
+        'Review past similar decisions for context',
+      ],
     };
   }
 
