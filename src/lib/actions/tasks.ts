@@ -18,7 +18,7 @@ import type {
 import { listSchema, labelSchema, sanitizeString } from '@/lib/validation';
 import { logTaskAction } from '@/lib/actions/task-helpers';
 import { getTaskRelations } from '@/lib/db/relations';
-import { broadcastTaskUpdate, logActivity } from '@/lib/actions/realtime';
+import { broadcastTaskUpdate } from '@/lib/actions/realtime';
 
 /**
  * Check for potential duplicate tasks by comparing names.
@@ -685,7 +685,10 @@ export async function createTask(
     );
   }
 
-  return task!;
+  if (!task) {
+    throw new Error('Task not found');
+  }
+  return task;
 }
 
 export async function updateTask(
@@ -852,7 +855,10 @@ export async function updateTask(
     );
   }
 
-  return task!;
+  if (!task) {
+    throw new Error('Task not found');
+  }
+  return task;
 }
 
 export async function deleteTask(id: number): Promise<void> {
@@ -1046,7 +1052,6 @@ export type BatchOperation =
 export async function performBatchOperation(
   operation: BatchOperation
 ): Promise<BatchOperationResult> {
-  const db = getDb();
   const user = await getCurrentUser();
 
   if (!user?.id && process.env.NODE_ENV !== 'test') {
@@ -1060,7 +1065,6 @@ export async function performBatchOperation(
   // In test mode, user might be null, so use 0 as fallback
   const userId = user?.id ?? 0;
 
-  const errors: Array<{ taskId: number; error: string }> = [];
   let affectedCount = 0;
 
   try {
@@ -1989,7 +1993,7 @@ export async function editTaskWithAI(
     taskId?: number;
     updates?: Record<string, unknown>;
   },
-  tasks: Array<{
+  _tasks: Array<{
     id: number;
     name: string;
     completed: boolean;
