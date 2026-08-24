@@ -168,6 +168,13 @@ export interface TaskShare {
   user_id: number;
   permission: 'view' | 'edit';
   created_at: string;
+  user?: {
+    id: number;
+    email: string;
+    name: string | null;
+    avatar_url: string | null;
+  };
+  share_token?: string;
 }
 
 export interface CalendarSync {
@@ -470,7 +477,7 @@ export interface UserSkill {
   user_id: number;
   skill_name: string;
   proficiency_level: number; // 1-5
-  evidence_task_ids: string | null; // JSON array
+  evidence_task_ids: number[] | string | null; // Can be array or JSON string
   last_used_at: string | null;
   created_at: string;
 }
@@ -505,6 +512,7 @@ export interface DecisionEntry {
   outcome_notes: string | null;
   outcome_rating: number | null; // -1 to 1
   options?: DecisionOption[];
+  tasks?: Task | null;
   created_at: string;
   updated_at: string;
 }
