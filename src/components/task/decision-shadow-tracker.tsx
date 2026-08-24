@@ -148,9 +148,11 @@ export function DecisionShadowTracker() {
               <Label>Decision Type</Label>
               <Select
                 value={decisionData.decision_type}
-                onValueChange={(v: string) =>
-                  setDecisionData(d => ({ ...d, decision_type: v }))
-                }
+                onValueChange={v => {
+                  if (v) {
+                    setDecisionData(d => ({ ...d, decision_type: v }))
+                  }
+                }}
               >
                 <SelectTrigger>
                   <SelectValue />
