@@ -15,10 +15,17 @@ export interface CognitiveLoadState {
 }
 
 export interface CognitiveLoadAnalysis {
-  totalTasks: number;
-  completedTasks: number;
-  avgFocusBlocks: number;
-  interruptionRate: number;
+  totalTasks?: number;
+  completedTasks?: number;
+  avgFocusBlocks?: number;
+  interruptionRate?: number;
+  // Additional properties used by components
+  avgTaskCount?: number;
+  completionRate?: number;
+  avgEnergyLevel?: number;
+  loadTrend?: 'increasing' | 'decreasing' | 'stable';
+  recommendations?: string[];
+  avgInterruptions?: number;
 }
 
 export function useCognitiveLoad() {
@@ -76,6 +83,12 @@ export interface EnergyBudget {
   daily: number;
   balance: number;
   spent?: number;
+  // Additional properties used by components
+  date?: string;
+  dailyLimit?: number;
+  recovered?: number;
+  energy_spent?: number;
+  percentageUsed?: number;
 }
 
 export interface EnergyData {
@@ -158,6 +171,14 @@ export interface ExternalTask {
   status: 'pending' | 'completed' | 'cancelled';
   dueDate?: string;
   createdAt: string;
+  // Additional properties used by component
+  external_id?: string;
+  external_app_type?: string;
+  priority?: string;
+  confidence?: number;
+  due_date?: string;
+  energy_cost_estimate?: number;
+  created_at?: string;
 }
 
 export function useExternalTasks(status = 'pending') {
@@ -214,13 +235,26 @@ export interface DecisionAnalysis {
   items: DecisionAnalysisItem[];
   total: number;
   accuracy: number;
+  // Additional properties used by components
+  totalDecisions?: number;
+  avgOutcomeRating?: number;
+  decisionTypes?: Record<string, { avgRating: number }>;
+  patternAnalysis?: Array<{ pattern: string; recommendation: string; count?: number; improvement?: string }>;
 }
 
 export interface DecisionData {
-  decision: string;
+  decision?: string;
   options?: string[];
   context?: string;
   confidence?: number;
+  // Additional properties used by component
+  decision_type?: 'approach' | 'priority' | 'tool' | 'timeline' | 'allocation' | 'cancellation';
+  question?: string;
+  chosen_option_text?: string;
+  rationale?: string;
+  opportunity_cost?: string;
+  outcome?: string;
+  outcome_rating?: number;
 }
 
 export function useDecisionShadow() {
@@ -274,6 +308,9 @@ export interface MoodRecommendations {
   suggestions: string[];
   focusTime: string;
   breakInterval: number;
+  recommendations?: string[];
+  // Additional properties used by component
+  primary_mood?: string;
 }
 
 export function useMoodTracking() {
