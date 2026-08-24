@@ -288,7 +288,7 @@ export async function completeFocusSession(
 export async function interruptFocusSession(
   sessionId: number,
   userId: number,
-  reason?: string
+  _reason?: string
 ): Promise<FocusSession | null> {
   const db = getDb();
 
@@ -557,7 +557,12 @@ export async function getPomodoroHistory(
     ORDER BY date
   `
     )
-    .all(userId, startDate.toISOString().split('T')[0]) as any[];
+    .all(userId, startDate.toISOString().split('T')[0]) as Array<{
+    date: string;
+    completed: number | null;
+    interruptions: number | null;
+    totalTime: number | null;
+  }>;
 
   return history.map(h => ({
     date: h.date,
