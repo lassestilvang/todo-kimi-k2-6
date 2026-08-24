@@ -149,15 +149,15 @@ function IntegrationCard({
 
 interface ExternalTask {
   id: number;
-  external_id: string;
-  external_app_type: string;
+  external_id?: string;
+  external_app_type?: string;
   title: string;
-  description: string | null;
-  due_date: string | null;
-  priority: string;
-  confidence: number;
-  energy_cost_estimate: number;
-  created_at: string;
+  description?: string;
+  due_date?: string;
+  priority?: string;
+  confidence?: number;
+  energy_cost_estimate?: number;
+  created_at?: string;
 }
 
 interface ExternalTaskCardProps {
@@ -180,18 +180,18 @@ function ExternalTaskCard({ task, onConvert }: ExternalTaskCardProps) {
         <div className="flex-1">
           <h4 className="font-medium">{task.title}</h4>
           <p className="text-sm text-muted-foreground line-clamp-2">
-            {task.description}
+            {task.description ?? 'No description'}
           </p>
         </div>
-        <Badge className={priorityColors[task.priority] || 'bg-gray-100'}>
-          {task.priority}
+        <Badge className={task.priority ? priorityColors[task.priority] : 'bg-gray-100'}>
+          {task.priority ?? 'none'}
         </Badge>
       </div>
 
       <div className="flex items-center gap-4 text-xs text-muted-foreground mb-3">
-        <span>From: {task.external_app_type}</span>
-        <span>Confidence: {task.confidence}%</span>
-        <span>Energy: {task.energy_cost_estimate}</span>
+        <span>From: {task.external_app_type ?? 'Unknown'}</span>
+        <span>Confidence: {task.confidence ?? 0}%</span>
+        <span>Energy: {task.energy_cost_estimate ?? 0}</span>
       </div>
 
       <div className="flex gap-2">
