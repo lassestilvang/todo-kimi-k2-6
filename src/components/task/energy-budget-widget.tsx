@@ -32,13 +32,6 @@ export function EnergyBudgetWidget({ className }: EnergyBudgetWidgetProps) {
     await logEnergy({
       date: new Date().toISOString().split('T')[0],
       energy_spent: spent,
-      activities: [
-        {
-          task_id: null,
-          energy_cost: spent,
-          timestamp: new Date().toISOString(),
-        },
-      ],
     });
   };
 
