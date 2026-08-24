@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { sanitizeString } from '@/lib/validation';
 
 // Schema for incoming email webhook
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const EmailWebhookSchema = z.object({
   message_id: z.string(),
   subject: z.string(),
@@ -17,6 +18,7 @@ const EmailWebhookSchema = z.object({
 });
 
 // Schema for email processing options
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const EmailProcessingOptionsSchema = z.object({
   auto_create: z.boolean().default(true),
   auto_label: z.boolean().default(false),
