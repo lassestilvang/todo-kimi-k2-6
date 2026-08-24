@@ -32,7 +32,11 @@ export async function createList(input: CreateListInput): Promise<List> {
       parsed.data.emoji || '📋',
       parsed.data.color || '#6366f1'
     );
-  return (await getListById(result.lastInsertRowid as number))!;
+  const list = await getListById(result.lastInsertRowid as number);
+  if (!list) {
+    throw new Error('Failed to create list');
+  }
+  return list;
 }
 
 export async function updateList(
@@ -40,6 +44,7 @@ export async function updateList(
   input: Partial<CreateListInput>
 ): Promise<List> {
   const db = getDb();
+
   const fields: string[] = [];
   const values: unknown[] = [];
   if (input.name !== undefined) {
@@ -59,7 +64,12 @@ export async function updateList(
   db.prepare(`UPDATE lists SET ${fields.join(', ')} WHERE id = ?`).run(
     ...values
   );
-  return (await getListById(id))!;
+
+  const list = await getListById(id);
+  if (!list) {
+    throw new Error('List not found');
+  }
+  return list;
 }
 
 export async function deleteList(id: number): Promise<void> {
