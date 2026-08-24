@@ -4,6 +4,25 @@
 
 import { getDb } from '@/lib/db';
 
+// Task type from database
+interface TaskRow {
+  id: number;
+  name: string;
+  estimate?: string;
+  actual_time?: number;
+  priority?: string;
+  completed?: boolean;
+  completed_at?: string;
+  date?: string;
+  deadline?: string;
+  description?: string;
+  assignee_id?: number;
+  list_id?: number;
+  created_at?: string;
+  updated_at?: string;
+  [key: string]: unknown;
+}
+
 export interface EnergyLevel {
   time: string; // "09:00"
   level: 1 | 2 | 3 | 4 | 5; // 1 = low, 5 = high
@@ -122,7 +141,7 @@ export async function calculateOptimalSchedule(
       AND user_id = ?
     `
     )
-    .all(...taskIds, userId) as any[]; // better-sqlite3 row type
+    .all(...taskIds, userId) as TaskRow[]; // better-sqlite3 row type
 
   if (tasks.length === 0) {
     return {
@@ -141,7 +160,7 @@ export async function calculateOptimalSchedule(
       WHERE user_id = ? AND date = ?
     `
     )
-    .all(userId, targetDate) as unknown as Record<string, unknown>[]; // better-sqlite3 row type
+    .all(userId, targetDate) as Record<string, string | number | boolean | null>[]; // better-sqlite3 row type
 
   // Calculate blocked time
   const blockedTime: { start: string; end: string }[] = [];
@@ -155,8 +174,10 @@ export async function calculateOptimalSchedule(
 
   // Add calendar events
   calendarEvents.forEach(event => {
-    if (event.start_time && event.end_time) {
-      blockedTime.push({ start: event.start_time, end: event.end_time });
+    const startTime = event.start_time;
+    const endTime = event.end_time;
+    if (typeof startTime === 'string' && typeof endTime === 'string') {
+      blockedTime.push({ start: startTime, end: endTime });
     }
   });
 
@@ -181,10 +202,12 @@ export async function calculateOptimalSchedule(
   const suggestions: BlockSuggestion[] = [];
 
   for (const task of tasks) {
+    const estimateStr = typeof task.estimate === 'string' ? task.estimate : undefined;
+    const actualTimeNum = typeof task.actual_time === 'number' ? task.actual_time : undefined;
     const estimatedMinutes = parseDuration(
-      task.estimate || task.actual_time || '30'
+      estimateStr || (actualTimeNum ? String(actualTimeNum) : '30')
     );
-    const priority = task.priority || 'medium';
+    const priority = (typeof task.priority === 'string' ? task.priority : undefined) || 'medium';
 
     // Find best time slot
     let bestSlot: BlockSuggestion | null = null;
@@ -358,7 +381,7 @@ export async function rescheduleTask(
 
   const task = db
     .prepare('SELECT * FROM tasks WHERE id = ? AND user_id = ?')
-    .get(taskId, userId) as any | undefined;
+    .get(taskId, userId) as Record<string, unknown> | undefined;
 
   if (!task) {
     return { success: false, message: 'Task not found' };
