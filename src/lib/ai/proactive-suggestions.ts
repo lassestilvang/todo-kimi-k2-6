@@ -2,7 +2,7 @@
  * Proactive AI Suggestions - Smart nudges based on user patterns and task analysis
  */
 
-import type { Task, TaskWithRelations } from '@/types';
+import type { TaskWithRelations } from '@/types';
 
 export interface ProactiveSuggestion {
   type: 'nudge' | 'pattern' | 'focus' | 'balance' | 'risk' | 'streak' | 'habit';
