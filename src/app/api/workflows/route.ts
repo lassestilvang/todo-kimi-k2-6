@@ -32,7 +32,11 @@ export async function GET(request: NextRequest) {
   const type = searchParams.get('type');
   const executions = searchParams.get('executions') === 'true';
   const statusParam = searchParams.get('status');
-  const validStatus: ExecutionStatus | undefined = statusParam && ['running', 'completed', 'failed', 'skipped'].includes(statusParam) ? statusParam as ExecutionStatus : undefined;
+  const validStatus: ExecutionStatus | undefined =
+    statusParam &&
+    ['running', 'completed', 'failed', 'skipped'].includes(statusParam)
+      ? (statusParam as ExecutionStatus)
+      : undefined;
 
   try {
     // Get single workflow
