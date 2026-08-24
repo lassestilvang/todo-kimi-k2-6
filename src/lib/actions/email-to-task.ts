@@ -2,7 +2,7 @@
 
 import { getDb } from '@/lib/db';
 import { getCurrentUser } from '@/lib/session';
-import type { Task, CreateTaskInput } from '@/types';
+import type { Task } from '@/types';
 import { createTask } from './tasks';
 import { z } from 'zod';
 import { shouldExcludeEmail, parseEmailToTask } from './email-parser-helpers';
@@ -23,6 +23,7 @@ const EmailWebhookSchema = z.object({
 });
 
 // Schema for email processing options
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const EmailProcessingOptionsSchema = z.object({
   auto_create: z.boolean().default(true),
   auto_label: z.boolean().default(false),
@@ -127,14 +128,23 @@ export async function processEmail(
       };
     }
 
+    if (!parsed.parsed_fields) {
+      return {
+        success: false,
+        skipped: true,
+        reason: 'No parsed fields available',
+        confidence: 0,
+      };
+    }
+
     const task = await createTask({
-      name: parsed.parsed_fields!.title,
-      description: parsed.parsed_fields!.description,
-      deadline: parsed.parsed_fields!.due_date,
-      priority: parsed.parsed_fields!.priority,
+      name: parsed.parsed_fields.title,
+      description: parsed.parsed_fields.description,
+      deadline: parsed.parsed_fields.due_date,
+      priority: parsed.parsed_fields.priority,
       list_id: options?.default_list_id,
-      label_ids: parsed.parsed_fields!.labels?.length
-        ? await ensureLabelsExist(parsed.parsed_fields!.labels, user.id)
+      label_ids: parsed.parsed_fields.labels?.length
+        ? await ensureLabelsExist(parsed.parsed_fields.labels, user.id)
         : [],
     });
 
