@@ -139,9 +139,7 @@ describe('Lists Actions - Extended Tests', () => {
     });
 
     it('should handle non-existent list in update', async () => {
-      // Mock may not throw, just verify the function runs
-      await updateList(999, { name: 'Updated' });
-      // In real implementation, this would throw or return null
+      await expect(updateList(999, { name: 'Updated' })).rejects.toThrow('List not found');
     });
   });
 
