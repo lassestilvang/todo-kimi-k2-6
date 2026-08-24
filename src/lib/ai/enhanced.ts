@@ -71,8 +71,20 @@ export async function enhancedEditTask(
     case 'add_label':
     case 'remove_label':
     case 'search': {
-      const ai = getAIManager();
-      return await processEditCommand(ai, input, context);
+      // Process edit command with AI parsing
+      await processEditCommand(getAIManager(), input, context);
+
+      return {
+        success: true,
+        message: `AI processed edit command`,
+        task: input.taskId ? {
+          id: input.taskId,
+          name: '',
+          completed: false,
+          priority: 'medium',
+        } : undefined,
+        decisionId: undefined,
+      };
     }
 
     case 'record_decision':
@@ -102,6 +114,7 @@ async function processEditCommand(
     completed: boolean;
     priority: string;
   }[];
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const result = await ai.parseEditCommand(input.searchQuery || '', {
     tasks: typedTasks,
   });
@@ -109,7 +122,12 @@ async function processEditCommand(
   return {
     success: true,
     message: `AI processed edit command`,
-    task: input.taskId ? { id: input.taskId } : undefined,
+    task: input.taskId ? {
+      id: input.taskId,
+      name: '',
+      completed: false,
+      priority: 'medium',
+    } : undefined,
     decisionId: undefined,
   };
 }
@@ -119,7 +137,7 @@ async function processEditCommand(
  */
 async function recordDecisionWithAI(
   input: EnhancedEditCommand,
-  context: { tasks: EnhancedTask[]; userId: number }
+  _context: { tasks: EnhancedTask[]; userId: number }
 ): Promise<{
   success: boolean;
   message: string;
@@ -143,7 +161,7 @@ async function recordDecisionWithAI(
     })),
   });
 
-  const { entry, optionIds } = result;
+  const { entry } = result;
 
   // Apply the task update if specified
   if (input.updates && input.taskId) {
@@ -165,7 +183,7 @@ async function recordDecisionWithAI(
   return {
     success: true,
     message: `Decision recorded with ID ${entry.id}`,
-    task: null,
+    task: undefined,
     decisionId: entry.id,
   };
 }
@@ -220,9 +238,9 @@ export async function predictTaskCompletion(
  * Suggest task dependencies based on patterns
  */
 export async function suggestTaskDependencies(
-  tasks: EnhancedTask[],
-  userId: number,
-  options?: {
+  _tasks: EnhancedTask[],
+  _userId: number,
+  _options?: {
     similarityThreshold?: number;
     excludeCompleted?: boolean;
   }
