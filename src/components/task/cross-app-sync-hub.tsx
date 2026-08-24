@@ -183,7 +183,11 @@ function ExternalTaskCard({ task, onConvert }: ExternalTaskCardProps) {
             {task.description ?? 'No description'}
           </p>
         </div>
-        <Badge className={task.priority ? priorityColors[task.priority] : 'bg-gray-100'}>
+        <Badge
+          className={
+            task.priority ? priorityColors[task.priority] : 'bg-gray-100'
+          }
+        >
           {task.priority ?? 'none'}
         </Badge>
       </div>
