@@ -112,6 +112,7 @@ export function TaskList({
   const parentRef = useRef<HTMLDivElement>(null);
   const visibleTasks = showCompleted ? tasks : tasks.filter(t => !t.completed);
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const rowVirtualizer = useVirtualizer({
     count: visibleTasks.length,
     getScrollElement: () => parentRef.current,
