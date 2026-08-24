@@ -11,7 +11,6 @@ import {
   IntegrationConfig,
   ExternalRecord,
 } from './base-connector';
-import type { Task } from '@/types';
 
 export interface OutlookCalendarRecord extends ExternalRecord {
   eventId: string;
@@ -23,6 +22,19 @@ export interface OutlookCalendarRecord extends ExternalRecord {
   sensitivity: 'normal' | 'personal' | 'private';
   categories?: string[];
   labels?: string[];
+}
+
+export interface OutlookEventInput {
+  id?: string;
+  subject?: string;
+  body?: { content?: string };
+  start?: { dateTime?: string };
+  end?: { dateTime?: string };
+  attendees?: Array<{ emailAddress?: { address?: string }; name?: string }>;
+  categories?: string[];
+  sensitivity?: 'normal' | 'personal' | 'private';
+  isReminderOn?: boolean;
+  webLink?: string;
 }
 
 export class OutlookConnector extends BaseConnector {
@@ -339,7 +351,7 @@ export class OutlookConnector extends BaseConnector {
     });
   }
 
-  private mapOutlookEventToTask(event: any): OutlookCalendarRecord | null {
+  private mapOutlookEventToTask(event: OutlookEventInput): OutlookCalendarRecord | null {
     // Only convert events that appear to be task-related
     const hasTaskKeywords = /task|todo|meeting|appointment|deadline/i.test(
       event.subject || ''
