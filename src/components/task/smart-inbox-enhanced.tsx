@@ -130,6 +130,7 @@ export function SmartInbox({
     sortBy?: 'priority' | 'date' | 'confidence';
   }>({});
   const [showConvertDialog, setShowConvertDialog] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<SmartInboxItem | null>(null);
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
   const [autoTriageEnabled, setAutoTriageEnabled] = useState(true);
 
@@ -302,6 +303,11 @@ export function SmartInbox({
     if (confidence >= 50) return 'text-blue-600';
     if (confidence >= 30) return 'text-amber-600';
     return 'text-red-600';
+  };
+
+  const openConvertDialog = (item: SmartInboxItem) => {
+    setSelectedItem(item);
+    setShowConvertDialog(true);
   };
 
   const runAutoTriage = useCallback(async () => {
@@ -627,6 +633,13 @@ export function SmartInbox({
                               )}
                             </div>
                           </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => openConvertDialog(item)}
+                          >
+                            Convert
+                          </Button>
                         </div>
                       </CardContent>
                     </Card>
@@ -730,8 +743,12 @@ export function SmartInbox({
               Cancel
             </Button>
             <Button
-              onClick={() => {
-                if (selectedItem) handleConvert(selectedItem);
+              onClick={async () => {
+                if (selectedItem) {
+                  await handleConvert(selectedItem);
+                  setShowConvertDialog(false);
+                  setSelectedItem(null);
+                }
               }}
             >
               Convert with AI Suggestions
