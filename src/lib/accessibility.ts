@@ -113,10 +113,10 @@ export function announce(message: string): void {
  * Hook to announce changes to screen readers
  */
 export function useAnnounce(message: string, dependsOn?: unknown[]): void {
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (message) {
       announce(message);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [message, ...(dependsOn || [])]);
 }
