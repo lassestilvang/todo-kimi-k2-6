@@ -140,7 +140,7 @@ interface CacheEntry<T> {
 }
 
 class AICache {
-  private cache = new Map<string, CacheEntry<any>>();
+  private cache = new Map<string, CacheEntry<unknown>>();
 
   get<T>(key: string): T | null {
     const entry = this.cache.get(key);
@@ -151,7 +151,7 @@ class AICache {
       return null;
     }
 
-    return entry.data;
+    return entry.data as T;
   }
 
   set<T>(key: string, data: T): void {
@@ -614,7 +614,6 @@ export class KeywordParser implements AIProvider {
       projectName,
       description = '',
       constraints = {},
-      context = {},
     } = input;
     const normalizedDescription = (
       description +
@@ -755,6 +754,7 @@ export class KeywordParser implements AIProvider {
     }
 
     // Check for duration keywords in description
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const durationPatterns = [
       { pattern: /(\d+)\s*day/i, days: 1 },
       { pattern: /(\d+)\s*week/i, days: 7 },
@@ -826,7 +826,6 @@ export class KeywordParser implements AIProvider {
     totalDuration: number
   ): ProjectPhase[] {
     const phases: ProjectPhase[] = [];
-    let remainingDays = totalDuration;
 
     // Define standard phase templates
     const phaseTemplates: Array<{
@@ -877,7 +876,7 @@ export class KeywordParser implements AIProvider {
     const detectedPhaseKeys = new Set<string>();
 
     // Find matching phases based on keywords
-    for (const [phaseIndex, template] of phaseTemplates.entries()) {
+    for (const [phaseIndex, template] of [...phaseTemplates.entries()]) {
       const matches = template.namePattern.filter(
         pattern =>
           description.includes(pattern) || detectedPhaseKeys.has(pattern)
@@ -928,8 +927,6 @@ export class KeywordParser implements AIProvider {
           duration_days: phaseDays,
           priority,
         });
-
-        remainingDays -= phaseDays;
       }
     }
 
@@ -939,7 +936,7 @@ export class KeywordParser implements AIProvider {
   /**
    * Format phase name to be more readable and appropriate
    */
-  private formatPhaseName(keyword: string, phaseIndex: number): string {
+  private formatPhaseName(keyword: string, _phaseIndex: number): string {
     const nameMap: Record<string, string> = {
       planning: 'Planning',
       setup: 'Setup',
@@ -1663,11 +1660,15 @@ Return only JSON with these fields:
 
     try {
       return await this.withRetry(async () => {
+        const apiKey = process.env.ANTHROPIC_API_KEY;
+        if (!apiKey) {
+          throw new Error('ANTHROPIC_API_KEY is not set');
+        }
         const response = await withTimeout(
           fetch(`${this.baseURL}/v1/messages`, {
             method: 'POST',
             headers: {
-              'x-api-key': process.env.ANTHROPIC_API_KEY!,
+              'x-api-key': apiKey,
               'Content-Type': 'application/json',
               'anthropic-version': '2023-06-01',
             },
@@ -1735,11 +1736,15 @@ Return JSON: {"tips":["..."],"suggestions":["..."],"trends":["..."]}
 `;
 
     try {
+      const apiKey = process.env.ANTHROPIC_API_KEY;
+      if (!apiKey) {
+        throw new Error('ANTHROPIC_API_KEY is not set');
+      }
       return await this.withRetry(async () => {
         const response = await fetch(`${this.baseURL}/v1/messages`, {
           method: 'POST',
           headers: {
-            'x-api-key': process.env.ANTHROPIC_API_KEY!,
+            'x-api-key': apiKey,
             'Content-Type': 'application/json',
             'anthropic-version': '2023-06-01',
           },
@@ -1801,10 +1806,14 @@ Only return valid JSON.
 `;
 
     try {
+      const apiKey = process.env.ANTHROPIC_API_KEY;
+      if (!apiKey) {
+        return [];
+      }
       const response = await fetch(`${this.baseURL}/v1/messages`, {
         method: 'POST',
         headers: {
-          'x-api-key': process.env.ANTHROPIC_API_KEY!,
+          'x-api-key': apiKey,
           'Content-Type': 'application/json',
           'anthropic-version': '2023-06-01',
         },
@@ -1844,10 +1853,14 @@ Return JSON with phases and total_duration_days.
 `;
 
     try {
+      const apiKey = process.env.ANTHROPIC_API_KEY;
+      if (!apiKey) {
+        throw new Error('ANTHROPIC_API_KEY is not set');
+      }
       const response = await fetch(`${this.baseURL}/v1/messages`, {
         method: 'POST',
         headers: {
-          'x-api-key': process.env.ANTHROPIC_API_KEY!,
+          'x-api-key': apiKey,
           'Content-Type': 'application/json',
           'anthropic-version': '2023-06-01',
         },
@@ -1886,10 +1899,14 @@ Return JSON with name, prompt_template, and option_template.
 `;
 
     try {
+      const apiKey = process.env.ANTHROPIC_API_KEY;
+      if (!apiKey) {
+        throw new Error('ANTHROPIC_API_KEY is not set');
+      }
       const response = await fetch(`${this.baseURL}/v1/messages`, {
         method: 'POST',
         headers: {
-          'x-api-key': process.env.ANTHROPIC_API_KEY!,
+          'x-api-key': apiKey,
           'Content-Type': 'application/json',
           'anthropic-version': '2023-06-01',
         },
@@ -2027,13 +2044,10 @@ export class AIManager {
     for (const provider of this.providers) {
       if (
         provider.name !== 'keyword-parser' &&
-        typeof (provider as any).generateTasksFromNotes === 'function'
+        provider.generateTasksFromNotes
       ) {
         try {
-          const result = await (provider as any).generateTasksFromNotes(
-            notes,
-            context
-          );
+          const result = await provider.generateTasksFromNotes?.(notes, context);
           if (result && result.length > 0) {
             return result.map((task: TaskSuggestion) => ({
               ...task,
@@ -2066,9 +2080,9 @@ export class AIManager {
   ): Promise<GeneratedProject & { provider: string }> {
     // Try providers that support project planning (keyword parser always has it)
     for (const provider of this.providers) {
-      if (typeof (provider as any).generateProjectPlan === 'function') {
+      if (provider.generateProjectPlan) {
         try {
-          const result = await (provider as any).generateProjectPlan(input);
+          const result = await provider.generateProjectPlan?.(input);
           if (result) {
             return { ...result, provider: provider.name };
           }
@@ -2176,9 +2190,9 @@ export class AIManager {
       try {
         if (
           provider.name !== 'keyword-parser' &&
-          typeof (provider as any).parseEditCommand === 'function'
+          provider.parseEditCommand
         ) {
-          const result = await (provider as any).parseEditCommand(
+          const result = await provider.parseEditCommand?.(
             text,
             context
           );
