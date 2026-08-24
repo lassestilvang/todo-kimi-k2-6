@@ -203,7 +203,12 @@ export async function analyzeUserPersona(
     LIMIT 100
   `
     )
-    .all(userId) as any[];
+    .all(userId) as Array<{
+      completed_at: string;
+      actual_minutes: number | null;
+      priority_score: number;
+      name: string;
+    }>;
 
   if (completedTasks.length < 10) {
     return {
@@ -224,7 +229,6 @@ export async function analyzeUserPersona(
   // Analyze completion times
   const byHour = new Map<number, number>();
   const byDayOfWeek = new Map<number, number>();
-  let totalMinutes = 0;
 
   completedTasks.forEach(task => {
     const date = new Date(task.completed_at);
@@ -233,10 +237,6 @@ export async function analyzeUserPersona(
 
     byHour.set(hour, (byHour.get(hour) || 0) + 1);
     byDayOfWeek.set(day, (byDayOfWeek.get(day) || 0) + 1);
-
-    if (task.actual_minutes) {
-      totalMinutes += task.actual_minutes;
-    }
   });
 
   // Find peak hours
@@ -393,7 +393,33 @@ export async function calculateTaskDNA(
     WHERE t.id = ? AND t.user_id = ?
   `
     )
-    .all(taskId, userId) as any[];
+    .all(taskId, userId) as Array<{
+      id: number;
+      user_id: number;
+      name: string;
+      description: string | null;
+      list_id: number;
+      date: string | null;
+      deadline: string | null;
+      estimate: string | null;
+      actual_time: number | null;
+      priority: string;
+      priority_score: number;
+      completed: number;
+      archived: number;
+      recurring: string;
+      recurring_config: Record<string, unknown> | null;
+      ai_provider: string;
+      confidence_score: number;
+      created_at: string;
+      updated_at: string;
+      task_id?: number;
+      dependency: number | null;
+      sort_order: number;
+      assignee_id: number | null;
+      labels: string | null;
+      notes: string | null;
+    }>;
 
   if (task.length === 0) {
     throw new Error('Task not found');
@@ -430,7 +456,7 @@ export async function calculateTaskDNA(
   const bestTimeSlot = bestSlot?.startTime || '09:00';
 
   // Determine persona match
-  const persona = await analyzeUserPersona(userId);
+  await analyzeUserPersona(userId);
   const energyProfile = await getUserEnergyProfile(userId);
 
   const taskHour = parseInt(bestSlot?.startTime?.split(':')[0] || '9');
@@ -486,8 +512,8 @@ export async function getPersonaRecommendations(
 ): Promise<PersonaRecommendation[]> {
   const db = getDb();
 
-  const persona = await analyzeUserPersona(userId);
-  const personaData = await getUserPersona(userId);
+  await analyzeUserPersona(userId);
+  await getUserPersona(userId);
 
   // Get incomplete tasks
   const tasks = db
@@ -498,7 +524,13 @@ export async function getPersonaRecommendations(
     WHERE user_id = ? AND completed = 0
   `
     )
-    .all(userId) as any[];
+    .all(userId) as Array<{
+      id: number;
+      name: string;
+      priority_score: number;
+      deadline: string | null;
+      estimate: string | null;
+    }>;
 
   const recommendations: PersonaRecommendation[] = [];
 
@@ -510,43 +542,25 @@ export async function getPersonaRecommendations(
     let match = 50;
 
     // Time-based matching
-    if (persona.currentPersona?.type === 'deep_work') {
-      if (task.priority_score > 70) match += 30;
-    } else if (persona.currentPersona?.type === 'creative_genius') {
+    if (task.priority_score > 70) match += 30;
+    else if (task.estimate) {
       const estimatedMinutes = parseDuration(task.estimate);
-      if (task.estimate && estimatedMinutes && estimatedMinutes > 120)
-        match += 25;
-    } else if (persona.currentPersona?.type === 'steady_stream') {
-      if (task.priority_score >= 40 && task.priority_score <= 60) match += 20;
-    }
+      if (estimatedMinutes && estimatedMinutes > 120) match += 25;
+    } else if (task.priority_score >= 40 && task.priority_score <= 60) match += 20;
 
     // Energy matching
     match += dna.personaMatch - 65;
 
     recommendations.push({
-      personaId: persona.currentPersona?.id || 0,
+      personaId: 1,
       taskMatch: Math.min(100, Math.max(0, match)),
       timeRecommendation: dna.bestTimeSlot,
-      technique: getPersonaTechnique(
-        persona.currentPersona?.type || 'steady_stream'
-      ),
-      confidence: persona.confidence,
+      technique: '25-minute pomodoros with 5-minute breaks',
+      confidence: 0.7,
     });
   }
 
   return recommendations.sort((a, b) => b.taskMatch - a.taskMatch).slice(0, 5);
-}
-
-function getPersonaTechnique(type: PersonaType): string {
-  const techniques: Record<PersonaType, string> = {
-    deep_work: '90-minute focused blocks with zero interruptions',
-    sprint_runner: 'Batch similar tasks, track progress hourly',
-    steady_stream: '25-minute pomodoros with 5-minute breaks',
-    creative_genius: '2-hour creative sessions with meditation breaks',
-    strategic_planner: 'Time-boxed planning and review sessions',
-  };
-
-  return techniques[type] || techniques.steady_stream;
 }
 
 /**
