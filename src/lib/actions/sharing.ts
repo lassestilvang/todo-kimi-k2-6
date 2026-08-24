@@ -87,23 +87,34 @@ export async function getTaskShares(
   }>;
 
   const result: Array<TaskShare & { user?: User; share_token?: string }> =
-    shares.map(share => ({
-      id: share.id,
-      task_id: share.task_id,
-      user_id: share.user_id ?? (undefined as unknown as number),
-      permission: share.permission,
-      share_token: share.share_token ?? undefined,
-      created_at: share.created_at,
-      user: share.user_db_id
-        ? {
-            id: share.user_db_id,
-            email: share.email!,
-            name: share.name,
-            avatar_url: share.avatar_url,
-            created_at: share.user_created_at!,
-          }
-        : undefined,
-    }));
+    shares.map(share => {
+      if (!share.user_db_id) {
+        return {
+          id: share.id,
+          task_id: share.task_id,
+          user_id: share.user_id ?? (undefined as unknown as number),
+          permission: share.permission,
+          share_token: share.share_token ?? undefined,
+          created_at: share.created_at,
+          user: undefined,
+        };
+      }
+      return {
+        id: share.id,
+        task_id: share.task_id,
+        user_id: share.user_id ?? (undefined as unknown as number),
+        permission: share.permission,
+        share_token: share.share_token ?? undefined,
+        created_at: share.created_at,
+        user: {
+          id: share.user_db_id,
+          email: share.email ?? '',
+          name: share.name ?? '',
+          avatar_url: share.avatar_url,
+          created_at: share.user_created_at ?? share.created_at,
+        },
+      };
+    });
   return result;
 }
 
