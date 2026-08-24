@@ -301,7 +301,7 @@ export function PersonaMatchDashboard({ tasks }: PersonaMatchDashboardProps) {
             <Target className="h-5 w-5" />
             <span>Task Matching</span>
           </CardTitle>
-          <Select value={sortBy} onValueChange={(v: 'match' | 'complexity' | 'time') => setSortBy(v)}>
+          <Select value={sortBy} onValueChange={v => { if (v) setSortBy(v) }}>
             <SelectTrigger className="w-[120px] h-8">
               <SelectValue placeholder="Sort by..." />
             </SelectTrigger>
