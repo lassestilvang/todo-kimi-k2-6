@@ -203,16 +203,16 @@ export async function logEnergyBudget(
   // Get current balance
   const existing = db
     .prepare(
-      'SELECT current_balance FROM energy_budget_logs WHERE user_id = ? AND date = ?'
+      'SELECT current_balance, energy_spent, energy_recovered FROM energy_budget_logs WHERE user_id = ? AND date = ?'
     )
-    .get(user.id, input.date) as { current_balance: number } | undefined;
+    .get(user.id, input.date) as { current_balance: number; energy_spent: number; energy_recovered: number } | undefined;
 
   const currentBalance = existing?.current_balance ?? 100;
-  const prevBalance = existing ? (existing as any).energy_spent : 0;
+  const prevBalance = existing?.energy_spent ?? 0;
   const energySpent = (input.energy_spent ?? 0) + prevBalance;
   const energyRecovered =
     (input.energy_recovered ?? 0) +
-    (existing ? (existing as any).energy_recovered : 0);
+    (existing?.energy_recovered ?? 0);
   const newBalance = Math.max(
     0,
     Math.min(100, currentBalance - energySpent + energyRecovered)
@@ -820,7 +820,7 @@ export async function getDecisionAnalysis(
 
 function generateDecisionPatterns(
   decisionTypes: Array<{ type: string; count: number; avgRating: number }>,
-  avgOutcomeRating: number
+  _avgOutcomeRating: number
 ): Array<{ pattern: string; recommendation: string }> {
   const patterns = [];
 
