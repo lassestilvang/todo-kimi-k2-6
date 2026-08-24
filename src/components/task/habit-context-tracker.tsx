@@ -156,7 +156,9 @@ export function HabitContextTracker({
             <Label>Context Type</Label>
             <Select
               value={selectedContextType}
-              onValueChange={(v: string) => setSelectedContextType(v as HabitContext['context_type'])}
+              onValueChange={v => {
+                if (v) setSelectedContextType(v as HabitContext['context_type'])
+              }}
             >
               <SelectTrigger>
                 <SelectValue />
