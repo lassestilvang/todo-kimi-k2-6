@@ -102,7 +102,7 @@ export async function createTaskConnection(
     const updated = db
       .prepare('SELECT * FROM task_connections WHERE id = ?')
       .get(existing.id) as TaskConnection;
-    const { updated_at, ...result } = updated;
+    const { updated_at: _updatedAt, ...result } = updated;
     return result;
   }
 
@@ -117,8 +117,8 @@ export async function createTaskConnection(
   const connection = db
     .prepare('SELECT * FROM task_connections WHERE id = ?')
     .get(result.lastInsertRowid as number) as TaskConnection;
-  const { updated_at, ...result } = connection;
-  return result;
+  const { updated_at: _updatedAt, ...newResult } = connection;
+  return newResult;
 }
 
 /**
@@ -364,8 +364,6 @@ export async function updateSkillProficiency(
   userId: number,
   task: TaskWithRelations
 ): Promise<void> {
-  const db = getDb();
-
   // Simple skill inference based on task priority and category
   const skills: string[] = [];
 
