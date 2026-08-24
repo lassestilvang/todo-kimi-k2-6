@@ -65,9 +65,8 @@ const connectionTypes = [
 export function TaskConnectionsTab({
   task,
   connections = [],
-  _relatedTasks = [],
   onConnectionsChange,
-}: TaskConnectionsTabProps) {
+}: TaskConnectionsTabProps & { relatedTasks?: Task[] }) {
   const [showAddConnection, setShowAddConnection] = useState(false);
   const [newConnection, setNewConnection] = useState({
     targetTaskId: '',
