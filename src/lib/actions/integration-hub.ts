@@ -68,6 +68,11 @@ export interface SyncSchedule {
 }
 
 /**
+ * Integration config record type
+ */
+export type IntegrationConfig = Record<string, string | number | boolean | object | null>;
+
+/**
  * Get all integrations for a user
  */
 export async function getUserIntegrations(
@@ -114,7 +119,7 @@ export async function connectIntegration(
     name: string;
     type: string;
     provider: string;
-    config?: Record<string, any>;
+    config?: IntegrationConfig;
     syncEnabled?: boolean;
   }
 ): Promise<Integration> {
@@ -151,7 +156,7 @@ export async function updateIntegration(
   updates: Partial<{
     name: string;
     type: string;
-    config: Record<string, any>;
+    config: IntegrationConfig;
     sync_enabled: boolean;
     status: 'active' | 'pending' | 'error' | 'disconnected';
   }>
@@ -159,7 +164,7 @@ export async function updateIntegration(
   const db = getDb();
 
   const setClauses: string[] = [];
-  const values: any[] = [];
+  const values: unknown[] = [];
 
   if (updates.name !== undefined) {
     setClauses.push('name = ?');
@@ -249,7 +254,7 @@ export async function deleteIntegration(
 export async function triggerSync(
   userId: number,
   integrationId: number,
-  options?: { skipQueue?: boolean }
+  _options?: { skipQueue?: boolean }
 ): Promise<SyncResult> {
   const db = getDb();
 
@@ -288,11 +293,11 @@ export async function triggerSync(
       duration_ms: Date.now() - startTime,
       next_sync: nextSync,
     };
-  } catch (error) {
+  } catch (e) {
     return {
       success: false,
       items_synced: 0,
-      errors: [error instanceof Error ? error.message : 'Sync failed'],
+      errors: [e instanceof Error ? e.message : 'Sync failed'],
       duration_ms: Date.now() - startTime,
       next_sync: '',
     };
@@ -445,8 +450,8 @@ export async function getPopularIntegrations(
  */
 export async function calculateNextSync(
   frequency: string,
-  time?: string,
-  days?: string[]
+  _time?: string,
+  _days?: string[]
 ): Promise<string> {
   const now = new Date();
 
@@ -529,7 +534,7 @@ export async function testIntegrationConnection(
   userId: number,
   integrationId: number
 ): Promise<{ success: boolean; message: string }> {
-  const db = getDb();
+  const _db = getDb();
 
   const integration = await getIntegration(integrationId, userId);
   if (!integration) {
