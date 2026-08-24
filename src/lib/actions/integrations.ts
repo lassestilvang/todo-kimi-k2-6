@@ -1,9 +1,7 @@
 'use server';
 
 import { getDb } from '@/lib/db';
-import { getCurrentUser } from '@/lib/session';
 import type { Integration, TaskMapping } from '@/types';
-import { aiCache } from '@/lib/ai/providers';
 
 /**
  * Connect a new integration for the user
@@ -12,7 +10,7 @@ export async function connectIntegration(
   user: { id: number },
   integrationType: Integration['type'],
   name: string,
-  config: Record<string, any>
+  config: Record<string, unknown>
 ): Promise<Integration> {
   const db = getDb();
 
@@ -56,12 +54,20 @@ export async function connectIntegration(
 }
 
 /**
+ * External task representation from integrations
+ */
+interface ExternalTask {
+  id: string;
+  [key: string]: unknown;
+}
+
+/**
  * Sync tasks from an integration to local database
  */
 export async function syncTasksFromIntegration(
   user: { id: number },
   integrationId: number
-): Promise<{ success: boolean; tasksImported: number; conflicts?: any[] }> {
+): Promise<{ success: boolean; tasksImported: number; conflicts?: Array<{ external_task_id: string; type: string; message: string }> }> {
   const db = getDb();
 
   // Verify integration belongs to user and is enabled
@@ -82,7 +88,7 @@ export async function syncTasksFromIntegration(
     .all(integrationId) as TaskMapping[];
 
   // Based on integration type, call appropriate sync function
-  let externalTasks: any[] = [];
+  let externalTasks: ExternalTask[] = [];
 
   switch (integration.type) {
     case 'trello':
@@ -110,7 +116,7 @@ export async function syncTasksFromIntegration(
   }
 
   // Process and import tasks
-  const conflicts: any[] = [];
+  const conflicts: Array<{ external_task_id: string; type: string; message: string }> = [];
   let tasksImported = 0;
 
   for (const externalTask of externalTasks) {
@@ -168,7 +174,7 @@ export async function syncTasksToIntegration(
   user: { id: number },
   integrationId: number,
   taskIds: number[]
-): Promise<{ success: boolean; tasksExported: number; errors?: any[] }> {
+): Promise<{ success: boolean; tasksExported: number; errors?: string[] }> {
   const db = getDb();
 
   // Verify integration
@@ -201,7 +207,7 @@ export async function syncTasksToIntegration(
 
   // Export to external system
   let success = false;
-  let errors: any[] = [];
+  let errors: string[] = [];
 
   switch (integration.type) {
     case 'trello':
@@ -280,7 +286,7 @@ export async function updateIntegrationMapping(
       }
     : currentMappings;
 
-  const result = db
+  void db
     .prepare(
       'UPDATE task_mappings SET local_task_id = ?, field_mappings = ?, sync_rules = ?, last_sync_at = CURRENT_TIMESTAMP WHERE id = ?'
     )
@@ -363,7 +369,7 @@ export async function getIntegrationSyncStatus(user: {
           syncStatus = 'stale';
         }
       }
-    } catch (error) {
+    } catch {
       syncStatus = 'error';
     }
 
@@ -432,8 +438,8 @@ export async function getUserTaskMappings(
 
 async function syncTodoistLikeIntegration(
   integration: Integration & { config: string },
-  mappings: TaskMapping[]
-): Promise<any[]> {
+  _mappings: TaskMapping[]
+): Promise<ExternalTask[]> {
   // In a real implementation, this would call the actual Todoist API
   // For now, return mock data based on existing local tasks
 
@@ -461,9 +467,9 @@ async function syncTodoistLikeIntegration(
 }
 
 async function syncGitHubIntegration(
-  integration: Integration & { config: string },
-  mappings: TaskMapping[]
-): Promise<any[]> {
+  _integration: Integration & { config: string },
+  _mappings: TaskMapping[]
+): Promise<ExternalTask[]> {
   // Would call GitHub API to get issues, pull requests, etc.
   return [
     {
@@ -480,9 +486,9 @@ async function syncGitHubIntegration(
 }
 
 async function syncSlackIntegration(
-  integration: Integration & { config: string },
-  mappings: TaskMapping[]
-): Promise<any[]> {
+  _integration: Integration & { config: string },
+  _mappings: TaskMapping[]
+): Promise<ExternalTask[]> {
   // Would call Slack API to get messages, channels, etc.
   return [
     {
@@ -499,9 +505,9 @@ async function syncSlackIntegration(
 }
 
 async function syncNotionIntegration(
-  integration: Integration & { config: string },
-  mappings: TaskMapping[]
-): Promise<any[]> {
+  _integration: Integration & { config: string },
+  _mappings: TaskMapping[]
+): Promise<ExternalTask[]> {
   // Would call Notion API
   return [
     {
@@ -518,9 +524,9 @@ async function syncNotionIntegration(
 }
 
 async function syncLinearIntegration(
-  integration: Integration & { config: string },
-  mappings: TaskMapping[]
-): Promise<any[]> {
+  _integration: Integration & { config: string },
+  _mappings: TaskMapping[]
+): Promise<ExternalTask[]> {
   // Would call Linear API
   return [
     {
@@ -539,17 +545,17 @@ async function syncLinearIntegration(
 // Export functions
 
 async function exportTodoistLikeIntegration(
-  integration: Integration & { config: string },
-  tasks: any[]
+  _integration: Integration & { config: string },
+  tasks: ExternalTask[]
 ): Promise<boolean> {
   // Mock successful export
-  console.log(`Exporting ${tasks.length} tasks to ${integration.type}`);
+  console.log(`Exporting ${tasks.length} tasks to todoist-like integration`);
   return true;
 }
 
 async function exportGitHubIntegration(
-  integration: Integration & { config: string },
-  tasks: any[]
+  _integration: Integration & { config: string },
+  tasks: ExternalTask[]
 ): Promise<[boolean, string[]]> {
   // Mock successful export
   console.log(`Exporting ${tasks.length} tasks to GitHub issues`);
@@ -557,8 +563,8 @@ async function exportGitHubIntegration(
 }
 
 async function exportSlackIntegration(
-  integration: Integration & { config: string },
-  tasks: any[]
+  _integration: Integration & { config: string },
+  tasks: ExternalTask[]
 ): Promise<[boolean, string[]]> {
   // Mock successful export
   console.log(`Exporting ${tasks.length} tasks to Slack messages`);
@@ -566,8 +572,8 @@ async function exportSlackIntegration(
 }
 
 async function exportNotionIntegration(
-  integration: Integration & { config: string },
-  tasks: any[]
+  _integration: Integration & { config: string },
+  tasks: ExternalTask[]
 ): Promise<[boolean, string[]]> {
   // Mock successful export
   console.log(`Exporting ${tasks.length} tasks to Notion pages`);
@@ -575,8 +581,8 @@ async function exportNotionIntegration(
 }
 
 async function exportLinearIntegration(
-  integration: Integration & { config: string },
-  tasks: any[]
+  _integration: Integration & { config: string },
+  tasks: ExternalTask[]
 ): Promise<[boolean, string[]]> {
   // Mock successful export
   console.log(`Exporting ${tasks.length} tasks to Linear issues`);
@@ -585,22 +591,28 @@ async function exportLinearIntegration(
 
 // Task mapping utilities
 
-async function createTask(taskData: any): Promise<{ id: number }> {
+async function createTask(taskData: Record<string, unknown>): Promise<{ id: number }> {
   const { createTask } = await import('@/lib/actions/tasks');
-  const result = await createTask(taskData);
+  const result = await createTask(taskData as { [key: string]: unknown });
   return { id: result.id };
 }
 
-async function getTasksByIds(ids: number[], userId: number): Promise<any[]> {
+async function getTasksByIds(ids: number[], _userId: number): Promise<ExternalTask[]> {
   const { getTasksByIds } = await import('@/lib/actions/tasks');
-  return getTasksByIds(ids);
+  return getTasksByIds(ids) as Promise<ExternalTask[]>;
 }
 
-function mapExternalTaskToLocal(externalTask: any, mapping: TaskMapping): any {
+function mapExternalTaskToLocal(
+  externalTask: ExternalTask,
+  mapping: TaskMapping
+): Record<string, unknown> {
   const fieldMappings = mapping.field_mappings
     ? JSON.parse(mapping.field_mappings)
     : {};
-  const syncRules = mapping.sync_rules ? JSON.parse(mapping.sync_rules) : {};
+
+  if (mapping.sync_rules) {
+    JSON.parse(mapping.sync_rules);
+  }
 
   const taskName = fieldMappings.name || 'name';
   const taskDescription = fieldMappings.description || 'description';
@@ -611,7 +623,7 @@ function mapExternalTaskToLocal(externalTask: any, mapping: TaskMapping): any {
   return {
     name: externalTask[taskName],
     description: externalTask[taskDescription] || null,
-    priority: mapPriority(externalTask[taskPriority]),
+    priority: mapPriority(externalTask[taskPriority] as string),
     completed:
       externalTask[taskStatus] === 'complete' ||
       externalTask[taskStatus] === 'done' ||
@@ -623,11 +635,22 @@ function mapExternalTaskToLocal(externalTask: any, mapping: TaskMapping): any {
   };
 }
 
-function mapLocalTaskToExternal(task: any, integrationId: number): any {
+interface LocalTaskForMapping {
+  id: number;
+  name: string;
+  description: string | null;
+  completed: boolean;
+  priority: string;
+  date: string | null;
+  labels?: Array<{ name: string }>;
+  assignee?: { name: string };
+}
+
+function mapLocalTaskToExternal(task: LocalTaskForMapping, integrationId: number): ExternalTask {
   // This is the reverse mapping - from local task to external format
   // The structure depends on the integration type
 
-  const baseTask = {
+  const baseTask: ExternalTask = {
     id: `local-${task.id}`, // Use local ID with prefix
     name: task.name,
     description: task.description || '',
@@ -643,12 +666,12 @@ function mapLocalTaskToExternal(task: any, integrationId: number): any {
       return {
         ...baseTask,
         list_name: 'Backlog', // Would come from task list
-        labels: task.labels?.map((l: any) => l.name) || [],
+        labels: task.labels?.map(l => l.name) || [],
       };
     case 2: // GitHub
       return {
         ...baseTask,
-        labels: task.labels?.map((l: any) => `label:${l.name}`) || [],
+        labels: task.labels?.map(l => `label:${l.name}`) || [],
         assignee: task.assignee?.name || 'unassigned',
       };
     default:
