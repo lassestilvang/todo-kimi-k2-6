@@ -9,12 +9,26 @@ import type {
   ViewType,
 } from '@/types';
 
+interface CustomViewRow {
+  id: number;
+  user_id: number;
+  name: string;
+  filter_preset: string | null;
+  list_id: number | null;
+  label_ids: string | null;
+  priority: number | null;
+  sort_field: string;
+  sort_direction: string;
+  view_type: string;
+  created_at: string;
+}
+
 export async function getCustomViews(userId: number): Promise<CustomView[]> {
   const db = getDb();
   return db
     .prepare('SELECT * FROM custom_views WHERE user_id = ? ORDER BY name ASC')
     .all(userId)
-    .map((row: any) => ({
+    .map((row: CustomViewRow) => ({
       ...row,
       label_ids: row.label_ids ? JSON.parse(row.label_ids) : [],
     })) as CustomView[];
@@ -27,7 +41,7 @@ export async function getCustomViewById(
   const db = getDb();
   const row = db
     .prepare('SELECT * FROM custom_views WHERE id = ? AND user_id = ?')
-    .get(id, userId) as any;
+    .get(id, userId) as CustomViewRow | undefined;
 
   if (!row) return undefined;
 
