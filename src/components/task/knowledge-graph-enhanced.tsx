@@ -135,6 +135,7 @@ export function KnowledgeGraphEnhanced({ tasks }: KnowledgeGraphEnhancedProps) {
       words.forEach(word => {
         if (word.length < 4) return; // Skip short words
 
+        // Create pattern if it doesn't exist
         if (!patternMap.has(word)) {
           patternMap.set(word, {
             id: word,
@@ -145,8 +146,7 @@ export function KnowledgeGraphEnhanced({ tasks }: KnowledgeGraphEnhancedProps) {
           });
         }
 
-        const pattern = patternMap.get(word);
-        if (!pattern) continue;
+        const pattern = patternMap.get(word)!;
         pattern.relatedTasks.push(task.id);
 
         if (pattern.relatedTasks.length >= 3) {
