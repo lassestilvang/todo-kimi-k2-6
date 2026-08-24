@@ -106,7 +106,7 @@ function generateTaskPatterns(completedTasks: TaskWithRelations[]): SkillPattern
 
 interface GraphData {
   nodes: { id: number; name: string; group: string; priority: string }[];
-  links: { source: number; target: number; type: string }[];
+  links: TaskConnection[];
   groups: string[];
 }
 
@@ -118,18 +118,17 @@ interface ForceGraphProps {
   nodeAutoColorBy?: string;
   nodeLabel?: string;
   linkLabel?: string;
-  linkColor?: (link: unknown) => string;
+  linkColor?: (link: TaskConnection) => string;
   onNodeDragEnd?: (node: unknown) => void;
 }
 
 // Fallback component when react-forcegraph is not available
 const FallbackForceGraph: React.FC<ForceGraphProps> = ({
   graphData,
-  _onNodeClick,
-  _onLinkClick,
-  _nodeAutoColorBy = 'group',
-  _nodeLabel = 'name',
-  _linkColor,
+  onNodeClick,
+  onLinkClick,
+  nodeLabel = 'name',
+  linkColor,
 }) => {
   return (
     <div className="flex items-center justify-center h-full bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 rounded-lg">
@@ -370,8 +369,9 @@ export function KnowledgeGraph({
     name: string;
   }
 
-  const handleNodeClick = (node: GraphNodeData) => {
-    const selectedNodeData = nodes.find(n => n.id === node.id);
+  const handleNodeClick = (node: unknown) => {
+    const nodeData = node as GraphNodeData;
+    const selectedNodeData = nodes.find(n => n.id === nodeData.id);
     if (selectedNodeData) {
       setSelectedNode(selectedNodeData);
       setSelectedLink(null);
@@ -383,12 +383,13 @@ export function KnowledgeGraph({
     target: number;
   }
 
-  const handleLinkClick = (link: GraphLinkData) => {
+  const handleLinkClick = (link: unknown) => {
+    const linkData = link as GraphLinkData;
     const connection = connections.find(
       c =>
-        (c.source_task_id === link.source &&
-          c.target_task_id === link.target) ||
-        (c.source_task_id === link.target && c.target_task_id === link.source)
+        (c.source_task_id === linkData.source &&
+          c.target_task_id === linkData.target) ||
+        (c.source_task_id === linkData.target && c.target_task_id === linkData.source)
     );
     if (connection) {
       setSelectedLink(connection);
@@ -455,9 +456,14 @@ export function KnowledgeGraph({
         priority: n.priority,
       })),
       links: connections.map(c => ({
-        source: c.source_task_id,
-        target: c.target_task_id,
-        type: c.connection_type,
+        id: c.id,
+        user_id: 1,
+        source_task_id: c.source_task_id,
+        target_task_id: c.target_task_id,
+        connection_type: c.connection_type,
+        strength: c.strength,
+        notes: c.notes,
+        created_at: c.created_at ?? '',
       })),
       groups: [...new Set(nodes.map(n => n.group))],
     };
@@ -502,7 +508,11 @@ export function KnowledgeGraph({
       );
     }
 
-    return { nodes: filteredNodes, links: connections }; // Return with connections included
+    return {
+      nodes: filteredNodes,
+      links: connections,
+      groups: [...new Set(nodes.map(n => n.group))],
+    };
   };
 
   const renderGraph = () => {
@@ -520,9 +530,8 @@ export function KnowledgeGraph({
           nodeRelSize={12}
           nodeAutoColorBy="group"
           nodeLabel="name"
-          linkLabel="type"
-          linkColor={link => getConnectionColor(link.type)}
-          onNodeDragEnd={handleNodeDragEnd}
+          linkColor={(link: TaskConnection) => getConnectionColor(link.connection_type)}
+          onNodeDragEnd={(_node: unknown) => {}}
         />
 
         {/* Legend */}
@@ -873,12 +882,17 @@ export function KnowledgeGraph({
                   />
                   <div className="text-sm text-muted-foreground">
                     Based on{' '}
-                    {skill.evidence_task_ids
-                      ? JSON.parse(skill.evidence_task_ids).length
-                      : 0}{' '}
+                    {Array.isArray(skill.evidence_task_ids)
+                      ? skill.evidence_task_ids.length
+                      : skill.evidence_task_ids
+                        ? JSON.parse(skill.evidence_task_ids).length
+                        : 0}{' '}
                     task
-                    {skill.evidence_task_ids &&
-                    JSON.parse(skill.evidence_task_ids).length !== 1
+                    {(Array.isArray(skill.evidence_task_ids)
+                      ? skill.evidence_task_ids.length
+                      : skill.evidence_task_ids
+                        ? JSON.parse(skill.evidence_task_ids).length
+                        : 0) !== 1
                       ? 's'
                       : ''}
                   </div>
