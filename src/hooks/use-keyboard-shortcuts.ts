@@ -100,9 +100,9 @@ export function useKeyboardShortcuts(
     };
   }, []);
 
-  const findShortcut = (id: string): SavedShortcut | undefined => {
+  const findShortcut = useCallback((id: string): SavedShortcut | undefined => {
     return customShortcuts.find(s => s.id === id && s.enabled);
-  };
+  }, [customShortcuts]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -270,7 +270,7 @@ export function useKeyboardShortcuts(
         }
       }
     },
-    [router, options, customShortcuts]
+    [router, options, findShortcut]
   );
 
   useEffect(() => {
