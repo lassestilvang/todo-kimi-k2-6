@@ -29,7 +29,6 @@ export async function getTaskAnalytics(
   const whereClause = userId
     ? 'WHERE t.created_by = ? OR t.assignee_id = ?'
     : '';
-  const groupBy = userId ? '' : '';
 
   // Get basic stats
   const totalResult = db
