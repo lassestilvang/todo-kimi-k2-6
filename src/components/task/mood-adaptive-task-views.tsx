@@ -184,7 +184,9 @@ export function MoodAdaptiveTaskViews({
             </div>
             <Select
               value={activeMoodView}
-              onValueChange={(v: MoodType) => setActiveMoodView(v)}
+              onValueChange={v => {
+                if (v) setActiveMoodView(v)
+              }}
             >
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Select mood view" />
