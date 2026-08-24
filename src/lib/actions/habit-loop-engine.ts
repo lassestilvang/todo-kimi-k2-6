@@ -2,7 +2,7 @@
 
 import { getDb } from '@/lib/db';
 import { getCurrentUser } from '@/lib/session';
-import type { HabitContext, HabitCompletion, Task } from '@/types';
+import { getDb } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 
 // Extended Habit Loop Engine
