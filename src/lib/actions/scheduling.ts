@@ -1,9 +1,97 @@
 'use server';
 
-import { getDb } from '@/lib/db';
-import { getCurrentUser } from '@/lib/session';
-import type { TaskWithRelations, Priority } from '@/types';
 import { aiCache } from '@/lib/ai/providers';
+import type { TaskWithRelations } from '@/types';
+
+/**
+ * Energy profile for scheduling
+ */
+export interface EnergyProfile {
+  peak_hours?: Array<{ hour: number; productivity_score: number }>;
+  [key: string]: unknown;
+}
+
+/**
+ * Time slot for scheduling
+ */
+export interface TimeSlot {
+  taskId: number;
+  taskName: string;
+  startTime: string;
+  endTime: string;
+  durationMinutes: number;
+  bufferMinutes: number;
+  energyRequirement: number;
+}
+
+/**
+ * Schedule result type
+ */
+export interface ScheduleResult {
+  schedule: TimeSlot[];
+  confidence: number;
+}
+
+/**
+ * Conflict result type
+ */
+export interface ConflictResult {
+  conflicts: Array<{
+    taskId: number;
+    taskName: string;
+    conflictingSlot: unknown;
+    overlapType: string;
+  }>;
+  suggestions: Array<{
+    type: string;
+    originalTime: unknown;
+    suggestedTime: {
+      startTime: string;
+      endTime: string;
+      reason: string;
+    };
+  }>;
+}
+
+/**
+ * Schedule suggestion type
+ */
+export interface ScheduleSuggestion {
+  time: string;
+  confidence: number;
+  energyRequirement: number;
+  reason: string;
+  deadlineCompatible: boolean;
+}
+
+/**
+ * Available window type
+ */
+export interface AvailableWindow {
+  startTime: string;
+  endTime: string;
+  capacity: string;
+}
+
+/**
+ * Optimal period type
+ */
+export interface OptimalPeriod {
+  period: string;
+  startHour: number;
+  endHour: number;
+  suitability: string;
+  taskTypes: string[];
+}
+
+/**
+ * Energy recommendation type
+ */
+export interface EnergyRecommendation {
+  type: string;
+  description: string;
+  impact: string;
+}
 
 /**
  * Generate an optimal time-blocking schedule for a list of tasks
@@ -15,10 +103,10 @@ export async function generateTimeBlockedSchedule(
     userId: number;
     workHours?: { start: number; end: number };
     deadline?: string;
-    energyProfile?: any;
+    energyProfile?: EnergyProfile;
     existingTasks?: TaskWithRelations[];
   }
-): Promise<any> {
+): Promise<{ schedule: TimeSlot[]; confidence: number }> {
   const cacheKey = `time-blocked-schedule:${constraints.userId}`;
   const cached = aiCache.get(cacheKey);
   if (cached) {
@@ -51,10 +139,10 @@ export async function generateTimeBlockedSchedule(
  */
 export async function detectScheduleConflicts(
   tasks: TaskWithRelations[],
-  existingSchedule?: any[]
-): Promise<{ conflicts: any[]; suggestions: any[] }> {
-  const conflicts: any[] = [];
-  const suggestions: any[] = [];
+  existingSchedule?: unknown[]
+): Promise<ConflictResult> {
+  const conflicts: ConflictResult['conflicts'] = [];
+  const suggestions: ConflictResult['suggestions'] = [];
 
   if (!existingSchedule) {
     return { conflicts, suggestions };
@@ -89,12 +177,12 @@ export async function detectScheduleConflicts(
 export async function rescheduleWithBuffer(
   tasks: TaskWithRelations[],
   bufferMinutes = 15,
-  constraints?: {
+  _constraints?: {
     workHours?: { start: number; end: number };
     userId?: number;
   }
-): Promise<any[]> {
-  const workHours = constraints?.workHours || { start: 9, end: 17 };
+): Promise<TimeSlot[]> {
+  const workHours = _constraints?.workHours || { start: 9, end: 17 };
   let currentTime = workHours.start * 60; // Convert to minutes
 
   const scheduledTasks = [];
@@ -143,7 +231,7 @@ export async function predictTaskDuration(
       deadlineUrgency?: number;
     };
   }
-): Promise<any> {
+): Promise<{ estimatedMinutes: number; confidence: number; factors: string[] }> {
   const cacheKey = `task-duration-prediction:${task.id}`;
   const cached = aiCache.get(cacheKey);
   if (cached) {
@@ -166,12 +254,12 @@ export async function suggestOptimalTimes(
   constraints: {
     userId: number;
     date?: string;
-    energyProfile?: any;
+    energyProfile?: EnergyProfile;
     existingTasks?: TaskWithRelations[];
   }
-): Promise<any[]> {
+): Promise<ScheduleSuggestion[]> {
   const cacheKey = `optimal-times:${taskId}`;
-  const cached = aiCache.get<any[]>(cacheKey);
+  const cached = aiCache.get<ScheduleSuggestion[]>(cacheKey);
   if (cached) {
     return cached;
   }
@@ -201,7 +289,12 @@ export async function analyzeAvailability(
   userId: number,
   timeRange: { start: string; end: string },
   tasks?: TaskWithRelations[]
-): Promise<any> {
+): Promise<{
+  peakHours: Array<{ hour: number; productivity_score: number }>;
+  availableWindows: AvailableWindow[];
+  optimalSchedulingPeriods: OptimalPeriod[];
+  energyRecommendations: EnergyRecommendation[];
+}> {
   const cacheKey = `availability-analysis:${userId}`;
   const cached = aiCache.get(cacheKey);
   if (cached) {
@@ -226,7 +319,7 @@ export async function analyzeAvailability(
 /**
  * Get user's energy profile for scheduling purposes
  */
-async function getUserEnergyProfile(userId: number): Promise<any> {
+async function getUserEnergyProfile(userId: number): Promise<EnergyProfile> {
   const cacheKey = `energy-profile:${userId}`;
   const cached = aiCache.get(cacheKey);
   if (cached) {
@@ -246,7 +339,7 @@ async function getUserEnergyProfile(userId: number): Promise<any> {
 async function getUserCalendarEvents(
   userId: number,
   timeRange: { start: string; end: string }
-): Promise<any[]> {
+): Promise<Array<{ date: string; startTime: string; endTime: string; type: string }>> {
   // In a real implementation, this would call calendar APIs
   // For now, return mock data
   return [
@@ -286,7 +379,7 @@ async function getTaskById(
  */
 function sortTasksForScheduling(
   tasks: TaskWithRelations[],
-  constraints?: any
+  _constraints?: { userId: number; workHours?: { start: number; end: number } }
 ): TaskWithRelations[] {
   return tasks.sort((a, b) => {
     // Primary: Critical priority tasks first
@@ -313,14 +406,13 @@ function sortTasksForScheduling(
 async function createTimeBlocks(
   tasks: TaskWithRelations[],
   workHours: { start: number; end: number },
-  energyProfile: any,
+  energyProfile: EnergyProfile,
   deadline?: string
-): Promise<any[]> {
+): Promise<TimeSlot[]> {
   const schedule = [];
   let currentTime = workHours.start * 60; // Convert to minutes
 
   for (const task of tasks) {
-    const duration = estimateTaskDuration(task);
     const optimalSlot = findOptimalTimeSlot(
       task,
       currentTime,
@@ -386,7 +478,7 @@ function findOptimalTimeSlot(
   task: TaskWithRelations,
   currentTime: number,
   workHours: { start: number; end: number },
-  energyProfile: any,
+  energyProfile: EnergyProfile,
   deadline?: string
 ): {
   start: number;
@@ -423,7 +515,6 @@ function findOptimalTimeSlot(
         energyProfile,
         deadline
       );
-      const energyRequirement = getTaskEnergyRequirement(task, option.hour);
 
       if (confidence > optimalConfidence) {
         optimalTime = startTime;
@@ -446,7 +537,7 @@ function findOptimalTimeSlot(
 /**
  * Check if two time ranges overlap
  */
-function timeOverlap(task: TaskWithRelations, existingSlot: any): boolean {
+function timeOverlap(task: TaskWithRelations, existingSlot: { startTime: string; endTime: string }): boolean {
   const taskStart =
     parseTimeToMinutes(task.date || '') +
     (task.estimate ? parseTimeToMinutes(task.estimate) : 0);
@@ -463,8 +554,8 @@ function timeOverlap(task: TaskWithRelations, existingSlot: any): boolean {
  */
 function generateConflictResolution(
   task: TaskWithRelations,
-  existingSlot: any
-): any {
+  existingSlot: { startTime: string; endTime: string }
+): { type: string; originalTime: { startTime: string; endTime: string }; suggestedTime: { startTime: string; endTime: string; reason: string } } | null {
   const taskDuration = estimateTaskDuration(task);
   const slotDuration =
     parseTimeToMinutes(existingSlot.endTime) -
@@ -496,7 +587,7 @@ function generateConflictResolution(
 function calculateSlotConfidence(
   task: TaskWithRelations,
   hour: number,
-  energyProfile: any,
+  energyProfile: EnergyProfile,
   deadline?: string
 ): number {
   let confidence = 0.5; // Base confidence
@@ -518,7 +609,7 @@ function calculateSlotConfidence(
   // Consider energy profile
   if (energyProfile) {
     const hourEnergy = energyProfile.peak_hours?.find(
-      (h: any) => h.hour === hour
+      (h: { hour: number; productivity_score: number }) => h.hour === hour
     );
     if (hourEnergy) {
       confidence += hourEnergy.productivity_score / 100;
@@ -575,13 +666,13 @@ function generateSlotReason(
  */
 function generateTimeSuggestions(
   task: TaskWithRelations,
-  energyProfile: any,
-  constraints: any
-): any[] {
-  const suggestions = [];
+  energyProfile: EnergyProfile,
+  constraints: { existingTasks?: TaskWithRelations[]; deadline?: string }
+): ScheduleSuggestion[] {
+  const suggestions: ScheduleSuggestion[] = [];
 
   // Use energy profile to find optimal times
-  const optimalHours = energyProfile?.peak_hours?.map((h: any) => h.hour) || [
+  const optimalHours = energyProfile?.peak_hours?.map((h: { hour: number }) => h.hour) || [
     9, 10, 11, 14, 15,
   ];
 
@@ -603,7 +694,7 @@ function generateTimeSuggestions(
         time: `${hour.toString().padStart(2, '0')}:00`,
         confidence:
           Math.round(
-            ((energyProfile?.peak_hours?.find((h: any) => h.hour === hour)
+            ((energyProfile?.peak_hours?.find((h: { hour: number }) => h.hour === hour)
               ?.productivity_score || 80) /
               100) *
               100
@@ -692,7 +783,7 @@ function minutesToTime(minutes: number): string {
 /**
  * Find peak hours from user activity
  */
-function identifyPeakHours(events: any[], tasks: TaskWithRelations[]): any[] {
+function identifyPeakHours(_events: Array<{ date: string; startTime: string; endTime: string; type: string }>, tasks: TaskWithRelations[]): Array<{ hour: number; productivity_score: number }> {
   const hourCounts: Record<number, number> = {};
 
   // Count task completions by hour
@@ -721,9 +812,9 @@ function identifyPeakHours(events: any[], tasks: TaskWithRelations[]): any[] {
  * Find available time windows
  */
 function findAvailableWindows(
-  events: any[],
+  _events: Array<{ date: string; startTime: string; endTime: string; type: string }>,
   timeRange: { start: string; end: string }
-): any[] {
+): AvailableWindow[] {
   const windows = [];
 
   // Simplified: find gaps in calendar events
@@ -749,9 +840,9 @@ function findAvailableWindows(
  * Calculate optimal scheduling periods
  */
 function calculateOptimalPeriods(
-  events: any[],
-  tasks: TaskWithRelations[]
-): any[] {
+  _events: Array<{ date: string; startTime: string; endTime: string; type: string }>,
+  _tasks: TaskWithRelations[]
+): OptimalPeriod[] {
   const periods = [
     {
       period: 'Morning Focus',
@@ -783,9 +874,9 @@ function calculateOptimalPeriods(
  * Generate energy recommendations
  */
 function generateEnergyRecommendations(
-  events: any[],
-  tasks: TaskWithRelations[]
-): any[] {
+  _events: Array<{ date: string; startTime: string; endTime: string; type: string }>,
+  _tasks: TaskWithRelations[]
+): EnergyRecommendation[] {
   const recommendations = [
     {
       type: 'focus_time',
@@ -811,7 +902,7 @@ function generateEnergyRecommendations(
 /**
  * Generate user energy profile
  */
-async function generateEnergyProfile(userId: number): Promise<any> {
+async function generateEnergyProfile(_userId: number): Promise<EnergyProfile> {
   // Mock energy profile generation
   return {
     peak_hours: [
