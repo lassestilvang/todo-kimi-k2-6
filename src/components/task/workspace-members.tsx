@@ -233,7 +233,9 @@ export function WorkspaceMembers({
                     <Label>Role</Label>
                     <Select
                       value={newMemberRole}
-                      onValueChange={value => setNewMemberRole(value as 'admin' | 'member' | 'viewer')}
+                      onValueChange={value =>
+                        setNewMemberRole(value as 'admin' | 'member' | 'viewer')
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue />
