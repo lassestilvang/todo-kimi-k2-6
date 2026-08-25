@@ -1,13 +1,52 @@
 'use client';
 
+// Type declarations for Web Speech API
+interface SpeechRecognitionEvent {
+  results: SpeechRecognitionAlternativeList;
+  resultIndex: number;
+}
+
+interface SpeechRecognitionAlternativeList {
+  readonly length: number;
+  item(index: number): SpeechRecognitionAlternative;
+  [index: number]: SpeechRecognitionAlternative;
+}
+
+interface SpeechRecognitionAlternative {
+  transcript: string;
+  confidence: number;
+  isFinal: boolean;
+}
+
+interface SpeechRecognitionErrorEvent {
+  error: string;
+  message: string;
+}
+
+interface SpeechRecognitionInstance {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  start(): void;
+  stop(): void;
+  onresult: (event: SpeechRecognitionEvent) => void;
+  onerror: (event: SpeechRecognitionErrorEvent) => void;
+}
+
+declare const SpeechRecognition:
+  | {
+      new (): SpeechRecognitionInstance;
+    }
+  | undefined;
+
+declare const webkitSpeechRecognition:
+  | {
+      new (): SpeechRecognitionInstance;
+    }
+  | undefined;
+
 import { useState, useEffect, useCallback } from 'react';
-import {
-  Mic,
-  MicOff,
-  Volume2,
-  VolumeX,
-  History,
-} from 'lucide-react';
+import { Mic, MicOff, Volume2, VolumeX, History } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -85,7 +124,8 @@ export function VoiceCommands({ className, onTaskCreate }: VoiceCommandsProps) {
   const [lastResult, setLastResult] = useState<VoiceCommand | null>(null);
   const [history, setHistory] = useState<VoiceCommandHistory[]>([]);
   const [muted, setMuted] = useState(false);
-  const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
+  const [recognition, setRecognition] =
+    useState<SpeechRecognitionInstance | null>(null);
 
   const parseCommand = (command: string): VoiceCommand | null => {
     for (const [_key, handler] of Object.entries(COMMANDS)) {
@@ -145,79 +185,84 @@ Available voice commands:
     });
   }, [muted]);
 
-  const executeAction = useCallback(async (parsed: VoiceCommand) => {
-    switch (parsed.intent) {
-      case 'create_task':
-        const taskName = parsed.entities.taskName || 'Voice Created Task';
-        if (onTaskCreate) {
-          onTaskCreate({
-            title: taskName,
-            description: `Created via voice command`,
-          });
+  const executeAction = useCallback(
+    async (parsed: VoiceCommand) => {
+      switch (parsed.intent) {
+        case 'create_task':
+          const taskName = parsed.entities.taskName || 'Voice Created Task';
+          if (onTaskCreate) {
+            onTaskCreate({
+              title: taskName,
+              description: `Created via voice command`,
+            });
+          }
+          toast.success(`Created task: ${taskName}`);
+          break;
+
+        case 'complete_task':
+          toast.info('Mark task as complete');
+          break;
+
+        case 'today_tasks':
+          toast.info("Showing today's tasks");
+          break;
+
+        case 'list_tasks':
+          toast.info('Listing all tasks');
+          break;
+
+        case 'help':
+          showHelp();
+          break;
+
+        default:
+          toast.info(`Executed: ${parsed.intent}`);
+      }
+    },
+    [onTaskCreate, showHelp]
+  );
+
+  const handleVoiceCommand = useCallback(
+    (command: string) => {
+      const parsed = parseCommand(command.toLowerCase().trim());
+
+      if (parsed) {
+        setLastCommand(command);
+        setLastResult(parsed);
+
+        // Add to history using timestamp-based ID
+        const timestamp = performance.now();
+        const isoTimestamp = new Date(timestamp).toISOString();
+        const newEntry: VoiceCommandHistory = {
+          id: Math.round(timestamp),
+          command,
+          result: parsed,
+          timestamp: isoTimestamp,
+        };
+        setHistory(prev => [newEntry, ...prev.slice(0, 9)]);
+
+        // Execute the action
+        executeAction(parsed);
+
+        // Provide feedback via speech
+        if (!muted) {
+          speak(`Executed: ${parsed.intent}`);
         }
-        toast.success(`Created task: ${taskName}`);
-        break;
+      } else {
+        setLastCommand(command);
+        setLastResult(null);
 
-      case 'complete_task':
-        toast.info('Mark task as complete');
-        break;
-
-      case 'today_tasks':
-        toast.info("Showing today's tasks");
-        break;
-
-      case 'list_tasks':
-        toast.info('Listing all tasks');
-        break;
-
-      case 'help':
-        showHelp();
-        break;
-
-      default:
-        toast.info(`Executed: ${parsed.intent}`);
-    }
-  }, [onTaskCreate, showHelp]);
-
-  const handleVoiceCommand = useCallback((command: string) => {
-    const parsed = parseCommand(command.toLowerCase().trim());
-
-    if (parsed) {
-      setLastCommand(command);
-      setLastResult(parsed);
-
-      // Add to history using timestamp-based ID
-      const timestamp = performance.now();
-      const isoTimestamp = new Date(timestamp).toISOString();
-      const newEntry: VoiceCommandHistory = {
-        id: Math.round(timestamp),
-        command,
-        result: parsed,
-        timestamp: isoTimestamp,
-      };
-      setHistory(prev => [newEntry, ...prev.slice(0, 9)]);
-
-      // Execute the action
-      executeAction(parsed);
-
-      // Provide feedback via speech
-      if (!muted) {
-        speak(`Executed: ${parsed.intent}`);
+        if (!muted) {
+          speak("Sorry, I didn't understand that command");
+        }
       }
-    } else {
-      setLastCommand(command);
-      setLastResult(null);
-
-      if (!muted) {
-        speak("Sorry, I didn't understand that command");
-      }
-    }
-  }, [muted, executeAction]);
+    },
+    [muted, executeAction]
+  );
 
   useEffect(() => {
     // Check if SpeechRecognition is available
-    const SpeechRecognitionAPI =
-      window.SpeechRecognition || (window as unknown as { webkitSpeechRecognition: SpeechRecognition }).webkitSpeechRecognition;
+    const SpeechRecognitionAPI = SpeechRecognition || webkitSpeechRecognition;
 
     if (!SpeechRecognitionAPI) {
       console.warn('Speech Recognition not supported in this browser');
@@ -231,11 +276,10 @@ Available voice commands:
 
     recognitionInstance.onresult = (event: SpeechRecognitionEvent) => {
       const transcript = Array.from(event.results)
-        .map((result) => result[0])
-        .map((result) => result.transcript)
+        .map((result: SpeechRecognitionAlternative) => result.transcript)
         .join('');
 
-      if (event.results[0].isFinal) {
+      if (event.results.length > 0 && event.results[0].isFinal) {
         handleVoiceCommand(transcript);
       }
     };
@@ -377,7 +421,7 @@ Available voice commands:
                 </div>
 
                 <div className="space-y-2 max-h-60 overflow-y-auto">
-                  {history.map((entry) => (
+                  {history.map(entry => (
                     <div
                       key={entry.id}
                       className="text-xs p-2 border rounded bg-muted/20"
