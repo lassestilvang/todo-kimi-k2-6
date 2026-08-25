@@ -65,11 +65,11 @@ interface IntegrationMarketplaceProps {
   userId?: number;
 }
 
-export function IntegrationMarketplace(
-  _props: IntegrationMarketplaceProps
-) {
+export function IntegrationMarketplace(_props: IntegrationMarketplaceProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string | null>('all');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(
+    'all'
+  );
   const [installedIntegrations, setInstalledIntegrations] = useState<
     Integration[]
   >([]);
@@ -236,7 +236,12 @@ export function IntegrationMarketplace(
       </div>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={(value: string) => setActiveTab(value as 'installed' | 'marketplace')}>
+      <Tabs
+        value={activeTab}
+        onValueChange={(value: string) =>
+          setActiveTab(value as 'installed' | 'marketplace')
+        }
+      >
         <TabsList>
           <TabsTrigger value="marketplace">Marketplace</TabsTrigger>
           <TabsTrigger value="installed">Installed</TabsTrigger>
