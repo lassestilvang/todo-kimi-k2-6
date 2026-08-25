@@ -91,7 +91,10 @@ export function SkillTracker({ tasks, userId, className }: SkillTrackerProps) {
           if (skill) {
             skill.evidence_task_ids.push(task.id);
             // Increment proficiency based on completion count
-            skill.proficiency_level = Math.min(5, skill.evidence_task_ids.length);
+            skill.proficiency_level = Math.min(
+              5,
+              skill.evidence_task_ids.length
+            );
           }
         }
       });
