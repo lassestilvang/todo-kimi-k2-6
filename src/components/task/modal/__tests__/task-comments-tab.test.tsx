@@ -47,14 +47,12 @@ vi.mock('sonner', () => ({
 }));
 
 vi.mock('@/lib/actions', () => ({
-  addTaskComment: vi
-    .fn()
-    .mockResolvedValue({
-      id: 1,
-      task_id: 1,
-      content: 'test',
-      created_at: new Date().toISOString(),
-    }),
+  addTaskComment: vi.fn().mockResolvedValue({
+    id: 1,
+    task_id: 1,
+    content: 'test',
+    created_at: new Date().toISOString(),
+  }),
 }));
 
 vi.mock('date-fns', () => ({
