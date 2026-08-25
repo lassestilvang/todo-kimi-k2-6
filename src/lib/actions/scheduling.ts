@@ -1,6 +1,10 @@
 'use server';
 
-import { aiCache } from '@/lib/ai/providers';
+import {
+  aiCache,
+  type TaskDurationInput,
+  type DurationPredictionContext,
+} from '@/lib/ai/providers';
 import type { TaskWithRelations } from '@/types';
 
 /**
@@ -109,8 +113,8 @@ export async function generateTimeBlockedSchedule(
 ): Promise<{ schedule: TimeSlot[]; confidence: number }> {
   const cacheKey = `time-blocked-schedule:${constraints.userId}`;
   const cached = aiCache.get(cacheKey);
-  if (cached) {
-    return cached;
+  if (cached && typeof cached === 'object' && 'schedule' in cached) {
+    return cached as { schedule: TimeSlot[]; confidence: number };
   }
 
   // Get user's circadian rhythm data if available
@@ -130,8 +134,8 @@ export async function generateTimeBlockedSchedule(
     constraints.deadline
   );
 
-  aiCache.set(cacheKey, schedule); // Cache for default TTL
-  return schedule;
+  aiCache.set(cacheKey, { schedule, confidence: 0.8 }); // Cache for default TTL
+  return { schedule, confidence: 0.8 };
 }
 
 /**
@@ -151,7 +155,12 @@ export async function detectScheduleConflicts(
   // Check for time overlaps
   for (const task of tasks) {
     for (const existingSlot of existingSchedule) {
-      if (timeOverlap(task, existingSlot)) {
+      if (
+        timeOverlap(
+          task,
+          existingSlot as { startTime: string; endTime: string }
+        )
+      ) {
         conflicts.push({
           taskId: task.id,
           taskName: task.name,
@@ -160,7 +169,10 @@ export async function detectScheduleConflicts(
         });
 
         // Generate suggestions
-        const suggestion = generateConflictResolution(task, existingSlot);
+        const suggestion = generateConflictResolution(
+          task,
+          existingSlot as { startTime: string; endTime: string }
+        );
         if (suggestion) {
           suggestions.push(suggestion);
         }
@@ -231,19 +243,59 @@ export async function predictTaskDuration(
       deadlineUrgency?: number;
     };
   }
-): Promise<{ estimatedMinutes: number; confidence: number; factors: string[] }> {
+): Promise<{
+  estimatedMinutes: number;
+  confidence: number;
+  factors: string[];
+}> {
   const cacheKey = `task-duration-prediction:${task.id}`;
   const cached = aiCache.get(cacheKey);
-  if (cached) {
-    return cached;
+  if (cached && typeof cached === 'object' && 'estimatedMinutes' in cached) {
+    return cached as {
+      estimatedMinutes: number;
+      confidence: number;
+      factors: string[];
+    };
   }
 
   // AI-powered duration prediction
   const ai = await getAIManager();
-  const prediction = await ai.predictTaskDuration(task, context || {});
+  const taskInput: TaskDurationInput = {
+    name: task.name,
+    description: task.description ?? undefined,
+    priority: task.priority,
+    estimate: task.estimate ?? undefined,
+    date: task.date ?? undefined,
+    deadline: task.deadline ?? undefined,
+  };
+  const prediction = await ai.predictTaskDuration(
+    taskInput,
+    context as DurationPredictionContext | undefined
+  );
 
-  aiCache.set(cacheKey, prediction); // Cache for default TTL
-  return prediction;
+  // Transform AI response to match expected interface
+  interface AITaskDurationPrediction {
+    estimated_duration: number;
+    estimatedMinutes?: number;
+    confidence: number;
+    factors: string[];
+  }
+  const predictionTyped = prediction as AITaskDurationPrediction;
+  const result: {
+    estimatedMinutes: number;
+    confidence: number;
+    factors: string[];
+  } = {
+    estimatedMinutes:
+      predictionTyped.estimated_duration ??
+      predictionTyped.estimatedMinutes ??
+      0,
+    confidence: predictionTyped.confidence ?? 0.5,
+    factors: predictionTyped.factors ?? [],
+  };
+
+  aiCache.set(cacheKey, result); // Cache for default TTL
+  return result;
 }
 
 /**
@@ -297,8 +349,13 @@ export async function analyzeAvailability(
 }> {
   const cacheKey = `availability-analysis:${userId}`;
   const cached = aiCache.get(cacheKey);
-  if (cached) {
-    return cached;
+  if (cached && typeof cached === 'object' && 'peakHours' in cached) {
+    return cached as {
+      peakHours: Array<{ hour: number; productivity_score: number }>;
+      availableWindows: AvailableWindow[];
+      optimalSchedulingPeriods: OptimalPeriod[];
+      energyRecommendations: EnergyRecommendation[];
+    };
   }
 
   // Get user calendar/events if available
@@ -322,8 +379,8 @@ export async function analyzeAvailability(
 async function getUserEnergyProfile(userId: number): Promise<EnergyProfile> {
   const cacheKey = `energy-profile:${userId}`;
   const cached = aiCache.get(cacheKey);
-  if (cached) {
-    return cached;
+  if (cached && typeof cached === 'object' && 'peak_hours' in cached) {
+    return cached as EnergyProfile;
   }
 
   // Generate energy profile based on task history
@@ -339,7 +396,9 @@ async function getUserEnergyProfile(userId: number): Promise<EnergyProfile> {
 async function getUserCalendarEvents(
   userId: number,
   timeRange: { start: string; end: string }
-): Promise<Array<{ date: string; startTime: string; endTime: string; type: string }>> {
+): Promise<
+  Array<{ date: string; startTime: string; endTime: string; type: string }>
+> {
   // In a real implementation, this would call calendar APIs
   // For now, return mock data
   return [
@@ -427,7 +486,7 @@ async function createTimeBlocks(
       startTime: minutesToTime(optimalSlot.start),
       endTime: minutesToTime(optimalSlot.end),
       durationMinutes: optimalSlot.duration,
-      priority: task.priority,
+      bufferMinutes: optimalSlot.bufferMinutes || 15,
       energyRequirement: optimalSlot.energyRequirement,
       confidence: optimalSlot.confidence,
       reason: optimalSlot.reason,
@@ -487,6 +546,7 @@ function findOptimalTimeSlot(
   energyRequirement: number;
   confidence: number;
   reason: string;
+  bufferMinutes?: number;
 } {
   const duration = estimateTaskDuration(task);
 
@@ -531,13 +591,17 @@ function findOptimalTimeSlot(
     energyRequirement: getTaskEnergyRequirement(task, optimalTime / 60),
     confidence: Math.round(optimalConfidence * 100) / 100,
     reason: optimalReason,
+    bufferMinutes: 15,
   };
 }
 
 /**
  * Check if two time ranges overlap
  */
-function timeOverlap(task: TaskWithRelations, existingSlot: { startTime: string; endTime: string }): boolean {
+function timeOverlap(
+  task: TaskWithRelations,
+  existingSlot: { startTime: string; endTime: string }
+): boolean {
   const taskStart =
     parseTimeToMinutes(task.date || '') +
     (task.estimate ? parseTimeToMinutes(task.estimate) : 0);
@@ -555,7 +619,11 @@ function timeOverlap(task: TaskWithRelations, existingSlot: { startTime: string;
 function generateConflictResolution(
   task: TaskWithRelations,
   existingSlot: { startTime: string; endTime: string }
-): { type: string; originalTime: { startTime: string; endTime: string }; suggestedTime: { startTime: string; endTime: string; reason: string } } | null {
+): {
+  type: string;
+  originalTime: { startTime: string; endTime: string };
+  suggestedTime: { startTime: string; endTime: string; reason: string };
+} | null {
   const taskDuration = estimateTaskDuration(task);
   const slotDuration =
     parseTimeToMinutes(existingSlot.endTime) -
@@ -672,9 +740,9 @@ function generateTimeSuggestions(
   const suggestions: ScheduleSuggestion[] = [];
 
   // Use energy profile to find optimal times
-  const optimalHours = energyProfile?.peak_hours?.map((h: { hour: number }) => h.hour) || [
-    9, 10, 11, 14, 15,
-  ];
+  const optimalHours = energyProfile?.peak_hours?.map(
+    (h: { hour: number }) => h.hour
+  ) || [9, 10, 11, 14, 15];
 
   // Generate 3 different time suggestions
   for (let i = 0; i < Math.min(3, optimalHours.length); i++) {
@@ -694,8 +762,9 @@ function generateTimeSuggestions(
         time: `${hour.toString().padStart(2, '0')}:00`,
         confidence:
           Math.round(
-            ((energyProfile?.peak_hours?.find((h: { hour: number }) => h.hour === hour)
-              ?.productivity_score || 80) /
+            ((energyProfile?.peak_hours?.find(
+              (h: { hour: number }) => h.hour === hour
+            )?.productivity_score || 80) /
               100) *
               100
           ) / 100,
@@ -783,7 +852,15 @@ function minutesToTime(minutes: number): string {
 /**
  * Find peak hours from user activity
  */
-function identifyPeakHours(_events: Array<{ date: string; startTime: string; endTime: string; type: string }>, tasks: TaskWithRelations[]): Array<{ hour: number; productivity_score: number }> {
+function identifyPeakHours(
+  _events: Array<{
+    date: string;
+    startTime: string;
+    endTime: string;
+    type: string;
+  }>,
+  tasks: TaskWithRelations[]
+): Array<{ hour: number; productivity_score: number }> {
   const hourCounts: Record<number, number> = {};
 
   // Count task completions by hour
@@ -812,7 +889,12 @@ function identifyPeakHours(_events: Array<{ date: string; startTime: string; end
  * Find available time windows
  */
 function findAvailableWindows(
-  _events: Array<{ date: string; startTime: string; endTime: string; type: string }>,
+  _events: Array<{
+    date: string;
+    startTime: string;
+    endTime: string;
+    type: string;
+  }>,
   timeRange: { start: string; end: string }
 ): AvailableWindow[] {
   const windows = [];
@@ -840,7 +922,12 @@ function findAvailableWindows(
  * Calculate optimal scheduling periods
  */
 function calculateOptimalPeriods(
-  _events: Array<{ date: string; startTime: string; endTime: string; type: string }>,
+  _events: Array<{
+    date: string;
+    startTime: string;
+    endTime: string;
+    type: string;
+  }>,
   _tasks: TaskWithRelations[]
 ): OptimalPeriod[] {
   const periods = [
@@ -874,7 +961,12 @@ function calculateOptimalPeriods(
  * Generate energy recommendations
  */
 function generateEnergyRecommendations(
-  _events: Array<{ date: string; startTime: string; endTime: string; type: string }>,
+  _events: Array<{
+    date: string;
+    startTime: string;
+    endTime: string;
+    type: string;
+  }>,
   _tasks: TaskWithRelations[]
 ): EnergyRecommendation[] {
   const recommendations = [
