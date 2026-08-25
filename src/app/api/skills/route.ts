@@ -56,7 +56,31 @@ export async function GET(request: NextRequest) {
       created_at: string;
     }>;
 
-    return jsonResponse({ skills });
+    // Calculate growth metrics
+    const growthAnalysis = db
+      .prepare(`
+        SELECT * FROM user_skills
+        WHERE user_id = ? AND last_used_at >= datetime('now', '-30 days')
+      `)
+      .all(userId) as Array<{ skill_name: string }>;
+
+    const growthRate = skills.length > 0 ? growthAnalysis.length / skills.length : 0;
+
+    // Generate recommendations
+    const recommendations = generateSkillRecommendations(skills, growthRate);
+
+    return jsonResponse({
+      skills,
+      growth_rate: growthRate,
+      analysis: {
+        total_skills: skills.length,
+        average_proficiency: skills.length > 0
+          ? skills.reduce((sum, s) => sum + s.proficiency_level, 0) / skills.length
+          : 0,
+        most_recent_skill: growthAnalysis[0]?.skill_name || null,
+        recommendations,
+      },
+    });
   } catch (error: unknown) {
     console.error('Failed to get skills:', error);
     return errorResponse('Failed to get skills', 500);
@@ -410,4 +434,46 @@ export async function DELETE(request: NextRequest) {
       500
     );
   }
+}
+
+function generateSkillRecommendations(
+  skills: Array<{
+    skill_name: string;
+    proficiency_level: number;
+    last_used_at: string | null;
+  }>,
+  growthRate: number
+): Array<{ skill_name: string; reason: string; priority: 'high' | 'medium' | 'low' }> {
+  const recommendations: Array<{ skill_name: string; reason: string; priority: 'high' | 'medium' | 'low' }> = [];
+
+  // Find skills with high completion counts that could be developed further
+  const highUseSkills = skills.filter(s => s.proficiency_level < 5 && s.proficiency_level > 2);
+
+  for (const skill of highUseSkills) {
+    const gap = 5 - skill.proficiency_level;
+    const reason = `Has proficiency level ${skill.proficiency_level} - room to grow by ${gap} more levels`;
+    recommendations.push({
+      skill_name: skill.skill_name,
+      reason,
+      priority: gap >= 3 ? 'high' : gap >= 2 ? 'medium' : 'low',
+    });
+  }
+
+  // Find gaps in skill coverage
+  const skillCategories = ['research', 'development', 'design', 'communication', 'project management'];
+
+  const skillNames = new Set(skills.map(s => s.skill_name.toLowerCase()));
+
+  for (const category of skillCategories) {
+    const isCovered = skillNames.has(category);
+    if (!isCovered && skills.length > 3) {
+      recommendations.push({
+        skill_name: category,
+        reason: 'High task volume suggests opportunity to develop this foundational skill',
+        priority: growthRate > 0.7 ? 'high' : 'medium',
+      });
+    }
+  }
+
+  return recommendations.slice(0, 5);
 }
