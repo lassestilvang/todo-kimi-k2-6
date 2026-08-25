@@ -129,7 +129,7 @@ export async function removeFromCalendar(
 /**
  * Refresh access token if expired
  */
-async function refreshAccessTokenIfNeeded(
+export async function refreshAccessTokenIfNeeded(
   sync: GoogleCalendarSync
 ): Promise<string | null> {
   if (!sync.expires_at || Date.now() < sync.expires_at) {
