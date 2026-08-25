@@ -30,7 +30,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { exportData, exportCsv, importData } from '@/lib/actions';
+import { exportData, exportCsv, importData, checkImportConflicts, type ExportDataSchema, type ConflictCheckResult } from '@/lib/actions';
+import { validateExportData } from '@/lib/validation/export';
 import { exportToPdf } from '@/lib/export/pdf';
 
 interface ImportExportProps {
@@ -39,6 +40,7 @@ interface ImportExportProps {
 
 type ExportFormat = 'json' | 'csv' | 'pdf';
 type ImportSource = 'file' | 'paste' | 'template';
+type ConflictStrategy = 'replace' | 'merge' | 'skip_conflicts';
 
 export function ImportExport({ onRefresh }: ImportExportProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -49,6 +51,9 @@ export function ImportExport({ onRefresh }: ImportExportProps) {
   const [activeTab, setActiveTab] = useState<'export' | 'import'>('export');
   const [exportFormat, setExportFormat] = useState<ExportFormat>('json');
   const [importSource, setImportSource] = useState<ImportSource>('file');
+  const [conflictStrategy, setConflictStrategy] = useState<ConflictStrategy>('replace');
+  const [conflictPreview, setConflictPreview] = useState<ConflictCheckResult | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
 
   const handleExport = async () => {
     setIsExporting(true);
@@ -99,7 +104,7 @@ export function ImportExport({ onRefresh }: ImportExportProps) {
 
     setIsImporting(true);
     try {
-      let data;
+      let data: unknown;
 
       if (importSource === 'file') {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -109,10 +114,26 @@ export function ImportExport({ onRefresh }: ImportExportProps) {
         data = JSON.parse(jsonData);
       }
 
-      const result = await importData(data);
-      toast.success(
-        `Imported ${result.tasks} tasks, ${result.lists} lists, ${result.labels} labels`
-      );
+      // Validate the imported data
+      const validation = validateExportData(data);
+      if (!validation.valid) {
+        toast.error(`Validation failed: ${validation.errors.join(', ')}`);
+        return;
+      }
+
+      const result = await importData(data as ExportDataSchema, { conflictStrategy });
+
+      let message = `Imported ${result.tasks} tasks, ${result.lists} lists, ${result.labels} labels`;
+      if (result.skipped > 0) {
+        message += `, skipped ${result.skipped} items with conflicts`;
+      }
+      if (result.errors.length > 0) {
+        message += `, ${result.errors.length} errors`;
+        toast.warning(message);
+      } else {
+        toast.success(message);
+      }
+
       setJsonData('');
       setFile(null);
       onRefresh();
@@ -121,6 +142,38 @@ export function ImportExport({ onRefresh }: ImportExportProps) {
       console.error(error);
     } finally {
       setIsImporting(false);
+    }
+  };
+
+  const checkConflicts = async () => {
+    if (importSource === 'file' && !file) return;
+    if (importSource === 'paste' && !jsonData.trim()) return;
+
+    try {
+      let data: unknown;
+
+      if (importSource === 'file') {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        const text = await file!.text();
+        data = JSON.parse(text);
+      } else {
+        data = JSON.parse(jsonData);
+      }
+
+      // Validate first
+      const validation = validateExportData(data);
+      if (!validation.valid) {
+        toast.error(`Validation failed: ${validation.errors.join(', ')}`);
+        return;
+      }
+
+      // Check conflicts
+      const conflicts = await checkImportConflicts(data as ExportDataSchema);
+      setConflictPreview(conflicts);
+      setShowPreview(true);
+    } catch (error) {
+      toast.error('Failed to check conflicts. Check the file format.');
+      console.error(error);
     }
   };
 
@@ -263,6 +316,66 @@ export function ImportExport({ onRefresh }: ImportExportProps) {
                       >
                         <X className="h-3 w-3" />
                       </Button>
+                    )}
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <Label>Conflict Resolution</Label>
+                  <Select
+                    value={conflictStrategy}
+                    onValueChange={v => setConflictStrategy(v as ConflictStrategy)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="replace">Replace All (default)</SelectItem>
+                      <SelectItem value="merge">Merge (update existing, keep new)</SelectItem>
+                      <SelectItem value="skip_conflicts">Skip Existing (keep current)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Choose how to handle existing data with the same IDs
+                  </p>
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={checkConflicts}
+                  disabled={isImporting}
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Check Conflicts
+                </Button>
+
+                {showPreview && conflictPreview && conflictPreview.hasConflicts && (
+                  <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md">
+                    <p className="text-sm font-medium text-amber-800 dark:text-amber-200 mb-2">
+                      Potential conflicts detected
+                    </p>
+                    <ul className="text-xs text-amber-700 dark:text-amber-300 space-y-1">
+                      {conflictPreview.lists.duplicates > 0 && (
+                        <li>{conflictPreview.lists.duplicates} lists have duplicate IDs</li>
+                      )}
+                      {conflictPreview.labels.duplicates > 0 && (
+                        <li>{conflictPreview.labels.duplicates} labels have duplicate IDs</li>
+                      )}
+                      {conflictPreview.tasks.duplicates > 0 && (
+                        <li>{conflictPreview.tasks.duplicates} tasks have duplicate IDs</li>
+                      )}
+                      {conflictPreview.templates.duplicates > 0 && (
+                        <li>{conflictPreview.templates.duplicates} templates have duplicate IDs</li>
+                      )}
+                      {conflictPreview.time_entries.duplicates > 0 && (
+                        <li>{conflictPreview.time_entries.duplicates} time entries have duplicate IDs</li>
+                      )}
+                    </ul>
+                    {conflictStrategy === 'skip_conflicts' && (
+                      <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
+                        Only new items will be imported; existing items will be kept.
+                      </p>
                     )}
                   </div>
                 )}
