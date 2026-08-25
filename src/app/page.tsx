@@ -575,6 +575,7 @@ export default function Home() {
           <AIAssistant
             tasks={tasks}
             lists={lists}
+            labels={labels}
             onAddTask={async task => {
               try {
                 const newTask = await (
@@ -758,11 +759,28 @@ export default function Home() {
             </Button>
           </div>
         )}
+        {/* Offline and Sync Status Indicator */}
         {!isOnline && (
           <div className="bg-yellow-500/10 border-b border-yellow-500/20 px-4 py-2 text-center text-sm">
-            <WifiOff className="h-4 w-4 inline mr-1.5" />
-            You are offline. Changes will be saved locally and synced when you
-            are back online.
+            <div className="flex items-center justify-center gap-2">
+              <WifiOff className="h-4 w-4" />
+              <span>You are offline</span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Changes will be saved locally and synced when back online
+            </p>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="mt-1 h-6 px-2 text-xs"
+              onClick={() => {
+                // Attempt to refetch when online button is clicked
+                window.dispatchEvent(new Event('online'));
+                loadData();
+              }}
+            >
+              Retry connection
+            </Button>
           </div>
         )}
         {isLoading ? (
