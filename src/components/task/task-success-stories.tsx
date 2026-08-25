@@ -1,20 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import {
-  Smile,
-  Star,
-  Share2,
-  Trophy,
-  RefreshCw,
-} from 'lucide-react';
+import { Smile, Star, Share2, Trophy, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -66,12 +55,18 @@ export function TaskSuccessStories({
   onComplete,
 }: TaskSuccessStoriesProps) {
   const [showStoryForm, setShowStoryForm] = useState(false);
-  const [story, setStory] = useState({
+  const [story, setStory] = useState<{
+    what_went_well: string;
+    key_insight: string;
+    improvement_suggestion: string;
+    difficulty_level: 'easy' | 'medium' | 'hard';
+    tags: string;
+  }>({
     what_went_well: '',
     key_insight: '',
     improvement_suggestion: '',
-    difficulty_level: 'medium' as const,
-    tags: '' as string,
+    difficulty_level: 'medium',
+    tags: '',
   });
 
   const [savedStories, setSavedStories] = useState<SuccessStory[]>([]);
@@ -218,9 +213,14 @@ export function TaskSuccessStories({
                 <Label>Difficulty</Label>
                 <Select
                   value={story.difficulty_level}
-                  onValueChange={v =>
-                    setStory({ ...story, difficulty_level: v as 'easy' | 'medium' | 'hard' })
-                  }
+                  onValueChange={v => {
+                    if (v) {
+                      setStory({
+                        ...story,
+                        difficulty_level: v as 'easy' | 'medium' | 'hard',
+                      });
+                    }
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue />
