@@ -235,8 +235,10 @@ export async function incrementSkillExperience(
 
     if (skill) {
       // Add task to evidence if not already there
-      const evidence = skill.evidence_task_ids
-        ? JSON.parse(skill.evidence_task_ids)
+      const evidence: number[] = skill.evidence_task_ids
+        ? typeof skill.evidence_task_ids === 'string'
+          ? (JSON.parse(skill.evidence_task_ids) as number[])
+          : skill.evidence_task_ids
         : [];
 
       if (!evidence.includes(taskId)) {
