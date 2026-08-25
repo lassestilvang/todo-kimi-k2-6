@@ -225,7 +225,7 @@ export async function generateTaskDNA(
   }
 
   // Calculate complexity based on description length and dependencies
-  const descriptionLength = task.description?.length || 0;
+  const descriptionLength = (task.description as string | null)?.length || 0;
   const dependencyCount = db
     .prepare(
       `
@@ -241,15 +241,18 @@ export async function generateTaskDNA(
   );
 
   // Cognitive load
-  const hasLabels = task.labels ? JSON.parse(task.labels).length : 0;
+  const hasLabels = task.labels
+    ? (JSON.parse(String(task.labels)).length as number)
+    : 0;
   const cognitiveLoad = Math.min(
     1,
-    3 - task.priority_score / 30 + hasLabels * 0.1
+    3 - (task.priority_score as number) / 30 + hasLabels * 0.1
   );
 
   // Time estimate accuracy
-  const actualMinutes = task.actual_minutes || 0;
-  const estimatedMinutes = parseDurationToMinutes(task.estimate) || 30;
+  const actualMinutes = (task.actual_minutes as number) || 0;
+  const estimatedMinutes =
+    parseDurationToMinutes(task.estimate as string) || 30;
   const timeEstimateAccuracy =
     actualMinutes > 0
       ? Math.max(
@@ -329,18 +332,18 @@ export async function predictTaskCompletion(
   let probability = 0.5;
 
   // Priority factor
-  const priorityFactor = (task.priority_score || 50) / 100;
+  const priorityFactor = ((task.priority_score as number) || 50) / 100;
   probability = (probability + priorityFactor) / 2;
 
   // Age factor (older tasks more likely to be done)
-  const createdDate = new Date(task.created_at);
+  const createdDate = new Date(task.created_at as string);
   const ageDays = (Date.now() - createdDate.getTime()) / (1000 * 60 * 60 * 24);
   const ageFactor = Math.min(1, ageDays / 30);
   probability = (probability + ageFactor) / 2;
 
   // Due date factor
   if (task.deadline) {
-    const dueDate = new Date(task.deadline);
+    const dueDate = new Date(task.deadline as string);
     const daysUntil = (dueDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24);
     if (daysUntil <= 0) {
       probability = Math.min(1, probability + 0.3); // Overdue boost
@@ -350,8 +353,9 @@ export async function predictTaskCompletion(
   }
 
   // Estimate completion date
-  const estimatedMinutes = parseDurationToMinutes(task.estimate) || 60;
-  const created = new Date(task.created_at);
+  const estimatedMinutes =
+    parseDurationToMinutes(task.estimate as string) || 60;
+  const created = new Date(task.created_at as string);
   const estimatedDays = estimatedMinutes / 60 / 8; // Divide by 8 hours per day
   const estimatedCompletion = new Date(created);
   estimatedCompletion.setDate(estimatedCompletion.getDate() + estimatedDays);
@@ -495,11 +499,13 @@ export async function getTrendAnalysis(
     ORDER BY date
   `
     )
-    .all(userId, userId, startDate.toISOString()) as Array<Record<string, unknown>>;
+    .all(userId, userId, startDate.toISOString()) as Array<
+    Record<string, unknown>
+  >;
 
   const data = dailyData.map(d => ({
-    date: d.date,
-    value: d.completed,
+    date: String(d.date),
+    value: Number(d.completed),
   }));
 
   // Calculate trend
