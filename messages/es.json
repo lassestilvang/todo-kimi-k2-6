@@ -1,0 +1,58 @@
+{
+  "app": {
+    "title": "TaskFlow",
+    "tagline": "Planificador diario y gestor de tareas"
+  },
+  "navigation": {
+    "today": "Hoy",
+    "next7Days": "Próximos 7 días",
+    "upcoming": "Próximamente",
+    "completed": "Completado",
+    "kanban": "Kanban",
+    "gantt": "Gantt",
+    "analytics": "Analíticas",
+    "settings": "Configuración",
+    "calendarSync": "Sincronización de calendario",
+    "calendar": "Calendario",
+    "graph": "Gráfico de dependencias",
+    "matrix": "Matriz de Eisenhower",
+    "ai": "Asistente IA",
+    "goals": "Metas y hábitos",
+    "blocked": "Tareas bloqueadas"
+  },
+  "filterPresets": {
+    "needsAttention": "Necesita atención",
+    "thisWeek": "Esta semana",
+    "withLabels": "Con etiquetas",
+    "withSubtasks": "Con subtareas"
+  },
+  "tasks": {
+    "addTask": "Agregar tarea",
+    "editTask": "Editar tarea",
+    "deleteTask": "Eliminar tarea",
+    "complete": "Completar",
+    "pending": "Pendiente",
+    "noTasks": "No se encontraron tareas",
+    "searchTasks": "Buscar tareas...",
+    "searchPlaceholder": "Buscar: \"{query}\"",
+    "loading": "Cargando sus tareas..."
+  },
+  "search": {
+    "placeholder": "Buscar tareas...",
+    "clear": "Borrar búsqueda",
+    "showHistory": "Mostrar historial",
+    "historyTitle": "Historial de búsqueda",
+    "clearHistory": "Borrar todo el historial",
+    "noHistory": "Aún no hay historial de búsqueda",
+    "historyItem": "Buscar '{query}'"
+  },
+  "common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "loading": "Cargando...",
+    "error": "Ocurrió un error",
+    "success": "Operación exitosa"
+  }
+}
