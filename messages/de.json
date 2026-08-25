@@ -1,0 +1,58 @@
+{
+  "app": {
+    "title": "TaskFlow",
+    "tagline": "Täglicher Planer und Aufgabenmanager"
+  },
+  "navigation": {
+    "today": "Heute",
+    "next7Days": "Nächste 7 Tage",
+    "upcoming": "Bevorstehend",
+    "completed": "Abgeschlossen",
+    "kanban": "Kanban",
+    "gantt": "Gantt",
+    "analytics": "Analysen",
+    "settings": "Einstellungen",
+    "calendarSync": "Kalendersynchronisierung",
+    "calendar": "Kalender",
+    "graph": "Abhängigkeitsdiagramm",
+    "matrix": "Eisenhower-Matrix",
+    "ai": "KI-Assistent",
+    "goals": "Ziele und Gewohnheiten",
+    "blocked": "Blockierte Aufgaben"
+  },
+  "filterPresets": {
+    "needsAttention": "Benötigt Aufmerksamkeit",
+    "thisWeek": "Diese Woche",
+    "withLabels": "Mit Labels",
+    "withSubtasks": "Mit Unteraufgaben"
+  },
+  "tasks": {
+    "addTask": "Aufgabe hinzufügen",
+    "editTask": "Aufgabe bearbeiten",
+    "deleteTask": "Aufgabe löschen",
+    "complete": "Abgeschlossen",
+    "pending": "Ausstehend",
+    "noTasks": "Keine Aufgaben gefunden",
+    "searchTasks": "Aufgaben suchen...",
+    "searchPlaceholder": "Suchen: \"{query}\"",
+    "loading": "Laden Ihrer Aufgaben..."
+  },
+  "search": {
+    "placeholder": "Aufgaben suchen...",
+    "clear": "Suche löschen",
+    "showHistory": "Verlauf anzeigen",
+    "historyTitle": "Suchverlauf",
+    "clearHistory": "Gesamten Verlauf löschen",
+    "noHistory": "Noch kein Suchverlauf vorhanden",
+    "historyItem": "Nach '{query}' suchen"
+  },
+  "common": {
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "loading": "Laden...",
+    "error": "Ein Fehler ist aufgetreten",
+    "success": "Vorgang erfolgreich"
+  }
+}
