@@ -334,7 +334,11 @@ function CreateTemplateForm({
           <label className="text-sm font-medium">Priority</label>
           <Select
             value={priority}
-            onValueChange={value => setPriority(value as 'none' | 'low' | 'medium' | 'high' | 'critical')}
+            onValueChange={value =>
+              setPriority(
+                value as 'none' | 'low' | 'medium' | 'high' | 'critical'
+              )
+            }
           >
             <SelectTrigger>
               <SelectValue />
