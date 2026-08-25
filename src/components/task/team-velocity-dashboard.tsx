@@ -142,7 +142,11 @@ export function TeamVelocityDashboard({
         <div className="flex items-center gap-4">
           <select
             value={timeframe}
-            onChange={e => setTimeframe(e.target.value as 'week' | 'month' | 'quarter' | 'year')}
+            onChange={e =>
+              setTimeframe(
+                e.target.value as 'week' | 'month' | 'quarter' | 'year'
+              )
+            }
             className="px-3 py-2 border rounded-md"
           >
             <option value="week">This Week</option>
