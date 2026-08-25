@@ -1,0 +1,58 @@
+{
+  "app": {
+    "title": "TaskFlow",
+    "tagline": "Planificateur quotidien et gestionnaire de tâches"
+  },
+  "navigation": {
+    "today": "Aujourd'hui",
+    "next7Days": "Prochaines 7 journées",
+    "upcoming": "À venir",
+    "completed": "Terminé",
+    "kanban": "Kanban",
+    "gantt": "Gantt",
+    "analytics": "Analytique",
+    "settings": "Paramètres",
+    "calendarSync": "Synchronisation du calendrier",
+    "calendar": "Calendrier",
+    "graph": "Graphe de dépendances",
+    "matrix": "Matrice d'Eisenhower",
+    "ai": "Assistant IA",
+    "goals": "Objectifs et habitudes",
+    "blocked": "Tâches bloquées"
+  },
+  "filterPresets": {
+    "needsAttention": "Nécessite de l'attention",
+    "thisWeek": "Cette semaine",
+    "withLabels": "Avec des étiquettes",
+    "withSubtasks": "Avec des sous-tâches"
+  },
+  "tasks": {
+    "addTask": "Ajouter une tâche",
+    "editTask": "Modifier la tâche",
+    "deleteTask": "Supprimer la tâche",
+    "complete": "Terminer",
+    "pending": "En attente",
+    "noTasks": "Aucune tâche trouvée",
+    "searchTasks": "Rechercher des tâches...",
+    "searchPlaceholder": "Rechercher : \"{query}\"",
+    "loading": "Chargement de vos tâches..."
+  },
+  "search": {
+    "placeholder": "Rechercher des tâches...",
+    "clear": "Effacer la recherche",
+    "showHistory": "Afficher l'historique",
+    "historyTitle": "Historique de recherche",
+    "clearHistory": "Effacer tout l'historique",
+    "noHistory": "Pas d'historique de recherche pour le moment",
+    "historyItem": "Rechercher '{query}'"
+  },
+  "common": {
+    "save": "Sauvegarder",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "loading": "Chargement...",
+    "error": "Une erreur s'est produite",
+    "success": "Opération réussie"
+  }
+}
