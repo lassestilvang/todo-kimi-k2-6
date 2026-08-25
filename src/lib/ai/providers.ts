@@ -610,11 +610,7 @@ export class KeywordParser implements AIProvider {
   async generateProjectPlan(
     input: ProjectPlanInput
   ): Promise<GeneratedProject> {
-    const {
-      projectName,
-      description = '',
-      constraints = {},
-    } = input;
+    const { projectName, description = '', constraints = {} } = input;
     const normalizedDescription = (
       description +
       ' ' +
@@ -2047,7 +2043,10 @@ export class AIManager {
         provider.generateTasksFromNotes
       ) {
         try {
-          const result = await provider.generateTasksFromNotes?.(notes, context);
+          const result = await provider.generateTasksFromNotes?.(
+            notes,
+            context
+          );
           if (result && result.length > 0) {
             return result.map((task: TaskSuggestion) => ({
               ...task,
@@ -2188,14 +2187,8 @@ export class AIManager {
     // Try AI providers
     for (const provider of this.providers) {
       try {
-        if (
-          provider.name !== 'keyword-parser' &&
-          provider.parseEditCommand
-        ) {
-          const result = await provider.parseEditCommand?.(
-            text,
-            context
-          );
+        if (provider.name !== 'keyword-parser' && provider.parseEditCommand) {
+          const result = await provider.parseEditCommand?.(text, context);
           if (result) {
             return { ...result, provider: provider.name };
           }
