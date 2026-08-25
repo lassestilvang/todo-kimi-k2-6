@@ -25,8 +25,19 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -271,7 +282,7 @@ function BuilderModal({
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {workflowNodes.map((node) => (
+                  {workflowNodes.map(node => (
                     <div key={node.id} className="flex items-center gap-3">
                       <div className="absolute left-4 top-4 w-6 h-6 flex items-center justify-center text-muted-foreground/50">
                         {node.type === 'trigger' ? 'v' : '→'}
@@ -287,7 +298,9 @@ function BuilderModal({
                         <div className="flex items-center gap-2">
                           <AlertCircle className="h-4 w-4" />
                           <div>
-                            <div className="font-medium text-sm">{node.label}</div>
+                            <div className="font-medium text-sm">
+                              {node.label}
+                            </div>
                             <div className="text-xs text-muted-foreground">
                               {node.description}
                             </div>
@@ -357,7 +370,9 @@ function BuilderModal({
 export function VisualWorkflowBuilder({ className }: { className?: string }) {
   const [workflows, setWorkflows] = useState<WorkflowData[]>([]);
   const [showBuilder, setShowBuilder] = useState(false);
-  const [editingWorkflow, setEditingWorkflow] = useState<WorkflowData | null>(null);
+  const [editingWorkflow, setEditingWorkflow] = useState<WorkflowData | null>(
+    null
+  );
   const [workflowNodes, setWorkflowNodes] = useState<WorkflowNode[]>([]);
   const [selectedNode, setSelectedNode] = useState<WorkflowNode | null>(null);
 
@@ -425,17 +440,24 @@ export function VisualWorkflowBuilder({ className }: { className?: string }) {
     }
   }, [editingWorkflow, workflowNodes, fetchWorkflows]);
 
-  const handleTemplateClick = useCallback((template: { name: string; nodes: WorkflowNode[]; edges: { source: string; target: string }[] }) => {
-    openBuilder({
-      id: 0,
-      name: template.name,
-      nodes: template.nodes,
-      edges: template.edges,
-      enabled: true,
-      run_count: 0,
-      created_at: new Date().toISOString(),
-    });
-  }, [openBuilder]);
+  const handleTemplateClick = useCallback(
+    (template: {
+      name: string;
+      nodes: WorkflowNode[];
+      edges: { source: string; target: string }[];
+    }) => {
+      openBuilder({
+        id: 0,
+        name: template.name,
+        nodes: template.nodes,
+        edges: template.edges,
+        enabled: true,
+        run_count: 0,
+        created_at: new Date().toISOString(),
+      });
+    },
+    [openBuilder]
+  );
 
   const handleCloseModal = useCallback(() => {
     setShowBuilder(false);
@@ -482,16 +504,18 @@ export function VisualWorkflowBuilder({ className }: { className?: string }) {
                 <Button
                   variant="outline"
                   className="w-full justify-start"
-                  onClick={() => handleTemplateClick({
-                    name: 'Auto-Create Tasks',
-                    nodes: [...TRIGGER_NODES.slice(0, 1), ACTION_NODES[0]],
-                    edges: [
-                      {
-                        source: 'trigger-task-created',
-                        target: 'action-create-task',
-                      },
-                    ],
-                  })}
+                  onClick={() =>
+                    handleTemplateClick({
+                      name: 'Auto-Create Tasks',
+                      nodes: [...TRIGGER_NODES.slice(0, 1), ACTION_NODES[0]],
+                      edges: [
+                        {
+                          source: 'trigger-task-created',
+                          target: 'action-create-task',
+                        },
+                      ],
+                    })
+                  }
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Task Creation from Trigger
@@ -499,19 +523,21 @@ export function VisualWorkflowBuilder({ className }: { className?: string }) {
                 <Button
                   variant="outline"
                   className="w-full justify-start"
-                  onClick={() => handleTemplateClick({
-                    name: 'Task Completion Tracker',
-                    nodes: [
-                      ...TRIGGER_NODES.slice(1, 2),
-                      ...ACTION_NODES.slice(2, 3),
-                    ],
-                    edges: [
-                      {
-                        source: 'trigger-task-completed',
-                        target: 'action-send-notification',
-                      },
-                    ],
-                  })}
+                  onClick={() =>
+                    handleTemplateClick({
+                      name: 'Task Completion Tracker',
+                      nodes: [
+                        ...TRIGGER_NODES.slice(1, 2),
+                        ...ACTION_NODES.slice(2, 3),
+                      ],
+                      edges: [
+                        {
+                          source: 'trigger-task-completed',
+                          target: 'action-send-notification',
+                        },
+                      ],
+                    })
+                  }
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Notify on Completion
