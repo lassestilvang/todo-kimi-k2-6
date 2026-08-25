@@ -1,19 +1,8 @@
 'use client';
 
 import { useMemo } from 'react';
-import {
-  Calendar,
-  Target,
-  Flame,
-  Award,
-  UserCheck,
-} from 'lucide-react';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Calendar, Target, Flame, Award, UserCheck } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   ResponsiveContainer,
   LineChart,
