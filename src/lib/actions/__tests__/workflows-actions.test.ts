@@ -285,7 +285,7 @@ describe('Workflow Actions', () => {
         action_config: '{}',
       };
 
-      await expect(executeAction(workflow)).rejects.toThrow(
+      await expect(executeAction(workflow as any)).rejects.toThrow(
         'Unknown action type'
       );
     });
@@ -516,7 +516,7 @@ describe('Workflow Actions', () => {
         action_config: JSON.stringify({ task_name: 'Test Task' }),
       };
 
-      const result = (await executeAction(workflow)) as {
+      const result = (await executeAction(workflow as any)) as {
         task_id: number;
         name: string;
         status: string;
@@ -539,7 +539,7 @@ describe('Workflow Actions', () => {
         action_config: JSON.stringify({ task_id: 1, completed: 1 }),
       };
 
-      const result = (await executeAction(workflow)) as {
+      const result = (await executeAction(workflow as any)) as {
         task_id: number;
         status: string;
       };
@@ -558,7 +558,7 @@ describe('Workflow Actions', () => {
         }),
       };
 
-      const result = (await executeAction(workflow)) as {
+      const result = (await executeAction(workflow as any)) as {
         status: string;
         type: string;
       };
@@ -577,7 +577,7 @@ describe('Workflow Actions', () => {
         }),
       };
 
-      const result = (await executeAction(workflow)) as {
+      const result = (await executeAction(workflow as any)) as {
         status: string;
         level: string;
       };
@@ -592,7 +592,7 @@ describe('Workflow Actions', () => {
         action_config: JSON.stringify({ url: 'https://example.com/webhook' }),
       };
 
-      const result = (await executeAction(workflow)) as {
+      const result = (await executeAction(workflow as any)) as {
         status: string;
         response_code: number;
       };
@@ -608,7 +608,9 @@ describe('Workflow Actions', () => {
         action_config: JSON.stringify({ task_id: 1 }), // No updates provided
       };
 
-      const result = (await executeAction(workflow)) as { status: string };
+      const result = (await executeAction(workflow as any)) as {
+        status: string;
+      };
       expect(result.status).toBe('no_updates');
     });
   });
