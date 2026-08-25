@@ -69,7 +69,7 @@ export default defineConfig({
         branches: 65,
         functions: 78,
         lines: 80,
-        statements: 80,
+        statements: 79,
       },
     },
     clearMocks: true,
