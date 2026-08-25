@@ -381,7 +381,10 @@ export function TaskModal({
         const offlineData = isEditing
           ? { id: task.id, ...parsed.data }
           : parsed.data;
-        saveOfflineTask(isEditing ? 'update' : 'create', offlineData as TaskWithRelations & { id?: number });
+        saveOfflineTask(
+          isEditing ? 'update' : 'create',
+          offlineData as Partial<import('@/types').CreateTaskInput>
+        );
         toast.success('Task saved locally. Will sync when online.');
         onSuccess();
         onOpenChange(false);
@@ -1093,17 +1096,17 @@ export function TaskModal({
           )}
 
           {activeTab === 'context' && isEditing && task && (
-            <TaskContextTab task={task} contexts={task.habit_contexts as unknown as Array<{ id: number; context: string; scheduled_time: string | null }>} />
+            <TaskContextTab task={task} contexts={task.habit_contexts} />
           )}
 
           {activeTab === 'decision' && isEditing && task && (
-            <TaskDecisionTab task={task} decisions={task.decisions as unknown as Array<{ id: number; decision_point: string; outcome?: string }>} />
+            <TaskDecisionTab task={task} decisions={task.decisions} />
           )}
 
           {activeTab === 'connections' && isEditing && task && (
             <TaskConnectionsTab
               task={task}
-              connections={task.connections as unknown as Array<{ id: number; source_task_id: number; target_task_id: number; connection_type: string }>}
+              connections={task.connections}
               relatedTasks={allTasks}
             />
           )}
