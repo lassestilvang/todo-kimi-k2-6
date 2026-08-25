@@ -264,7 +264,7 @@ export function TaskInvestmentPortfolio({
               <LineChart data={weeklyCompletionData}>
                 <XAxis dataKey="day" />
                 <YAxis domain={[0, 100]} hide />
-                <Tooltip formatter={(value: number) => `${value}%`} />
+                <Tooltip />
                 <Line
                   type="monotone"
                   dataKey="rate"
@@ -355,21 +355,12 @@ export function TaskInvestmentPortfolio({
                   domain={[0, 100]}
                 />
                 <Tooltip
-                  content={(props: { payload?: { name: string; x: number; y: number }; active?: boolean }) => (
-                    <div className="bg-background border rounded p-2">
-                      {props.payload && (
-                        <>
-                          <div className="font-medium">
-                            {props.payload.name}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            Risk: {String(props.payload.x)} | ROI:{' '}
-                            {String(props.payload.y)}
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  )}
+                  contentStyle={{
+                    backgroundColor: 'var(--background)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '6px',
+                    padding: '8px',
+                  }}
                 />
                 <Scatter data={scatterData} shape="circle" />
                 <ReferenceLine
