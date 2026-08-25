@@ -18,13 +18,11 @@ vi.mock('@/lib/rate-limiter', () => ({
     ai: { max: 60, windowMs: 60000 },
   },
   getClientKey: vi.fn().mockReturnValue('test-client'),
-  checkRateLimit: vi
-    .fn()
-    .mockResolvedValue({
-      allowed: true,
-      remaining: 99,
-      resetTime: Date.now() + 60000,
-    }),
+  checkRateLimit: vi.fn().mockResolvedValue({
+    allowed: true,
+    remaining: 99,
+    resetTime: Date.now() + 60000,
+  }),
 }));
 
 vi.mock('@/lib/csrf', () => ({
