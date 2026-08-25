@@ -113,10 +113,10 @@ describe('Scheduling Actions', () => {
         },
       });
 
-      expect(Array.isArray(schedule)).toBe(true);
-      expect(schedule.length).toBeGreaterThan(0);
+      expect(Array.isArray(schedule.schedule)).toBe(true);
+      expect(schedule.schedule.length).toBeGreaterThan(0);
 
-      schedule.forEach((block: any) => {
+      schedule.schedule.forEach((block: any) => {
         expect(block.taskId).toBeDefined();
         expect(block.startTime).toBeDefined();
         expect(block.endTime).toBeDefined();
@@ -134,7 +134,7 @@ describe('Scheduling Actions', () => {
         workHours: { start: 9, end: 17 },
       });
 
-      expect(schedule.length).toBe(criticalTasks.length);
+      expect(schedule.schedule.length).toBe(criticalTasks.length);
     });
   });
 
@@ -218,7 +218,7 @@ describe('Scheduling Actions', () => {
       try {
         const prediction = await predictTaskDuration(task, { userId: 1 });
         expect(prediction).toBeDefined();
-        expect(prediction.estimated_duration).toBeGreaterThan(0);
+        expect(prediction.estimatedMinutes).toBeGreaterThan(0);
       } catch (error) {
         // If AI is not configured, the function may throw - this is expected
         expect(error).toBeDefined();
