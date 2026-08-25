@@ -328,7 +328,9 @@ export function SmartInbox({
         if (data.updates) {
           setItems(prev =>
             prev.map(item => {
-              const update = (data.updates as TaskUpdate[]).find((u) => u.id === item.id);
+              const update = (data.updates as TaskUpdate[]).find(
+                u => u.id === item.id
+              );
               return update ? { ...item, ...update } : item;
             })
           );
