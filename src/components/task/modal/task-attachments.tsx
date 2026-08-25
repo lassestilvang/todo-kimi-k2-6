@@ -71,7 +71,8 @@ export function TaskAttachments({
   };
 
   const getFileIcon = (mimeType: string) => {
-    if (mimeType.startsWith('image/')) return <Image className="h-4 w-4" aria-label="Image file" />;
+    if (mimeType.startsWith('image/'))
+      return <Image className="h-4 w-4" aria-label="Image file" />;
     if (mimeType === 'application/pdf') return <FileText className="h-4 w-4" />;
     if (mimeType.includes('zip') || mimeType.includes('archive'))
       return <FileArchive className="h-4 w-4" />;
