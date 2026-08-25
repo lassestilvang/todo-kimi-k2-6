@@ -1,14 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import {
-  Coffee,
-  Clock,
-  MapPin,
-  Battery,
-  Brain,
-  Moon,
-} from 'lucide-react';
+import { Coffee, Clock, MapPin, Battery, Brain, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -157,7 +150,8 @@ export function HabitContextTracker({
             <Select
               value={selectedContextType}
               onValueChange={v => {
-                if (v) setSelectedContextType(v as HabitContext['context_type'])
+                if (v)
+                  setSelectedContextType(v as HabitContext['context_type']);
               }}
             >
               <SelectTrigger>
