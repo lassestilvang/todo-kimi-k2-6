@@ -6,7 +6,7 @@
  */
 
 export interface MockStatement {
-  run: (...params: unknown[]) => { lastInsertRowid: number; changes: number };
+  run: (...params: unknown[]) => { lastInsertRowid: number | bigint; changes: number };
   get: (...params: unknown[]) => Record<string, unknown> | undefined;
   all: (...params: unknown[]) => Record<string, unknown>[];
 }
@@ -15,7 +15,7 @@ export interface MockDatabase {
   prepare(sql: string): MockStatement;
   exec(sql: string): void;
   close(): void;
-  transaction<T>(fn: () => T): T;
+  transaction<T>(fn: () => T | Promise<T>): T | Promise<T>;
   _reset?: () => void;
 }
 
@@ -1506,7 +1506,7 @@ export function createMockDatabase(): MockDatabase {
       /* no-op */
     },
 
-    transaction<T>(fn: () => T): T {
+    transaction<T>(fn: () => T | Promise<T>): T | Promise<T> {
       return fn();
     },
 
