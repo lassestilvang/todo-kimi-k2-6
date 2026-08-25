@@ -117,14 +117,24 @@ export function ProjectPlanningDashboard({
           id: Date.now(),
           name: localName,
           description: localDescription,
-          phases: data.phases.map((p: { name: string; description: string; duration_days: number; priority: string }, i: number) => ({
-            id: i + 1,
-            name: p.name,
-            description: p.description,
-            duration_days: p.duration_days || 30,
-            priority: p.priority || 'medium',
-            completed: false,
-          })),
+          phases: data.phases.map(
+            (
+              p: {
+                name: string;
+                description: string;
+                duration_days: number;
+                priority: string;
+              },
+              i: number
+            ) => ({
+              id: i + 1,
+              name: p.name,
+              description: p.description,
+              duration_days: p.duration_days || 30,
+              priority: p.priority || 'medium',
+              completed: false,
+            })
+          ),
           total_duration_days: data.total_duration_days || 90,
           created_at: new Date().toISOString(),
         };
@@ -148,10 +158,9 @@ export function ProjectPlanningDashboard({
         throw new Error(error.message || 'Failed to generate plan');
       }
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      toast.error(
-        `Failed to generate project plan: ${errorMessage}`
-      );
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      toast.error(`Failed to generate project plan: ${errorMessage}`);
     } finally {
       setIsGenerating(false);
     }
