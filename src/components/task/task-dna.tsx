@@ -2,11 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import {
-  Brain,
-  Clock,
-  Target,
-} from 'lucide-react';
+import { Brain, Clock, Target } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -301,7 +297,12 @@ export function PersonaMatchDashboard({ tasks }: PersonaMatchDashboardProps) {
             <Target className="h-5 w-5" />
             <span>Task Matching</span>
           </CardTitle>
-          <Select value={sortBy} onValueChange={v => { if (v) setSortBy(v) }}>
+          <Select
+            value={sortBy}
+            onValueChange={v => {
+              if (v) setSortBy(v);
+            }}
+          >
             <SelectTrigger className="w-[120px] h-8">
               <SelectValue placeholder="Sort by..." />
             </SelectTrigger>
