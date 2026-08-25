@@ -37,6 +37,15 @@
     "searchPlaceholder": "Search: \"{query}\"",
     "loading": "Loading your tasks..."
   },
+  "search": {
+    "placeholder": "Search tasks...",
+    "clear": "Clear search",
+    "showHistory": "Show search history",
+    "historyTitle": "Search History",
+    "clearHistory": "Clear all history",
+    "noHistory": "No search history yet",
+    "historyItem": "Search for '{query}'"
+  },
   "common": {
     "save": "Save",
     "cancel": "Cancel",
