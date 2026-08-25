@@ -138,9 +138,7 @@ export async function exportPdf(): Promise<Blob> {
   return new Blob([lines.join('\n')], { type: 'text/plain' });
 }
 
-export async function importData(
-  data: ExportData
-): Promise<{
+export async function importData(data: ExportData): Promise<{
   lists: number;
   labels: number;
   tasks: number;
