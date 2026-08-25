@@ -17,6 +17,7 @@ import {
   Paperclip,
   Archive,
   ArchiveRestore,
+  HelpCircle,
 } from 'lucide-react';
 import { AIStatusIndicator } from '@/components/task/ai-status-indicator';
 import { format, parseISO } from 'date-fns';
@@ -342,6 +343,17 @@ export function TaskList({
               {visibleTasks.length} tasks
             </p>
           </div>
+          {/* Keyboard shortcuts hint */}
+          <button
+            onClick={() =>
+              document.dispatchEvent(new CustomEvent('open-keyboard-shortcuts'))
+            }
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-accent rounded transition-colors"
+            title="Keyboard shortcuts (⌘K or ?)"
+          >
+            <HelpCircle className="h-3 w-3" />
+            <span>?</span>
+          </button>
         </div>
         <div className="flex items-center gap-2">
           {isSelectMode && (
