@@ -139,7 +139,9 @@ describe('Lists Actions - Extended Tests', () => {
     });
 
     it('should handle non-existent list in update', async () => {
-      await expect(updateList(999, { name: 'Updated' })).rejects.toThrow('List not found');
+      await expect(updateList(999, { name: 'Updated' })).rejects.toThrow(
+        'List not found'
+      );
     });
   });
 
