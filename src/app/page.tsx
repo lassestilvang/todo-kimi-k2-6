@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Plus,
   BarChart3,
@@ -53,6 +53,11 @@ import {
   DecisionShadowTracker,
   MoodAdaptiveTaskViews,
 } from '@/components/task/enhanced-productivity-dashboard';
+import { useRouter } from 'next/navigation';
+import { LABS_ROUTES } from '@/utils/lab-routes';
+
+// Re-export for backwards compatibility
+export { LABS_ROUTES };
 
 export default function Home() {
   const { status } = useSession();
@@ -105,6 +110,7 @@ export default function Home() {
     error?: string;
   } | null>(null);
 
+  const router = useRouter();
   const {
     tasks,
     lists,
@@ -236,6 +242,16 @@ export default function Home() {
     setModalOpen(true);
   };
 
+  // Wrapper for handleViewChange to handle labs routes
+  const handleNavigation = useCallback((view: string, listId?: number) => {
+    const labsRoute = LABS_ROUTES[view];
+    if (labsRoute) {
+      router.push(labsRoute);
+    } else {
+      handleViewChange(view, listId);
+    }
+  }, [handleViewChange, router]);
+
   const getViewTitle = () => {
     if (searchQuery)
       return `${tTasks('searchPlaceholder', { query: searchQuery })}`;
@@ -290,38 +306,38 @@ export default function Home() {
       // Quick navigation shortcuts
       if (e.key === '1' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        handleViewChange('today');
+        handleNavigation('today');
       }
       if (e.key === '2' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        handleViewChange('kanban');
+        handleNavigation('kanban');
       }
       if (e.key === '3' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        handleViewChange('analytics');
+        handleNavigation('analytics');
       }
 
       // View navigation shortcuts
       if (e.key === 'g' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        handleViewChange('gantt');
+        handleNavigation('gantt');
       }
       if (e.key === 'm' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        handleViewChange('matrix');
+        handleNavigation('matrix');
       }
       if (e.key === 'c' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        handleViewChange('calendar');
+        handleNavigation('calendar');
       }
       if (e.key === 'a' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        handleViewChange('ai');
+        handleNavigation('ai');
       }
 
       if (e.key === 'g' && e.shiftKey && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        handleViewChange('goals');
+        handleNavigation('goals');
       }
 
       // Assignment shortcut (Shift+A) - only when modal is open
@@ -335,7 +351,7 @@ export default function Home() {
       // Focus mode shortcut
       if (e.key === 'f' && e.shiftKey && !modalOpen) {
         e.preventDefault();
-        handleViewChange('focus');
+        handleNavigation('focus');
       }
     };
 
@@ -348,7 +364,7 @@ export default function Home() {
     setCurrentView,
     setSearchQuery,
     setCurrentFilterPreset,
-    handleViewChange,
+    handleNavigation,
     searchInputRef,
   ]);
 
@@ -616,7 +632,7 @@ export default function Home() {
         <FocusMode
           task={currentTask || fallbackTask}
           open={true}
-          onOpenChange={open => !open && handleViewChange('today')}
+          onOpenChange={open => !open && handleNavigation('today')}
         />
       );
     }
@@ -645,7 +661,7 @@ export default function Home() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => handleViewChange('analytics')}
+              onClick={() => handleNavigation('analytics')}
               className="hidden md:flex"
             >
               <BarChart3 className="h-4 w-4 mr-1.5" />
@@ -696,7 +712,7 @@ export default function Home() {
           currentView={currentView}
           currentListId={currentListId}
           overdueCount={overdueCount}
-          onViewChange={handleViewChange}
+          onViewChange={handleNavigation}
           onRefresh={loadData}
           onSearch={handleSearch}
           onNewTask={handleNewTask}
@@ -714,7 +730,7 @@ export default function Home() {
           currentView={currentView}
           currentListId={currentListId}
           overdueCount={overdueCount}
-          onViewChange={handleViewChange}
+          onViewChange={handleNavigation}
           onRefresh={loadData}
           onSearch={handleSearch}
           workspaces={workspaces}
@@ -788,7 +804,7 @@ export default function Home() {
           variant="outline"
           size="icon"
           className="h-9 w-9"
-          onClick={() => handleViewChange('ai')}
+          onClick={() => handleNavigation('ai')}
           title="AI Assistant"
         >
           <svg
