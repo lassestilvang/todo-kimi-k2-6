@@ -37,6 +37,7 @@ import { GoalsDashboard } from '@/components/task/goals-dashboard';
 import { AIAssistant } from '@/components/task/ai-assistant';
 import { KnowledgeGraph } from '@/components/task/knowledge-graph';
 import { IntegrationMarketplace } from '@/components/task/integration-marketplace';
+import { EnhancedSearch } from '@/components/task/enhanced-search';
 import { useTasks } from '@/hooks/use-tasks';
 import type {
   TaskWithRelations,
@@ -799,6 +800,14 @@ export default function Home() {
               lists={lists}
               completedTasks={completedTasks}
             />
+            {/* Enhanced Search Component */}
+            <div className="px-6 py-3 border-b bg-muted/30">
+              <EnhancedSearch
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Search tasks, projects, or keywords..."
+              />
+            </div>
             {renderViewContent()}
           </>
         )}
