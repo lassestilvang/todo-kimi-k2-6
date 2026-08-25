@@ -2058,3 +2058,82 @@ export async function editTaskWithAI(
 
   return { success: false, message: 'No valid task specified' };
 }
+
+/**
+ * Restore a deleted task from JSON data (for undo functionality)
+ * This recreates a task that was permanently deleted.
+ * NOTE: This cannot restore all relations (labels, subtasks, etc.) - only the basic task.
+ * For full undo, prefer using archiveTask instead of deleteTask.
+ */
+export async function restoreTask(
+  taskData: {
+    name: string;
+    description?: string | null;
+    notes?: string | null;
+    list_id?: number | null;
+    date?: string | null;
+    deadline?: string | null;
+    estimate?: string | null;
+    actual_time?: string | null;
+    priority?: 'critical' | 'high' | 'medium' | 'low' | 'none';
+    recurring?: 'none' | 'daily' | 'weekly' | 'weekdays' | 'monthly' | 'yearly' | 'custom';
+    recurring_config?: string | null;
+    label_ids?: number[];
+    subtasks?: string[];
+    reminders?: string[];
+    blocker_ids?: number[];
+    created_at?: string;
+    sort_order?: number;
+  }
+): Promise<Task> {
+  const db = getDb();
+  const user = await getCurrentUser();
+
+  if (!user?.id) {
+    throw new Error('Authentication required');
+  }
+
+  // Generate a new ID (use the highest existing ID + 1)
+  const maxIdResult = db.prepare('SELECT MAX(id) as max_id FROM tasks').get();
+  const newId = (maxIdResult?.max_id || 0) + 1;
+
+  const now = new Date().toISOString();
+
+  const _result = db
+    .prepare(`
+      INSERT INTO tasks
+      (id, user_id, name, description, notes, list_id, date, deadline, estimate, actual_time,
+       priority, recurring, recurring_config, sort_order, archived, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
+    `)
+    .run(
+      newId,
+      user.id,
+      taskData.name,
+      taskData.description ?? null,
+      taskData.notes ?? null,
+      taskData.list_id ?? null,
+      taskData.date ?? null,
+      taskData.deadline ?? null,
+      taskData.estimate ?? null,
+      taskData.actual_time ?? null,
+      taskData.priority ?? 'none',
+      taskData.recurring ?? 'none',
+      taskData.recurring_config ?? null,
+      taskData.sort_order ?? 0,
+      taskData.created_at ?? now,
+      now
+    );
+
+  const restoredTask = db
+    .prepare('SELECT * FROM tasks WHERE id = ?')
+    .get(newId) as Task;
+
+  // Log the restoration
+  logTaskAction(newId, 'restored', 'Task restored via undo');
+
+  // Broadcast for real-time updates
+  await broadcastTaskUpdate(newId, user.id, { id: newId }, 'created');
+
+  return restoredTask;
+}
