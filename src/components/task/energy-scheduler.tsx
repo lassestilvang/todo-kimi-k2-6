@@ -1,11 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import {
-  Zap,
-  Brain,
-  Timer,
-} from 'lucide-react';
+import { Zap, Brain, Timer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -369,7 +365,10 @@ export function EnergyScheduler({ tasks = [] }: EnergySchedulerProps) {
                       setEnergyData(prev =>
                         prev.map(e =>
                           e.id === latest.id
-                            ? { ...e, time_of_day: v as EnergyEntry['time_of_day'] }
+                            ? {
+                                ...e,
+                                time_of_day: v as EnergyEntry['time_of_day'],
+                              }
                             : e
                         )
                       );
