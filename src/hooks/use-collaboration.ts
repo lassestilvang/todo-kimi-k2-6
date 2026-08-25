@@ -50,7 +50,9 @@ export function useCollaboration({
 
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const handleMessageRef = useRef<((data: CollaborationEvent) => void) | null>(null);
+  const handleMessageRef = useRef<((data: CollaborationEvent) => void) | null>(
+    null
+  );
 
   useEffect(() => {
     if (!enabled || !userId) {
@@ -118,12 +120,13 @@ export function useCollaboration({
     (data: CollaborationEvent) => {
       switch (data.type) {
         case 'user_joined':
-          if (data.userId !== undefined && data.userName) {
+          if (data.userId !== undefined && data.userName !== undefined) {
+            const { userId, userName } = data;
             setPresenceUsers(prev => [
               ...prev,
               {
-                userId: data.userId,
-                userName: data.userName,
+                userId,
+                userName,
                 joinedAt: new Date(),
               },
             ]);
