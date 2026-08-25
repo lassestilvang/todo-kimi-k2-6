@@ -146,12 +146,14 @@ export function KnowledgeGraphEnhanced({ tasks }: KnowledgeGraphEnhancedProps) {
           });
         }
 
-        const pattern = patternMap.get(word)!;
-        pattern.relatedTasks.push(task.id);
+        const pattern = patternMap.get(word);
+        if (pattern) {
+          pattern.relatedTasks.push(task.id);
 
-        if (pattern.relatedTasks.length >= 3) {
-          pattern.confidence = Math.min(pattern.relatedTasks.length / 10, 1);
-          pattern.suggestedAction = `Consider creating a template for ${word} tasks`;
+          if (pattern.relatedTasks.length >= 3) {
+            pattern.confidence = Math.min(pattern.relatedTasks.length / 10, 1);
+            pattern.suggestedAction = `Consider creating a template for ${word} tasks`;
+          }
         }
       });
     });
