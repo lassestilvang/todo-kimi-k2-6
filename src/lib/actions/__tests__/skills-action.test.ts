@@ -102,6 +102,12 @@ describe('Skills Action', () => {
     });
 
     it('properly maps decision types to skills', async () => {
+      // Insert a decision with valid decision_type and low outcome rating
+      const db = testDb;
+      db.prepare(
+        'INSERT INTO decisions (user_id, decision_type, outcome_rating) VALUES (?, ?, ?)'
+      ).run(1, 'priority', -1);
+
       const recommendations = await getDecisionOutcomeRecommendations(1);
 
       if (recommendations.length > 0) {
@@ -109,7 +115,85 @@ describe('Skills Action', () => {
           expect(rec).toHaveProperty('decision_type');
           expect(rec).toHaveProperty('skill_needed');
           expect(rec).toHaveProperty('recommendation');
+          expect(rec.decision_type).toBe('priority');
+          // priority should map to decision-making
+          expect(rec.skill_needed).toBe('decision-making');
         });
+      }
+    });
+
+    it('handles decisions with null decision_type gracefully', async () => {
+      // Insert a decision with null decision_type
+      const db = testDb;
+      db.prepare(
+        'INSERT INTO decisions (user_id, decision_type, outcome_rating) VALUES (?, ?, ?)'
+      ).run(1, null, -1);
+
+      const recommendations = await getDecisionOutcomeRecommendations(1);
+
+      // Should return array without errors - null decision_types should be filtered out
+      expect(Array.isArray(recommendations)).toBe(true);
+      // All recommendations should have valid decision_type (null ones filtered)
+      recommendations.forEach(rec => {
+        expect(rec.decision_type).toBeDefined();
+        expect(rec.decision_type).not.toBeNull();
+      });
+    });
+
+    it('handles decisions with different decision types', async () => {
+      // Insert a decision with a different type
+      const db = testDb;
+      db.prepare(
+        'INSERT INTO decisions (user_id, decision_type, outcome_rating) VALUES (?, ?, ?)'
+      ).run(1, 'tool', -1);
+
+      const recommendations = await getDecisionOutcomeRecommendations(1);
+
+      expect(Array.isArray(recommendations)).toBe(true);
+      // Should have tool mapped to development skill
+      if (recommendations.length > 0) {
+        expect(recommendations[0].skill_needed).toBe('development');
+      }
+    });
+
+    it('filters out decisions without skills when user has no skills', async () => {
+      // Insert a decision with valid decision_type
+      const db = testDb;
+      db.prepare(
+        'INSERT INTO decisions (user_id, decision_type, outcome_rating) VALUES (?, ?, ?)'
+      ).run(1, 'timeline', -1);
+
+      const recommendations = await getDecisionOutcomeRecommendations(1);
+
+      // User has no skills, so hasSkill should be false
+      expect(Array.isArray(recommendations)).toBe(true);
+      if (recommendations.length > 0) {
+        // timeline should map to time management
+        expect(recommendations[0].skill_needed).toBe('time management');
+        // Should have recommendation about developing the skill
+        expect(recommendations[0].recommendation).toContain('developing');
+      }
+    });
+
+    it('shows review recommendation when user has the skill', async () => {
+      // First create the skill
+      const db = testDb;
+      db.prepare(
+        'INSERT INTO user_skills (user_id, skill_name, proficiency_level, created_at) VALUES (?, ?, ?, datetime("now"))'
+      ).run(1, 'decision-making', 4, '2024-01-01');
+
+      // Then insert a decision
+      db.prepare(
+        'INSERT INTO decisions (user_id, decision_type, outcome_rating) VALUES (?, ?, ?)'
+      ).run(1, 'priority', -1);
+
+      const recommendations = await getDecisionOutcomeRecommendations(1);
+
+      expect(Array.isArray(recommendations)).toBe(true);
+      if (recommendations.length > 0) {
+        // Should have recommendation about reviewing decisions
+        expect(recommendations[0].recommendation).toContain('Review');
+        expect(recommendations[0].recommendation).toContain('apply');
       }
     });
   });
