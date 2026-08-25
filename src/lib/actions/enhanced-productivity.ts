@@ -205,14 +205,19 @@ export async function logEnergyBudget(
     .prepare(
       'SELECT current_balance, energy_spent, energy_recovered FROM energy_budget_logs WHERE user_id = ? AND date = ?'
     )
-    .get(user.id, input.date) as { current_balance: number; energy_spent: number; energy_recovered: number } | undefined;
+    .get(user.id, input.date) as
+    | {
+        current_balance: number;
+        energy_spent: number;
+        energy_recovered: number;
+      }
+    | undefined;
 
   const currentBalance = existing?.current_balance ?? 100;
   const prevBalance = existing?.energy_spent ?? 0;
   const energySpent = (input.energy_spent ?? 0) + prevBalance;
   const energyRecovered =
-    (input.energy_recovered ?? 0) +
-    (existing?.energy_recovered ?? 0);
+    (input.energy_recovered ?? 0) + (existing?.energy_recovered ?? 0);
   const newBalance = Math.max(
     0,
     Math.min(100, currentBalance - energySpent + energyRecovered)
