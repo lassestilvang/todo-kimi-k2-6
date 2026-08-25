@@ -160,7 +160,10 @@ export async function calculateOptimalSchedule(
       WHERE user_id = ? AND date = ?
     `
     )
-    .all(userId, targetDate) as Record<string, string | number | boolean | null>[]; // better-sqlite3 row type
+    .all(userId, targetDate) as Record<
+    string,
+    string | number | boolean | null
+  >[]; // better-sqlite3 row type
 
   // Calculate blocked time
   const blockedTime: { start: string; end: string }[] = [];
@@ -202,12 +205,16 @@ export async function calculateOptimalSchedule(
   const suggestions: BlockSuggestion[] = [];
 
   for (const task of tasks) {
-    const estimateStr = typeof task.estimate === 'string' ? task.estimate : undefined;
-    const actualTimeNum = typeof task.actual_time === 'number' ? task.actual_time : undefined;
+    const estimateStr =
+      typeof task.estimate === 'string' ? task.estimate : undefined;
+    const actualTimeNum =
+      typeof task.actual_time === 'number' ? task.actual_time : undefined;
     const estimatedMinutes = parseDuration(
       estimateStr || (actualTimeNum ? String(actualTimeNum) : '30')
     );
-    const priority = (typeof task.priority === 'string' ? task.priority : undefined) || 'medium';
+    const priority =
+      (typeof task.priority === 'string' ? task.priority : undefined) ||
+      'medium';
 
     // Find best time slot
     let bestSlot: BlockSuggestion | null = null;
