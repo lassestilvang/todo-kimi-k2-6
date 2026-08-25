@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import { useUndo } from '../use-undo';
 
 // Mock sonner toast
@@ -41,7 +41,7 @@ describe('useUndo Hook', () => {
     });
 
     it('should execute async action and show success toast', async () => {
-      const { result, waitFor } = renderHook(() => useUndo());
+      const { result } = renderHook(() => useUndo());
       const action = vi.fn().mockResolvedValue(undefined);
       const undoAction = vi.fn();
 
