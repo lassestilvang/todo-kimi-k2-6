@@ -1,13 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import {
-  Download,
-  BarChart3,
-  Clock,
-  Timer,
-  TrendingUp,
-} from 'lucide-react';
+import { Download, BarChart3, Clock, Timer, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
