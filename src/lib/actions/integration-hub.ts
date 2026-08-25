@@ -70,7 +70,10 @@ export interface SyncSchedule {
 /**
  * Integration config record type
  */
-export type IntegrationConfig = Record<string, string | number | boolean | object | null>;
+export type IntegrationConfig = Record<
+  string,
+  string | number | boolean | object | null
+>;
 
 /**
  * Get all integrations for a user
