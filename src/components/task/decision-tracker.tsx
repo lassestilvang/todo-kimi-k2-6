@@ -123,8 +123,13 @@ export function DecisionTracker({ taskName, taskId }: DecisionTrackerProps) {
   const [filterType, setFilterType] = useState<string>('all');
 
   // Form state
-  const [formData, setFormData] = useState({
-    decision_type: 'approach' as const,
+  const [formData, setFormData] = useState<{
+    decision_type: DecisionEntry['decision_type'];
+    question: string;
+    rationale: string;
+    options: Array<{ option_text: string; pros: string; cons: string }>;
+  }>({
+    decision_type: 'approach',
     question: '',
     rationale: '',
     options: [{ option_text: '', pros: '', cons: '' }],
@@ -385,7 +390,10 @@ export function DecisionTracker({ taskName, taskId }: DecisionTrackerProps) {
                 <Select
                   value={formData.decision_type}
                   onValueChange={v =>
-                    setFormData({ ...formData, decision_type: v as DecisionEntry['decision_type'] })
+                    setFormData({
+                      ...formData,
+                      decision_type: v as DecisionEntry['decision_type'],
+                    })
                   }
                 >
                   <SelectTrigger>
