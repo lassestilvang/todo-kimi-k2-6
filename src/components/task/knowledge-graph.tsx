@@ -61,7 +61,9 @@ interface SkillPattern {
 }
 
 // Pure utility function moved to module scope to satisfy React Hooks rules
-function generateTaskPatterns(completedTasks: TaskWithRelations[]): SkillPattern[] {
+function generateTaskPatterns(
+  completedTasks: TaskWithRelations[]
+): SkillPattern[] {
   const skillMap = new Map<string, { count: number; examples: number[] }>();
 
   completedTasks.forEach(task => {
@@ -112,24 +114,24 @@ interface GraphData {
 
 interface ForceGraphProps {
   graphData: GraphData;
-  onNodeClick?: (node: unknown) => void;
-  onLinkClick?: (link: unknown) => void;
+  _onNodeClick?: (node: unknown) => void;
+  _onLinkClick?: (link: unknown) => void;
   nodeRelSize?: number;
   nodeAutoColorBy?: string;
-  nodeLabel?: string;
+  _nodeLabel?: string;
   linkLabel?: string;
-  linkColor?: (link: TaskConnection) => string;
+  _linkColor?: (link: TaskConnection) => string;
   onNodeDragEnd?: (node: unknown) => void;
 }
 
 // Fallback component when react-forcegraph is not available
 const FallbackForceGraph: React.FC<ForceGraphProps> = ({
   graphData,
-  onNodeClick,
-  onLinkClick,
-  nodeLabel = 'name',
-  linkColor,
-}) => {
+  _onNodeClick,
+  _onLinkClick,
+  _nodeLabel,
+  _linkColor,
+}: ForceGraphProps) => {
   return (
     <div className="flex items-center justify-center h-full bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 rounded-lg">
       <div className="text-center max-w-md p-6">
@@ -183,7 +185,6 @@ interface GraphNode {
   val?: number; // Node size
   color?: string; // Node color
 }
-
 
 interface ConnectionFormData {
   source_task_id: number;
@@ -389,18 +390,14 @@ export function KnowledgeGraph({
       c =>
         (c.source_task_id === linkData.source &&
           c.target_task_id === linkData.target) ||
-        (c.source_task_id === linkData.target && c.target_task_id === linkData.source)
+        (c.source_task_id === linkData.target &&
+          c.target_task_id === linkData.source)
     );
     if (connection) {
       setSelectedLink(connection);
       setSelectedNode(null);
       setShowConnectionForm(false);
     }
-  };
-
-  const handleNodeDragEnd = (_node: GraphNode) => {
-    // Node position update is handled by the graph component internally
-    // This callback can be used for side effects if needed
   };
 
   const openConnectionForm = () => {
@@ -437,7 +434,9 @@ export function KnowledgeGraph({
 
   const deleteConnection = async (connectionId: number) => {
     try {
-      const updatedConnections = connections.filter(c => String(c.id) !== String(connectionId));
+      const updatedConnections = connections.filter(
+        c => String(c.id) !== String(connectionId)
+      );
       setConnections(updatedConnections);
 
       toast.success('Task connection deleted');
@@ -525,13 +524,14 @@ export function KnowledgeGraph({
       >
         <FallbackForceGraph
           graphData={filtered}
-          onNodeClick={handleNodeClick}
-          onLinkClick={handleLinkClick}
+          _onNodeClick={handleNodeClick}
+          _onLinkClick={handleLinkClick}
           nodeRelSize={12}
           nodeAutoColorBy="group"
-          nodeLabel="name"
-          linkColor={(link: TaskConnection) => getConnectionColor(link.connection_type)}
-          onNodeDragEnd={(_node: unknown) => {}}
+          _nodeLabel="name"
+          _linkColor={(link: TaskConnection) =>
+            getConnectionColor(link.connection_type)
+          }
         />
 
         {/* Legend */}
