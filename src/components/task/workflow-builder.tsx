@@ -1,13 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import {
-  Workflow,
-  Play,
-  Save,
-  Plus,
-  History,
-} from 'lucide-react';
+import { Workflow, Play, Save, Plus, History } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -231,54 +225,74 @@ export function WorkflowBuilder({ className }: WorkflowBuilderProps) {
     } catch {
       toast.error('Failed to save workflow');
     }
-  }, [editingWorkflow, name, description, triggerType, actionType, taskName, taskDescription, taskPriority, enabled, fetchWorkflows]);
+  }, [
+    editingWorkflow,
+    name,
+    description,
+    triggerType,
+    actionType,
+    taskName,
+    taskDescription,
+    taskPriority,
+    enabled,
+    fetchWorkflows,
+  ]);
 
-  const handleDelete = useCallback(async (id: number) => {
-    try {
-      await fetch(`/api/workflows?id=${id}`, {
-        method: 'DELETE',
-      });
-      toast.success('Workflow deleted');
-      fetchWorkflows();
-    } catch {
-      toast.error('Failed to delete workflow');
-    }
-  }, [fetchWorkflows]);
-
-  const handleToggle = useCallback(async (workflow: Workflow) => {
-    try {
-      await fetch(`/api/workflows?id=${workflow.id}`, {
-        method: 'PATCH',
-      });
-      toast.success(`Workflow ${workflow.enabled ? 'paused' : 'enabled'}`);
-      fetchWorkflows();
-    } catch {
-      toast.error('Failed to toggle workflow');
-    }
-  }, [fetchWorkflows]);
-
-  const handleExecute = useCallback(async (workflow: Workflow) => {
-    try {
-      const response = await fetch('/api/workflows', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'execute',
-          workflow_id: workflow.id,
-          input_data: {},
-        }),
-      });
-
-      if (response.ok) {
-        toast.success('Workflow executed');
+  const handleDelete = useCallback(
+    async (id: number) => {
+      try {
+        await fetch(`/api/workflows?id=${id}`, {
+          method: 'DELETE',
+        });
+        toast.success('Workflow deleted');
         fetchWorkflows();
-      } else {
-        throw new Error('Execution failed');
+      } catch {
+        toast.error('Failed to delete workflow');
       }
-    } catch {
-      toast.error('Failed to execute workflow');
-    }
-  }, [fetchWorkflows]);
+    },
+    [fetchWorkflows]
+  );
+
+  const handleToggle = useCallback(
+    async (workflow: Workflow) => {
+      try {
+        await fetch(`/api/workflows?id=${workflow.id}`, {
+          method: 'PATCH',
+        });
+        toast.success(`Workflow ${workflow.enabled ? 'paused' : 'enabled'}`);
+        fetchWorkflows();
+      } catch {
+        toast.error('Failed to toggle workflow');
+      }
+    },
+    [fetchWorkflows]
+  );
+
+  const handleExecute = useCallback(
+    async (workflow: Workflow) => {
+      try {
+        const response = await fetch('/api/workflows', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'execute',
+            workflow_id: workflow.id,
+            input_data: {},
+          }),
+        });
+
+        if (response.ok) {
+          toast.success('Workflow executed');
+          fetchWorkflows();
+        } else {
+          throw new Error('Execution failed');
+        }
+      } catch {
+        toast.error('Failed to execute workflow');
+      }
+    },
+    [fetchWorkflows]
+  );
 
   const fetchExecutions = useCallback(async (workflowId: number) => {
     try {
@@ -385,7 +399,9 @@ export function WorkflowBuilder({ className }: WorkflowBuilderProps) {
                               Active
                             </span>
                           ) : (
-                            <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs">Paused</span>
+                            <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs">
+                              Paused
+                            </span>
                           )}
                           <span className="text-xs text-muted-foreground">
                             {getTriggerLabel(wf.trigger_type)}
