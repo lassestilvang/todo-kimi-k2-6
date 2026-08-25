@@ -1,7 +1,11 @@
 'use server';
 
 import { z } from 'zod';
-import { getAIManager, TaskDurationInput, DurationPredictionContext } from './providers';
+import {
+  getAIManager,
+  TaskDurationInput,
+  DurationPredictionContext,
+} from './providers';
 
 /**
  * Basic task structure for enhanced edit context
@@ -77,12 +81,14 @@ export async function enhancedEditTask(
       return {
         success: true,
         message: `AI processed edit command`,
-        task: input.taskId ? {
-          id: input.taskId,
-          name: '',
-          completed: false,
-          priority: 'medium',
-        } : undefined,
+        task: input.taskId
+          ? {
+              id: input.taskId,
+              name: '',
+              completed: false,
+              priority: 'medium',
+            }
+          : undefined,
         decisionId: undefined,
       };
     }
@@ -122,12 +128,14 @@ async function processEditCommand(
   return {
     success: true,
     message: `AI processed edit command`,
-    task: input.taskId ? {
-      id: input.taskId,
-      name: '',
-      completed: false,
-      priority: 'medium',
-    } : undefined,
+    task: input.taskId
+      ? {
+          id: input.taskId,
+          name: '',
+          completed: false,
+          priority: 'medium',
+        }
+      : undefined,
     decisionId: undefined,
   };
 }
@@ -156,9 +164,9 @@ async function recordDecisionWithAI(
     question: input.decisionContext.question,
     options: input.decisionContext.options.map(opt => ({
       option_text: opt.text,
-      pros: opt.pros,
-      cons: opt.cons,
-    })),
+      pros: opt.pros ? JSON.stringify(opt.pros) : null,
+      cons: opt.cons ? JSON.stringify(opt.cons) : null,
+    })) as unknown as import('@/types').DecisionOption[],
   });
 
   const { entry } = result;
@@ -228,10 +236,13 @@ export async function predictTaskCompletion(
   factors: string[];
 }> {
   const ai = getAIManager();
-  return ai.predictTaskDuration({
-    name: `Task ${taskId}`,
-    ...context,
-  } as TaskDurationInput, context);
+  return ai.predictTaskDuration(
+    {
+      name: `Task ${taskId}`,
+      ...context,
+    } as TaskDurationInput,
+    context
+  );
 }
 
 /**
@@ -321,7 +332,8 @@ function determineDecisionType(
  */
 async function getTaskById(taskId: number): Promise<EnhancedTask | null> {
   const { getTaskById } = await import('@/lib/actions/tasks');
-  return getTaskById(taskId);
+  const task = await getTaskById(taskId);
+  return task ? (task as unknown as EnhancedTask) : null;
 }
 
 // Re-export AI manager
