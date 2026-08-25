@@ -210,6 +210,9 @@ export function createMockDatabase(): MockDatabase {
                 } else if (valueToken?.toUpperCase() === 'NULL') {
                   // Literal NULL
                   val = null;
+                } else if (valueToken?.match(/^datetime\s*\(['"]now['"]\)$/i)) {
+                  // datetime('now') or datetime("now") - SQL function call
+                  val = new Date().toISOString();
                 } else if (valueToken?.match(/^\d+$/)) {
                   // Numeric literal
                   val = Number(valueToken);
@@ -1432,9 +1435,9 @@ export function createMockDatabase(): MockDatabase {
         if (trimmedStmt.toLowerCase().includes('insert')) {
           // Replace SQL functions with their values
           let processedStmt = trimmedStmt;
-          // Replace datetime('now') with current ISO timestamp
+          // Replace datetime('now') or datetime("now") with current ISO timestamp
           processedStmt = processedStmt.replace(
-            /datetime\s*\(\s*'now'\s*\)/gi,
+            /datetime\s*\(['"]now['"]\)/gi,
             new Date().toISOString()
           );
           // Replace CURRENT_TIMESTAMP with current ISO timestamp
