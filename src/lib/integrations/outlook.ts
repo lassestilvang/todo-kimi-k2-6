@@ -351,7 +351,9 @@ export class OutlookConnector extends BaseConnector {
     });
   }
 
-  private mapOutlookEventToTask(event: OutlookEventInput): OutlookCalendarRecord | null {
+  private mapOutlookEventToTask(
+    event: OutlookEventInput
+  ): OutlookCalendarRecord | null {
     // Only convert events that appear to be task-related
     const hasTaskKeywords = /task|todo|meeting|appointment|deadline/i.test(
       event.subject || ''
@@ -362,20 +364,23 @@ export class OutlookConnector extends BaseConnector {
     }
 
     return {
-      id: event.id,
-      title: event.subject,
-      description: event.body?.content || '',
+      id: event.id ?? '',
+      title: event.subject ?? '',
+      description: event.body?.content ?? '',
       dueDate: event.start?.dateTime,
-      labels: event.categories || [],
-      assignee: event.attendees?.[0]?.emailAddress?.address,
+      labels: event.categories ?? [],
+      assignee: event.attendees?.[0]?.emailAddress?.address ?? '',
       priority: this.extractPriorityFromEvent(event),
-      eventId: event.id,
-      attendees: event.attendees,
-      body: event.body?.content || '',
-      sensitivity: event.sensitivity || 'normal',
+      eventId: event.id ?? '',
+      attendees: event.attendees?.map(a => ({
+        name: a.name ?? '',
+        emailAddress: a.emailAddress?.address ?? '',
+      })),
+      body: event.body?.content ?? '',
+      sensitivity: event.sensitivity ?? 'normal',
       externalUrl: event.webLink,
       createdAt: new Date().toISOString(),
-    };
+    } as unknown as OutlookCalendarRecord;
   }
 
   private extractDueDateFromEvent(
@@ -385,7 +390,7 @@ export class OutlookConnector extends BaseConnector {
   }
 
   private extractPriorityFromEvent(
-    event: OutlookCalendarRecord
+    event: OutlookCalendarRecord | OutlookEventInput
   ): 'low' | 'medium' | 'high' | 'critical' | undefined {
     const categories = event.categories?.join(' ').toLowerCase() || '';
 
