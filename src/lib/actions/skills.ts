@@ -214,47 +214,63 @@ export async function incrementSkillExperience(
 
     if (!skill) {
       // Create new skill
-      skill =
-        db
-          .prepare(
-            `
+      const created = db
+        .prepare(
+          `
         INSERT INTO user_skills (user_id, skill_name, proficiency_level, evidence_task_ids)
         VALUES (?, ?, 1, ?)
       `
-          )
-          .run(userId, skillName, JSON.stringify([taskId])).changes > 0
-          ? (db
-              .prepare(
-                `
+        )
+        .run(userId, skillName, JSON.stringify([taskId]));
+
+      if (!created.changes) {
+        return null;
+      }
+
+      // Fetch the newly created skill
+      skill = db
+        .prepare(
+          `
         SELECT * FROM user_skills WHERE user_id = ? AND skill_name = ?
       `
-              )
-              .get(userId, skillName) as UserSkill)
-          : undefined;
-    }
+        )
+        .get(userId, skillName) as UserSkill;
 
-    if (skill) {
-      // Add task to evidence if not already there
-      const evidence: number[] = skill.evidence_task_ids
-        ? typeof skill.evidence_task_ids === 'string'
-          ? (JSON.parse(skill.evidence_task_ids) as number[])
-          : skill.evidence_task_ids
-        : [];
-
-      if (!evidence.includes(taskId)) {
-        evidence.push(taskId);
-
-        db.prepare(
-          `
-          UPDATE user_skills
-          SET proficiency_level = ?, evidence_task_ids = ?, last_used_at = CURRENT_TIMESTAMP
-          WHERE id = ?
-        `
-        ).run(skill.proficiency_level, JSON.stringify(evidence), skill.id);
+      if (!skill) {
+        return null;
       }
     }
 
-    return skill ?? null;
+    // Add task to evidence if not already there
+    const evidence: number[] = skill.evidence_task_ids
+      ? typeof skill.evidence_task_ids === 'string'
+        ? (JSON.parse(skill.evidence_task_ids) as number[])
+        : skill.evidence_task_ids
+      : [];
+
+    if (!evidence.includes(taskId)) {
+      evidence.push(taskId);
+    }
+
+    // Update if evidence changed or this is a new skill that needs last_used_at
+    db.prepare(
+      `
+      UPDATE user_skills
+      SET proficiency_level = ?, evidence_task_ids = ?, last_used_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `
+    ).run(skill.proficiency_level, JSON.stringify(evidence), skill.id);
+
+    // Return the updated skill
+    const updatedSkill = db
+      .prepare(
+        `
+      SELECT * FROM user_skills WHERE id = ?
+    `
+      )
+      .get(skill.id) as UserSkill;
+
+    return updatedSkill ?? null;
   } catch (error) {
     logError(
       'Failed to increment skill experience',
