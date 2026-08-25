@@ -1352,6 +1352,8 @@ export async function completeTasks(
     const count = result.changes || 0;
     for (const id of ids) {
       logTaskAction(id, 'completed', 'Batch completed');
+      // Trigger skill extraction for completed task
+      await extractSkillsFromCompletedTask(id, userId);
     }
     return count;
   }
@@ -1362,6 +1364,26 @@ export async function completeTasks(
       )
       .run(...ids, now).changes || 0
   );
+}
+
+/**
+ * Automatically extract skills from a completed task
+ * This is called when a task is marked as complete
+ */
+async function extractSkillsFromCompletedTask(
+  taskId: number,
+  userId: number | null
+): Promise<void> {
+  if (!userId) return;
+
+  try {
+    // Import the skills extraction function dynamically to avoid circular dependencies
+    const { extractSkillsFromTask } = await import('@/lib/actions/skills-action');
+    await extractSkillsFromTask(taskId, userId);
+  } catch (error) {
+    // Log but don't fail the completion if skill extraction fails
+    console.error('Failed to extract skills from completed task:', error);
+  }
 }
 
 export async function uncompleteTasks(
