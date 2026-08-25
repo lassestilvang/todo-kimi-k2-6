@@ -12,12 +12,7 @@ import {
   CheckCircle2,
   AlertCircle,
 } from 'lucide-react';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import {
@@ -192,7 +187,15 @@ export function ProductivityDashboardEnhanced({
       const dayCompletions = dayTasks.filter(t => {
         if (!t.completed_at) return false;
         const taskDate = new Date(t.completed_at);
-        const dayMap: Record<number, number> = { 1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 0: 6 };
+        const dayMap: Record<number, number> = {
+          1: 0,
+          2: 1,
+          3: 2,
+          4: 3,
+          5: 4,
+          6: 5,
+          0: 6,
+        };
         return dayMap[taskDate.getDay()] === index;
       });
       return { day, count: dayCompletions.length };
@@ -597,4 +600,3 @@ function AchievementBadge({ title, achieved, icon }: AchievementBadgeProps) {
     </div>
   );
 }
-
