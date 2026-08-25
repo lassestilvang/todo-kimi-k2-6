@@ -446,4 +446,112 @@ describe('Outlook Calendar Sync', () => {
       );
     });
   });
+
+  describe('refreshAccessTokenIfNeeded', () => {
+    it('returns existing token when not expired', async () => {
+      const { refreshAccessTokenIfNeeded } = await import('../outlook-calendar');
+      const sync: any = {
+        id: 1,
+        access_token: 'valid-token',
+        expires_at: Date.now() + 3600000,
+        refresh_token: 'refresh-token',
+      };
+
+      const result = await refreshAccessTokenIfNeeded(sync);
+      expect(result).toBe('valid-token');
+    });
+
+    it('returns null when refresh_token is missing and token expired', async () => {
+      const { refreshAccessTokenIfNeeded } = await import('../outlook-calendar');
+      const sync: any = {
+        id: 1,
+        access_token: 'expired-token',
+        expires_at: Date.now() - 1000,
+        refresh_token: null,
+      };
+
+      const result = await refreshAccessTokenIfNeeded(sync);
+      expect(result).toBeNull();
+    });
+
+    it('returns null when client credentials missing', async () => {
+      const { refreshAccessTokenIfNeeded } = await import('../outlook-calendar');
+
+      // Temporarily remove env vars
+      const originalClientId = process.env.OUTLOOK_CLIENT_ID;
+      const originalClientSecret = process.env.OUTLOOK_CLIENT_SECRET;
+      delete (process.env as any).OUTLOOK_CLIENT_ID;
+      delete (process.env as any).OUTLOOK_CLIENT_SECRET;
+
+      const sync: any = {
+        id: 1,
+        access_token: 'expired-token',
+        expires_at: Date.now() - 1000,
+        refresh_token: 'refresh-token',
+      };
+
+      const result = await refreshAccessTokenIfNeeded(sync);
+      expect(result).toBeNull();
+
+      // Restore env vars
+      if (originalClientId) process.env.OUTLOOK_CLIENT_ID = originalClientId;
+      if (originalClientSecret) process.env.OUTLOOK_CLIENT_SECRET = originalClientSecret;
+    });
+
+    it('refreshes token and updates database', async () => {
+      const { refreshAccessTokenIfNeeded } = await import('../outlook-calendar');
+
+      process.env.OUTLOOK_CLIENT_ID = 'test-client-id';
+      process.env.OUTLOOK_CLIENT_SECRET = 'test-client-secret';
+
+      (fetch as any).mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          access_token: 'new-access-token',
+          expires_in: 3600,
+        }),
+      });
+
+      const sync: any = {
+        id: 1,
+        access_token: 'expired-token',
+        expires_at: Date.now() - 1000,
+        refresh_token: 'valid-refresh-token',
+      };
+
+      const result = await refreshAccessTokenIfNeeded(sync);
+      expect(result).toBe('new-access-token');
+      expect(fetch).toHaveBeenCalledWith(
+        'https://login.microsoftonline.com/common/oauth2/v2.0/token',
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({
+            'Content-Type': 'application/x-www-form-urlencoded',
+          }),
+        })
+      );
+    });
+
+    it('returns null when token refresh fails', async () => {
+      const { refreshAccessTokenIfNeeded } = await import('../outlook-calendar');
+
+      process.env.OUTLOOK_CLIENT_ID = 'test-client-id';
+      process.env.OUTLOOK_CLIENT_SECRET = 'test-client-secret';
+
+      (fetch as any).mockResolvedValue({
+        ok: false,
+        status: 400,
+      });
+
+      const sync: any = {
+        id: 1,
+        access_token: 'expired-token',
+        expires_at: Date.now() - 1000,
+        refresh_token: 'invalid-refresh-token',
+      };
+
+      const result = await refreshAccessTokenIfNeeded(sync);
+      expect(result).toBeNull();
+    });
+  });
 });
