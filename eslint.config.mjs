@@ -57,6 +57,9 @@ const eslintConfig = defineConfig([
     // Generated files
     'coverage/**',
     'html/**',
+    // Mutation testing
+    '.stryker-tmp/**',
+    'reports/mutation/**',
     // Configuration and script files
     'scripts/**',
     'next.config.analyzer.js',
