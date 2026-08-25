@@ -345,10 +345,15 @@ export async function executeWorkflow(
 }
 
 // Execute an action based on type
-export async function executeAction(workflow: WorkflowRecord, inputData?: unknown) {
+export async function executeAction(
+  workflow: WorkflowRecord,
+  inputData?: unknown
+) {
   const db = getDb();
   const actionType = workflow.action_type as ActionType;
-  const actionConfig = JSON.parse(workflow.action_config || '{}') as WorkflowActionConfig;
+  const actionConfig = JSON.parse(
+    workflow.action_config || '{}'
+  ) as WorkflowActionConfig;
 
   switch (actionType) {
     case 'create_task':
@@ -464,7 +469,10 @@ async function updateTaskFromWorkflow(
 }
 
 // Send notification
-async function sendNotification(config: WorkflowActionConfig, inputData?: unknown) {
+async function sendNotification(
+  config: WorkflowActionConfig,
+  inputData?: unknown
+) {
   // In a real implementation, this would integrate with email, push, or other notification services
   // For now, we return a mock response
   const inputRecord = inputData as Record<string, unknown> | undefined;
@@ -487,7 +495,8 @@ async function logMessage(
   inputData?: unknown
 ) {
   const inputRecord = inputData as Record<string, unknown> | undefined;
-  const message = config.message || inputRecord?.message || 'Workflow execution';
+  const message =
+    config.message || inputRecord?.message || 'Workflow execution';
   const level = config.level || 'info';
 
   const stmt = db.prepare(`
@@ -506,7 +515,9 @@ async function logMessage(
 
 // Call webhook
 async function callWebhook(config: WorkflowActionConfig, inputData?: unknown) {
-  const url = config.url || (inputData as Record<string, unknown> | undefined)?.webhook_url;
+  const url =
+    config.url ||
+    (inputData as Record<string, unknown> | undefined)?.webhook_url;
   if (!url) {
     throw new Error('Webhook URL is required');
   }
@@ -514,7 +525,10 @@ async function callWebhook(config: WorkflowActionConfig, inputData?: unknown) {
   const method = config.method || 'POST';
   // Note: headers and body would be used for actual HTTP request in production
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const headers = { 'Content-Type': 'application/json', ...(config.headers ?? {}) };
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(config.headers ?? {}),
+  };
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const body = JSON.stringify({
     ...(config.body ?? {}),
@@ -608,9 +622,10 @@ export async function evaluateConditions(
 
   let conditionObj: Record<string, unknown>;
   try {
-    conditionObj = typeof conditions === 'string'
-      ? JSON.parse(conditions) as Record<string, unknown>
-      : conditions as Record<string, unknown>;
+    conditionObj =
+      typeof conditions === 'string'
+        ? (JSON.parse(conditions) as Record<string, unknown>)
+        : (conditions as Record<string, unknown>);
   } catch {
     return true;
   }
@@ -633,14 +648,20 @@ export async function evaluateConditions(
 
   // Example: check task label
   if (conditionObj.task_label && context.task_labels) {
-    if (!Array.isArray(context.task_labels) || !context.task_labels.includes(conditionObj.task_label)) {
+    if (
+      !Array.isArray(context.task_labels) ||
+      !context.task_labels.includes(conditionObj.task_label)
+    ) {
       return false;
     }
   }
 
   // Example: check due date
   if (conditionObj.due_date_before && context.due_date) {
-    if (new Date(context.due_date as string) > new Date(conditionObj.due_date_before as string)) {
+    if (
+      new Date(context.due_date as string) >
+      new Date(conditionObj.due_date_before as string)
+    ) {
       return false;
     }
   }
