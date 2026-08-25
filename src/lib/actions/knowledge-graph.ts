@@ -453,7 +453,9 @@ export async function recordHabitContext(
 /**
  * Get aggregated statistics for user's knowledge graph
  */
-export async function getKnowledgeGraphStats(userId: number): Promise<KnowledgeGraphStats> {
+export async function getKnowledgeGraphStats(
+  userId: number
+): Promise<KnowledgeGraphStats> {
   const db = getDb();
 
   // Get basic counts
@@ -489,10 +491,14 @@ export async function getKnowledgeGraphStats(userId: number): Promise<KnowledgeG
     .get(userId) as { avg_strength: number };
 
   return {
-    ...stats,
-    ...basicStats,
+    total_tasks: basicStats.total_tasks,
+    total_connections: basicStats.total_connections,
+    insight_count: basicStats.insight_count,
+    skill_count: basicStats.skill_count,
+    pattern_matches: basicStats.pattern_matches,
     avg_connection_strength:
       Math.round((avgStrength.avg_strength || 0) * 100) / 100,
+    recommendations_generated: 0,
   };
 }
 
