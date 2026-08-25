@@ -4,9 +4,7 @@ import { getDb } from '@/lib/db';
 import { getTasksByIds } from './tasks';
 import type { TaskWithRelations } from '@/types';
 
-export async function getTaskAssignments(
-  taskId: number
-): Promise<
+export async function getTaskAssignments(taskId: number): Promise<
   Array<{
     user_id: number;
     user_email: string;
