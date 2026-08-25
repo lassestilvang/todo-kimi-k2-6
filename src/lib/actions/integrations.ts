@@ -67,7 +67,15 @@ interface ExternalTask {
 export async function syncTasksFromIntegration(
   user: { id: number },
   integrationId: number
-): Promise<{ success: boolean; tasksImported: number; conflicts?: Array<{ external_task_id: string; type: string; message: string }> }> {
+): Promise<{
+  success: boolean;
+  tasksImported: number;
+  conflicts?: Array<{
+    external_task_id: string;
+    type: string;
+    message: string;
+  }>;
+}> {
   const db = getDb();
 
   // Verify integration belongs to user and is enabled
@@ -116,7 +124,11 @@ export async function syncTasksFromIntegration(
   }
 
   // Process and import tasks
-  const conflicts: Array<{ external_task_id: string; type: string; message: string }> = [];
+  const conflicts: Array<{
+    external_task_id: string;
+    type: string;
+    message: string;
+  }> = [];
   let tasksImported = 0;
 
   for (const externalTask of externalTasks) {
@@ -202,7 +214,10 @@ export async function syncTasksToIntegration(
 
   // Map tasks to external format
   const mappedTasks = tasks.map(task =>
-    mapLocalTaskToExternal(task, integrationId)
+    mapLocalTaskToExternal(
+      task as unknown as LocalTaskForMapping,
+      integrationId
+    )
   );
 
   // Export to external system
@@ -311,9 +326,7 @@ export async function updateIntegrationMapping(
 /**
  * Get sync status for all user integrations
  */
-export async function getIntegrationSyncStatus(user: {
-  id: number;
-}): Promise<
+export async function getIntegrationSyncStatus(user: { id: number }): Promise<
   Array<
     Integration & {
       sync_status: string;
@@ -591,15 +604,24 @@ async function exportLinearIntegration(
 
 // Task mapping utilities
 
-async function createTask(taskData: Record<string, unknown>): Promise<{ id: number }> {
+async function createTask(
+  taskData: Record<string, unknown>
+): Promise<{ id: number }> {
   const { createTask } = await import('@/lib/actions/tasks');
-  const result = await createTask(taskData as { [key: string]: unknown });
+  const result = await createTask({
+    name: String(taskData.name || 'Migrated Task'),
+    ...taskData,
+  } as import('@/types').CreateTaskInput);
   return { id: result.id };
 }
 
-async function getTasksByIds(ids: number[], _userId: number): Promise<ExternalTask[]> {
+async function getTasksByIds(
+  ids: number[],
+  _userId: number
+): Promise<ExternalTask[]> {
   const { getTasksByIds } = await import('@/lib/actions/tasks');
-  return getTasksByIds(ids) as Promise<ExternalTask[]>;
+  const tasks = await getTasksByIds(ids);
+  return tasks.map(t => t as unknown as ExternalTask);
 }
 
 function mapExternalTaskToLocal(
@@ -646,7 +668,10 @@ interface LocalTaskForMapping {
   assignee?: { name: string };
 }
 
-function mapLocalTaskToExternal(task: LocalTaskForMapping, integrationId: number): ExternalTask {
+function mapLocalTaskToExternal(
+  task: LocalTaskForMapping,
+  integrationId: number
+): ExternalTask {
   // This is the reverse mapping - from local task to external format
   // The structure depends on the integration type
 
