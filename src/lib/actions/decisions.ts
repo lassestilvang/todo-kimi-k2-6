@@ -296,9 +296,18 @@ export async function analyzeDecisionOutcomes(
     negative_outcomes: number;
   };
   patterns: {
-    by_decision_type: Record<string, { count: number; outcome_quality: number[]; average_outcome?: number }>;
-    by_time_of_day: Record<string, { count: number; outcome_quality: number[]; average_outcome?: number }>;
-    by_task_context: Record<string, { count: number; outcome_quality: number[]; average_outcome?: number }>;
+    by_decision_type: Record<
+      string,
+      { count: number; outcome_quality: number[]; average_outcome?: number }
+    >;
+    by_time_of_day: Record<
+      string,
+      { count: number; outcome_quality: number[]; average_outcome?: number }
+    >;
+    by_task_context: Record<
+      string,
+      { count: number; outcome_quality: number[]; average_outcome?: number }
+    >;
   };
   learning_insights: {
     good_decision_makers: Array<{
@@ -327,8 +336,8 @@ export async function analyzeDecisionOutcomes(
 }> {
   const cacheKey = `decision-analysis:${userId}:${options?.decisionType || 'all'}`;
   const cached = aiCache.get(cacheKey);
-  if (cached) {
-    return cached;
+  if (cached && typeof cached === 'object' && 'total_decisions' in cached) {
+    return cached as unknown as ReturnType<typeof analyzeDecisionOutcomes>;
   }
 
   const decisions = await getUserDecisionHistory(userId, {
@@ -555,21 +564,30 @@ function calculateOutcomeQuality(decisions: DecisionEntry[]): {
  * Identify patterns in decision-making
  */
 function identifyDecisionPatterns(decisions: DecisionEntry[]): {
-  by_decision_type: Record<string, {
-    count: number;
-    outcome_quality: number[];
-    average_outcome?: number;
-  }>;
-  by_time_of_day: Record<string, {
-    count: number;
-    outcome_quality: number[];
-    average_outcome?: number;
-  }>;
-  by_task_context: Record<string, {
-    count: number;
-    outcome_quality: number[];
-    average_outcome?: number;
-  }>;
+  by_decision_type: Record<
+    string,
+    {
+      count: number;
+      outcome_quality: number[];
+      average_outcome?: number;
+    }
+  >;
+  by_time_of_day: Record<
+    string,
+    {
+      count: number;
+      outcome_quality: number[];
+      average_outcome?: number;
+    }
+  >;
+  by_task_context: Record<
+    string,
+    {
+      count: number;
+      outcome_quality: number[];
+      average_outcome?: number;
+    }
+  >;
 } {
   // Group decisions by type and analyze patterns
   interface PatternType {
