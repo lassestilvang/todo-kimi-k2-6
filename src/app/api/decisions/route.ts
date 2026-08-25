@@ -64,7 +64,8 @@ export async function GET(request: NextRequest) {
 
   const decisions = db.prepare(query).all(...params) as DecisionEntry[];
 
-  return jsonResponse(decisions);
+  // Return wrapped in decisions key for consistency
+  return jsonResponse({ decisions, total: decisions.length });
 }
 
 // POST create decision
