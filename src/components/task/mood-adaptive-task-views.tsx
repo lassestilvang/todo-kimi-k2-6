@@ -31,6 +31,7 @@ import {
 import {
   useMoodTracking,
   useEnergyBudget,
+  MoodType,
 } from '@/hooks/use-enhanced-productivity';
 
 interface MoodAdaptiveTaskViewsProps {
@@ -46,8 +47,6 @@ interface MoodAdaptiveTaskViewsProps {
     tags?: string[];
   }>;
 }
-
-type MoodType = 'energized' | 'balanced' | 'tired' | 'stressed' | 'inspired';
 
 interface Task {
   id: number;
@@ -185,7 +184,7 @@ export function MoodAdaptiveTaskViews({
             <Select
               value={activeMoodView}
               onValueChange={v => {
-                if (v) setActiveMoodView(v)
+                if (v) setActiveMoodView(v);
               }}
             >
               <SelectTrigger className="w-[180px]">
@@ -287,10 +286,7 @@ export function MoodAdaptiveTaskViews({
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {moodFilteredTasks.slice(0, 10).map(task => (
-                    <TaskGridItem
-                      key={task.id}
-                      task={task}
-                    />
+                    <TaskGridItem key={task.id} task={task} />
                   ))}
                 </div>
               )}
