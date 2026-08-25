@@ -68,7 +68,11 @@ export interface CognitiveState {
   current_load_level: 'low' | 'medium' | 'high' | 'overwhelmed';
   focus_ability: 'excellent' | 'good' | 'fair' | 'poor';
   energy_situation: 'peak' | 'high' | 'medium' | 'low' | 'depleted';
-  recommendation: 'continue' | 'restructuring_needed' | 'breaks_needed' | 'delegate_suggested';
+  recommendation:
+    | 'continue'
+    | 'restructuring_needed'
+    | 'breaks_needed'
+    | 'delegate_suggested';
   immediate_actions: string[];
   recommendations_list: string[];
   longer_term_adjustments: string[];
@@ -119,8 +123,20 @@ export async function calculateCognitiveLoad(
   // Try AI-powered analysis
   try {
     const ai = await getAIManager();
-    if (ai && typeof (ai as unknown as Record<string, unknown>).analyzeCognitiveLoad === 'function') {
-      const analysis = await (ai as unknown as { analyzeCognitiveLoad?: (tasks: TaskItem[], ctx: typeof userContext) => Promise<CognitiveLoadAnalysis> }).analyzeCognitiveLoad?.(tasks, userContext) ?? {};
+    if (
+      ai &&
+      typeof (ai as unknown as Record<string, unknown>).analyzeCognitiveLoad ===
+        'function'
+    ) {
+      const analysis =
+        (await (
+          ai as unknown as {
+            analyzeCognitiveLoad?: (
+              tasks: TaskItem[],
+              ctx: typeof userContext
+            ) => Promise<CognitiveLoadAnalysis>;
+          }
+        ).analyzeCognitiveLoad?.(tasks, userContext)) ?? {};
       Object.assign(loadAnalysis, analysis);
     }
   } catch {
@@ -241,9 +257,16 @@ export async function detectFocusThreats(
  */
 export interface FocusContext {
   userId: number;
-  energyProfile?: { peak_hours?: Array<{ hour: number; productivity_score: number }> };
-  availableTimeBlocks?: Array<{ start: string; end: string; activity?: string }>;
-  preferredWorkingStyle?: 'deep_work' | 'broad_exploration' | 'scheduled' | 'flexible';
+  energyProfile?: {
+    peak_hours?: Array<{ hour: number; productivity_score: number }>;
+  };
+  availableTimeBlocks?: Array<{
+    start: string;
+    end: string;
+    activity?: string;
+  }>;
+  preferredWorkingStyle?:
+    'deep_work' | 'broad_exploration' | 'scheduled' | 'flexible';
   goals?: Array<{ name: string; target: number; deadline?: string }>;
 }
 
@@ -271,7 +294,10 @@ export async function generateFocusPlan(
       low: 3,
       none: 4,
     };
-    return (priorityOrder[a.priority || 'medium'] || 2) - (priorityOrder[b.priority || 'medium'] || 2);
+    return (
+      (priorityOrder[a.priority || 'medium'] || 2) -
+      (priorityOrder[b.priority || 'medium'] || 2)
+    );
   });
 
   // Create 3 time blocks
@@ -609,7 +635,9 @@ export async function analyzeFocusPatterns(
 
   // Calculate consecutive days of completion
   const completedDates = [
-    ...new Set(tasks.filter((t: TaskItem) => t.completed).map((t: TaskItem) => t.date)),
+    ...new Set(
+      tasks.filter((t: TaskItem) => t.completed).map((t: TaskItem) => t.date)
+    ),
   ]
     .sort()
     .reverse();
