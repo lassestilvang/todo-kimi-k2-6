@@ -33,7 +33,7 @@ async function initRedis() {
     const redisModule = require('redis');
     redis = redisModule.createClient({ url: redisUrl });
     redisModule.on('error', (err: Error) => console.error('Redis error:', err));
-     
+
     await (redis as any).connect(); // redis client typing
     return redis;
   } catch (error) {
@@ -62,7 +62,6 @@ export async function set<T>(
   // Try Redis first
   const redisClient = await initRedis();
   if (redisClient) {
-     
     await (redisClient as any).setEx(key, Math.ceil(ttl / 1000), serialized); // redis typing
     return;
   }
@@ -84,7 +83,6 @@ export async function get<T>(key: string): Promise<T | null> {
   // Try Redis first
   const redisClient = await initRedis();
   if (redisClient) {
-     
     const serialized = await (redisClient as any).get(key); // redis typing
     if (!serialized) return null;
     try {
@@ -114,7 +112,6 @@ export async function del(key: string): Promise<void> {
   // Try Redis first
   const redisClient = await initRedis();
   if (redisClient) {
-     
     await (redisClient as any).del(key); // redis typing
     return;
   }
@@ -130,7 +127,6 @@ export async function clear(): Promise<void> {
   // Try Redis first
   const redisClient = await initRedis();
   if (redisClient) {
-     
     await (redisClient as any).flushAll(); // redis typing
     return;
   }
@@ -163,7 +159,6 @@ export const taskCache = {
       // Invalidate all task-related cache keys
       const redisClient = await initRedis();
       if (redisClient) {
-         
         const keys = await (redisClient as any).keys('tasks:*'); // redis typing
         if (keys.length > 0) await (redisClient as any).del(...keys); // redis typing
       } else {
@@ -237,7 +232,6 @@ export const aiCache = {
   clear: async () => {
     const redisClient = await initRedis();
     if (redisClient) {
-       
       await (redisClient as any).del('ai:*'); // redis typing
     } else {
       for (const key of memoryCache.keys()) {
