@@ -273,9 +273,11 @@ export function TaskDecisionTab({
                     <div className="mt-2">
                       <p className="text-xs font-medium">Options:</p>
                       <ul className="text-xs text-muted-foreground list-disc list-inside">
-                        {decision.options.map((opt: { option_text: string }, i: number) => (
-                          <li key={i}>{opt.option_text}</li>
-                        ))}
+                        {decision.options.map(
+                          (opt: { option_text: string }, i: number) => (
+                            <li key={i}>{opt.option_text}</li>
+                          )
+                        )}
                       </ul>
                     </div>
                   )}
