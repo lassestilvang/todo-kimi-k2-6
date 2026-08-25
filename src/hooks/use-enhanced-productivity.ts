@@ -141,7 +141,9 @@ export function useEnergyBudget() {
     });
     const result = await res.json();
     if (result.balance !== undefined) {
-      setBudget((prev: EnergyBudget | null) => prev ? { ...prev, balance: result.balance } : result);
+      setBudget((prev: EnergyBudget | null) =>
+        prev ? { ...prev, balance: result.balance } : result
+      );
     }
     return result;
   }, []);
@@ -239,7 +241,12 @@ export interface DecisionAnalysis {
   totalDecisions?: number;
   avgOutcomeRating?: number;
   decisionTypes?: Record<string, { avgRating: number }>;
-  patternAnalysis?: Array<{ pattern: string; recommendation: string; count?: number; improvement?: string }>;
+  patternAnalysis?: Array<{
+    pattern: string;
+    recommendation: string;
+    count?: number;
+    improvement?: string;
+  }>;
 }
 
 export interface DecisionData {
@@ -248,7 +255,13 @@ export interface DecisionData {
   context?: string;
   confidence?: number;
   // Additional properties used by component
-  decision_type?: 'approach' | 'priority' | 'tool' | 'timeline' | 'allocation' | 'cancellation';
+  decision_type?:
+    | 'approach'
+    | 'priority'
+    | 'tool'
+    | 'timeline'
+    | 'allocation'
+    | 'cancellation';
   question?: string;
   chosen_option_text?: string;
   rationale?: string;
@@ -304,18 +317,22 @@ export interface MoodData {
   timestamp?: string;
 }
 
+export type MoodType =
+  'energized' | 'balanced' | 'tired' | 'stressed' | 'inspired';
+
 export interface MoodRecommendations {
   suggestions: string[];
   focusTime: string;
   breakInterval: number;
   recommendations?: string[];
   // Additional properties used by component
-  primary_mood?: string;
+  primary_mood?: MoodType;
 }
 
 export function useMoodTracking() {
   const [loading, setLoading] = useState(true);
-  const [recommendations, setRecommendations] = useState<MoodRecommendations | null>(null);
+  const [recommendations, setRecommendations] =
+    useState<MoodRecommendations | null>(null);
 
   const fetchRecommendations = useCallback(async (date?: string) => {
     setLoading(true);
