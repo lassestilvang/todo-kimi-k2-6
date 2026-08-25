@@ -175,19 +175,22 @@ export function TaskShareManager({
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    {share.share_token && typeof share.share_token === 'string' && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => copyShareLink(share.share_token)}
-                      >
-                        {copiedToken === share.share_token ? (
-                          <Check className="h-3 w-3 text-green-500" />
-                        ) : (
-                          <Copy className="h-3 w-3" />
-                        )}
-                      </Button>
-                    )}
+                    {share.share_token &&
+                      typeof share.share_token === 'string' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            copyShareLink(share.share_token as string)
+                          }
+                        >
+                          {copiedToken === share.share_token ? (
+                            <Check className="h-3 w-3 text-green-500" />
+                          ) : (
+                            <Copy className="h-3 w-3" />
+                          )}
+                        </Button>
+                      )}
                     <Button
                       variant="ghost"
                       size="sm"
