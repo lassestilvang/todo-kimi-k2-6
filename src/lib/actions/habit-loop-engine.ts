@@ -2,7 +2,6 @@
 
 import { getDb } from '@/lib/db';
 import { getCurrentUser } from '@/lib/session';
-import { getDb } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 
 // Extended Habit Loop Engine
