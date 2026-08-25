@@ -152,7 +152,10 @@ export function TaskSnippets({
                 className="cursor-pointer hover:bg-muted/30 transition-colors"
               >
                 <CardContent className="p-3 flex items-center justify-between">
-                  <div onClick={() => handleSnippetUse(snippet)} className="flex-1">
+                  <div
+                    onClick={() => handleSnippetUse(snippet)}
+                    className="flex-1"
+                  >
                     <div className="font-medium text-sm">{snippet.name}</div>
                     {snippet.template.priority && (
                       <Badge variant="secondary" className="mt-1 text-xs">
