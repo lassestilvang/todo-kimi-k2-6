@@ -204,11 +204,11 @@ export async function analyzeUserPersona(
   `
     )
     .all(userId) as Array<{
-      completed_at: string;
-      actual_minutes: number | null;
-      priority_score: number;
-      name: string;
-    }>;
+    completed_at: string;
+    actual_minutes: number | null;
+    priority_score: number;
+    name: string;
+  }>;
 
   if (completedTasks.length < 10) {
     return {
@@ -394,32 +394,32 @@ export async function calculateTaskDNA(
   `
     )
     .all(taskId, userId) as Array<{
-      id: number;
-      user_id: number;
-      name: string;
-      description: string | null;
-      list_id: number;
-      date: string | null;
-      deadline: string | null;
-      estimate: string | null;
-      actual_time: number | null;
-      priority: string;
-      priority_score: number;
-      completed: number;
-      archived: number;
-      recurring: string;
-      recurring_config: Record<string, unknown> | null;
-      ai_provider: string;
-      confidence_score: number;
-      created_at: string;
-      updated_at: string;
-      task_id?: number;
-      dependency: number | null;
-      sort_order: number;
-      assignee_id: number | null;
-      labels: string | null;
-      notes: string | null;
-    }>;
+    id: number;
+    user_id: number;
+    name: string;
+    description: string | null;
+    list_id: number;
+    date: string | null;
+    deadline: string | null;
+    estimate: string | null;
+    actual_time: number | null;
+    priority: string;
+    priority_score: number;
+    completed: number;
+    archived: number;
+    recurring: string;
+    recurring_config: Record<string, unknown> | null;
+    ai_provider: string;
+    confidence_score: number;
+    created_at: string;
+    updated_at: string;
+    task_id?: number;
+    dependency: number | null;
+    sort_order: number;
+    assignee_id: number | null;
+    labels: string | null;
+    notes: string | null;
+  }>;
 
   if (task.length === 0) {
     throw new Error('Task not found');
@@ -525,12 +525,12 @@ export async function getPersonaRecommendations(
   `
     )
     .all(userId) as Array<{
-      id: number;
-      name: string;
-      priority_score: number;
-      deadline: string | null;
-      estimate: string | null;
-    }>;
+    id: number;
+    name: string;
+    priority_score: number;
+    deadline: string | null;
+    estimate: string | null;
+  }>;
 
   const recommendations: PersonaRecommendation[] = [];
 
@@ -546,7 +546,8 @@ export async function getPersonaRecommendations(
     else if (task.estimate) {
       const estimatedMinutes = parseDuration(task.estimate);
       if (estimatedMinutes && estimatedMinutes > 120) match += 25;
-    } else if (task.priority_score >= 40 && task.priority_score <= 60) match += 20;
+    } else if (task.priority_score >= 40 && task.priority_score <= 60)
+      match += 20;
 
     // Energy matching
     match += dna.personaMatch - 65;
