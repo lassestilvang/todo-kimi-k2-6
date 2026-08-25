@@ -106,7 +106,7 @@ async function getTeamMembers(
       id: r.id,
       name: r.name || r.email,
       email: r.email,
-      avatar_url: r.avatar_url,
+      avatar_url: r.avatar_url ?? undefined,
       task_count: r.task_count || 0,
       completion_rate: r.completion_rate || 0,
       last_active: r.last_active || new Date().toISOString(),
@@ -145,7 +145,7 @@ async function getTeamMembers(
       id: r.id,
       name: r.name || r.email,
       email: r.email,
-      avatar_url: r.avatar_url,
+      avatar_url: r.avatar_url ?? undefined,
       task_count: r.task_count || 0,
       completion_rate: r.completion_rate || 0,
       last_active: r.last_active || new Date().toISOString(),
@@ -264,7 +264,10 @@ async function getCapacityUtilization(
     ${whereClause ? `WHERE ${whereClause}` : ''}
   `
     )
-    .all(...params)) as Array<{ deadline: string | null; duration_seconds: number | null }>;
+    .all(...params)) as Array<{
+    deadline: string | null;
+    duration_seconds: number | null;
+  }>;
 
   // Get user count
   const userCount = workspaceId
@@ -336,12 +339,12 @@ async function getUpcomingDeadlines(
   `
     )
     .all(...params)) as Array<{
-      task_id: number;
-      task_name: string;
-      assignee: string | null;
-      deadline: string;
-      days_until: number;
-    }>;
+    task_id: number;
+    task_name: string;
+    assignee: string | null;
+    deadline: string;
+    days_until: number;
+  }>;
 
   return results.map(r => ({
     task_id: r.task_id,
@@ -382,10 +385,10 @@ async function getBlockers(
   `
     )
     .all(...params)) as Array<{
-      task_id: number;
-      task_name: string;
-      blocked_by: number;
-    }>;
+    task_id: number;
+    task_name: string;
+    blocked_by: number;
+  }>;
 
   return results.map(r => ({
     task_id: r.task_id,
@@ -437,13 +440,13 @@ export async function getSprintHistory(
   `
     )
     .all(...params)) as Array<{
-      sprint_id: string;
-      start_date: string;
-      end_date: string;
-      planned: number;
-      completed: number;
-      completion_rate: number;
-    }>;
+    sprint_id: string;
+    start_date: string;
+    end_date: string;
+    planned: number;
+    completed: number;
+    completion_rate: number;
+  }>;
 
   return results.map(r => ({
     sprint_id: parseInt(r.sprint_id),
