@@ -71,15 +71,18 @@ export function TimeTracker({ task, open, onOpenChange }: TimeTrackerProps) {
     }
   }, [currentStart, description, timeEntries, task]);
 
-  const handleDelete = useCallback(async (id: number) => {
-    try {
-      await deleteTimeEntry(id);
-      setTimeEntries(timeEntries.filter(e => e.id !== id));
-      toast.success('Time entry deleted');
-    } catch {
-      toast.error('Failed to delete time entry');
-    }
-  }, [timeEntries]);
+  const handleDelete = useCallback(
+    async (id: number) => {
+      try {
+        await deleteTimeEntry(id);
+        setTimeEntries(timeEntries.filter(e => e.id !== id));
+        toast.success('Time entry deleted');
+      } catch {
+        toast.error('Failed to delete time entry');
+      }
+    },
+    [timeEntries]
+  );
 
   const loadTimeEntries = useCallback(async () => {
     const entries = await getTimeEntries(task.id);
