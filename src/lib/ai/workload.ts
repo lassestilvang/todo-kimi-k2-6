@@ -371,18 +371,14 @@ export async function generateWorkloadSuggestions(
     (workloadMap.size || 1);
 
   // Find overloaded and underloaded users
-  const overloadedUsers = users.filter(
-    u => {
-      const score = workloadMap.get(u.userId);
-      return score !== undefined && score > avgWorkload * 1.3;
-    }
-  );
-  const underloadedUsers = users.filter(
-    u => {
-      const score = workloadMap.get(u.userId);
-      return score !== undefined && score < avgWorkload * 0.7;
-    }
-  );
+  const overloadedUsers = users.filter(u => {
+    const score = workloadMap.get(u.userId);
+    return score !== undefined && score > avgWorkload * 1.3;
+  });
+  const underloadedUsers = users.filter(u => {
+    const score = workloadMap.get(u.userId);
+    return score !== undefined && score < avgWorkload * 0.7;
+  });
 
   // Check for overdue high-priority tasks that could be reassigned
   const overdueHighPriority = tasks.filter(
@@ -396,7 +392,9 @@ export async function generateWorkloadSuggestions(
   for (const task of overdueHighPriority) {
     if (overloadedUsers.length > 0 && underloadedUsers.length > 0) {
       const currentAssignee = users.find(u => u.userId === task.assignee_id);
-      const currentWorkload = currentAssignee ? workloadMap.get(currentAssignee.userId) : undefined;
+      const currentWorkload = currentAssignee
+        ? workloadMap.get(currentAssignee.userId)
+        : undefined;
       if (
         currentAssignee &&
         currentWorkload !== undefined &&
@@ -405,7 +403,8 @@ export async function generateWorkloadSuggestions(
         const bestCandidate = underloadedUsers.reduce((best, user) => {
           const userWorkload = workloadMap.get(user.userId);
           const bestWorkload = workloadMap.get(best.userId);
-          return userWorkload !== undefined && (bestWorkload === undefined || userWorkload < bestWorkload)
+          return userWorkload !== undefined &&
+            (bestWorkload === undefined || userWorkload < bestWorkload)
             ? user
             : best;
         });
