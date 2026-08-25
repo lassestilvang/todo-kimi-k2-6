@@ -14,8 +14,7 @@ interface EnergyBudgetWidgetProps {
 }
 
 export function EnergyBudgetWidget({ className }: EnergyBudgetWidgetProps) {
-  const { profile, budget, loading, logEnergy } =
-    useEnergyBudget();
+  const { profile, budget, loading, logEnergy } = useEnergyBudget();
   const { getRecommendations } = useMoodTracking();
 
   if (loading) {
