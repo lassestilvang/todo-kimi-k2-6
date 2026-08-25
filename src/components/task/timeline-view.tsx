@@ -184,7 +184,8 @@ export function TimelineView({ tasks, onTaskClick }: TimelineViewProps) {
                   list_id: originalTask.list_id ?? null,
                   date: task.start.toISOString().split('T')[0],
                   deadline: task.end.toISOString().split('T')[0],
-                  priority: task.priority as 'critical' | 'high' | 'medium' | 'low' | 'none',
+                  priority: task.priority as
+                    'critical' | 'high' | 'medium' | 'low' | 'none',
                   recurring: 'none',
                   completed: false,
                   created_at: '',
