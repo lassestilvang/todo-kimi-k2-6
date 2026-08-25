@@ -30,7 +30,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
-import type { TaskWithRelations, List, Priority } from '@/types';
+import type { TaskWithRelations, List, Priority, Label } from '@/types';
 import type { TaskSuggestion, AIEditCommand } from '@/lib/ai';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -47,6 +47,7 @@ type WorkloadSuggestion = {
 interface AIAssistantProps {
   tasks: TaskWithRelations[];
   lists: List[];
+  labels: Label[];
   onAddTask: (task: Partial<TaskWithRelations>) => void;
   className?: string;
 }
@@ -77,6 +78,7 @@ const inputSchema = z.object({
 export function AIAssistant({
   tasks,
   lists,
+  labels,
   onAddTask,
   className,
 }: AIAssistantProps) {
@@ -100,6 +102,15 @@ export function AIAssistant({
   const [pendingEditCommand, setPendingEditCommand] = useState<
     (AIEditCommand & { task?: TaskWithRelations }) | null
   >(null);
+
+  // State for undo functionality (used in executeEditCommand)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [pendingUndo, setPendingUndo] = useState<{
+    taskId: number;
+    taskName: string;
+    action: 'delete' | 'complete';
+  } | null>(null);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null);
@@ -292,61 +303,115 @@ export function AIAssistant({
 
       const editResult = await editCommand.json();
 
-      // If we got a valid edit command, show confirmation dialog first
+      // If we got a valid edit command, execute it with undo capability
       if (editResult.action && editResult.taskId) {
         const task = tasks.find(t => t.id === editResult.taskId);
         if (task) {
-          // Show confirmation for destructive actions
-          if (
-            editResult.action === 'delete' ||
-            editResult.action === 'complete' ||
-            editResult.action === 'prioritize'
-          ) {
+          // Set up pending edit command for the confirmation dialog (for priority changes)
+          // Delete and complete will handle themselves with undo toast
+          if (editResult.action === 'prioritize') {
             setPendingEditCommand({ ...editResult, task });
             setIsLoading(false);
             return;
           }
 
-          // Execute non-destructive actions directly
-          let responseContent = '';
-          try {
-            switch (editResult.action) {
-              case 'delete':
-                await (await import('@/lib/actions/tasks')).deleteTask(task.id);
-                responseContent = `🗑️ Deleted "${task.name}"`;
-                break;
-              case 'complete':
-                await (
-                  await import('@/lib/actions/tasks')
-                ).updateTask(task.id, { completed: true });
-                responseContent = `✅ Marked "${task.name}" as completed!`;
-                break;
-              case 'prioritize': {
-                const priority = editResult.updates?.priority as
-                  'critical' | 'high' | 'medium' | 'low' | 'none' | undefined;
-                await (
-                  await import('@/lib/actions/tasks')
-                ).updateTask(task.id, { priority });
-                responseContent = `📌 Changed priority of "${task.name}" to ${priority || 'unknown'}`;
-                break;
-              }
-              default:
-                throw new Error('Unknown action');
-            }
-          } catch {
-            responseContent = `Failed to execute ${editResult.action} command`;
+          // Execute actions directly (delete/complete have undo via toast)
+          if (editResult.action === 'delete') {
+            // Store task for potential undo
+            const deletedTask = { ...task };
+            const deletedKey = `deleted_task_${task.id}_${Date.now()}`;
+            localStorage.setItem(deletedKey, JSON.stringify(deletedTask));
+
+            // Store original completed state for restoration (used by restoreTask)
+            const _originalState = { completed: task.completed };
+
+            await (await import('@/lib/actions/tasks')).deleteTask(task.id);
+
+            // Show toast with undo
+            toast('Task deleted', {
+              description: `"${task.name}" has been permanently deleted`,
+              duration: 10000,
+              action: {
+                label: 'Undo',
+                onClick: async () => {
+                  try {
+                    const { restoreTask } = await import(
+                      '@/lib/actions/tasks'
+                    );
+                    const taskData = JSON.parse(localStorage.getItem(deletedKey) || '{}');
+                    if (taskData && taskData.name) {
+                      await restoreTask(taskData);
+                      localStorage.removeItem(deletedKey);
+                      toast('Task restored', {
+                        description: `"${taskData.name}" has been restored`,
+                      });
+                    }
+                  } catch (error) {
+                    console.error('Failed to restore task:', error);
+                    toast.error('Failed to restore task');
+                  }
+                },
+              },
+            });
+
+            const aiResponse: Message = {
+              id: Date.now() + 1,
+              role: 'assistant',
+              content: `🗑️ Deleted "${task.name}"`,
+              timestamp: new Date(),
+            };
+            setMessages(prev => [...prev, aiResponse]);
+            setIsLoading(false);
+            return;
           }
-          const aiResponse: Message = {
-            id: Date.now() + 1,
-            role: 'assistant',
-            content: responseContent,
-            timestamp: new Date(),
-            parsedTask: undefined,
-          };
-          setMessages(prev => [...prev, aiResponse]);
-          setIsLoading(false);
-          return;
+
+          if (editResult.action === 'complete') {
+            const _wasCompleted = task.completed;
+
+            await (
+              await import('@/lib/actions/tasks')
+            ).updateTask(task.id, { completed: true });
+
+            // Show toast with undo
+            toast('Task completed', {
+              description: `"${task.name}" marked as completed`,
+              duration: 8000,
+              action: {
+                label: 'Undo',
+                onClick: async () => {
+                  await (
+                    await import('@/lib/actions/tasks')
+                  ).updateTask(task.id, { completed: false });
+                  toast('Task reopened', {
+                    description: `"${task.name}" marked as incomplete`,
+                  });
+                },
+              },
+            });
+
+            const aiResponse: Message = {
+              id: Date.now() + 1,
+              role: 'assistant',
+              content: `✅ Marked "${task.name}" as completed!`,
+              timestamp: new Date(),
+            };
+            setMessages(prev => [...prev, aiResponse]);
+            setIsLoading(false);
+            return;
+          }
         }
+      }
+
+      // Execute via executeEditCommand for other actions that need confirmation
+      if (editResult.action && editResult.taskId) {
+        setPendingEditCommand({
+          action: editResult.action,
+          taskId: editResult.taskId,
+          updates: editResult.updates,
+          task: tasks.find(t => t.id === editResult.taskId),
+        });
+        setIsLoading(false);
+        return;
       }
 
       // Fall back to task creation parsing
@@ -414,7 +479,7 @@ export function AIAssistant({
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  // Execute an AI edit command with proper error handling
+  // Execute an AI edit command with proper error handling and toast-based undo capability
   const executeEditCommand = useCallback(
     async (command: AIEditCommand & { task?: TaskWithRelations }) => {
       if (!command.action || !command.taskId || !command.task) {
@@ -426,16 +491,84 @@ export function AIAssistant({
 
       try {
         switch (command.action) {
-          case 'complete':
+          case 'complete': {
             await (
               await import('@/lib/actions/tasks')
             ).updateTask(task.id, { completed: true });
+
+            // Show toast with undo
+            toast('Task completed', {
+              description: `"${task.name}" marked as completed`,
+              action: {
+                label: 'Undo',
+                onClick: async () => {
+                  await (
+                    await import('@/lib/actions/tasks')
+                  ).updateTask(task.id, { completed: false });
+                  toast('Task reopened', {
+                    description: `"${task.name}" marked as incomplete`,
+                  });
+                },
+              },
+            });
+
             responseContent = `✅ Marked "${task.name}" as completed!`;
             break;
-          case 'delete':
+          }
+          case 'delete': {
+            // Show confirmation first, then show undo toast
             await (await import('@/lib/actions/tasks')).deleteTask(task.id);
+
+            // Store in localStorage for potential restore
+            const deletedKey = `deleted_task_${task.id}_${Date.now()}`;
+            localStorage.setItem(
+              deletedKey,
+              JSON.stringify({
+                ...task,
+                deletedAt: Date.now(),
+              })
+            );
+
+            // Clean up localStorage after 10 seconds (permanent deletion window)
+            setTimeout(() => {
+              localStorage.removeItem(deletedKey);
+            }, 10000);
+
+            // Show toast with undo
+            toast('Task deleted', {
+              description: `"${task.name}" has been permanently deleted`,
+              duration: 10000,
+              action: {
+                label: 'Undo',
+                onClick: async () => {
+                  try {
+                    // Restore from localStorage
+                    const data = localStorage.getItem(deletedKey);
+                    if (data) {
+                      const taskData = JSON.parse(data);
+                      const { restoreTask } = await import(
+                        '@/lib/actions/tasks'
+                      );
+                      const restored = await restoreTask(taskData);
+                      localStorage.removeItem(deletedKey);
+                      toast('Task restored', {
+                        description: `"${restored.name}" has been restored`,
+                      });
+                    }
+                  } catch (error) {
+                    console.error('Failed to restore task:', error);
+                    toast('Failed to restore task');
+                  }
+                },
+              },
+            });
+
+            // Refresh the tasks list
+            await new Promise(resolve => setTimeout(resolve, 500));
+
             responseContent = `🗑️ Deleted "${task.name}"`;
             break;
+          }
           case 'prioritize': {
             const priority = command.updates?.priority as
               'critical' | 'high' | 'medium' | 'low' | 'none' | undefined;
@@ -448,7 +581,8 @@ export function AIAssistant({
           default:
             responseContent = `I don't know how to "${command.action}". Try being more specific!`;
         }
-      } catch {
+      } catch (error) {
+        console.error(error);
         responseContent = `Failed to execute ${command.action} command`;
       }
 
@@ -578,6 +712,16 @@ export function AIAssistant({
 
     setIsGeneratingFromNotes(true);
     try {
+      // Get user preferences for task creation
+      const userPreferences = {
+        lists: lists.map(l => ({
+          id: l.id,
+          name: l.name,
+          emoji: l.emoji,
+        })),
+        labels: labels.map(label => ({ id: label.id, name: label.name, color: label.color })),
+      };
+
       const response = await fetch('/api/ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -585,12 +729,12 @@ export function AIAssistant({
           type: 'generateTasks',
           input: {
             notes: notesInput,
-            context: {
-              lists: lists.map(l => ({
-                id: l.id,
-                name: l.name,
-                emoji: l.emoji,
-              })),
+            context: userPreferences,
+            options: {
+              extract_deadlines: true,
+              suggest_priorities: true,
+              suggest_labels: true,
+              batch_similar: true,
             },
           },
         }),
@@ -599,35 +743,63 @@ export function AIAssistant({
       if (response.ok) {
         const generatedTasks = await response.json();
         if (generatedTasks.tasks && generatedTasks.tasks.length > 0) {
-          // Add each generated task
+          // Add each generated task with enhanced data
           generatedTasks.tasks.forEach(
             (task: {
               name: string;
               description?: string | null;
               priority?: Priority;
               suggested_date?: string | null;
+              deadline?: string | null;
               list_id?: number | null;
+              confidence?: number;
+              label_suggestions?: string[]; // Suggested label names
             }) => {
+              // Map label names to actual label IDs
+              const labelSuggestions = task.label_suggestions || [];
+              const suggestedLabelIds = labels
+                .filter(l =>
+                  labelSuggestions.some(
+                    sug =>
+                      l.name.toLowerCase() === sug.toLowerCase() ||
+                      l.name.toLowerCase().includes(sug.toLowerCase())
+                  )
+                )
+                .map(l => l.id);
+
               onAddTask({
                 name: task.name,
                 description: task.description ?? null,
                 priority: task.priority || 'medium',
                 date: task.suggested_date ?? null,
+                deadline: task.deadline ?? null,
                 list_id: task.list_id ?? null,
+                labels: labels.filter(l =>
+                  suggestedLabelIds.includes(l.id)
+                ),
               });
             }
           );
-          toast.success(`Generated ${generatedTasks.tasks.length} task(s)`);
+
+          // Show detailed success message with suggestions
+          const taskCount = generatedTasks.tasks.length;
+          const tasksAdded = `🎉 Generated ${taskCount} task${taskCount > 1 ? 's' : ''} from your notes`;
+
+          toast.success(tasksAdded, {
+              description: generatedTasks.summary || 'Review the tasks in your inbox',
+            });
+
           setNotesInput('');
         } else {
           toast.info('No tasks could be generated from the provided text');
         }
       } else {
-        toast.error('Failed to generate tasks from notes');
+        const errorData = await response.json().catch(() => ({}));
+        toast.error(errorData.message || 'Failed to generate tasks from notes');
       }
     } catch (error) {
-      toast.error('Failed to generate tasks');
       console.error(error);
+      toast.error('Failed to generate tasks. Please try again.');
     } finally {
       setIsGeneratingFromNotes(false);
     }
