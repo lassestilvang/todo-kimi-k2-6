@@ -262,7 +262,7 @@ export async function getDecisionOutcomeRecommendations(
 
   const skillNames = new Set(skills.map(s => s.skill_name.toLowerCase()));
 
-  const recommendations = poorDecisions.map(d => {
+  const recommendations = poorDecisions.filter(d => d.decision_type).map(d => {
     const skillMapping: Record<string, string> = {
       priority: 'decision-making',
       timeline: 'time management',
