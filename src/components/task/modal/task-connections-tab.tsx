@@ -14,12 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Link,
-  Lightbulb,
-  BookOpen,
-  X,
-} from 'lucide-react';
+import { Link, Lightbulb, BookOpen, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface TaskConnectionsTabProps {
@@ -159,7 +154,8 @@ export function TaskConnectionsTab({
                   onValueChange={value =>
                     setNewConnection({
                       ...newConnection,
-                      connectionType: value as (typeof newConnection.connectionType),
+                      connectionType:
+                        value as typeof newConnection.connectionType,
                     })
                   }
                 >
