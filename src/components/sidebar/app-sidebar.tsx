@@ -25,8 +25,9 @@ import {
   Smile,
   GraduationCap,
   Lightbulb,
-  Plug2,
   Brain,
+  Network,
+  BookOpen,
   type LucideIcon,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
@@ -97,14 +98,15 @@ const views: ViewItem[] = [
   { id: 'investment', name: 'Technology Portfolio', icon: TrendingUp },
   { separator: true, label: 'Labs' },
   { id: 'energy', name: 'Energy Scheduler', icon: Zap },
-  { id: 'knowledge', name: 'Knowledge Vault', icon: Brain },
-  { id: 'integrations', name: 'Integrations', icon: Plug2 },
-  { id: 'labs', name: 'AI Playground', icon: TestTube },
+  { id: 'knowledge-graph', name: 'Knowledge Graph', icon: Network },
+  { id: 'ai-parsing', name: 'AI Parser', icon: TestTube },
   { id: 'project-planning', name: 'Project Planner', icon: GraduationCap },
-  { id: 'skills', name: 'Skills Tracker', icon: Calculator },
+  { id: 'skills', name: 'Skills Hub', icon: Calculator },
+  { id: 'skills-dashboard', name: 'Skills Dashboard', icon: BarChart3 },
   { id: 'stories', name: 'Success Stories', icon: Smile },
   { id: 'decision-journal', name: 'Decision Journal', icon: Lightbulb },
-  { id: 'career-compass', name: 'Career Compass', icon: GraduationCap },
+  { id: 'learning-path', name: 'Learning Path', icon: BookOpen },
+  { id: 'meeting-assistant', name: 'Meeting Assistant', icon: Bot },
 ];
 
 export function AppSidebar({
