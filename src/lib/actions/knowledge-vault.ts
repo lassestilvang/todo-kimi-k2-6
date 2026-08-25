@@ -298,14 +298,14 @@ export async function extractLessonsLearned(
   `
     )
     .all(userId) as Array<{
-      id: number;
-      name: string;
-      description: string | null;
-      outcome: string | null;
-      outcome_notes: string | null;
-      outcome_rating: number | null;
-      created_at: string;
-    }>;
+    id: number;
+    name: string;
+    description: string | null;
+    outcome: string | null;
+    outcome_notes: string | null;
+    outcome_rating: number | null;
+    created_at: string;
+  }>;
 
   return lessons.map(l => ({
     id: l.id,
