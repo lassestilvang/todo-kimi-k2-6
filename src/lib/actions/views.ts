@@ -4,6 +4,8 @@ import { getDb } from '@/lib/db';
 import type {
   CustomView,
   CreateCustomViewInput,
+  FilterPreset,
+  Priority,
   SortField,
   SortDirection,
   ViewType,
@@ -48,6 +50,11 @@ export async function getCustomViewById(
   return {
     ...row,
     label_ids: row.label_ids ? JSON.parse(row.label_ids) : [],
+    filter_preset: row.filter_preset as FilterPreset | null,
+    priority: row.priority as Priority | null,
+    sort_field: row.sort_field as SortField,
+    sort_direction: row.sort_direction as SortDirection,
+    view_type: row.view_type as ViewType,
   };
 }
 
