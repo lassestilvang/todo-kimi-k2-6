@@ -64,34 +64,37 @@ export function TaskVoting({
     loadVoteData();
   }, [taskId, loadVoteData]);
 
-  const handleVote = useCallback(async (value: -1 | 1) => {
-    if (disabled || loading) return;
+  const handleVote = useCallback(
+    async (value: -1 | 1) => {
+      if (disabled || loading) return;
 
-    setLoading(true);
+      setLoading(true);
 
-    try {
-      const response = await fetch('/api/task-votes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ task_id: taskId, value }),
-      });
+      try {
+        const response = await fetch('/api/task-votes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ task_id: taskId, value }),
+        });
 
-      if (response.ok) {
-        const data = await response.json();
-        setVote(value);
-        setStats(data.stats);
-        toast.success(
-          `Task ${value === 1 ? 'prioritized' : 'marked as reviewed'}!`
-        );
-      } else {
-        throw new Error('Failed to vote');
+        if (response.ok) {
+          const data = await response.json();
+          setVote(value);
+          setStats(data.stats);
+          toast.success(
+            `Task ${value === 1 ? 'prioritized' : 'marked as reviewed'}!`
+          );
+        } else {
+          throw new Error('Failed to vote');
+        }
+      } catch {
+        toast.error('Failed to vote on task');
+      } finally {
+        setLoading(false);
       }
-    } catch {
-      toast.error('Failed to vote on task');
-    } finally {
-      setLoading(false);
-    }
-  }, [taskId, disabled, loading]);
+    },
+    [taskId, disabled, loading]
+  );
 
   const handleRemoveVote = useCallback(async () => {
     if (disabled || loading) return;
