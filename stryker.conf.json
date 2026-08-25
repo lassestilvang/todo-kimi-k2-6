@@ -1,5 +1,5 @@
 {
-  "schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
   "packageManager": "npm",
   "testRunner": "vitest",
   "mutate": [
@@ -15,8 +15,7 @@
     "src/app/api/task-votes/route.ts"
   ],
   "coverageAnalysis": "perTest",
-  "vitestRunner": "^5.0.0",
-  "vitestOptions": {
+  "vitest": {
     "configFile": "vitest.config.ts"
   },
   "timeoutMS": 60000,
@@ -27,7 +26,6 @@
     "fileName": "reports/mutation/html/index.html"
   },
   "logLevel": "info",
-  "mutationTesting": true,
   "thresholds": {
     "high": 80,
     "low": 60,
