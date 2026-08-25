@@ -100,9 +100,12 @@ export function useKeyboardShortcuts(
     };
   }, []);
 
-  const findShortcut = useCallback((id: string): SavedShortcut | undefined => {
-    return customShortcuts.find(s => s.id === id && s.enabled);
-  }, [customShortcuts]);
+  const findShortcut = useCallback(
+    (id: string): SavedShortcut | undefined => {
+      return customShortcuts.find(s => s.id === id && s.enabled);
+    },
+    [customShortcuts]
+  );
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
