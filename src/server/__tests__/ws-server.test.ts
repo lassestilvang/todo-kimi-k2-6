@@ -45,6 +45,7 @@ describe('WSHub', () => {
         mockWs as unknown as WebSocket & {
           userId: number;
           userName: string;
+          userEmail: string;
           subscribedChannels: Set<string>;
         }
       );
@@ -58,6 +59,7 @@ describe('WSHub', () => {
         mockWs as unknown as WebSocket & {
           userId: number;
           userName: string;
+          userEmail: string;
           subscribedChannels: Set<string>;
         }
       );
@@ -71,6 +73,7 @@ describe('WSHub', () => {
         mockWs as unknown as WebSocket & {
           userId: number;
           userName: string;
+          userEmail: string;
           subscribedChannels: Set<string>;
         },
         123
@@ -82,6 +85,7 @@ describe('WSHub', () => {
         mockWs as unknown as WebSocket & {
           userId: number;
           userName: string;
+          userEmail: string;
           subscribedChannels: Set<string>;
         },
         456
@@ -93,6 +97,7 @@ describe('WSHub', () => {
         mockWs as unknown as WebSocket & {
           userId: number;
           userName: string;
+          userEmail: string;
           subscribedChannels: Set<string>;
         }
       );
@@ -103,6 +108,7 @@ describe('WSHub', () => {
         mockWs as unknown as WebSocket & {
           userId: number;
           userName: string;
+          userEmail: string;
           subscribedChannels: Set<string>;
         },
         789
@@ -116,6 +122,7 @@ describe('WSHub', () => {
         mockWs as unknown as WebSocket & {
           userId: number;
           userName: string;
+          userEmail: string;
           subscribedChannels: Set<string>;
         }
       );
@@ -132,6 +139,7 @@ describe('WSHub', () => {
         mockWs as unknown as WebSocket & {
           userId: number;
           userName: string;
+          userEmail: string;
           subscribedChannels: Set<string>;
         }
       );
@@ -144,6 +152,7 @@ describe('WSHub', () => {
         mockWs as unknown as WebSocket & {
           userId: number;
           userName: string;
+          userEmail: string;
           subscribedChannels: Set<string>;
         }
       );
@@ -159,6 +168,7 @@ describe('WSHub', () => {
         mockWs as unknown as WebSocket & {
           userId: number;
           userName: string;
+          userEmail: string;
           subscribedChannels: Set<string>;
         }
       );
@@ -171,6 +181,7 @@ describe('WSHub', () => {
         mockWs as unknown as WebSocket & {
           userId: number;
           userName: string;
+          userEmail: string;
           subscribedChannels: Set<string>;
         }
       );
@@ -183,6 +194,7 @@ describe('WSHub', () => {
         mockWs as unknown as WebSocket & {
           userId: number;
           userName: string;
+          userEmail: string;
           subscribedChannels: Set<string>;
         }
       );
@@ -197,6 +209,7 @@ describe('WSHub', () => {
         mockWs as unknown as WebSocket & {
           userId: number;
           userName: string;
+          userEmail: string;
           subscribedChannels: Set<string>;
         }
       );
@@ -210,6 +223,7 @@ describe('WSHub', () => {
         mockWs as unknown as WebSocket & {
           userId: number;
           userName: string;
+          userEmail: string;
           subscribedChannels: Set<string>;
         }
       );
@@ -224,6 +238,7 @@ describe('WSHub', () => {
         mockWs as unknown as WebSocket & {
           userId: number;
           userName: string;
+          userEmail: string;
           subscribedChannels: Set<string>;
         }
       );
@@ -243,6 +258,7 @@ describe('WSHub', () => {
         mockWs as unknown as WebSocket & {
           userId: number;
           userName: string;
+          userEmail: string;
           subscribedChannels: Set<string>;
         }
       );
@@ -261,6 +277,7 @@ describe('WSHub', () => {
         closedWs as unknown as WebSocket & {
           userId: number;
           userName: string;
+          userEmail: string;
           subscribedChannels: Set<string>;
         }
       );
@@ -273,6 +290,7 @@ describe('WSHub', () => {
         mockWs as unknown as WebSocket & {
           userId: number;
           userName: string;
+          userEmail: string;
           subscribedChannels: Set<string>;
         },
         123
@@ -288,6 +306,7 @@ describe('WSHub', () => {
         mockWs as unknown as WebSocket & {
           userId: number;
           userName: string;
+          userEmail: string;
           subscribedChannels: Set<string>;
         }
       );
@@ -295,6 +314,7 @@ describe('WSHub', () => {
       const mockWs2 = { ...mockWs } as unknown as WebSocket & {
         userId: number;
         userName: string;
+        userEmail: string;
         subscribedChannels: Set<string>;
       };
       wsHub.addClient(mockWs2, 123);
@@ -309,6 +329,7 @@ describe('WSHub', () => {
         mockWs as unknown as WebSocket & {
           userId: number;
           userName: string;
+          userEmail: string;
           subscribedChannels: Set<string>;
         }
       );
@@ -321,6 +342,7 @@ describe('WSHub', () => {
         mockWs as unknown as WebSocket & {
           userId: number;
           userName: string;
+          userEmail: string;
           subscribedChannels: Set<string>;
         }
       );
@@ -334,6 +356,7 @@ describe('WSHub', () => {
         mockWs as unknown as WebSocket & {
           userId: number;
           userName: string;
+          userEmail: string;
           subscribedChannels: Set<string>;
         },
         789
@@ -349,6 +372,7 @@ describe('WSHub', () => {
         mockWs as unknown as WebSocket & {
           userId: number;
           userName: string;
+          userEmail: string;
           subscribedChannels: Set<string>;
         }
       );
@@ -361,6 +385,7 @@ describe('WSHub', () => {
         mockWs as unknown as WebSocket & {
           userId: number;
           userName: string;
+          userEmail: string;
           subscribedChannels: Set<string>;
         }
       );
@@ -378,6 +403,7 @@ describe('WSHub', () => {
         closedWs as unknown as WebSocket & {
           userId: number;
           userName: string;
+          userEmail: string;
           subscribedChannels: Set<string>;
         }
       );
@@ -392,6 +418,7 @@ describe('WSHub', () => {
         mockWs as unknown as WebSocket & {
           userId: number;
           userName: string;
+          userEmail: string;
           subscribedChannels: Set<string>;
         }
       );
@@ -411,6 +438,7 @@ describe('WSHub', () => {
         mockWs as unknown as WebSocket & {
           userId: number;
           userName: string;
+          userEmail: string;
           subscribedChannels: Set<string>;
         },
         123
@@ -433,6 +461,7 @@ describe('WSHub', () => {
         mockWs as unknown as WebSocket & {
           userId: number;
           userName: string;
+          userEmail: string;
           subscribedChannels: Set<string>;
         }
       );
@@ -451,6 +480,7 @@ describe('WSHub', () => {
         mockWs as unknown as WebSocket & {
           userId: number;
           userName: string;
+          userEmail: string;
           subscribedChannels: Set<string>;
         }
       );
@@ -469,6 +499,7 @@ describe('WSHub', () => {
         mockWs as unknown as WebSocket & {
           userId: number;
           userName: string;
+          userEmail: string;
           subscribedChannels: Set<string>;
         },
         456
@@ -490,6 +521,7 @@ describe('WSHub', () => {
         mockWs as unknown as WebSocket & {
           userId: number;
           userName: string;
+          userEmail: string;
           subscribedChannels: Set<string>;
         }
       );
@@ -513,6 +545,7 @@ describe('WSHub', () => {
         mockWs as unknown as WebSocket & {
           userId: number;
           userName: string;
+          userEmail: string;
           subscribedChannels: Set<string>;
         }
       );
@@ -527,6 +560,7 @@ describe('WSHub', () => {
         mockWs as unknown as WebSocket & {
           userId: number;
           userName: string;
+          userEmail: string;
           subscribedChannels: Set<string>;
         }
       );
@@ -545,6 +579,7 @@ describe('WSHub', () => {
         mockWs as unknown as WebSocket & {
           userId: number;
           userName: string;
+          userEmail: string;
           subscribedChannels: Set<string>;
         }
       );
@@ -566,6 +601,7 @@ describe('WSHub', () => {
         mockWs as unknown as WebSocket & {
           userId: number;
           userName: string;
+          userEmail: string;
           subscribedChannels: Set<string>;
         }
       );
@@ -574,6 +610,7 @@ describe('WSHub', () => {
         mockWs as unknown as WebSocket & {
           userId: number;
           userName: string;
+          userEmail: string;
           subscribedChannels: Set<string>;
         }
       );
