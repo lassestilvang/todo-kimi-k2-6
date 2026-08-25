@@ -76,6 +76,11 @@ export {
   exportIcal,
   exportPdf,
   importData,
+  checkImportConflicts,
+  type ImportOptions,
+  type ImportResult,
+  type ExportDataSchema,
+  type ConflictCheckResult,
 } from './export';
 
 // Time tracking
