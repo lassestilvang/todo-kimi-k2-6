@@ -36,25 +36,51 @@ interface DailyPattern {
 
 interface EnergyProfile {
   peak_hours: Array<{ hour: number; productivity_score: number }>;
-  preferred_task_types_by_time: Array<{ hour: number; typical_tasks: Record<string, number> }>;
+  preferred_task_types_by_time: Array<{
+    hour: number;
+    typical_tasks: Record<string, number>;
+  }>;
   energy_cycles: {
-    weekly_patterns: Array<{ day_of_week: number; average_completion_rate: number; typical_task_count: number }>;
+    weekly_patterns: Array<{
+      day_of_week: number;
+      average_completion_rate: number;
+      typical_task_count: number;
+    }>;
     recovery_days: Array<{ day_name: string; recovery_score: number }>;
     suggested_rest_days: string[];
   };
   burnout_risks: {
-    daily_risk_assessments: Array<{ date: string; risk_score: number; risk_level: string; contributing_factors: string[] }>;
+    daily_risk_assessments: Array<{
+      date: string;
+      risk_score: number;
+      risk_level: string;
+      contributing_factors: string[];
+    }>;
     overall_burnout_risk: 'high' | 'medium' | 'low';
-    recommendations: Array<{ priority: string; message: string; actions: string[] }>;
+    recommendations: Array<{
+      priority: string;
+      message: string;
+      actions: string[];
+    }>;
   };
   productivity_windows: {
-    optimal_hours: Array<{ hour: number; productivity_rating: number }>;
+    optimal_hours: Array<{ hour: number; productivity_score: number }>;
     preferred_pattern: 'morning' | 'afternoon' | 'evening' | 'balanced';
     suggested_work_hours: { start: number; end: number };
-    recommended_breaks: Array<{ hour: number; duration: number; type: string; reason: string }>;
+    recommended_breaks: Array<{
+      hour: number;
+      duration: number;
+      type: string;
+      reason: string;
+    }>;
   };
   recovery_needs: {
-    daily_recommendations: Array<{ date: string; type: string; recommendation: string; reason: string }>;
+    daily_recommendations: Array<{
+      date: string;
+      type: string;
+      recommendation: string;
+      reason: string;
+    }>;
     general_recovery_strategies: string[];
   };
 }
@@ -103,13 +129,24 @@ export async function analyzeUserEnergyPatterns(
   }
 
   // Calculate comprehensive energy profile
+  const optimalWorkWindows = identifyOptimalWorkWindows(dailyPatterns);
+  const recoveryRecs = generateRecoveryRecommendations(dailyPatterns);
+
   const energyProfile: EnergyProfile = {
     peak_hours: identifyPeakHours(dailyPatterns),
     preferred_task_types_by_time: analyzeTaskTypesByTime(dailyPatterns),
     energy_cycles: detectEnergyCycles(dailyPatterns),
     burnout_risks: calculateBurnoutRisk(dailyPatterns),
-    productivity_windows: identifyOptimalWorkWindows(dailyPatterns),
-    recovery_needs: analyzeRecoveryNeeds(dailyPatterns),
+    productivity_windows: optimalWorkWindows,
+    recovery_needs: {
+      daily_recommendations: recoveryRecs,
+      general_recovery_strategies: [
+        'Schedule tasks in energy blocks (high energy tasks together)',
+        'Take regular breaks during deep work sessions',
+        'Plan lighter days after intensive work periods',
+        'Use completion time to assess tomorrow workload',
+      ],
+    },
   };
 
   aiCache.set(cacheKey, energyProfile);
@@ -156,24 +193,22 @@ export async function detectEnergyPeaks(
   userId: number,
   tasks: Task[],
   timeWindow: 'day' | 'week' | 'month' = 'day'
-): Promise<{ peak_hours: Array<{ hour: number; productivity_score: number }>; energy_cycles: EnergyProfile['energy_cycles']; productivity_windows: EnergyProfile['productivity_windows']; recommended_breaks: EnergyProfile['recovery_needs']['daily_recommendations']; energy_recovery_recommendations: EnergyProfile['recovery_needs']['daily_recommendations'] }> {
+): Promise<EnergyProfile> {
   const cacheKey = `energy-peaks:${userId}:${timeWindow}`;
   const cached = aiCache.get(cacheKey);
-  if (cached) {
-    return cached;
+  if (
+    cached &&
+    typeof cached === 'object' &&
+    Object.keys(cached as object).length > 0
+  ) {
+    return cached as EnergyProfile;
   }
 
   const patterns = await analyzeUserEnergyPatterns(userId, tasks);
-  const peaks = {
-    strongest_productivity_hours: patterns.peak_hours,
-    energy_fluctuation_patterns: patterns.energy_cycles,
-    optimal_task_scheduling: patterns.productivity_windows,
-    recommended_breaks: calculateOptimalBreakTimes(patterns),
-    energy_recovery_recommendations: patterns.recovery_needs,
-  };
+  const result = patterns;
 
-  aiCache.set(cacheKey, peaks);
-  return peaks;
+  aiCache.set(cacheKey, result);
+  return result;
 }
 
 /**
@@ -333,7 +368,9 @@ function mostFrequent(arr: number[]): number | null {
 /**
  * Identify peak productivity hours from daily patterns
  */
-function identifyPeakHours(dailyPatterns: DailyPattern[]): Array<{ hour: number; productivity_score: number }> {
+function identifyPeakHours(
+  dailyPatterns: DailyPattern[]
+): Array<{ hour: number; productivity_score: number }> {
   // Count task completions by hour across all days
   const hourCounts: Record<number, number> = {};
 
@@ -359,7 +396,9 @@ function identifyPeakHours(dailyPatterns: DailyPattern[]): Array<{ hour: number;
 /**
  * Analyze task types by time of day
  */
-function analyzeTaskTypesByTime(dailyPatterns: DailyPattern[]): Array<{ hour: number; typical_tasks: Record<string, number> }> {
+function analyzeTaskTypesByTime(
+  dailyPatterns: DailyPattern[]
+): Array<{ hour: number; typical_tasks: Record<string, number> }> {
   const taskTypesByHour: Record<number, Record<string, number>> = {};
 
   dailyPatterns.forEach(pattern => {
@@ -389,7 +428,9 @@ function analyzeTaskTypesByTime(dailyPatterns: DailyPattern[]): Array<{ hour: nu
 /**
  * Detect energy cycles and patterns
  */
-function detectEnergyCycles(dailyPatterns: DailyPattern[]): EnergyProfile['energy_cycles'] {
+function detectEnergyCycles(
+  dailyPatterns: DailyPattern[]
+): EnergyProfile['energy_cycles'] {
   // Look for weekly patterns
   const dayOfWeekPatterns: Record<number, DailyPattern[]> = {};
 
@@ -409,8 +450,7 @@ function detectEnergyCycles(dailyPatterns: DailyPattern[]): EnergyProfile['energ
     ([dayOfWeek, patterns]) => {
       const avgCompletionRate =
         patterns.reduce(
-          (sum: number, p: DailyPattern) =>
-            sum + p.completion_rate,
+          (sum: number, p: DailyPattern) => sum + p.completion_rate,
           0
         ) / patterns.length;
 
@@ -458,7 +498,9 @@ function detectEnergyCycles(dailyPatterns: DailyPattern[]): EnergyProfile['energ
 /**
  * Calculate burnout risk based on daily patterns
  */
-function calculateBurnoutRisk(dailyPatterns: DailyPattern[]): EnergyProfile['burnout_risks'] {
+function calculateBurnoutRisk(
+  dailyPatterns: DailyPattern[]
+): EnergyProfile['burnout_risks'] {
   // High risk factors:
   // 1. Consistently high task load with low completion
   // 2. Very long working hours
@@ -502,7 +544,9 @@ function calculateBurnoutRisk(dailyPatterns: DailyPattern[]): EnergyProfile['bur
 /**
  * Identify optimal work windows for productivity
  */
-function identifyOptimalWorkWindows(dailyPatterns: DailyPattern[]): EnergyProfile['productivity_windows'] {
+function identifyOptimalWorkWindows(
+  dailyPatterns: DailyPattern[]
+): EnergyProfile['productivity_windows'] {
   const allHours: number[] = [];
 
   dailyPatterns.forEach(pattern => {
@@ -526,7 +570,7 @@ function identifyOptimalWorkWindows(dailyPatterns: DailyPattern[]): EnergyProfil
 
   const optimalHours = sortedHours.slice(0, 4).map(([hour, count]) => ({
     hour: parseInt(hour),
-    productivity_rating: Math.round((count / allHours.length) * 100),
+    productivity_score: Math.round((count / allHours.length) * 100),
   }));
 
   // Identify pattern: morning vs afternoon vs evening preferences
@@ -557,17 +601,29 @@ function identifyOptimalWorkWindows(dailyPatterns: DailyPattern[]): EnergyProfil
           : preferredPattern === 'evening'
             ? { start: 14, end: 20 }
             : { start: 9, end: 17 },
-    recommended_breaks: calculateOptimalBreakTimes({
-      peak_hours: optimalHours,
-    }),
+    recommended_breaks: calculateOptimalBreakTimes(
+      optimalHours as unknown as EnergyProfile
+    ),
   };
 }
 
 /**
  * Analyze recovery needs based on task patterns
  */
-function analyzeRecoveryNeeds(dailyPatterns: DailyPattern[]): EnergyProfile['recovery_needs'] {
-  const recoveryRecommendations: Array<{ date: string; type: string; recommendation: string; reason: string }> = [];
+function generateRecoveryRecommendations(
+  dailyPatterns: DailyPattern[]
+): Array<{
+  date: string;
+  type: string;
+  recommendation: string;
+  reason: string;
+}> {
+  const recoveryRecommendations: Array<{
+    date: string;
+    type: string;
+    recommendation: string;
+    reason: string;
+  }> = [];
 
   dailyPatterns.forEach(pattern => {
     // Days with high completion but little rest
@@ -594,26 +650,25 @@ function analyzeRecoveryNeeds(dailyPatterns: DailyPattern[]): EnergyProfile['rec
     }
   });
 
-  return {
-    daily_recommendations: recoveryRecommendations,
-    general_recovery_strategies: [
-      'Schedule tasks in energy blocks (high energy tasks together)',
-      'Take regular breaks during deep work sessions',
-      'Plan lighter days after intensive work periods',
-      'Use completion time to assess tomorrow workload',
-    ],
-  };
+  return recoveryRecommendations;
 }
 
 /**
  * Calculate optimal break times based on productivity patterns
  */
-function calculateOptimalBreakTimes(energyProfile: EnergyProfile): Array<{ hour: number; duration: number; type: string; reason: string }> {
-  const breakTimes: Array<{ hour: number; duration: number; type: string; reason: string }> = [];
+function calculateOptimalBreakTimes(
+  energyProfile: EnergyProfile
+): Array<{ hour: number; duration: number; type: string; reason: string }> {
+  const breakTimes: Array<{
+    hour: number;
+    duration: number;
+    type: string;
+    reason: string;
+  }> = [];
 
   // If user has identified peak hours, schedule breaks around them
   if (energyProfile.peak_hours && energyProfile.peak_hours.length > 0) {
-    energyProfile.peak_hours.forEach((peak) => {
+    energyProfile.peak_hours.forEach(peak => {
       const hour = peak.hour;
       const suggestedBreakHour = hour + 2; // 2 hours after peak
 
@@ -640,8 +695,18 @@ function calculateOptimalBreakTimes(energyProfile: EnergyProfile): Array<{ hour:
 /**
  * Generate burnout recommendations based on risk assessments
  */
-function generateBurnoutRecommendations(burnoutIndicators: Array<{ risk_level: string; risk_score: number; date: string }>): Array<{ priority: string; message: string; actions: string[] }> {
-  const recommendations: Array<{ priority: string; message: string; actions: string[] }> = [];
+function generateBurnoutRecommendations(
+  burnoutIndicators: Array<{
+    risk_level: string;
+    risk_score: number;
+    date: string;
+  }>
+): Array<{ priority: string; message: string; actions: string[] }> {
+  const recommendations: Array<{
+    priority: string;
+    message: string;
+    actions: string[];
+  }> = [];
 
   const highRiskDays = burnoutIndicators.filter(
     indicator => indicator.risk_level === 'high'
@@ -685,7 +750,8 @@ function generateTimeSuggestions(
   const suggestions: TimeSuggestion[] = [];
 
   // Base suggestion using optimal work hours
-  const optimalHours = energyProfile.productivity_windows.suggested_work_hours || {
+  const optimalHours = energyProfile.productivity_windows
+    .suggested_work_hours || {
     start: 9,
     end: 17,
   };
