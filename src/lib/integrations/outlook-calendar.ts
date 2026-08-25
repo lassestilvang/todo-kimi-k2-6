@@ -220,7 +220,7 @@ export async function getOutlookUserProfile(accessToken: string): Promise<{
 /**
  * Refresh access token if expired
  */
-async function refreshAccessTokenIfNeeded(
+export async function refreshAccessTokenIfNeeded(
   sync: OutlookCalendarSync
 ): Promise<string | null> {
   if (!sync.expires_at || Date.now() < sync.expires_at) {
