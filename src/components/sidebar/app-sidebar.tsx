@@ -28,6 +28,11 @@ import {
   Brain,
   Network,
   BookOpen,
+  AlertCircle,
+  Heart,
+  Ban,
+  Webhook,
+  Skull,
   type LucideIcon,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
@@ -107,6 +112,18 @@ const views: ViewItem[] = [
   { id: 'decision-journal', name: 'Decision Journal', icon: Lightbulb },
   { id: 'learning-path', name: 'Learning Path', icon: BookOpen },
   { id: 'meeting-assistant', name: 'Meeting Assistant', icon: Bot },
+  { separator: true, label: 'Intelligence (2026-09)' },
+  { id: 'intelligence', name: 'Intelligence Hub', icon: Brain },
+  { id: 'parking', name: 'Parking Lot', icon: Clock },
+  { id: 'async', name: 'Async Waits', icon: Clock },
+  { id: 'principles', name: 'Principles', icon: Lightbulb },
+  { id: 'anti-procrastination', name: 'Stuck Tasks', icon: AlertCircle },
+  { id: 'reflection', name: 'Sunday Reflection', icon: Heart },
+  { id: 'anti-goals', name: 'Anti-Goals', icon: Ban },
+  { id: 'reading', name: 'Reading Queue', icon: BookOpen },
+  { id: 'autopilot', name: 'Decision Autopilot', icon: Bot },
+  { id: 'webhooks', name: 'Webhooks', icon: Webhook },
+  { id: 'afterlife', name: 'Task Afterlife', icon: Skull },
 ];
 
 export function AppSidebar({
