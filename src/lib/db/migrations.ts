@@ -430,6 +430,217 @@ export const migrations: Record<number, string> = {
     );
     CREATE UNIQUE INDEX IF NOT EXISTS idx_user_personas_user ON user_personas(user_id);
   `,
+  35: `
+    -- Extend tasks with cognitive_load column and parking-lot status
+    ALTER TABLE tasks ADD COLUMN cognitive_load TEXT DEFAULT 'medium'
+      CHECK(cognitive_load IN ('deep', 'creative', 'routine', 'social', 'emotional'));
+    ALTER TABLE tasks ADD COLUMN parked INTEGER DEFAULT 0;
+    ALTER TABLE tasks ADD COLUMN parked_until TEXT;
+    ALTER TABLE tasks ADD COLUMN park_reason TEXT;
+    ALTER TABLE tasks ADD COLUMN reschedule_count INTEGER DEFAULT 0;
+    ALTER TABLE tasks ADD COLUMN last_reschedule_at TEXT;
+    ALTER TABLE tasks ADD COLUMN deleted_at TEXT;
+    ALTER TABLE tasks ADD COLUMN deleted_reason TEXT;
+    ALTER TABLE tasks ADD COLUMN decision_autopilot_eligible INTEGER DEFAULT 0;
+    ALTER TABLE tasks ADD COLUMN travel_origin TEXT;
+    ALTER TABLE tasks ADD COLUMN travel_destination TEXT;
+
+    -- Personal operating principles - persistent rules learned by the system
+    CREATE TABLE IF NOT EXISTS operating_principles (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      rule TEXT NOT NULL,
+      category TEXT NOT NULL CHECK(category IN ('scheduling', 'priority', 'focus', 'energy', 'communication', 'other')),
+      evidence_count INTEGER DEFAULT 1,
+      confidence REAL DEFAULT 0.5,
+      active INTEGER DEFAULT 1,
+      source TEXT DEFAULT 'inferred',
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_principles_user ON operating_principles(user_id);
+
+    -- Async waits - tasks waiting on someone else
+    CREATE TABLE IF NOT EXISTS async_waits (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      waiting_on TEXT NOT NULL,
+      waiting_on_type TEXT DEFAULT 'person' CHECK(waiting_on_type IN ('person', 'system', 'event', 'payment', 'response')),
+      asked_at TEXT NOT NULL,
+      expected_response_days INTEGER DEFAULT 3,
+      nudge_threshold_days INTEGER DEFAULT 7,
+      status TEXT DEFAULT 'waiting' CHECK(status IN ('waiting', 'nudged', 'resolved', 'abandoned')),
+      last_nudge_at TEXT,
+      resolved_at TEXT,
+      notes TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_async_waits_user ON async_waits(user_id);
+    CREATE INDEX IF NOT EXISTS idx_async_waits_task ON async_waits(task_id);
+
+    -- Weekly reflections - Sunday review answers
+    CREATE TABLE IF NOT EXISTS reflections (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      week_of TEXT NOT NULL,
+      surprised TEXT,
+      worked TEXT,
+      did_not_work TEXT,
+      should_change TEXT,
+      gratitude TEXT,
+      extracted_principle_ids TEXT,
+      mood_score INTEGER,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(user_id, week_of)
+    );
+    CREATE INDEX IF NOT EXISTS idx_reflections_user ON reflections(user_id);
+
+    -- Context switches log - track what user is working on over time
+    CREATE TABLE IF NOT EXISTS context_switches (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      task_id INTEGER REFERENCES tasks(id) ON DELETE SET NULL,
+      project_tag TEXT,
+      switched_at TEXT NOT NULL,
+      session_duration_seconds INTEGER,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_ctx_switches_user_time ON context_switches(user_id, switched_at);
+
+    -- Decision autopilot log
+    CREATE TABLE IF NOT EXISTS autopilot_decisions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      decision_type TEXT NOT NULL,
+      question TEXT NOT NULL,
+      chosen_option TEXT NOT NULL,
+      rejected_options TEXT,
+      rationale TEXT,
+      user_approved INTEGER DEFAULT 0,
+      overridden INTEGER DEFAULT 0,
+      week_of TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_autopilot_user ON autopilot_decisions(user_id);
+
+    -- Anti-goals - explicit won't-do-this-quarter items
+    CREATE TABLE IF NOT EXISTS anti_goals (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      title TEXT NOT NULL,
+      reason TEXT,
+      active INTEGER DEFAULT 1,
+      valid_until TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_anti_goals_user ON anti_goals(user_id);
+
+    -- Reading / watch queue with optional AI summary
+    CREATE TABLE IF NOT EXISTS reading_queue (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      url TEXT,
+      title TEXT NOT NULL,
+      source TEXT,
+      item_type TEXT DEFAULT 'article' CHECK(item_type IN ('article', 'video', 'podcast', 'paper', 'book', 'thread')),
+      summary TEXT,
+      action_items TEXT,
+      status TEXT DEFAULT 'queued' CHECK(status IN ('queued', 'in_progress', 'done', 'archived')),
+      saved_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      consumed_at TEXT,
+      created_task_ids TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_reading_queue_user ON reading_queue(user_id);
+
+    -- Inbound webhooks - user-defined webhook endpoints
+    CREATE TABLE IF NOT EXISTS webhooks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      slug TEXT NOT NULL,
+      workflow_id INTEGER,
+      secret TEXT,
+      active INTEGER DEFAULT 1,
+      last_called_at TEXT,
+      call_count INTEGER DEFAULT 0,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(user_id, slug)
+    );
+    CREATE INDEX IF NOT EXISTS idx_webhooks_user ON webhooks(user_id);
+
+    -- Habit ↔ task bridges - link habits with recurring tasks
+    CREATE TABLE IF NOT EXISTS habit_task_bridge (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      habit_id INTEGER NOT NULL REFERENCES habits(id) ON DELETE CASCADE,
+      task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+      counts_for_both INTEGER DEFAULT 1,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(habit_id, task_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_habit_task_bridge_user ON habit_task_bridge(user_id);
+
+    -- Briefing preferences
+    CREATE TABLE IF NOT EXISTS briefing_preferences (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      enabled INTEGER DEFAULT 1,
+      delivery_hour INTEGER DEFAULT 8,
+      include_voice INTEGER DEFAULT 0,
+      include_predictions INTEGER DEFAULT 1,
+      include_principles INTEGER DEFAULT 1,
+      include_overdue INTEGER DEFAULT 1,
+      include_recommendations INTEGER DEFAULT 1,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(user_id)
+    );
+
+    -- Task afterlife (archive of deleted tasks for archaeology)
+    CREATE TABLE IF NOT EXISTS task_afterlife (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      original_task_id INTEGER,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      description TEXT,
+      priority TEXT,
+      completed_count INTEGER DEFAULT 0,
+      last_completed_at TEXT,
+      resurrect_count INTEGER DEFAULT 0,
+      resurrected_as_task_id INTEGER,
+      created_at TEXT,
+      deleted_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      tags TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_afterlife_user ON task_afterlife(user_id);
+
+    -- Anti-procrastination signals (computed lazily but stored to learn)
+    CREATE TABLE IF NOT EXISTS procrastination_signals (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+      reschedule_count INTEGER NOT NULL,
+      days_since_created INTEGER NOT NULL,
+      status TEXT NOT NULL CHECK(status IN ('active', 'declined', 'broken_down', 'parked', 'completed')),
+      suggested_action TEXT,
+      actioned_at TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_procrastination_user ON procrastination_signals(user_id);
+
+    -- Decision autopilot guardrails
+    CREATE TABLE IF NOT EXISTS autopilot_guardrails (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      scope TEXT NOT NULL,
+      allowed_values TEXT,
+      denied_values TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(user_id, scope)
+    );
+  `,
 };
 
 export async function runMigrations(): Promise<void> {
