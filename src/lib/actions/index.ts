@@ -204,3 +204,146 @@ export {
 
 // Task helpers (no-op in browser)
 export { logTaskAction } from './task-helpers';
+
+// ----- 2026-09-15 expansion: productivity intelligence layer -----
+
+// Operating principles
+export {
+  listPrinciples,
+  createPrinciple,
+  updatePrinciple,
+  deletePrinciple,
+  inferPrinciples,
+  type OperatingPrinciple,
+} from './principles';
+
+// Parking lot
+export {
+  parkTask,
+  unparkTask,
+  listParkedTasks,
+  getResurrectionCandidates,
+  resurrectTask,
+  type ParkedTask,
+} from './parking-lot';
+
+// Async waits
+export {
+  createAsyncWait,
+  listAsyncWaits,
+  nudgeAsyncWait,
+  resolveAsyncWait,
+  getWaitsNeedingNudge,
+  type AsyncWait,
+} from './async-waits';
+
+// Reflections (currentWeek lives in @/lib/week-utils because Server Actions can't export sync helpers)
+export {
+  saveReflection,
+  getReflection,
+  listReflections,
+  type Reflection,
+} from './reflections';
+
+// Cognitive load
+export {
+  setCognitiveLoad,
+  getWeeklyCognitiveLoad,
+  suggestReorderedToday,
+  type CognitiveLoad,
+  type CognitiveLoadDistribution,
+} from './cognitive-load';
+
+// Context switches
+export {
+  recordContextSwitch,
+  getContextSwitchStats,
+  clearTodaySwitches,
+  type ContextSwitch,
+  type ContextSwitchStats,
+} from './context-switches';
+
+// Anti-procrastination
+export {
+  detectProcrastination,
+  bumpReschedule,
+  type ProcrastinationSignal,
+} from './anti-procrastination';
+
+// Briefings
+export { getBriefing, type Briefing } from './briefings';
+
+// Anti-goals
+export {
+  listAntiGoals,
+  createAntiGoal,
+  toggleAntiGoal,
+  deleteAntiGoal,
+  type AntiGoal,
+} from './anti-goals';
+
+// Reading queue
+export {
+  addToReadingQueue,
+  listReadingQueue,
+  setReadingStatus,
+  setReadingSummary,
+  deleteReadingItem,
+  type ReadingItem,
+} from './reading-queue';
+
+// Webhooks
+export {
+  listWebhooks,
+  createWebhook,
+  toggleWebhook,
+  deleteWebhook,
+  findActiveWebhookBySlug,
+  recordWebhookCall,
+  type Webhook,
+} from './webhooks';
+
+// Habit bridges
+export {
+  bridgeHabitToTask,
+  listHabitBridges,
+  unbridgeHabitToTask,
+  type HabitBridge,
+} from './habit-bridge';
+
+// Decision autopilot
+export {
+  listAutopilotDecisions,
+  logAutopilotDecision,
+  markDecisionOverridden,
+  listGuardrails,
+  setGuardrail,
+  deleteGuardrail,
+  autopilotDecide,
+  type AutopilotDecision,
+  type AutopilotGuardrail,
+} from './autopilot';
+
+// Task afterlife (archive)
+export {
+  softDeleteTask,
+  listAfterlife,
+  findAfterlifePatterns,
+  type AfterlifeEntry,
+  type AfterlifePattern,
+} from './afterlife';
+
+// Travel time
+export {
+  estimateTravelTime,
+  recordTravelSegment,
+  listTravelSegments,
+  type TravelSegment,
+} from './travel-time';
+
+// Briefing preferences
+export {
+  getBriefingPreferences,
+  saveBriefingPreferences,
+  type BriefingPreferences,
+} from './briefing-prefs';
