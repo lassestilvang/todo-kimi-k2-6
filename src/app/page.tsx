@@ -54,6 +54,18 @@ import {
   DecisionShadowTracker,
   MoodAdaptiveTaskViews,
 } from '@/components/task/enhanced-productivity-dashboard';
+import { MorningBriefing } from '@/components/task/morning-briefing';
+import { ContextSwitchMeter } from '@/components/task/context-switch-meter';
+import { AntiProcrastination } from '@/components/task/anti-procrastination';
+import { ParkingLotPanel } from '@/components/task/parking-lot-panel';
+import { OperatingPrinciples } from '@/components/task/operating-principles';
+import { AsyncWaitTracker } from '@/components/task/async-wait-tracker';
+import { SundayReflection } from '@/components/task/sunday-reflection';
+import { AntiGoals } from '@/components/task/anti-goals';
+import { ReadingQueue } from '@/components/task/reading-queue';
+import { WebhookManager } from '@/components/task/webhook-manager';
+import { AutopilotPanel } from '@/components/task/autopilot-panel';
+import { TaskAfterlife } from '@/components/task/task-afterlife';
 import { useRouter } from 'next/navigation';
 import { LABS_ROUTES } from '@/utils/lab-routes';
 
@@ -89,6 +101,17 @@ export default function Home() {
     career_compass: 'Career Compass',
     knowledge: 'Knowledge Vault',
     integrations: 'Integration Marketplace',
+    intelligence: 'Intelligence Hub',
+    parking: 'Parking Lot',
+    async: 'Async Waits',
+    principles: 'Operating Principles',
+    'anti-procrastination': 'Stuck Tasks',
+    reflection: 'Sunday Reflection',
+    'anti-goals': 'Anti-Goals',
+    reading: 'Reading Queue',
+    autopilot: 'Decision Autopilot',
+    webhooks: 'Webhooks',
+    afterlife: 'Task Afterlife',
   };
   const [templates, setTemplates] = useState<Template[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -655,6 +678,126 @@ export default function Home() {
       );
     }
 
+    if (currentView === 'intelligence') {
+      return (
+        <div className="p-6 space-y-6">
+          <div>
+            <h1 className="text-3xl font-bold flex items-center gap-2">
+              <Brain className="h-8 w-8 text-purple-500" />
+              Intelligence Hub
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              A daily view of how you're working — briefings, switches, and stuck patterns.
+            </p>
+          </div>
+          <div className="grid gap-6 lg:grid-cols-2">
+            <MorningBriefing autoSpeak={false} />
+            <ContextSwitchMeter />
+          </div>
+          <div className="grid gap-6 lg:grid-cols-2">
+            <AntiProcrastination />
+            <AsyncWaitTracker />
+          </div>
+          <div className="grid gap-6 lg:grid-cols-2">
+            <OperatingPrinciples />
+            <ParkingLotPanel />
+          </div>
+          <div className="grid gap-6 lg:grid-cols-2">
+            <AntiGoals />
+            <TaskAfterlife />
+          </div>
+          <div className="grid gap-6 lg:grid-cols-2">
+            <ReadingQueue />
+            <WebhookManager />
+          </div>
+          <div className="grid gap-6 lg:grid-cols-2">
+            <AutopilotPanel />
+            <SundayReflection />
+          </div>
+        </div>
+      );
+    }
+
+    if (currentView === 'parking') {
+      return (
+        <div className="p-6 max-w-3xl">
+          <ParkingLotPanel />
+        </div>
+      );
+    }
+
+    if (currentView === 'async') {
+      return (
+        <div className="p-6 max-w-3xl">
+          <AsyncWaitTracker />
+        </div>
+      );
+    }
+
+    if (currentView === 'principles') {
+      return (
+        <div className="p-6 max-w-3xl">
+          <OperatingPrinciples />
+        </div>
+      );
+    }
+
+    if (currentView === 'anti-procrastination') {
+      return (
+        <div className="p-6 max-w-3xl">
+          <AntiProcrastination />
+        </div>
+      );
+    }
+
+    if (currentView === 'reflection') {
+      return (
+        <div className="p-6 max-w-3xl">
+          <SundayReflection />
+        </div>
+      );
+    }
+
+    if (currentView === 'anti-goals') {
+      return (
+        <div className="p-6 max-w-3xl">
+          <AntiGoals />
+        </div>
+      );
+    }
+
+    if (currentView === 'reading') {
+      return (
+        <div className="p-6 max-w-3xl">
+          <ReadingQueue />
+        </div>
+      );
+    }
+
+    if (currentView === 'autopilot') {
+      return (
+        <div className="p-6 max-w-3xl">
+          <AutopilotPanel />
+        </div>
+      );
+    }
+
+    if (currentView === 'webhooks') {
+      return (
+        <div className="p-6 max-w-3xl">
+          <WebhookManager />
+        </div>
+      );
+    }
+
+    if (currentView === 'afterlife') {
+      return (
+        <div className="p-6 max-w-3xl">
+          <TaskAfterlife />
+        </div>
+      );
+    }
+
     // Default: task list view
     return (
       <>
@@ -669,6 +812,15 @@ export default function Home() {
               <BarChart3 className="h-4 w-4 mr-1.5" />
               Analytics
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleNavigation('intelligence')}
+              className="hidden md:flex"
+            >
+              <Brain className="h-4 w-4 mr-1.5" />
+              Intelligence
+            </Button>
           </div>
           <div className="flex items-center gap-2">
             {filterListId && (
@@ -682,6 +834,14 @@ export default function Home() {
             )}
           </div>
         </div>
+        {currentView === 'today' && (
+          <div className="px-6 pt-4 pb-2 grid gap-3 lg:grid-cols-3">
+            <div className="lg:col-span-2">
+              <MorningBriefing />
+            </div>
+            <ContextSwitchMeter />
+          </div>
+        )}
         <TaskList
           tasks={visibleTasks}
           lists={lists}
