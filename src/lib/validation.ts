@@ -280,3 +280,115 @@ export const searchParamsSchema = z.object({
   offset: z.string().optional(),
   q: z.string().optional(),
 });
+
+// ----- New feature schemas (2026-09-15 expansion) -----
+
+export const cognitiveLoadSchema = z.object({
+  cognitive_load: z
+    .enum(['deep', 'creative', 'routine', 'social', 'emotional'])
+    .optional(),
+});
+
+export const operatingPrincipleSchema = z.object({
+  rule: z
+    .string()
+    .min(3, 'Rule must be at least 3 characters')
+    .max(500, 'Rule must be 500 characters or less'),
+  category: z.enum([
+    'scheduling',
+    'priority',
+    'focus',
+    'energy',
+    'communication',
+    'other',
+  ]),
+  confidence: z.number().min(0).max(1).optional(),
+  active: z.boolean().optional(),
+  source: z
+    .enum(['inferred', 'user', 'reflection'])
+    .optional(),
+});
+
+export const asyncWaitSchema = z.object({
+  task_id: z.number().min(1),
+  waiting_on: z.string().min(1).max(200),
+  waiting_on_type: z
+    .enum(['person', 'system', 'event', 'payment', 'response'])
+    .default('person'),
+  expected_response_days: z.number().min(1).max(90).default(3),
+  nudge_threshold_days: z.number().min(1).max(90).default(7),
+  notes: z.string().max(2000).optional().nullable(),
+});
+
+export const reflectionSchema = z.object({
+  surprised: z.string().max(2000).optional().nullable(),
+  worked: z.string().max(2000).optional().nullable(),
+  did_not_work: z.string().max(2000).optional().nullable(),
+  should_change: z.string().max(2000).optional().nullable(),
+  gratitude: z.string().max(2000).optional().nullable(),
+  mood_score: z.number().min(1).max(10).optional().nullable(),
+});
+
+export const autopilotDecisionSchema = z.object({
+  decision_type: z.string().min(1).max(80),
+  question: z.string().min(1).max(500),
+  chosen_option: z.string().min(1).max(500),
+  rejected_options: z.array(z.string()).optional(),
+  rationale: z.string().max(1000).optional().nullable(),
+});
+
+export const autopilotGuardrailSchema = z.object({
+  scope: z.string().min(1).max(80),
+  allowed_values: z.array(z.string()).optional(),
+  denied_values: z.array(z.string()).optional(),
+});
+
+export const antiGoalSchema = z.object({
+  title: z.string().min(1).max(200),
+  reason: z.string().max(1000).optional().nullable(),
+  valid_until: z.string().optional().nullable(),
+});
+
+export const readingQueueSchema = z.object({
+  url: z.string().url().optional().nullable(),
+  title: z.string().min(1).max(500),
+  source: z.string().max(200).optional().nullable(),
+  item_type: z
+    .enum(['article', 'video', 'podcast', 'paper', 'book', 'thread'])
+    .default('article'),
+});
+
+export const webhookSchema = z.object({
+  name: z.string().min(1).max(120),
+  slug: z
+    .string()
+    .min(2)
+    .max(80)
+    .regex(/^[a-z0-9-]+$/, 'Slug must be lowercase alphanumeric with dashes'),
+  workflow_id: z.number().optional().nullable(),
+  secret: z.string().optional().nullable(),
+  active: z.boolean().optional(),
+});
+
+export const habitTaskBridgeSchema = z.object({
+  habit_id: z.number().min(1),
+  task_id: z.number().min(1),
+  counts_for_both: z.boolean().optional(),
+});
+
+export const briefingPreferencesSchema = z.object({
+  enabled: z.boolean().optional(),
+  delivery_hour: z.number().min(0).max(23).optional(),
+  include_voice: z.boolean().optional(),
+  include_predictions: z.boolean().optional(),
+  include_principles: z.boolean().optional(),
+  include_overdue: z.boolean().optional(),
+  include_recommendations: z.boolean().optional(),
+});
+
+export const parkTaskSchema = z.object({
+  task_id: z.number().min(1),
+  parked_until: z.string().optional().nullable(),
+  reason: z.string().max(500).optional().nullable(),
+});
+
