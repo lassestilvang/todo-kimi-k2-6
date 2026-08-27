@@ -97,7 +97,14 @@ export function OperatingPrinciples() {
   );
 
   const remove = useCallback(
-    async (id: number) => {
+    async (id: number, rule: string) => {
+      if (
+        !confirm(
+          `Delete the principle "${rule.slice(0, 60)}${rule.length > 60 ? '…' : ''}"? This can't be undone.`
+        )
+      ) {
+        return;
+      }
       try {
         await fetch(`/api/principles?id=${id}`, { method: 'DELETE' });
         toast.success('Removed');
@@ -140,6 +147,8 @@ export function OperatingPrinciples() {
             variant="outline"
             onClick={infer}
             disabled={inferring}
+            aria-label="Infer principles from behavior"
+            title="Infer principles from behavior"
           >
             <Sparkles className="h-3 w-3" />
             {inferring ? 'Inferring…' : 'Infer from behavior'}
@@ -212,13 +221,19 @@ export function OperatingPrinciples() {
                   </div>
                 </div>
                 <div className="flex gap-1">
-                  <Button size="sm" variant="ghost" onClick={() => toggle(p)}>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => toggle(p)}
+                    aria-label={p.active ? `Pause principle: ${p.rule}` : `Enable principle: ${p.rule}`}
+                  >
                     {p.active ? 'pause' : 'enable'}
                   </Button>
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => remove(p.id)}
+                    onClick={() => remove(p.id, p.rule)}
+                    aria-label={`Delete principle: ${p.rule}`}
                   >
                     <Trash2 className="h-3 w-3" />
                   </Button>
