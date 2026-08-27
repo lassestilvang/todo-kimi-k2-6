@@ -59,6 +59,13 @@ export function ContextSwitchMeter() {
   }, [load]);
 
   const reset = useCallback(async () => {
+    if (
+      !confirm(
+        "Reset today's context-switch count? This wipes the day's tracking."
+      )
+    ) {
+      return;
+    }
     try {
       await fetch('/api/context-switches', { method: 'DELETE' });
       await load();
@@ -115,10 +122,20 @@ export function ContextSwitchMeter() {
         <p className="text-sm">{stats.recommendation}</p>
 
         <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={record}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={record}
+            aria-label="Record a context switch"
+          >
             Record a switch
           </Button>
-          <Button size="sm" variant="ghost" onClick={reset}>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={reset}
+            aria-label="Reset today's context switch counter"
+          >
             <RefreshCw className="h-3 w-3" />
             Reset today
           </Button>
