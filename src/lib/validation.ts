@@ -284,9 +284,8 @@ export const searchParamsSchema = z.object({
 // ----- New feature schemas (2026-09-15 expansion) -----
 
 export const cognitiveLoadSchema = z.object({
-  cognitive_load: z
-    .enum(['deep', 'creative', 'routine', 'social', 'emotional'])
-    .optional(),
+  task_id: z.number().int().positive(),
+  cognitive_load: z.enum(['deep', 'creative', 'routine', 'social', 'emotional']),
 });
 
 export const operatingPrincipleSchema = z.object({
