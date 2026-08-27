@@ -101,43 +101,56 @@ export function SundayReflection({ showHeader = true }: ReflectionFormProps) {
         ) : (
           <>
             <ReflectionField
+              id="reflection-surprised"
               label="What surprised you?"
               value={surprised}
               onChange={setSurprised}
             />
             <ReflectionField
+              id="reflection-worked"
               label="What worked?"
               value={worked}
               onChange={setWorked}
             />
             <ReflectionField
+              id="reflection-did-not-work"
               label="What didn't work?"
               value={didNotWork}
               onChange={setDidNotWork}
             />
             <ReflectionField
+              id="reflection-should-change"
               label="What should we change?"
               value={shouldChange}
               onChange={setShouldChange}
             />
             <ReflectionField
+              id="reflection-gratitude"
               label="Gratitude (optional)"
               value={gratitude}
               onChange={setGratitude}
             />
             <div>
-              <label className="text-sm font-medium">Mood (1–10)</label>
+              <label htmlFor="reflection-mood" className="text-sm font-medium">
+                Mood (1–10)
+              </label>
               <input
+                id="reflection-mood"
                 type="range"
                 min={1}
                 max={10}
                 value={mood}
                 onChange={e => setMood(parseInt(e.target.value, 10))}
                 className="w-full mt-1"
+                aria-label="Mood score"
               />
               <div className="text-xs text-muted-foreground">{mood}/10</div>
             </div>
-            <Button onClick={save} disabled={!surprised && !worked && !didNotWork && !shouldChange && !gratitude}>
+            <Button
+              onClick={save}
+              disabled={!surprised && !worked && !didNotWork && !shouldChange && !gratitude}
+              aria-label={current ? 'Update reflection' : 'Save reflection'}
+            >
               <Save className="h-3 w-3" />
               {current ? 'Update reflection' : 'Save reflection'}
             </Button>
@@ -149,18 +162,23 @@ export function SundayReflection({ showHeader = true }: ReflectionFormProps) {
 }
 
 function ReflectionField({
+  id,
   label,
   value,
   onChange,
 }: {
+  id: string;
   label: string;
   value: string;
   onChange: (v: string) => void;
 }) {
   return (
     <div>
-      <label className="text-sm font-medium">{label}</label>
+      <label htmlFor={id} className="text-sm font-medium">
+        {label}
+      </label>
       <Input
+        id={id}
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder="A sentence or two…"
