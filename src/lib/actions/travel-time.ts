@@ -103,12 +103,12 @@ export async function recordTravelSegment(input: {
     )
     .run(
       user.id,
-      input.from_location,
-      input.to_location,
+      input.from_location.trim(),
+      input.to_location.trim(),
       input.mode ?? 'driving',
       input.distance_km ?? null,
       input.duration_minutes,
-      input.notes ?? null
+      (input.notes ?? '').trim() || null
     );
 
   revalidatePath('/travel');
