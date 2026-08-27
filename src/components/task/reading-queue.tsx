@@ -111,6 +111,9 @@ export function ReadingQueue() {
 
   const remove = useCallback(
     async (id: number) => {
+      if (!confirm('Delete this reading item?')) {
+        return;
+      }
       try {
         await fetch(`/api/reading-queue?id=${id}`, { method: 'DELETE' });
         await load();
@@ -222,11 +225,17 @@ export function ReadingQueue() {
                       variant="ghost"
                       onClick={() => summarise(i.id, i.title)}
                       disabled={summarising === i.id}
+                      aria-label={`Summarise ${i.title}`}
                     >
                       <Sparkles className="h-3 w-3" />
                       {summarising === i.id ? '…' : 'AI'}
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={() => remove(i.id)}>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => remove(i.id)}
+                      aria-label={`Delete ${i.title}`}
+                    >
                       <Trash2 className="h-3 w-3" />
                     </Button>
                   </div>
