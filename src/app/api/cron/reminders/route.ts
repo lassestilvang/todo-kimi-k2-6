@@ -7,6 +7,7 @@ import {
 } from '@/lib/email';
 import { logError } from '@/lib/logger';
 import { format, startOfDay } from 'date-fns';
+import { NextRequest } from 'next/server';
 
 // Local type for database results (completed is stored as integer 0/1)
 interface DbTask {
@@ -31,9 +32,17 @@ interface UserRecord {
 /**
  * Cron job to send task reminders
  * Run every hour to check for upcoming deadlines
+ *
+ * Auth: requires `Authorization: Bearer <CRON_SECRET>`.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const authHeader = request.headers.get('authorization');
+    const cronSecret = process.env['CRON_SECRET'];
+    if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const db = getDb();
     const now = new Date();
     const today = format(startOfDay(now), 'yyyy-MM-dd');
