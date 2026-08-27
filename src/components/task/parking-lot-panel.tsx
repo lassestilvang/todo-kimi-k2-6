@@ -95,7 +95,14 @@ export function ParkingLotPanel() {
   );
 
   const archive = useCallback(
-    async (taskId: number) => {
+    async (taskId: number, label: string) => {
+      if (
+        !confirm(
+          `Permanently archive "${label}"? It won't appear again until you dig into the afterlife view.`
+        )
+      ) {
+        return;
+      }
       try {
         await fetch('/api/afterlife', {
           method: 'POST',
@@ -182,10 +189,20 @@ export function ParkingLotPanel() {
                     </div>
                   </div>
                   <div className="flex gap-1">
-                    <Button size="sm" variant="ghost" onClick={() => unpark(t.id)}>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => unpark(t.id)}
+                      aria-label={`Unpark ${t.name}`}
+                    >
                       <RotateCcw className="h-3 w-3" />
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={() => archive(t.id)}>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => archive(t.id, t.name)}
+                      aria-label={`Archive ${t.name}`}
+                    >
                       <Trash2 className="h-3 w-3" />
                     </Button>
                   </div>
@@ -210,11 +227,21 @@ export function ParkingLotPanel() {
                   Parked {c.daysInLot}d ago{c.park_reason ? ` · ${c.park_reason}` : ''}
                 </div>
                 <div className="flex gap-2 pt-1">
-                  <Button size="sm" variant="outline" onClick={() => unpark(c.id)}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => unpark(c.id)}
+                    aria-label={`Revive ${c.name}`}
+                  >
                     <RotateCcw className="h-3 w-3" />
                     Revive
                   </Button>
-                  <Button size="sm" variant="ghost" onClick={() => archive(c.id)}>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => archive(c.id, c.name)}
+                    aria-label={`Permanently drop ${c.name}`}
+                  >
                     <Trash2 className="h-3 w-3" />
                     Drop forever
                   </Button>
