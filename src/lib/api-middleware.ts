@@ -161,19 +161,52 @@ export async function applyMiddleware(
 export { rateLimits } from './rate-limiter';
 
 /**
- * Create a JSON response with proper headers
+ * Create a JSON response with proper headers.
+ *
+ * The second argument may be either:
+ *  - a numeric status code (e.g. 201), or
+ *  - a ResponseInit object (e.g. `{ status: 201 }`), or
+ *  - a `Record<string, string>` of middleware headers (legacy positional API).
+ *
+ * The third argument is treated as middleware headers when the second argument
+ * is a status code or ResponseInit.
  */
 export function jsonResponse(
   data: unknown,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  init?: any,
+  initOrStatus?: any,
   middlewareHeaders?: Record<string, string>
 ): NextResponse {
-  const response = NextResponse.json(data, init);
+  let responseInit: ResponseInit | undefined;
+  let headers: Record<string, string> | undefined;
+
+  if (typeof initOrStatus === 'number') {
+    responseInit = { status: initOrStatus };
+    headers = middlewareHeaders;
+  } else if (initOrStatus && typeof initOrStatus === 'object') {
+    // Could be either a ResponseInit or a Record of headers. If it has any of
+    // the standard ResponseInit keys, treat it as ResponseInit.
+    const looksLikeResponseInit = ['status', 'statusText', 'headers'].some(
+      k => k in initOrStatus
+    );
+    if (looksLikeResponseInit) {
+      responseInit = initOrStatus;
+      headers = middlewareHeaders;
+    } else {
+      // Treat as headers (legacy positional API: data, headers)
+      headers = initOrStatus;
+    }
+  } else if (middlewareHeaders) {
+    // Second arg is undefined / not provided but third arg is headers —
+    // legacy positional API.
+    headers = middlewareHeaders;
+  }
+
+  const response = NextResponse.json(data, responseInit);
 
   // Add rate limit headers
-  if (middlewareHeaders) {
-    for (const [key, value] of Object.entries(middlewareHeaders)) {
+  if (headers) {
+    for (const [key, value] of Object.entries(headers)) {
       response.headers.set(key, value);
     }
   }
