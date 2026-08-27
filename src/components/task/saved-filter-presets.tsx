@@ -59,6 +59,12 @@ export function SavedFilterPresets({
     setIsSaveDialogOpen(false);
   };
 
+  const handleDelete = (preset: { id: number; name: string }) => {
+    if (confirm(`Delete saved filter "${preset.name}"?`)) {
+      onDeletePreset(preset.id);
+    }
+  };
+
   return (
     <div className="flex items-center gap-2">
       {savedPresets.length > 0 && (
@@ -82,9 +88,10 @@ export function SavedFilterPresets({
                   variant="ghost"
                   size="sm"
                   className="ml-auto h-6 w-6 p-0"
+                  aria-label={`Delete filter preset ${preset.name}`}
                   onClick={e => {
                     e.stopPropagation();
-                    onDeletePreset(preset.id);
+                    handleDelete(preset);
                   }}
                 >
                   <Trash2 className="h-3 w-3" />
@@ -111,8 +118,11 @@ export function SavedFilterPresets({
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
-              <label className="text-sm font-medium">Preset Name</label>
+              <label htmlFor="filter-preset-name" className="text-sm font-medium">
+                Preset Name
+              </label>
               <Input
+                id="filter-preset-name"
                 value={presetName}
                 onChange={e => setPresetName(e.target.value)}
                 placeholder="e.g., My Work Tasks"
