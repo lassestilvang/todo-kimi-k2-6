@@ -4,6 +4,7 @@ import { getDb } from '@/lib/db';
 import { getCurrentUser } from '@/lib/session';
 import { sanitizeString } from '@/lib/validation';
 import { revalidatePath } from 'next/cache';
+import { currentWeek as weekOf } from '@/lib/week-utils';
 
 export interface AutopilotDecision {
   id: number;
@@ -26,17 +27,6 @@ export interface AutopilotGuardrail {
   allowed_values: string | null;
   denied_values: string | null;
   created_at: string;
-}
-
-function weekOf(date: Date = new Date()): string {
-  const d = new Date(
-    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
-  );
-  const dayNum = d.getUTCDay() || 7;
-  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  const weekNum = Math.ceil(((+d - +yearStart) / 86400000 + 1) / 7);
-  return `${d.getUTCFullYear()}-W${String(weekNum).padStart(2, '0')}`;
 }
 
 export async function listAutopilotDecisions(limit = 30): Promise<AutopilotDecision[]> {
