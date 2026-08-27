@@ -2,13 +2,22 @@ import { getDb } from '@/lib/db';
 import { logError } from '@/lib/logger';
 import { executeWorkflow, evaluateConditions } from '@/lib/actions/workflows';
 import { Task } from '@/types';
+import { NextRequest } from 'next/server';
 
 /**
  * Cron job to trigger workflows based on schedules and events
  * Run every 5 minutes to check for trigger conditions
+ *
+ * Auth: requires `Authorization: Bearer <CRON_SECRET>`.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const authHeader = request.headers.get('authorization');
+    const cronSecret = process.env['CRON_SECRET'];
+    if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const db = getDb();
     const now = new Date();
     const currentHour = now.getHours();
