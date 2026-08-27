@@ -73,7 +73,14 @@ export function TemplateCategoriesManager({
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: number, name: string) => {
+    if (
+      !confirm(
+        `Delete template category "${name}"? Templates inside will become uncategorised.`
+      )
+    ) {
+      return;
+    }
     try {
       await onDelete(id);
       toast.success('Category deleted');
@@ -107,18 +114,25 @@ export function TemplateCategoriesManager({
             </DialogHeader>
             <div className="space-y-4 mt-4">
               <div>
-                <label className="text-sm font-medium">Name</label>
+                <label htmlFor="tpl-cat-name" className="text-sm font-medium">
+                  Name
+                </label>
                 <Input
+                  id="tpl-cat-name"
                   value={newName}
                   onChange={e => setNewName(e.target.value)}
                   placeholder="e.g., Work, Personal, Projects"
                 />
               </div>
               <div>
-                <label className="text-sm font-medium">
+                <label
+                  htmlFor="tpl-cat-description"
+                  className="text-sm font-medium"
+                >
                   Description (optional)
                 </label>
                 <Textarea
+                  id="tpl-cat-description"
                   value={newDescription}
                   onChange={e => setNewDescription(e.target.value)}
                   placeholder="Describe this category..."
@@ -169,7 +183,12 @@ export function TemplateCategoriesManager({
               <div className="flex items-center gap-1">
                 <Dialog>
                   <DialogTrigger>
-                    <Button variant="ghost" size="sm">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      aria-label={`Edit category ${category.name}`}
+                      title="Edit"
+                    >
                       <Edit className="h-3.5 w-3.5" />
                     </Button>
                   </DialogTrigger>
@@ -179,8 +198,14 @@ export function TemplateCategoriesManager({
                     </DialogHeader>
                     <div className="space-y-4 mt-4">
                       <div>
-                        <label className="text-sm font-medium">Name</label>
+                        <label
+                          htmlFor={`tpl-cat-edit-name-${category.id}`}
+                          className="text-sm font-medium"
+                        >
+                          Name
+                        </label>
                         <Input
+                          id={`tpl-cat-edit-name-${category.id}`}
                           value={category.name}
                           onChange={e =>
                             setEditingCategory({
@@ -191,10 +216,14 @@ export function TemplateCategoriesManager({
                         />
                       </div>
                       <div>
-                        <label className="text-sm font-medium">
+                        <label
+                          htmlFor={`tpl-cat-edit-desc-${category.id}`}
+                          className="text-sm font-medium"
+                        >
                           Description
                         </label>
                         <Textarea
+                          id={`tpl-cat-edit-desc-${category.id}`}
                           value={category.description || ''}
                           onChange={e =>
                             setEditingCategory({
@@ -220,7 +249,9 @@ export function TemplateCategoriesManager({
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleDelete(category.id)}
+                  onClick={() => handleDelete(category.id, category.name)}
+                  aria-label={`Delete category ${category.name}`}
+                  title="Delete"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </Button>
