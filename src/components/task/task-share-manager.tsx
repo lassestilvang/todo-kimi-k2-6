@@ -62,9 +62,16 @@ export function TaskShareManager({
     }
   };
 
-  const handleRemoveShare = async (shareId: number) => {
+  const handleRemoveShare = async (share: TaskShare) => {
+    if (
+      !confirm(
+        `Remove share for ${share.user?.email || 'this public link'}? They'll lose access.`
+      )
+    ) {
+      return;
+    }
     try {
-      const response = await fetch(`/api/shares?shareId=${shareId}`, {
+      const response = await fetch(`/api/shares?shareId=${share.id}`, {
         method: 'DELETE',
       });
 
@@ -72,7 +79,7 @@ export function TaskShareManager({
         throw new Error('Failed to remove share');
       }
 
-      onShareRemoved(shareId);
+      onShareRemoved(share.id);
       toast.success('Share removed');
     } catch (error) {
       toast.error(
@@ -183,6 +190,8 @@ export function TaskShareManager({
                           onClick={() =>
                             copyShareLink(share.share_token as string)
                           }
+                          aria-label="Copy share link"
+                          title="Copy share link"
                         >
                           {copiedToken === share.share_token ? (
                             <Check className="h-3 w-3 text-green-500" />
@@ -194,7 +203,11 @@ export function TaskShareManager({
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleRemoveShare(share.id)}
+                      onClick={() => handleRemoveShare(share)}
+                      aria-label={`Remove share for ${
+                        share.user?.email || 'public link'
+                      }`}
+                      title="Remove share"
                     >
                       <X className="h-4 w-4" />
                     </Button>
