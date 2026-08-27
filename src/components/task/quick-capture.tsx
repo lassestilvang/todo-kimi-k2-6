@@ -128,6 +128,7 @@ export function QuickCapture({ onTaskCreate, lists }: QuickCaptureProps) {
             size="icon"
             className="h-6 w-6"
             onClick={() => setIsOpen(false)}
+            aria-label="Close quick capture"
           >
             <X className="h-3 w-3" />
           </Button>
@@ -150,6 +151,7 @@ export function QuickCapture({ onTaskCreate, lists }: QuickCaptureProps) {
               className="h-9 w-9"
               onClick={toggleVoice}
               title={isListening ? 'Stop listening' : 'Start voice input'}
+              aria-label={isListening ? 'Stop voice input' : 'Start voice input'}
             >
               {isListening ? (
                 <MicOff className="h-4 w-4" />
