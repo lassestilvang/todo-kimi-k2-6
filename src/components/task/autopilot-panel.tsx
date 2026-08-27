@@ -76,6 +76,9 @@ export function AutopilotPanel() {
 
   const removeGuardrail = useCallback(
     async (id: number) => {
+      if (!confirm('Delete this guardrail? Autopilot may start suggesting these values again.')) {
+        return;
+      }
       try {
         await fetch(`/api/autopilot?id=${id}`, { method: 'DELETE' });
         await load();
@@ -169,7 +172,12 @@ export function AutopilotPanel() {
                     {deniedVals.length > 0 && (
                       <Badge variant="outline">denies: {deniedVals.join(', ')}</Badge>
                     )}
-                    <Button size="sm" variant="ghost" onClick={() => removeGuardrail(g.id)}>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => removeGuardrail(g.id)}
+                      aria-label={`Delete guardrail ${g.scope}`}
+                    >
                       <Trash2 className="h-3 w-3" />
                     </Button>
                   </li>
