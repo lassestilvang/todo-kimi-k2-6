@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { z } from 'zod';
 import {
   listAntiGoals,
   createAntiGoal,
@@ -7,6 +8,11 @@ import {
 } from '@/lib/actions/anti-goals';
 import { antiGoalSchema } from '@/lib/validation';
 import { applyMiddleware, errorResponse, jsonResponse } from '@/lib/api-middleware';
+
+const antiGoalToggleSchema = z.object({
+  id: z.number().int().positive(),
+  active: z.boolean(),
+});
 
 export async function GET(request: NextRequest) {
   const m = await applyMiddleware(request, { requireAuth: true });
@@ -36,9 +42,12 @@ export async function PATCH(request: NextRequest) {
   const m = await applyMiddleware(request, { requireAuth: true });
   if (m.error) return m.error;
   try {
-    const body = (await request.json()) as { id: number; active: boolean };
-    if (!body.id) return errorResponse('id required', 400);
-    const ok = await toggleAntiGoal(body.id, body.active);
+    const body = await request.json();
+    const parsed = antiGoalToggleSchema.safeParse(body);
+    if (!parsed.success) {
+      return errorResponse('Validation failed', 400, parsed.error.issues);
+    }
+    const ok = await toggleAntiGoal(parsed.data.id, parsed.data.active);
     return jsonResponse({ ok }, 200, m.headers);
   } catch (e) {
     return errorResponse(e instanceof Error ? e.message : 'Failed', 400);
