@@ -128,6 +128,13 @@ export function WorkspaceMembers({
   };
 
   const handleRemoveMember = async (member: WorkspaceMember) => {
+    if (
+      !confirm(
+        `Remove ${member.user?.name || member.user?.email || 'this member'} from the workspace? They will lose access.`
+      )
+    ) {
+      return;
+    }
     try {
       const response = await fetch(
         `/api/workspaces/${workspaceId}/members/${member.id}`,
@@ -345,6 +352,8 @@ export function WorkspaceMembers({
                           variant="ghost"
                           size="sm"
                           onClick={() => handleRemoveMember(member)}
+                          aria-label={`Remove ${member.user?.name || member.user?.email || 'member'} from workspace`}
+                          title="Remove member"
                         >
                           <X className="h-4 w-4" />
                         </Button>
