@@ -20,6 +20,10 @@ interface Hook {
   created_at: string;
 }
 
+interface CreateHookResponse {
+  webhook: Hook;
+}
+
 export function WebhookManager() {
   const [hooks, setHooks] = useState<Hook[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,13 +56,20 @@ export function WebhookManager() {
         body: JSON.stringify({ name: name.trim(), slug: slug.trim() }),
       });
       if (!r.ok) throw new Error();
-      const data = (await r.json()) as { webhook: Hook };
-      toast.success('Webhook ready');
+      const data = (await r.json()) as CreateHookResponse;
       setName('');
       setSlug('');
-      void navigator.clipboard?.writeText(
-        `${window.location.origin}/api/webhooks/in/${data.webhook.slug}`
-      ).catch(() => undefined);
+      const url = `${window.location.origin}/api/webhooks/in/${data.webhook.slug}`;
+      void navigator.clipboard?.writeText(url).catch(() => undefined);
+      if (data.webhook.secret) {
+        // Surface the secret exactly once so the user can save it.
+        toast.success(
+          `Webhook ready. Secret (copy now, shown once): ${data.webhook.secret}`,
+          { duration: 15000 }
+        );
+      } else {
+        toast.success('Webhook ready');
+      }
       await load();
     } catch {
       toast.error('Could not create');
@@ -83,6 +94,9 @@ export function WebhookManager() {
 
   const remove = useCallback(
     async (id: number) => {
+      if (!confirm('Delete this webhook? Inbound POSTs will stop working.')) {
+        return;
+      }
       try {
         await fetch(`/api/webhooks?id=${id}`, { method: 'DELETE' });
         await load();
@@ -156,13 +170,28 @@ export function WebhookManager() {
                     </div>
                   </div>
                   <div className="flex flex-col gap-1">
-                    <Button size="sm" variant="ghost" onClick={() => copyUrl(h.slug)}>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => copyUrl(h.slug)}
+                      aria-label={`Copy URL for ${h.name}`}
+                    >
                       <Copy className="h-3 w-3" /> URL
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={() => toggle(h)}>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => toggle(h)}
+                      aria-label={h.active ? `Pause ${h.name}` : `Enable ${h.name}`}
+                    >
                       {h.active ? 'pause' : 'enable'}
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={() => remove(h.id)}>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => remove(h.id)}
+                      aria-label={`Delete ${h.name}`}
+                    >
                       <Trash2 className="h-3 w-3" />
                     </Button>
                   </div>
