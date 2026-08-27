@@ -76,7 +76,7 @@ export function CognitiveLoadBadge({ taskId, current, onChange }: CognitiveLoadB
   }
 
   return (
-    <div className="flex flex-wrap gap-1 p-2 rounded-md border bg-popover">
+    <div className="flex flex-wrap gap-1 p-2 rounded-md border bg-popover" role="radiogroup" aria-label="Cognitive load">
       {LOADS.map(l => {
         const meta = LOAD_META[l];
         const Icon = meta.icon;
@@ -84,6 +84,9 @@ export function CognitiveLoadBadge({ taskId, current, onChange }: CognitiveLoadB
           <button
             key={l}
             onClick={() => choose(l)}
+            role="radio"
+            aria-checked={value === l}
+            aria-label={`Set cognitive load to ${meta.label}`}
             className={`px-2 py-1 rounded text-xs flex items-center gap-1 hover:bg-accent ${
               value === l ? 'ring-1 ring-primary' : ''
             }`}
