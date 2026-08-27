@@ -207,6 +207,55 @@ Explore the Labs section to experiment with AI-powered productivity:
 - **Font Options**: Dyslexia-friendly font selection
 - **Contrast Modes**: High contrast and reduced motion settings
 
+## Intelligence Layer (v0.3.0)
+
+A productivity-intelligence layer that observes your work patterns and surfaces
+useful defaults instead of making you configure everything by hand.
+
+- **Morning Briefing**: A single card with what's due today, what's overdue,
+  the principle of the day, async-wait nudges, context-switch level, and one
+  suggested first action. Endpoint: `GET /api/briefing`.
+- **Context-Switch Meter**: Tracks how often you move between tasks. Each
+  switch has a ~10-min refocus cost; the meter rates the day as low / moderate
+  / high / severe and recommends a focus block.
+- **Anti-Procrastination**: Detects tasks you've rescheduled many times, or
+  high-priority tasks that have been open for >14 days. Suggests breaking
+  them down, parking, or scheduling a 30-minute kickstart.
+- **Parking Lot**: Move tasks you want to "come back to later" without losing
+  them. Resurrection candidates (parked until elapsed, or >90 days old with
+  no review date) are surfaced automatically.
+- **Operating Principles**: Distilled rules learned from your behaviour
+  ("you tend to delay deep work — schedule it earlier"). CRUD plus an
+  `inferPrinciples()` job that detects patterns from reschedules, parked
+  tasks, and stuck async waits.
+- **Async Wait Tracker**: Mark a task as waiting on a person, system, event,
+  payment, or response. Nudge thresholds and a "needs nudge" list surface
+  stuck waits.
+- **Cognitive Load**: Tag each task as `deep`, `creative`, `routine`,
+  `social`, or `emotional`. The weekly distribution warns when deep work
+  is over 55% of your load.
+- **Sunday Reflection**: A weekly journal entry (surprised, worked, didn't
+  work, gratitude, mood score) saved against an ISO week string.
+- **Anti-Goals**: "Won't do this quarter" items that are surfaced during
+  AI suggestions to filter out things you've explicitly chosen not to do.
+- **Reading Queue**: Save-for-later links and articles, with status flow
+  (`queued → in_progress → done`) and an AI-summary action.
+- **Webhooks**: Per-user incoming HTTP endpoints at
+  `/api/webhooks/in/<slug>`. When a `secret` is configured, requests must
+  include `X-Webhook-Signature: sha256=<hex(hmac_sha256(secret, body))>`.
+- **Decision Autopilot**: Routine decisions delegated to the system. Set
+  guardrails (e.g. "deny red"), and `autopilotDecide()` will pick a
+  candidate deterministically per ISO week.
+- **Task Afterlife**: Soft-deleted tasks are archived. Pattern detection
+  flags tasks you've deleted and recreated multiple times — the suggestion
+  is to either drop them permanently or turn them into a template.
+- **Travel Time**: Heuristic travel-time estimates between two location
+  strings, with a per-user cache that improves as you record real segments.
+- **Habit Bridge**: Link a habit with a recurring task so completing one
+  counts for both.
+- **Briefing Preferences**: Persisted user prefs (delivery hour, voice
+  on/off, sections to include) for the morning briefing.
+
 ## Project Structure
 
 ```
@@ -296,6 +345,22 @@ src/
 | `/api/voice/commands`      | POST                      | Voice command processing    |
 | `/api/ai/career-paths`     | GET                       | Career path recommendations |
 | `/api/ai/skill-extract`    | POST                      | Extract skills from tasks   |
+| `/api/briefing`            | GET/PUT                   | Morning briefing + prefs    |
+| `/api/principles`          | GET/POST/PATCH/DELETE     | Operating principles CRUD   |
+| `/api/parking-lot`         | GET/POST/PATCH/DELETE     | Parking lot                 |
+| `/api/async-waits`         | GET/POST/PATCH/DELETE     | Async waits                 |
+| `/api/reflections`         | GET/POST                  | Sunday reflections          |
+| `/api/cognitive-load`      | GET/POST                  | Cognitive load              |
+| `/api/context-switches`    | GET/POST/DELETE           | Context switch meter        |
+| `/api/procrastination`     | GET                       | Anti-procrastination signals|
+| `/api/anti-goals`          | GET/POST/PATCH/DELETE     | Anti-goals                  |
+| `/api/reading-queue`       | GET/POST/PATCH/DELETE     | Reading queue               |
+| `/api/webhooks`            | GET/POST/PATCH/DELETE     | Webhook management          |
+| `/api/webhooks/in/[slug]`  | POST                      | Public webhook ingestion    |
+| `/api/autopilot`           | GET/PUT/DELETE            | Decision autopilot          |
+| `/api/afterlife`           | GET                       | Task afterlife archive      |
+| `/api/travel-time`         | GET/POST                  | Travel time estimates       |
+| `/api/habit-bridge`        | GET/POST/DELETE           | Habit-task bridges          |
 
 ## Security
 
