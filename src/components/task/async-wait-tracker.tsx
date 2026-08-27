@@ -41,7 +41,15 @@ export function AsyncWaitTracker() {
   }, [load]);
 
   const action = useCallback(
-    async (id: number, action: 'nudge' | 'resolve' | 'abandon') => {
+    async (id: number, action: 'nudge' | 'resolve' | 'abandon', label: string) => {
+      if (
+        action === 'abandon' &&
+        !confirm(
+          `Abandon waiting on "${label}"? The task will be marked abandoned.`
+        )
+      ) {
+        return;
+      }
       try {
         await fetch('/api/async-waits', {
           method: 'PATCH',
@@ -109,16 +117,31 @@ export function AsyncWaitTracker() {
                 </div>
                 <div className="flex gap-2">
                   {w.nudge_due && (
-                    <Button size="sm" variant="outline" onClick={() => action(w.id, 'nudge')}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => action(w.id, 'nudge', w.waiting_on)}
+                      aria-label={`Send nudge about ${w.waiting_on}`}
+                    >
                       <Bell className="h-3 w-3" />
                       Send nudge
                     </Button>
                   )}
-                  <Button size="sm" variant="ghost" onClick={() => action(w.id, 'resolve')}>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => action(w.id, 'resolve', w.waiting_on)}
+                    aria-label={`Mark resolved: waiting on ${w.waiting_on}`}
+                  >
                     <Check className="h-3 w-3" />
                     Resolved
                   </Button>
-                  <Button size="sm" variant="ghost" onClick={() => action(w.id, 'abandon')}>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => action(w.id, 'abandon', w.waiting_on)}
+                    aria-label={`Abandon waiting on ${w.waiting_on}`}
+                  >
                     <X className="h-3 w-3" />
                     Abandon
                   </Button>
