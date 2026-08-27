@@ -4,7 +4,7 @@ import { getDb } from '@/lib/db';
 import { getCurrentUser } from '@/lib/session';
 import { sanitizeString } from '@/lib/validation';
 import { revalidatePath } from 'next/cache';
-import { createHash, randomBytes } from 'node:crypto';
+import { randomBytes } from 'node:crypto';
 
 export interface Webhook {
   id: number;
@@ -65,12 +65,13 @@ export async function createWebhook(input: {
   if (!user?.id) return null;
 
   const finalSlug = await uniqueSlug(input.slug, user.id, db);
+  // The "secret" stored here must be the raw value the caller will use as the
+  // HMAC key, not a hash of it. We return it in the createWebhook response so
+  // the user can save it; from then on, it's only ever used as an HMAC key.
   const secret =
     input.generateSecret === false
       ? null
-      : createHash('sha256')
-          .update(`${user.id}:${input.slug}:${randomBytes(16).toString('hex')}`)
-          .digest('hex');
+      : randomBytes(32).toString('hex');
 
   const result = db
     .prepare(
