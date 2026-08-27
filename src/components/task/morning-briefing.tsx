@@ -126,7 +126,12 @@ export function MorningBriefing({ autoSpeak = false, onClose }: MorningBriefingP
               {speaking ? <Pause className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
             </Button>
             {onClose && (
-              <Button size="sm" variant="ghost" onClick={onClose}>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={onClose}
+                aria-label="Close briefing"
+              >
                 ✕
               </Button>
             )}
