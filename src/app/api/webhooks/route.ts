@@ -12,7 +12,13 @@ export async function GET(request: NextRequest) {
   const m = await applyMiddleware(request, { requireAuth: true });
   if (m.error) return m.error;
   try {
-    return jsonResponse({ webhooks: await listWebhooks() }, 200, m.headers);
+    const hooks = await listWebhooks();
+    // Never echo the raw secret in the listing — only return its presence.
+    const redacted = hooks.map(h => ({
+      ...h,
+      secret: h.secret ? '••••••••' : null,
+    }));
+    return jsonResponse({ webhooks: redacted }, 200, m.headers);
   } catch (e) {
     return errorResponse(e instanceof Error ? e.message : 'Failed', 500);
   }
