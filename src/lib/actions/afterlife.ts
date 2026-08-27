@@ -2,6 +2,7 @@
 
 import { getDb } from '@/lib/db';
 import { getCurrentUser } from '@/lib/session';
+import { revalidatePath } from 'next/cache';
 
 export interface AfterlifeEntry {
   id: number;
@@ -58,32 +59,37 @@ export async function softDeleteTask(taskId: number, reason?: string): Promise<b
       .all(taskId) as Array<{ name: string }>;
     const tags = labels.map(l => l.name).join(',') || null;
 
-    db.prepare(
-      `INSERT INTO task_afterlife
-         (original_task_id, user_id, name, description, priority,
-          completed_count, last_completed_at, created_at, tags, deleted_reason)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    ).run(
-      task.id,
-      user.id,
-      task.name,
-      task.description,
-      task.priority,
-      task.completed,
-      task.completed_at,
-      task.created_at,
-      tags,
-      reason ?? null
-    );
+    const insertResult = db
+      .prepare(
+        `INSERT INTO task_afterlife
+           (original_task_id, user_id, name, description, priority,
+            completed_count, last_completed_at, created_at, tags, deleted_reason)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      )
+      .run(
+        task.id,
+        user.id,
+        task.name,
+        task.description,
+        task.priority,
+        task.completed,
+        task.completed_at,
+        task.created_at,
+        tags,
+        reason ?? null
+      );
 
-    // Bump resurrection counter if same name deleted before
+    // Bump resurrection counter on previous entries with the same name
+    // (so the pattern detector sees total deletions of this task).
     db.prepare(
       `UPDATE task_afterlife
        SET resurrect_count = resurrect_count + 1
-       WHERE user_id = ? AND name = ? AND id != last_insert_rowid()`
-    ).run(user.id, task.name);
+       WHERE user_id = ? AND name = ? AND id != ?`
+    ).run(user.id, task.name, insertResult.lastInsertRowid);
 
     db.prepare('DELETE FROM tasks WHERE id = ?').run(taskId);
+    revalidatePath('/');
+    revalidatePath('/afterlife');
     return true;
   }) as boolean;
 }
