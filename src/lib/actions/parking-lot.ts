@@ -88,7 +88,7 @@ export async function listParkedTasks(): Promise<ParkedTask[]> {
               parked, parked_until, park_reason, cognitive_load, created_at
        FROM tasks
        WHERE user_id = ? AND parked = 1
-       ORDER BY parked_until ASC NULLS LAST, created_at DESC`
+       ORDER BY (parked_until IS NULL) ASC, parked_until ASC, created_at DESC`
     )
     .all(user.id) as ParkedTask[];
 }
