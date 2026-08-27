@@ -91,7 +91,14 @@ export function AntiProcrastination() {
   );
 
   const drop = useCallback(
-    async (taskId: number) => {
+    async (taskId: number, name: string) => {
+      if (
+        !confirm(
+          `Archive "${name}" to the afterlife? It won't appear again unless you dig it out.`
+        )
+      ) {
+        return;
+      }
       try {
         await fetch('/api/afterlife', {
           method: 'POST',
@@ -169,6 +176,7 @@ export function AntiProcrastination() {
                   size="sm"
                   variant="outline"
                   onClick={() => park(sig.task_id)}
+                  aria-label={`Park ${sig.task_name}`}
                 >
                   <ParkingCircle className="h-3 w-3" />
                   Park
@@ -176,12 +184,18 @@ export function AntiProcrastination() {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => drop(sig.task_id)}
+                  onClick={() => drop(sig.task_id, sig.task_name)}
+                  aria-label={`Drop ${sig.task_name}`}
                 >
                   <Trash2 className="h-3 w-3" />
                   Drop
                 </Button>
-                <Button size="sm" variant="ghost" disabled>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  disabled
+                  title={ACTION_LABEL[sig.suggested_action]}
+                >
                   <Icon className="h-3 w-3" />
                   {ACTION_LABEL[sig.suggested_action]}
                 </Button>
