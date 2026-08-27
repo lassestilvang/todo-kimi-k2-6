@@ -61,12 +61,21 @@ export async function saveBriefingPreferences(input: {
   set(merged, 'include_recommendations', input.include_recommendations === undefined ? undefined : input.include_recommendations ? 1 : 0);
 
   if (existing) {
-    const fields = Object.keys(merged)
-      .map(k => `${k} = ?`)
-      .join(', ');
+    const fields = Object.keys(merged);
+    if (fields.length === 0) {
+      // Nothing to change — still bump updated_at so consumers can detect "saved".
+      db.prepare(
+        'UPDATE briefing_preferences SET updated_at = CURRENT_TIMESTAMP WHERE user_id = ?'
+      ).run(user.id);
+      revalidatePath('/settings');
+      return db
+        .prepare('SELECT * FROM briefing_preferences WHERE user_id = ?')
+        .get(user.id) as BriefingPreferences;
+    }
+    const assignments = fields.map(k => `${k} = ?`).join(', ');
     const values = Object.values(merged);
     db.prepare(
-      `UPDATE briefing_preferences SET ${fields}, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?`
+      `UPDATE briefing_preferences SET ${assignments}, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?`
     ).run(...values, user.id);
     revalidatePath('/settings');
     return db
