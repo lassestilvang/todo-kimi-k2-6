@@ -25,35 +25,40 @@ export async function getTaskAnalytics(
 ): Promise<TaskAnalytics> {
   const db = getDb();
 
-  // Build where clause for user filtering
-  const whereClause = userId
-    ? 'WHERE t.created_by = ? OR t.assignee_id = ?'
+  // Build where clause for user filtering. Always parenthesize the OR
+  // so `AND <other condition>` binds inside it and not across.
+  const userWhere = userId
+    ? '(t.created_by = ? OR t.assignee_id = ?)'
     : '';
+  // Two params for every OR-paired filter.
+  const userParams = userId ? [userId, userId] : [];
 
   // Get basic stats
   const totalResult = db
-    .prepare(`SELECT COUNT(*) as count FROM tasks t ${whereClause}`)
-    .get(userId ? [userId, userId] : []) as { count: number };
+    .prepare(
+      `SELECT COUNT(*) as count FROM tasks t ${userWhere ? `WHERE ${userWhere}` : ''}`
+    )
+    .get(...userParams) as { count: number };
   const completedResult = db
     .prepare(
-      `SELECT COUNT(*) as count FROM tasks t WHERE t.completed = 1 ${userId ? `AND (t.created_by = ? OR t.assignee_id = ?)` : ''}`
+      `SELECT COUNT(*) as count FROM tasks t WHERE t.completed = 1 ${userWhere ? `AND ${userWhere}` : ''}`
     )
-    .get(userId ? [userId, userId] : []) as { count: number };
+    .get(...userParams) as { count: number };
   const overdueResult = db
     .prepare(
-      `SELECT COUNT(*) as count FROM tasks t WHERE t.deadline IS NOT NULL AND t.deadline < date('now') AND t.completed = 0 ${userId ? `AND (t.created_by = ? OR t.assignee_id = ?)` : ''}`
+      `SELECT COUNT(*) as count FROM tasks t WHERE t.deadline IS NOT NULL AND t.deadline < date('now') AND t.completed = 0 ${userWhere ? `AND ${userWhere}` : ''}`
     )
-    .get(userId ? [userId, userId] : []) as { count: number };
+    .get(...userParams) as { count: number };
 
   // Get tasks by priority
   const priorityResults = db
     .prepare(
       `
-    SELECT priority, COUNT(*) as count FROM tasks t ${whereClause}
+    SELECT priority, COUNT(*) as count FROM tasks t ${userWhere ? `WHERE ${userWhere}` : ''}
     GROUP BY priority
   `
     )
-    .all(userId ? [userId] : []) as Array<{ priority: string; count: number }>;
+    .all(...userParams) as Array<{ priority: string; count: number }>;
 
   const tasksByPriority = {
     critical: priorityResults.find(r => r.priority === 'critical')?.count ?? 0,
@@ -70,13 +75,13 @@ export async function getTaskAnalytics(
     SELECT l.name as list_name, COUNT(t.id) as count
     FROM tasks t
     LEFT JOIN lists l ON t.list_id = l.id
-    ${whereClause}
+    ${userWhere ? `WHERE ${userWhere}` : ''}
     GROUP BY l.name
     ORDER BY count DESC
     LIMIT 10
   `
     )
-    .all(userId ? [userId, userId] : []) as Array<{
+    .all(...userParams) as Array<{
     list_name: string;
     count: number;
   }>;
@@ -87,13 +92,13 @@ export async function getTaskAnalytics(
       `
     SELECT date(created_at) as date, SUM(CASE WHEN completed = 1 THEN 1 ELSE 0 END) as completed
     FROM tasks t
-    ${userId ? 'WHERE t.created_by = ? OR t.assignee_id = ?' : ''}
-    AND created_at >= date('now', '-12 weeks')
+    ${userWhere ? `WHERE ${userWhere}` : ''}
+    ${userWhere ? 'AND' : 'WHERE'} created_at >= date('now', '-12 weeks')
     GROUP BY date(created_at)
     ORDER BY date
   `
     )
-    .all(userId ? [userId, userId] : []) as Array<{
+    .all(...userParams) as Array<{
     date: string;
     completed: number;
   }>;
