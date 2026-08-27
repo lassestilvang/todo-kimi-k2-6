@@ -52,6 +52,12 @@ export function SavedViews({
 }: SavedViewsProps) {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
+  const handleDelete = (view: CustomView) => {
+    if (confirm(`Delete saved view "${view.name}"?`)) {
+      onDeleteView(view.id);
+    }
+  };
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
@@ -60,7 +66,13 @@ export function SavedViews({
         </span>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger>
-            <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0"
+              aria-label="Save current view"
+              title="Save current view"
+            >
               <Plus className="h-3 w-3" />
             </Button>
           </DialogTrigger>
@@ -96,17 +108,31 @@ export function SavedViews({
                 currentView === view.view_type && 'bg-muted'
               )}
               onClick={() => onViewSelect(view)}
+              role="button"
+              tabIndex={0}
+              aria-label={`Open saved view: ${view.name}`}
+              onKeyDown={e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onViewSelect(view);
+                }
+              }}
             >
               <LayoutDashboard className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm flex-1">{view.name}</span>
               <DropdownMenu>
                 <DropdownMenuTrigger>
-                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0"
+                    aria-label={`Actions for view ${view.name}`}
+                  >
                     <MoreHorizontal className="h-3 w-3" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => onDeleteView(view.id)}>
+                  <DropdownMenuItem onClick={() => handleDelete(view)}>
                     <Trash2 className="h-3 w-3 mr-2" />
                     Delete
                   </DropdownMenuItem>
@@ -143,8 +169,11 @@ function CreateViewForm({ onSubmit, onCancel }: CreateViewFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="text-sm font-medium">View Name</label>
+        <label htmlFor="saved-view-name" className="text-sm font-medium">
+          View Name
+        </label>
         <Input
+          id="saved-view-name"
           value={name}
           onChange={e => setName(e.target.value)}
           placeholder="e.g., Work Tasks"
@@ -152,12 +181,14 @@ function CreateViewForm({ onSubmit, onCancel }: CreateViewFormProps) {
         />
       </div>
       <div>
-        <label className="text-sm font-medium">View Type</label>
+        <label htmlFor="saved-view-type" className="text-sm font-medium">
+          View Type
+        </label>
         <Select
           value={viewType}
           onValueChange={v => setViewType(v as ViewType)}
         >
-          <SelectTrigger>
+          <SelectTrigger id="saved-view-type">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
