@@ -1,7 +1,7 @@
 'use server';
 
 import { getDb } from '@/lib/db';
-import type { TemplateCategory, CreateTemplateCategoryInput } from '@/types';
+import type { TemplateCategory, Template, CreateTemplateCategoryInput } from '@/types';
 
 export async function getTemplateCategories(): Promise<TemplateCategory[]> {
   const db = getDb();
@@ -46,9 +46,9 @@ export async function deleteTemplateCategory(id: number): Promise<void> {
 
 export async function getTemplatesByCategory(
   categoryId: number
-): Promise<TemplateCategory[]> {
+): Promise<Template[]> {
   const db = getDb();
   return db
     .prepare('SELECT * FROM templates WHERE category_id = ? ORDER BY name ASC')
-    .all(categoryId) as TemplateCategory[];
+    .all(categoryId) as Template[];
 }
