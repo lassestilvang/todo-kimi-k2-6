@@ -74,6 +74,9 @@ export function AntiGoals() {
 
   const remove = useCallback(
     async (id: number) => {
+      if (!confirm('Delete this anti-goal? You can re-add it later.')) {
+        return;
+      }
       try {
         await fetch(`/api/anti-goals?id=${id}`, { method: 'DELETE' });
         await load();
@@ -131,10 +134,20 @@ export function AntiGoals() {
                     )}
                   </div>
                   <div className="flex gap-1">
-                    <Button size="sm" variant="ghost" onClick={() => toggle(a)}>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => toggle(a)}
+                      aria-label={a.active ? `Pause ${a.title}` : `Enable ${a.title}`}
+                    >
                       {a.active ? 'pause' : 'enable'}
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={() => remove(a.id)}>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => remove(a.id)}
+                      aria-label={`Delete anti-goal ${a.title}`}
+                    >
                       <Trash2 className="h-3 w-3" />
                     </Button>
                   </div>
