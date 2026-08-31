@@ -45,7 +45,7 @@ jobs:
         run: git secrets --scan
 
       - name: Upload compliance report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v7
         with:
           name: compliance-report
           path: compliance-report.txt
