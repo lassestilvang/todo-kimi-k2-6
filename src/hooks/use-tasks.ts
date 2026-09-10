@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useMemo } from 'react';
+import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import type {
   TaskWithRelations,
   List,
@@ -79,6 +79,9 @@ export function useTasks({
   const [filterLabelIds, setFilterLabelIds] = useState<number[]>([]);
   const [filterPriority, setFilterPriority] = useState<Priority | undefined>();
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Search history from localStorage
+  const [searchHistory, setSearchHistory] = useState<string[]>([]);
 
   // Cache the Fuse instance to avoid recreating it on every render
   // Use dynamic import for SSR compatibility
@@ -213,6 +216,20 @@ export function useTasks({
     ).length;
   }, [tasks]);
 
+  // Load search history from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('taskSearchHistory');
+      if (saved) {
+        try {
+          setSearchHistory(JSON.parse(saved));
+        } catch {
+          // Ignore parse errors
+        }
+      }
+    }
+  }, []);
+
   const handleViewChange = useCallback((view: string, listId?: number) => {
     setCurrentView(view);
     setCurrentListId(listId);
@@ -222,12 +239,26 @@ export function useTasks({
 
   const handleSearch = useCallback((query: string) => {
     setSearchQuery(query);
+
+    // Save to history
+    if (query.trim()) {
+      const newHistory = [
+        query.trim(),
+        ...searchHistory.filter(s => s !== query.trim()),
+      ].slice(0, 10); // Keep last 10 searches
+      setSearchHistory(newHistory);
+      // Persist to localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('taskSearchHistory', JSON.stringify(newHistory));
+      }
+    }
+
     if (query) {
       setCurrentView('search');
     } else {
       setCurrentView('today');
     }
-  }, []);
+  }, [searchHistory]);
 
   const handleFilterPresetChange = useCallback((preset?: FilterPreset) => {
     setCurrentFilterPreset(preset);

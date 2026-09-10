@@ -301,6 +301,30 @@ export function TaskList({
             }
           }
           break;
+        case 'c':
+        case 'C':
+          // Complete focused task
+          if (focusedIndex !== null && focusedIndex < taskArray.length) {
+            const taskId = Number(
+              taskArray[focusedIndex].getAttribute('data-task-id')
+            );
+            const task = visibleTasks.find(t => t.id === taskId);
+            if (task && !task.completed) {
+              handleDelete(task); // Use existing delete handler for now
+            }
+          }
+          break;
+        case 'Enter':
+        case ' ':
+          if (focusedIndex !== null && focusedIndex < taskArray.length) {
+            e.preventDefault();
+            const taskId = Number(
+              taskArray[focusedIndex].getAttribute('data-task-id')
+            );
+            const task = visibleTasks.find(t => t.id === taskId);
+            if (task) onEditTask(task);
+          }
+          break;
         case 'Delete':
         case 'Backspace':
           if (focusedIndex !== null && focusedIndex < taskArray.length) {
@@ -310,6 +334,38 @@ export function TaskList({
             );
             const task = visibleTasks.find(t => t.id === taskId);
             if (task) handleDelete(task);
+          }
+          break;
+        case 'r':
+        case 'R':
+          if (e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+            // Refresh - call onRefresh if available
+            const event = new CustomEvent('refresh-tasks');
+            document.dispatchEvent(event);
+          }
+          break;
+        case 'g':
+        case 'G':
+          if (e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+            // Go to top
+            if (containerRef.current) {
+              containerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+          }
+          break;
+        case 't':
+        case 'T':
+          if (e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+            // Go to bottom
+            if (containerRef.current) {
+              containerRef.current.scrollTo({
+                top: containerRef.current.scrollHeight,
+                behavior: 'smooth',
+              });
+            }
           }
           break;
       }

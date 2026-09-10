@@ -902,6 +902,7 @@ export async function bulkUpdateTasks(
     label_ids?: number[];
     priority?: Priority;
     completed?: boolean;
+    archived?: boolean;
   }
 ): Promise<void> {
   const db = getDb();
@@ -929,6 +930,10 @@ export async function bulkUpdateTasks(
       updates.completed ? 1 : 0,
       updates.completed ? new Date().toISOString() : null
     );
+  }
+  if (updates.archived !== undefined) {
+    fields.push('archived = ?');
+    values.push(updates.archived ? 1 : 0);
   }
 
   if (fields.length > 0) {

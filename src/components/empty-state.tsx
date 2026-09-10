@@ -2,7 +2,7 @@
 
 import { type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, Search, Calendar, CheckCircle2, Inbox } from 'lucide-react';
+import { Plus, Search, Calendar, CheckCircle2, Inbox, Lightbulb, Archive } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface EmptyStateProps {
@@ -115,8 +115,75 @@ export function EmptyUpcomingState({ onAddTask }: { onAddTask?: () => void }) {
     <EmptyState
       icon={icons.calendar}
       title="No upcoming tasks"
-      description="Your schedule is clear for the next week. Time to plan ahead!"
+      description="Your schedule is clear for the next week. Time to plan ahead or add recurring tasks for regular routines!"
       action={onAddTask ? { label: 'Add Task', onClick: onAddTask } : undefined}
     />
+  );
+}
+
+export function EmptyArchivedState({ onUnarchive }: { onUnarchive?: () => void }) {
+  return (
+    <EmptyState
+      icon={<Archive className="h-12 w-12 text-muted-foreground" />}
+      title="No archived tasks"
+      description="Archived tasks are hidden here. Restore tasks when you need them again."
+      action={onUnarchive ? { label: 'Unarchive All', onClick: onUnarchive } : undefined}
+    />
+  );
+}
+
+export function EmptyIdeasState({ onAddTask }: { onAddTask?: () => void }) {
+  return (
+    <EmptyState
+      icon={<Lightbulb className="h-12 w-12 text-muted-foreground" />}
+      title="No ideas yet"
+      description="Ideas and tasks you haven't formalized yet will appear here. Use the AI assistant to generate tasks from your notes!"
+      action={onAddTask ? { label: 'Add Idea', onClick: onAddTask } : undefined}
+    />
+  );
+}
+
+export function EmptyWithTipsState({
+  title,
+  description,
+  tips,
+  onAction,
+}: {
+  title: string;
+  description?: string;
+  tips?: string[];
+  onAction?: () => void;
+}) {
+  return (
+    <div className="flex flex-col items-center justify-center text-center py-16 min-h-[400px]">
+      <div className="mb-4 opacity-70">
+        <Inbox className="h-12 w-12 mx-auto" />
+      </div>
+      <h3 className="text-lg font-semibold mb-2">{title}</h3>
+      {description && (
+        <p className="text-sm text-muted-foreground max-w-md mb-4">
+          {description}
+        </p>
+      )}
+      {tips && tips.length > 0 && (
+        <div className="w-full max-w-md mb-6">
+          <h4 className="text-xs font-medium text-muted-foreground mb-2">Tips:</h4>
+          <ul className="text-xs text-left space-y-1">
+            {tips.map((tip, idx) => (
+              <li key={idx} className="flex items-start gap-2">
+                <span className="text-muted-foreground/50">•</span>
+                <span className="text-muted-foreground">{tip}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {onAction && (
+        <Button onClick={onAction} className="gap-2">
+          <Plus className="h-4 w-4" />
+          Get started
+        </Button>
+      )}
+    </div>
   );
 }

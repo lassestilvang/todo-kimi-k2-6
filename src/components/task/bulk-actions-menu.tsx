@@ -8,6 +8,8 @@ import {
   Trash2,
   TrendingUp,
   ChevronDown,
+  Archive,
+  ArchiveRestore,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -158,6 +160,30 @@ export function BulkActionsMenu({
     }
   };
 
+  const handleArchive = async () => {
+    try {
+      const { bulkUpdateTasks } = await import('@/lib/actions/tasks');
+      await bulkUpdateTasks(selectedTasks, { archived: true });
+      toast.success(`Archived ${selectedTasks.length} task(s)`);
+      onAction();
+      onRefresh();
+    } catch {
+      toast.error('Failed to archive tasks');
+    }
+  };
+
+  const handleUnarchive = async () => {
+    try {
+      const { bulkUpdateTasks } = await import('@/lib/actions/tasks');
+      await bulkUpdateTasks(selectedTasks, { archived: false });
+      toast.success(`Unarchived ${selectedTasks.length} task(s)`);
+      onAction();
+      onRefresh();
+    } catch {
+      toast.error('Failed to unarchive tasks');
+    }
+  };
+
   if (isMoving) {
     return (
       <div className="flex items-center gap-2">
@@ -234,6 +260,15 @@ export function BulkActionsMenu({
         <DropdownMenuItem onClick={() => handlePriorityChange('low')}>
           <TrendingUp className="h-3.5 w-3.5 mr-2 text-blue-500" />
           Set Low
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={handleArchive} className="text-yellow-600">
+          <Archive className="h-3.5 w-3.5 mr-2" />
+          Archive
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={handleUnarchive}>
+          <ArchiveRestore className="h-3.5 w-3.5 mr-2 text-purple-500" />
+          Unarchive
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleDelete} className="text-red-500">
