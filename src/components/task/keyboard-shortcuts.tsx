@@ -573,14 +573,25 @@ export function KeyboardCheatsheet() {
     <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
       {[
         { keys: ['⌘', 'N'], desc: 'New Task' },
-        { keys: ['⌘', '/'], desc: 'Search' },
-        { keys: ['⌘', 'K'], desc: 'Shortcuts' },
-        { keys: ['1'], desc: 'Today View' },
-        { keys: ['2'], desc: 'Kanban View' },
-        { keys: ['3'], desc: 'Analytics' },
-        { keys: ['C'], desc: 'Calendar' },
-        { keys: ['G'], desc: 'Gantt Chart' },
-        { keys: ['M'], desc: 'Eisenhower Matrix' },
+        { keys: ['⌘', '/'], desc: 'Focus Search' },
+        { keys: ['⌘', 'K'], desc: 'Command Palette' },
+        { keys: ['⌘', 'Shift', '?'], desc: 'Show Shortcuts' },
+        { keys: ['1'], desc: 'Today (⌘+1)' },
+        { keys: ['2'], desc: 'Kanban (⌘+2)' },
+        { keys: ['3'], desc: 'Analytics (⌘+3)' },
+        { keys: ['C'], desc: 'Calendar (⌘+C)' },
+        { keys: ['G'], desc: 'Gantt (⌘+Shift+G)' },
+        { keys: ['M'], desc: 'Matrix (⌘+Shift+M)' },
+        { keys: ['A'], desc: 'AI Assistant (⌘+A)' },
+        { keys: ['F'], desc: 'Focus Mode (⌘+Shift+F)' },
+        // Task list shortcuts
+        { keys: ['Enter'], desc: 'Edit Task' },
+        { keys: [' '], desc: 'Complete/Incomplete' },
+        { keys: ['Delete'], desc: 'Delete Task' },
+        { keys: ['c'], desc: 'Complete Focused Task' },
+        { keys: ['r'], desc: 'Refresh (⌘+R)' },
+        { keys: ['g'], desc: 'Scroll Top (⌘+G)' },
+        { keys: ['t'], desc: 'Scroll Bottom (⌘+T)' },
       ].map((item, i) => (
         <div key={i} className="flex items-center gap-2">
           <kbd className="kbd">{item.keys.join('+')}</kbd>
