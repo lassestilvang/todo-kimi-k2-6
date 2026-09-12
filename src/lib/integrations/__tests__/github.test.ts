@@ -629,5 +629,103 @@ describe('GitHubConnector', () => {
       expect(info.full_name).toBe('owner/repo1');
       expect(info.stars).toBe(100);
     });
+
+    it('should throw error when API response fails', async () => {
+      (fetch as any).mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        statusText: 'Not Found',
+      });
+
+      await expect(
+        connector.getRepositoryInfo('owner', 'nonexistent')
+      ).rejects.toThrow('GitHub API error');
+    });
+  });
+
+  describe('getPullRequests', () => {
+    it('should fetch pull requests from repositories', async () => {
+      const mockPR = {
+        id: 123,
+        title: 'Feature PR',
+        body: 'Implementation of feature',
+        state: 'open',
+        labels: [],
+        html_url: 'https://github.com/owner/repo/pull/1',
+        created_at: '2024-01-10T10:00:00Z',
+        updated_at: '2024-01-10T12:00:00Z',
+        assignee: { login: 'developer' },
+      };
+
+      (fetch as any).mockResolvedValueOnce({
+        ok: true,
+        json: async () => [mockPR],
+      });
+
+      const prs = await connector.getPullRequests();
+
+      expect(prs).toHaveLength(1);
+      expect(prs[0].title).toBe('Feature PR');
+      expect(prs[0].status).toBe('open');
+    });
+
+    it('should skip invalid repository formats', async () => {
+      const invalidRepoConnector = new GitHubConnector({
+        id: 'invalid',
+        type: 'github',
+        name: 'Invalid Repo',
+        enabled: true,
+        apiToken: 'token',
+        repositories: ['invalid-repo-format'],
+        syncDirection: 'import',
+      });
+
+      const results = await invalidRepoConnector.getPullRequests();
+      expect(results).toEqual([]);
+    });
+
+    it('should continue on API failure for one repo', async () => {
+      // First call fails (for repo1), second succeeds (for repo2)
+      (fetch as any)
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 500,
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => [],
+        });
+
+      const multiRepoConnector = new GitHubConnector({
+        id: 'multi-github',
+        type: 'github',
+        name: 'Multi Repo',
+        enabled: true,
+        apiToken: 'token',
+        repositories: ['owner/repo1', 'owner/repo2'],
+        syncDirection: 'import',
+      });
+
+      // Should not throw, just skip failed repos
+      const results = await multiRepoConnector.getPullRequests();
+      expect(Array.isArray(results)).toBe(true);
+    });
+
+    it('should support filtering by state and since', async () => {
+      (fetch as any).mockResolvedValueOnce({
+        ok: true,
+        json: async () => [],
+      });
+
+      await connector.getPullRequests({
+        state: 'closed',
+        since: new Date('2024-01-01'),
+      });
+
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining('state=closed'),
+        expect.any(Object)
+      );
+    });
   });
 });
