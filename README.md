@@ -1,6 +1,8 @@
 # TaskFlow - Task Management Application
 
-[![Auditing](https://github.com/lasse/todo-kimi-k2-6/actions/workflows/test.yaml/badge.svg)](https://github.com/lasse/todo-kimi-k2-6/actions/workflows/test.yaml)
+[![CI](https://github.com/lassestilvang/todo-kimi-k2-6/actions/workflows/ci.yml/badge.svg)](https://github.com/lassestilvang/todo-kimi-k2-6/actions/workflows/ci.yml)
+[![Security](https://github.com/lassestilvang/todo-kimi-k2-6/actions/workflows/ci.yml/badge.svg?label=Security)](https://github.com/lassestilvang/todo-kimi-k2-6/security)
+[![npm audit](https://img.shields.io/badge/npm%20audit-0%20vulnerabilities-brightgreen)](https://github.com/lassestilvang/todo-kimi-k2-6/security)
 
 A modern, full-featured task management application built with Next.js, featuring AI-powered task parsing, collaboration tools, and advanced analytics.
 
@@ -294,6 +296,31 @@ src/
 | `/api/voice/commands`      | POST                      | Voice command processing    |
 | `/api/ai/career-paths`     | GET                       | Career path recommendations |
 | `/api/ai/skill-extract`    | POST                      | Extract skills from tasks   |
+
+## Security
+
+This project follows security best practices and is regularly scanned for vulnerabilities.
+
+### Security Status
+
+- ✅ **npm audit**: 0 vulnerabilities
+- ✅ **CI Security**: npm audit, gitleaks, CodeQL, Dependency Review
+- ✅ **Security Headers**: Full CSP, HSTS, COOP, COEP
+- ✅ **API Protection**: Rate limiting, CSRF, request size limits
+
+### Reporting Security Issues
+
+If you discover a security vulnerability, please report it via:
+- Email: security@taskflow.app
+- GitHub: [Security Advisory](https://github.com/lassestilvang/todo-kimi-k2-6/security/advisories)
+
+### Security Documentation
+
+See [SECURITY.md](./SECURITY.md) for detailed information on:
+- Current security audit results
+- Security headers configuration
+- CI security checks
+- Production deployment checklist
 
 ## License
 
