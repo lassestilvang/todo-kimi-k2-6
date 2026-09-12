@@ -196,20 +196,39 @@ export function getCSPNonce(): string | undefined {
 
 /**
  * Generate CSP headers for security
+ * Note: 'unsafe-inline' is kept for script-src due to dynamic imports,
+ * but consider using CSP nonces for production deployments
  */
 export function getCSPHeaders(): Record<string, string> {
   const nonce = getCSPNonce();
+
+  // Build CSP directives - configured for compatibility with React/Next.js
   const directives = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval'" +
-      (nonce ? ` 'nonce-${nonce}'` : ''),
-    "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: https:",
-    "font-src 'self' data:",
-    "connect-src 'self'",
+    // Script sources - essential for React hot reload and dynamic imports
+    // NOTE: For production, implement CSP nonces instead of unsafe-inline
+    `script-src 'self' 'unsafe-inline'${
+      nonce ? ` 'nonce-${nonce}'` : ''
+    }`,
+    // Style sources
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    // Image sources
+    "img-src 'self' data: blob: https: *.googleapis.com *.gstatic.com",
+    // Font sources
+    "font-src 'self' https://fonts.gstatic.com data:",
+    // Connect sources (fetch, WebSocket, etc.)
+    "connect-src 'self' https: wss: ws: *.googleapis.com",
+    // Frame settings
     "frame-ancestors 'none'",
+    // Form actions
     "base-uri 'self'",
     "form-action 'self'",
+    // Object/embed - deny for security
+    "object-src 'none'",
+    // Worker sources
+    "worker-src 'self' blob:",
+    // Manifest
+    "manifest-src 'self'",
   ];
 
   return {
@@ -218,6 +237,9 @@ export function getCSPHeaders(): Record<string, string> {
     'X-Frame-Options': 'DENY',
     'X-XSS-Protection': '1; mode=block',
     'Referrer-Policy': 'strict-origin-when-cross-origin',
+    'Cross-Origin-Embedder-Policy': 'require-corp',
+    'Cross-Origin-Opener-Policy': 'same-origin',
+    'Cross-Origin-Resource-Policy': 'same-origin',
   };
 }
 

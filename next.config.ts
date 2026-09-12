@@ -84,14 +84,13 @@ const nextConfig: NextConfig = withPWA(pwaConfig)({
     formats: ['image/avif', 'image/webp'],
   },
   async headers() {
+    // Environment-aware CORS origin for security
+    const corsOrigin = process.env['NEXT_PUBLIC_APP_URL'] || '';
+
     return [
       {
         source: '/:path*',
         headers: [
-          {
-            key: 'Cache-Control',
-            value: 'no-store, max-age=0',
-          },
           // Security headers
           {
             key: 'X-Content-Type-Options',
@@ -111,7 +110,7 @@ const nextConfig: NextConfig = withPWA(pwaConfig)({
           },
           {
             key: 'Permissions-Policy',
-            value: 'geolocation=(), microphone=(), camera=()',
+            value: 'geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()',
           },
           {
             key: 'X-Permitted-Cross-Domain-Policies',
@@ -119,40 +118,85 @@ const nextConfig: NextConfig = withPWA(pwaConfig)({
           },
           {
             key: 'Strict-Transport-Security',
-            value: 'max-age=31536000; includeSubDomains',
+            value: 'max-age=31536000; includeSubDomains; preload',
           },
-          // Content Security Policy
+          // Content Security Policy - production ready
           {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com",
+              // Script sources - use strict CSP, avoid unsafe-eval
+              "script-src 'self' 'unsafe-inline'",
+              // Allow CDN for third-party libraries (documented sources)
+              "script-src-elem 'self' https://cdn.jsdelivr.net https://unpkg.com",
+              // Style sources
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+              // Font sources
               "font-src 'self' https://fonts.gstatic.com data:",
-              "img-src 'self' data: blob: https:",
-              "connect-src 'self' https: wss: ws:",
+              // Image sources
+              "img-src 'self' data: blob: https:*.googleapis.com https://*.gstatic.com",
+              // Connect sources (fetch, XMLHttpRequest)
+              "connect-src 'self' https: wss: ws: https://*.googleapis.com",
+              // Frame/ancestors
               "frame-ancestors 'none'",
+              // Form actions
               "base-uri 'self'",
               "form-action 'self'",
+              // Object/embed
               "object-src 'none'",
+              // Worker sources
+              "worker-src 'self' blob:",
+              // Child sources
+              "child-src 'self' blob:",
+              // Media sources
+              "media-src 'self'",
+              // Manifest
+              "manifest-src 'self'",
             ].join('; '),
+          },
+          // Additional security headers
+          {
+            key: 'Cross-Origin-Embedder-Policy',
+            value: 'require-corp',
+          },
+          {
+            key: 'Cross-Origin-Opener-Policy',
+            value: 'same-origin',
+          },
+          {
+            key: 'Cross-Origin-Resource-Policy',
+            value: 'same-origin',
           },
         ],
       },
       {
+        // API routes with dynamic CORS
         source: '/api/:path*',
         headers: [
-          {
-            key: 'Access-Control-Allow-Origin',
-            value: process.env['NEXT_PUBLIC_APP_URL'] || '*',
-          },
+          // Only set CORS if APP_URL is configured (production)
+          ...(corsOrigin
+            ? [
+                {
+                  key: 'Access-Control-Allow-Origin',
+                  value: corsOrigin,
+                },
+              ]
+            : []),
           {
             key: 'Access-Control-Allow-Methods',
             value: 'GET, POST, PUT, DELETE, OPTIONS',
           },
           {
             key: 'Access-Control-Allow-Headers',
-            value: 'Content-Type, Authorization',
+            value: 'Content-Type, Authorization, X-CSRF-Token, X-Requested-With',
+          },
+          {
+            key: 'Access-Control-Allow-Credentials',
+            value: 'true',
+          },
+          {
+            key: 'Access-Control-Max-Age',
+            value: '86400',
           },
         ],
       },
