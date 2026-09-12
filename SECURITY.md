@@ -35,9 +35,9 @@ found 0 vulnerabilities
 | @sentry/nextjs | 9.47.1      | 10.70.0     | Dependency update |
 | dompurify      | 3.4.11      | 3.4.13      | Moderate          |
 
-### Known Considerations
+## Known Considerations
 
-#### Nodemailer (peer dependency conflict)
+### Nodemailer (peer dependency conflict)
 
 **Status**: Updated but with peer dependency warning
 
@@ -52,7 +52,7 @@ found 0 vulnerabilities
 - next-auth's nodemailer peer dependency (v7.x) is not actually used at runtime
 - Tests pass with the updated version
 
-#### Vitest/Test Framework Update
+### Vitest/Test Framework Update
 
 **Status**: Updated to v4.1.11, downgraded from v5
 
@@ -61,11 +61,21 @@ found 0 vulnerabilities
 - Vitest v4.1.11 has all security patches plus better compatibility
 - All 236 test files pass with the updated version
 
+### CSP Configuration
+
+**Current**: `unsafe-inline` and `unsafe-eval` are kept for React/Next.js compatibility
+
+**For Production Hardening**:
+1. Set `CSP_NONCE` environment variable
+2. Use CSP nonces instead of `unsafe-inline` for inline scripts
+3. Consider migrating to React Server Components to reduce `unsafe-eval` need
+4. Implement strict CSP in staging, then production after testing
+
 ## Contributing to Security
 
 ### Automated Security Checks
 
-The project runs `npm audit --audit-level moderate` in CI. For additional security scanning:
+The project runs comprehensive security checks in CI:
 
 ```bash
 # Check for vulnerabilities
@@ -81,6 +91,12 @@ npm audit fix --force
 npm audit --json | jq .
 ```
 
+CI includes:
+- npm audit (fails on high/critical)
+- gitleaks secret scanning
+- CodeQL security analysis
+- Dependency Review
+
 ### Manual Security Practices
 
 1. **Email Configuration**: SMTP settings are read from environment variables
@@ -91,49 +107,66 @@ npm audit --json | jq .
 
 ## Security Headers Configuration
 
-The application uses Next.js built-in security headers. Recommended additions for production:
+The application implements comprehensive security headers:
 
-```javascript
-// next.config.js
-module.exports = {
-  async headers() {
-    return [
-      {
-        source: '/(.*)',
-        headers: [
-          {
-            key: 'X-DNS-Prefetch-Control',
-            value: 'on'
-          },
-          {
-            key: 'X-Frame-Options',
-            value: 'SAMEORIGIN'
-          },
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff'
-          },
-          {
-            key: 'Referrer-Policy',
-            value: 'strict-origin-when-cross-origin'
-          },
-          {
-            key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'"
-          }
-        ]
-      }
-    ]
-  }
-}
+| Header | Value |
+|--------|-------|
+| X-Content-Type-Options | nosniff |
+| X-Frame-Options | DENY |
+| X-XSS-Protection | 1; mode=block |
+| Strict-Transport-Security | max-age=31536000; includeSubDomains; preload |
+| Referrer-Policy | strict-origin-when-cross-origin |
+| Permissions-Policy | geolocation=(), microphone=(), camera=() |
+| Cross-Origin-Embedder-Policy | require-corp |
+| Cross-Origin-Opener-Policy | same-origin |
+| Cross-Origin-Resource-Policy | same-origin |
+| Content-Security-Policy | Comprehensive directives for all sources |
+
+### CSP Nonce Configuration (Production)
+
+For enhanced CSP security, set the `CSP_NONCE` environment variable:
+
+```bash
+# In production (Vercel environment variables)
+CSP_NONCE=<random-32-byte-base64-string>
 ```
+
+## Production Deployment Checklist
+
+Before deploying to production:
+
+- [ ] Set `NEXTAUTH_SECRET` to a strong random value (32+ chars)
+- [ ] Configure `NEXTAUTH_URL` with your production domain
+- [ ] Set up SMTP credentials (SMTP_HOST, SMTP_USER, SMTP_PASS)
+- [ ] Configure Google OAuth client ID/secret
+- [ ] Set `CSP_NONCE` for stricter CSP (optional but recommended)
+- [ ] Enable Redis for production rate limiting (`REDIS_URL`)
+- [ ] Configure Sentry DSN for error monitoring
+- [ ] Review and merge all dependabot security PRs
+- [ ] Run final `npm run test` and `npm run build`
+- [ ] Check that `npm audit` shows 0 vulnerabilities
+
+## API Security
+
+All API routes are protected by:
+
+1. **Rate Limiting**: Dynamic limits based on endpoint type
+   - API: 100 requests/min
+   - Auth: 10 requests/15min
+   - AI: 20 requests/min
+
+2. **CSRF Protection**: HTTP-only cookie token validation
+
+3. **Request Size Limits**: 1MB max payload
+
+4. **Authentication**: JWT token validation for protected routes
 
 ## Reporting a Vulnerability
 
 If you discover a security vulnerability, please report it by:
 
-1. ** emailing security@taskflow.app**
-2. **Creating a private security advisory** on GitHub (https://github.com/lassestilvang/todo-kimi-k2-6/security/advisories)
+1. **Emailing security@taskflow.app**
+2. **Creating a private security advisory** on GitHub
 
 We aim to respond within **48 hours** and will work with you to validate and fix the issue before public disclosure.
 
@@ -145,7 +178,7 @@ We aim to respond within **48 hours** and will work with you to validate and fix
 
 ### What we don't accept
 
-- ❌ DoS attacks (not in scope - contact infrastructure provider)
+- ❌ DoS attacks (contact infrastructure provider)
 - ❌ Social engineering attacks
 - ❌ Physical security attacks
 - ❌ Issues already reported in public issues

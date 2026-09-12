@@ -11,6 +11,7 @@ updates:
       day: 'monday'
       time: '06:00'
     open-pull-requests-limit: 10
+    # Security updates are enabled by default - PRs for high/critical vulns
     groups:
       # Group major version updates for testing
       production-dependencies:
@@ -31,6 +32,10 @@ updates:
     labels:
       - 'dependencies'
       - 'automated-pr'
+    # Automatically merge non-breaking security updates
+    commit-message:
+      prefix: 'chore'
+      include: 'scope'
 
   # GitHub Actions
   - package-ecosystem: 'github-actions'
