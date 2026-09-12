@@ -1,0 +1,25 @@
+# Security Policy and Contact Information
+#
+# To report a security vulnerability, please:
+# - Email: security@taskflow.app
+# - Visit: https://github.com/lassestilvang/todo-kimi-k2-6/security
+#
+# This project follows responsible disclosure.
+# We aim to respond within 48 hours.
+#
+# Affects:
+#   - All API endpoints (/api/*)
+#   - Authentication flow
+#   - Shared task links
+#
+# Preferred vulnerability reporting:
+#   - GitHub Security Advisory (private)
+#   - Email (PGP key available on request)
+#
+# Additional security resources:
+#   - README: https://github.com/lassestilvang/todo-kimi-k2-6#security
+#   - Full documentation: https://github.com/lassestilvang/todo-kimi-k2-6/SECURITY.md
+
+Contact: security@taskflow.app
+Policy: https://github.com/lassestilvang/todo-kimi-k2-6/security
+Affects: https://taskflow.app

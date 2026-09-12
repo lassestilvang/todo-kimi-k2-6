@@ -1,0 +1,20 @@
+# robots.txt for TaskFlow
+# https://www.google.com/webmasters/control-crawl-index/docs/robots-meta-tag
+
+User-agent: *
+Allow: /
+Allow: /api/tasks
+Allow: /share
+Crawl-delay: 10
+
+# Security policy location
+/well-known/security.txt
+
+# Sitemap
+Sitemap: https://taskflow.app/sitemap.xml
+
+# Deny access to sensitive paths
+Disallow: /api/auth/
+Disallow: /api/ai/
+Disallow: /login
+Disallow: /register
