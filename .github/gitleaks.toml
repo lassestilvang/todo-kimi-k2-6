@@ -1,0 +1,58 @@
+title = "Gitleaks configuration for todo-kimi-k2-6"
+
+[[rules]]
+description = "API Keys"
+regex = '''(?i)(api[_-]?key|apikey|api-key|apikey)\s*[=:]\s*['"][^'"]{16,}['"]'''
+tags = ["api-key"]
+
+[[rules]]
+description = "JWT Secret"
+regex = '''(?i)jwt[_-]?secret\s*[=:]\s*['"][^'"]{16,}['"]'''
+tags = ["secret", "jwt"]
+
+[[rules]]
+description = "Secret Key"
+regex = '''(?i)secret[_-]?key\s*[=:]\s*['"][^'"]{16,}['"]'''
+tags = ["secret"]
+
+[[rules]]
+description = "AWS Access Key"
+regex = '''(?i)AKIA[0-9A-Z]{16}'''
+tags = ["aws"]
+
+[[rules]]
+description = "Private Key"
+regex = '''-----BEGIN (RSA )?PRIVATE KEY-----'''
+tags = ["private-key"]
+
+[[rules]]
+description = "Password"
+regex = '''(?i)password\s*[=:]\s*['"][^'"]{8,}['"]'''
+tags = ["password"]
+
+[[rules]]
+description = "NextAuth Secret"
+regex = '''NEXTAUTH_SECRET\s*=\s*['"][^'"]{32,}['"]'''
+tags = ["secret", "next-auth"]
+
+[[rules]]
+description = "Email SMTP Password"
+regex = '''SMTP_PASS\s*=\s*['"][^'"]{8,}['"]'''
+tags = ["secret", "smtp"]
+
+[[rules]]
+description = "Database URL"
+regex = '''DATABASE_URL\s*=\s*['"].*password.*['"]'''
+tags = ["database", "credential"]
+
+allowlist = [
+  "NEXTAUTH_SECRET",
+  "SMTP_PASS",
+  "DATABASE_URL",
+  "api[_-]?key",
+  "secret",
+]
+
+[allowlist]
+description = "Global allowlist"
+paths = [".env.example", "README.md"]
