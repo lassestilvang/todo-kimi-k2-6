@@ -41,6 +41,7 @@ import {
   FileText,
   Compass,
   Bell,
+  Sparkles,
   type LucideIcon,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
@@ -109,6 +110,7 @@ const views: ViewItem[] = [
   { id: 'analytics', name: 'Analytics', icon: BarChart3 },
   { id: 'analytics_enhanced', name: 'Enhanced Analytics', icon: Brain },
   { id: 'investment', name: 'Technology Portfolio', icon: TrendingUp },
+  { id: 'command_center', name: 'Command Center', icon: Sparkles },
   { separator: true, label: 'Labs' },
   { id: 'energy', name: 'Energy Scheduler', icon: Zap },
   { id: 'knowledge-graph', name: 'Knowledge Graph', icon: Network },

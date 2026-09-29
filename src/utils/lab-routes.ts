@@ -28,6 +28,7 @@ export const LABS_ROUTES: Record<string, string> = {
   'social_feed': '/labs/social-feed',
   'gamification': '/labs/gamification',
   'marketplace': '/labs/marketplace',
+  'command_center': '/command-center',
 };
 
 /**

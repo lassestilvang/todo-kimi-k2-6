@@ -215,7 +215,7 @@ describe('social-feed actions', () => {
     it('runs without throwing', async () => {
       const { autoPostTaskCompletion } = await import('@/lib/actions/social-feed');
       await expect(
-        autoPostTaskCompletion(1, 'Test Task')
+        autoPostTaskCompletion('Test Task', 'medium')
       ).resolves.not.toThrow();
     });
   });
@@ -224,7 +224,7 @@ describe('social-feed actions', () => {
     it('runs without throwing', async () => {
       const { autoPostMilestone } = await import('@/lib/actions/social-feed');
       await expect(
-        autoPostMilestone('100 tasks completed')
+        autoPostMilestone('100 tasks completed', 100)
       ).resolves.not.toThrow();
     });
   });
