@@ -278,7 +278,8 @@ export async function extractActionItemsFromText(notes: string): Promise<Extract
 
     for (const pattern of actionPatterns) {
       if (pattern instanceof RegExp) {
-        const regex = new RegExp(pattern.source, pattern.flags);
+        const flags = pattern.flags.includes('g') ? pattern.flags : pattern.flags + 'g';
+        const regex = new RegExp(pattern.source, flags);
         const matches = line.matchAll(regex);
 
         for (const match of matches) {

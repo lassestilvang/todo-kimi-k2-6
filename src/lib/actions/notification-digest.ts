@@ -397,7 +397,7 @@ export async function generateWeeklySummary(
       `SELECT AVG(actual_time) as avg_time FROM tasks
        WHERE user_id = ? AND completed = 1 AND actual_time IS NOT NULL`
     )
-    .get(userId) as { avg_time: number | null };
+    .get(userId) as { avg_time: number | null } | undefined;
 
   // Risk incidents this week
   const riskIncidents = db
@@ -420,7 +420,7 @@ export async function generateWeeklySummary(
     period_end: weekEnd.toISOString().split('T')[0],
     tasks_completed: completed.count,
     tasks_created: created.count,
-    average_completion_time: avgTime.avg_time || 0,
+    average_completion_time: avgTime?.avg_time || 0,
     streak,
     risk_incidents: riskIncidents.count,
     productivity_score: Math.round(productivityScore),
