@@ -345,7 +345,7 @@ export async function addEvolutionStep(
     .prepare(
       `
     INSERT INTO evolution_steps (entry_id, version, content, changes, confidence_score, created_at, created_by)
-    VALUES (?, ?, ?, ?, ?, datetime('now'), ?)
+    VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?)
   `
     )
     .run(entryId, versionCount.count + 1, content, changes, 0.9, userId);
@@ -353,7 +353,7 @@ export async function addEvolutionStep(
   // Update entry
   db.prepare(
     `
-    UPDATE knowledge_entries SET updated_at = datetime('now'), confidence = confidence + 0.1
+    UPDATE knowledge_entries SET updated_at = CURRENT_TIMESTAMP, confidence = confidence + 0.1
     WHERE id = ?
   `
   ).run(entryId);
@@ -430,7 +430,7 @@ export async function getEvolutionMetrics(userId: number): Promise<{
     .prepare(
       'SELECT COUNT(*) as count FROM knowledge_entries WHERE user_id = ?'
     )
-    .get(userId) as { count: number };
+    .get(userId) as { count: number } | undefined;
 
   const entriesWithEvolution = db
     .prepare(
@@ -441,31 +441,34 @@ export async function getEvolutionMetrics(userId: number): Promise<{
     WHERE ke.user_id = ?
   `
     )
-    .get(userId) as { count: number };
+    .get(userId) as { count: number } | undefined;
 
   const totalEvolutions = db
-    .prepare('SELECT COUNT(*) as count FROM evolution_steps')
-    .get() as { count: number };
+    .prepare('SELECT COUNT(*) as count FROM evolution_steps WHERE created_by = ?')
+    .get(userId) as { count: number } | undefined;
 
   const latestEvolution = db
     .prepare(
       `
     SELECT MAX(created_at) as latest FROM evolution_steps
+    WHERE created_by = ?
   `
     )
-    .get() as { latest: string };
+    .get(userId) as { latest: string | null } | undefined;
+
+  const entriesCount = entriesWithEvolution?.count ?? 0;
+  const totalEvolutionsCount = totalEvolutions?.count ?? 0;
 
   const avgVersionsPerEntry =
-    entriesWithEvolution.count > 0
-      ? Math.round((totalEvolutions.count / entriesWithEvolution.count) * 10) /
-        10
+    entriesCount > 0
+      ? Math.round((totalEvolutionsCount / entriesCount) * 10) / 10
       : 0;
 
   return {
-    totalEntries: totalEntries.count,
-    entriesWithEvolution: entriesWithEvolution.count,
+    totalEntries: totalEntries?.count ?? 0,
+    entriesWithEvolution: entriesCount,
     avgVersionsPerEntry,
-    totalEvolutions: totalEvolutions.count,
-    latestEvolution: latestEvolution.latest,
+    totalEvolutions: totalEvolutionsCount,
+    latestEvolution: latestEvolution?.latest ?? null,
   };
 }

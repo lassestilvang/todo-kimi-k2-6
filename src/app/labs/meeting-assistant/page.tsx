@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { MeetingRecorder } from '@/components/task/meeting-recorder';
+import { MeetingNotesManager } from '@/components/task/meeting-notes-manager';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -13,6 +14,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Check, RefreshCw, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -99,11 +101,18 @@ export default function MeetingAssistantPage() {
           Meeting Assistant
         </h1>
         <p className="text-muted-foreground mt-1">
-          Transcribe meetings and extract action items automatically
+          Transcribe meetings, extract action items, and manage meeting notes
         </p>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
+      <Tabs defaultValue="quick" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="quick">Quick Extract</TabsTrigger>
+          <TabsTrigger value="manage">Manage Notes</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="quick">
+          <div className="grid lg:grid-cols-2 gap-6">
         {/* Input Section */}
         <div className="space-y-4">
           <Card>
@@ -259,6 +268,12 @@ export default function MeetingAssistantPage() {
           </Card>
         </div>
       </div>
+        </TabsContent>
+
+        <TabsContent value="manage">
+          <MeetingNotesManager />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

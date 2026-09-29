@@ -19,6 +19,15 @@ export const LABS_ROUTES: Record<string, string> = {
   'project_planning': '/labs/project-planning',
   'meeting_assistant': '/labs/meeting-assistant',
   'stories': '/labs/stories',
+  // New 2026 features
+  'risk_assessment': '/labs/risk-assessment',
+  'career_compass_2': '/labs/career-compass-2',
+  'notifications': '/labs/notification-digest',
+  'wiki': '/labs/project-wiki',
+  'voice_control': '/labs/voice-control',
+  'social_feed': '/labs/social-feed',
+  'gamification': '/labs/gamification',
+  'marketplace': '/labs/marketplace',
 };
 
 /**

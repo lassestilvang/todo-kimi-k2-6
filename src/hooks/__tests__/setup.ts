@@ -3,6 +3,27 @@ import '@testing-library/jest-dom';
 import { createMockDatabase } from '@/lib/db/mock-driver';
 import { vi } from 'vitest';
 
+// Mock localStorage for React hooks that use it
+const localStorageMock = (() => {
+  let store: Record<string, string> = {};
+  return {
+    getItem: (key: string) => store[key] || null,
+    setItem: (key: string, value: string) => {
+      store[key] = value;
+    },
+    removeItem: (key: string) => {
+      delete store[key];
+    },
+    clear: () => {
+      store = {};
+    },
+  };
+})();
+Object.defineProperty(window, 'localStorage', {
+  writable: true,
+  value: localStorageMock,
+});
+
 // Mock window.matchMedia for use-mobile tests
 Object.defineProperty(window, 'matchMedia', {
   writable: true,

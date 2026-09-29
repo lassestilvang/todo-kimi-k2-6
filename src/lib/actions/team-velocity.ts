@@ -325,10 +325,11 @@ export async function getTeamActivity(
   const commentCounts = db
     .prepare(
       `
-    SELECT date(created_at) as date, COUNT(*) as comments
-    FROM task_comments
-    WHERE workspace_id = ?
-    GROUP BY date(created_at)
+    SELECT date(tc.created_at) as date, COUNT(*) as comments
+    FROM task_comments tc
+    JOIN tasks t ON tc.task_id = t.id
+    WHERE t.workspace_id = ?
+    GROUP BY date(tc.created_at)
   `
     )
     .all(workspaceId) as CommentCountRow[];

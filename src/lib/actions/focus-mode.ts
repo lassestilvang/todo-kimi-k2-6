@@ -111,13 +111,13 @@ export async function updatePomodoroTimer(
     remainingSeconds?: number;
     status?: 'paused' | 'completed' | 'cancelled';
   }
-): Promise<PomodoroTimer | null> {
+): Promise<PomodoroTimer | undefined> {
   const db = getDb();
 
   const timer = db
     .prepare('SELECT * FROM pomodoro_timers WHERE id = ? AND user_id = ?')
     .get(timerId, userId) as PomodoroTimer | undefined;
-  if (!timer) return null;
+  if (!timer) return undefined;
 
   const remainingSeconds = updates.remainingSeconds ?? timer.remaining_seconds;
   const status = updates.status || timer.status;
@@ -260,13 +260,13 @@ export async function startFocusSession(
 export async function completeFocusSession(
   sessionId: number,
   userId: number
-): Promise<FocusSession | null> {
+): Promise<FocusSession | undefined> {
   const db = getDb();
 
   const session = db
     .prepare('SELECT * FROM focus_sessions WHERE id = ? AND user_id = ?')
     .get(sessionId, userId) as FocusSession | undefined;
-  if (!session || session.status !== 'active') return null;
+  if (!session || session.status !== 'active') return undefined;
 
   db.prepare(
     `
@@ -492,7 +492,7 @@ export async function generateSmartDistractionBlocks(
     if (!matchesKeyword || d.confidence > 0.7) {
       suggestions.push({
         website: d.pattern,
-        category: d.category,
+        category: d.category.charAt(0).toUpperCase() + d.category.slice(1),
         reason: matchesKeyword
           ? 'Related to current tasks'
           : 'High distraction category',

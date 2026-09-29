@@ -1353,7 +1353,7 @@ export async function completeTasks(
       .prepare(
         `UPDATE tasks SET completed = 1, completed_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders}) AND user_id = ?`
       )
-      .run(...ids, now, userId);
+      .run(now, ...ids, userId);
     const count = result.changes || 0;
     for (const id of ids) {
       logTaskAction(id, 'completed', 'Batch completed');

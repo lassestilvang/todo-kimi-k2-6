@@ -57,7 +57,6 @@ export function createMockDatabase(): MockDatabase {
       'custom_views',
       'habit_streaks',
       'habit_completions',
-      'activity_logs',
       'recurring_exceptions',
       'custom_view_shares',
       'goal_milestones',
@@ -67,6 +66,13 @@ export function createMockDatabase(): MockDatabase {
       'migrations',
       'workspaces',
       'workspace_users',
+      // Focus mode tables
+      'pomodoro_timers',
+      'distraction_blocks',
+      'focus_sessions',
+      'focus_session_history',
+      // Activity and audit tables
+      'activity_logs',
       // Knowledge graph tables
       'task_connections',
       'decision_entries',
@@ -89,6 +95,39 @@ export function createMockDatabase(): MockDatabase {
       'external_tasks',
       'decision_shadows',
       'socket_connections',
+      // Notification digest tables
+      'notification_digests',
+      'notification_preferences',
+      // Risk assessment tables
+      'risk_assessments',
+      'risk_alerts',
+      'ai_confidence_scores',
+      // Conference integration tables
+      'conference_sync',
+      // Meeting assistant tables
+      'meeting_notes',
+      'action_items',
+      // Wiki tables
+      'wiki_pages',
+      'wiki_revisions',
+      'wiki_comments',
+      'wiki_task_links',
+      // Voice control tables
+      'voice_commands',
+      // Social feed tables
+      'feed_posts',
+      'feed_likes',
+      'feed_comments',
+      'user_follows',
+      // Gamification tables
+      'achievements',
+      'user_xp',
+      'xp_activity',
+      'daily_challenges',
+      // Task marketplace tables
+      'task_marketplace',
+      'xp_transfers',
+      'skill_marketplace_listings',
     ];
     schemaTables.forEach(name => tables.set(name, new Map()));
 
@@ -161,18 +200,37 @@ export function createMockDatabase(): MockDatabase {
               id: explicitId ?? lastInsertId,
             };
 
-            // Set default values for columns not in INSERT statement
-            // These defaults match the actual database schema
-            if (tableName === 'tasks') {
-              if (!columns.includes('completed')) {
-                record.completed = 0;
+            // Apply default values for common columns with DEFAULT clauses
+            // Columns not in the INSERT statement should get their defaults
+            const tableDefaults: Record<string, Record<string, number | string | null>> = {
+              task_afterlife: {
+                completed_count: 0,
+                resurrect_count: 0,
+                blocked_count: 0,
+                confidence: 0.5,
+                reschedule_count: 0,
+                evidence_count: 1,
+                user_id: null,
+              },
+              tasks: {
+                completed: 0,
+                user_id: null,
+                archived: 0,
+                cognitive_load: 'medium',
+                parked: 0,
+                reschedule_count: 0,
+                deleted: 0,
+              },
+              lists: {
+                user_id: null,
+              },
+            };
+
+            const defaults = tableDefaults[tableName] || {};
+            for (const col of Object.keys(defaults)) {
+              if (!columns.includes(col) && !(col in record)) {
+                record[col] = defaults[col];
               }
-              if (!columns.includes('user_id')) {
-                record.user_id = null;
-              }
-            }
-            if (tableName === 'lists' && !columns.includes('user_id')) {
-              record.user_id = null;
             }
 
             // Parse VALUES clause to handle both parameters and literals
@@ -493,11 +551,206 @@ export function createMockDatabase(): MockDatabase {
             };
           }
 
+          // Handle GROUP BY with aggregates - e.g., findAfterlifePatterns
+          const hasGroupBy = lowerSql.includes('group by');
+          if (hasGroupBy && table instanceof Map) {
+            const groupByMatch = sql.match(/GROUP\s+BY\s+(\w+)/i);
+            const groupByCol = groupByMatch?.[1];
+
+            if (groupByCol) {
+              return {
+                run: () => ({ lastInsertRowid: 0, changes: 0 }),
+                get: () => undefined,
+                all: (...params: unknown[]) => {
+                  let allRecords = Array.from(table.values()) as any[];
+
+                  // Apply WHERE user_id = ? filter
+                  if (params.length > 0 && lowerSql.includes('user_id')) {
+                    const userId = params[0] as number;
+                    allRecords = allRecords.filter(r => r && r.user_id === userId);
+                  }
+
+                  // Group by the specified column
+                  const grouped: Record<string, {
+                    group_value: string;
+                    count: number;
+                    sum_resurrect_count: number;
+                    max_deleted_at: string;
+                    records: any[];
+                  }> = {};
+
+                  allRecords.forEach((r: any) => {
+                    const groupVal = String(r?.[groupByCol] ?? 'unknown');
+                    if (!grouped[groupVal]) {
+                      grouped[groupVal] = {
+                        group_value: groupVal,
+                        count: 0,
+                        sum_resurrect_count: 0,
+                        max_deleted_at: '',
+                        records: [],
+                      };
+                    }
+                    grouped[groupVal].count++;
+                    grouped[groupVal].sum_resurrect_count +=
+                      Number(r?.resurrect_count ?? 0);
+                    if (r?.deleted_at) {
+                      if (!grouped[groupVal].max_deleted_at ||
+                          r.deleted_at > grouped[groupVal].max_deleted_at) {
+                        grouped[groupVal].max_deleted_at = r.deleted_at;
+                      }
+                    }
+                    grouped[groupVal].records.push(r);
+                  });
+
+                  let results = Object.values(grouped).map(g => ({
+                    name: g.group_value,
+                    deletions: g.count,
+                    resurrections: g.sum_resurrect_count,
+                    last_deleted: g.max_deleted_at || null,
+                  }));
+
+                  // Handle HAVING clause - filter groups based on aggregate conditions
+                  const havingMatch = sql.match(/HAVING\s+(.+?)(?:\s+ORDER|\s+LIMIT|$)/i);
+                  if (havingMatch) {
+                    const havingClause = havingMatch[1].toLowerCase();
+                    // Parse HAVING COUNT(*) >= N or similar
+                    const havingCountMatch = havingClause.match(/count\s*\(\*\)\s*>=\s*(\d+)/);
+                    if (havingCountMatch) {
+                      const threshold = Number(havingCountMatch[1]);
+                      results = results.filter(r => (r as any).deletions >= threshold);
+                    }
+                    const havingSumMatch = havingClause.match(/sum\s*\([^+\)]+\)\s*>=\s*(\d+)/);
+                    if (havingSumMatch) {
+                      const threshold = Number(havingSumMatch[1]);
+                      results = results.filter(r => (r as any).resurrections >= threshold);
+                    }
+                  }
+
+                  // Handle ORDER BY with aliases (deletions, resurrections, last_deleted)
+                  const orderByMatches = [...sql.matchAll(/ORDER\s+BY\s+(\w+)\s*(ASC|DESC)?/gi)];
+                  if (orderByMatches.length > 0) {
+                    orderByMatches.reverse().forEach(match => {
+                      const col = match[1];
+                      const dir = match[2]?.toUpperCase() === 'DESC' ? -1 : 1;
+                      results.sort((a, b) => {
+                        const aVal = (a as any)[col];
+                        const bVal = (b as any)[col];
+                        if (aVal == null && bVal == null) return 0;
+                        if (aVal == null) return 1 * dir;
+                        if (bVal == null) return -1 * dir;
+                        if (typeof aVal === 'string' && typeof bVal === 'string') {
+                          return aVal.localeCompare(bVal) * dir;
+                        }
+                        return (Number(aVal) - Number(bVal)) * dir;
+                      });
+                    });
+                  }
+
+                  // Handle LIMIT
+                  const limitMatch = sql.match(/LIMIT\s+(\d+)/i);
+                  if (limitMatch) {
+                    const limit = Number(limitMatch[1]);
+                    results = results.slice(0, limit);
+                  }
+
+                  return results as any[];
+                },
+              };
+            }
+          }
+
           const tableSize = table instanceof Map ? table.size : 0;
+
+          // Helper to apply WHERE conditions to records
+          function applyWhereConditions(sql: string, params: unknown[]): any[] {
+            const whereMatch = sql.match(/WHERE\s+(.+?)(?:\s+ORDER|\s+LIMIT|$)/i);
+            if (!whereMatch || params.length === 0) {
+              // No WHERE clause - return all records from table
+              return table instanceof Map ? Array.from(table.values()) : [];
+            }
+
+            const whereClause = whereMatch[1];
+            const allRecords: Record<string, unknown>[] = table instanceof Map ? Array.from(table.values()) : [];
+
+            // Handle OR conditions like "user_id = ? OR user_id IS NULL"
+            const orMatch = whereClause.match(
+              /([\w.]+)\s*=\s*\?\s*OR\s+([\w.]+)\s*IS\s+NULL/i
+            );
+            if (orMatch) {
+              const col = orMatch[1].replace(/^[a-z]+\./i, '');
+              const nullCol = orMatch[2];
+              const paramValue = params[0];
+              return allRecords.filter(
+                r =>
+                  r &&
+                  (r[col] === paramValue ||
+                    r[nullCol] === null ||
+                    r[nullCol] === undefined)
+              );
+            }
+
+            // Handle parameterized conditions: column = ?
+            const paramConditions: Array<{ column: string; paramIndex: number }> = [];
+            const paramMatches = [...whereClause.matchAll(/([\w.]+)\s*=\s*\?/gi)];
+            paramMatches.forEach((match, idx) => {
+              const col = match[1].replace(/^[a-z]+\./i, '');
+              paramConditions.push({ column: col, paramIndex: idx });
+            });
+
+            // Handle literal string conditions: column = 'value'
+            const literalConditions: Array<{ column: string; value: string | number }> = [];
+            const literalMatches = [...whereClause.matchAll(/([\w.]+)\s*=\s*['"]([^'"]+)['"]/gi)];
+            literalMatches.forEach(match => {
+              const col = match[1].replace(/^[a-z]+\./i, '');
+              literalConditions.push({ column: col, value: match[2] });
+            });
+
+            // Handle literal numeric conditions: column = 123
+            const numericLiteralMatches = [...whereClause.matchAll(/([\w.]+)\s*=\s*(\d+)\b(?!\s*\?)/gi)];
+            numericLiteralMatches.forEach(match => {
+              const col = match[1].replace(/^[a-z]+\./i, '');
+              literalConditions.push({ column: col, value: Number(match[2]) });
+            });
+
+            // Filter records
+            return allRecords.filter(r => {
+              if (!r) return false;
+
+              // Check parameterized conditions
+              const paramMatch = paramConditions.every(cond => r[cond.column] === params[cond.paramIndex]);
+              if (!paramMatch) return false;
+
+              // Check literal conditions
+              const literalMatch = literalConditions.every(cond => r[cond.column] === cond.value);
+              return literalMatch;
+            });
+          }
+
+          // Check if this is a COUNT query with WHERE clause
+          if (lowerSql.includes('count(*)')) {
+            return {
+              run: () => ({ lastInsertRowid: 0, changes: 0 }),
+              get: (...params: unknown[]) => {
+                const filtered = applyWhereConditions(sql, params);
+                return { count: filtered.length };
+              },
+              all: (...params: unknown[]) => {
+                const filtered = applyWhereConditions(sql, params);
+                return [{ count: filtered.length }];
+              },
+            };
+          }
+
           return {
             run: () => ({ lastInsertRowid: 0, changes: 0 }),
-            get: () => ({ count: tableSize }),
-            all: () => [{ count: tableSize }],
+            get: (...params: unknown[]) => {
+              const filtered = applyWhereConditions(sql, params);
+              return { count: filtered.length };
+            },
+            all: (...params: unknown[]) => {
+              const filtered = applyWhereConditions(sql, params);
+              return [{ count: filtered.length }];
+            },
           };
         }
 
@@ -834,7 +1087,7 @@ export function createMockDatabase(): MockDatabase {
                   if (found) {
                     return { ...found };
                   }
-                  return null;
+                  return undefined;
                 }
                 // For task_id lookup
                 if (params.length === 1) {
@@ -923,6 +1176,44 @@ export function createMockDatabase(): MockDatabase {
             };
           }
 
+          // Handle habit_streaks JOIN tasks for getStreakLeaderboard
+          // SELECT hs.task_id, t.name, hs.streak_count FROM habit_streaks hs JOIN tasks t ON hs.task_id = t.id ORDER BY hs.streak_count DESC LIMIT 10
+          if (lowerSql.includes('join task') && lowerSql.includes('habit_streaks')) {
+            const streaksTable = tables.get('habit_streaks');
+            const tasksTable = tables.get('tasks');
+            const streaks = streaksTable ? Array.from(streaksTable.values()) : [];
+
+            return {
+              run: () => ({ lastInsertRowid: 0, changes: 0 }),
+              get: () => undefined,
+              all: () => {
+                // Join habit_streaks with tasks
+                const result = streaks.map((streak: Record<string, unknown>) => {
+                  const taskId = streak.task_id as number;
+                  const task = tasksTable?.get(taskId);
+
+                  return {
+                    task_id: taskId,
+                    name: task?.name ?? 'Unknown',
+                    streak_count: (streak as any).streak_count ?? 0,
+                  };
+                });
+
+                // Sort by streak_count DESC (habit_streaks table uses 'count' not 'streak_count')
+                result.sort((a, b) => (b.streak_count as number) - (a.streak_count as number));
+
+                // Apply LIMIT
+                const limitMatch = sql.match(/LIMIT\s+(\d+)/i);
+                if (limitMatch) {
+                  const limit = parseInt(limitMatch[1], 10);
+                  return result.slice(0, limit);
+                }
+
+                return result;
+              },
+            };
+          }
+
           // Default JOIN handling - return empty
           return {
             run: () => ({ lastInsertRowid: 0, changes: 0 }),
@@ -992,7 +1283,8 @@ export function createMockDatabase(): MockDatabase {
             const whereIdMatch = sql.match(/WHERE\s+id\s*=\s*\?/i);
             if (whereIdMatch && params.length > 0) {
               const id = params[params.length - 1] as number;
-              return allRecords.find(r => r && r.id === id);
+              const result = allRecords.find(r => r && r.id === id);
+              return result ?? undefined;
             }
 
             // Handle WHERE with user_id = ? OR user_id IS NULL pattern
@@ -1024,24 +1316,33 @@ export function createMockDatabase(): MockDatabase {
               return allRecords.find(r => r && r[col] === val);
             }
 
-            // Handle WHERE with literal values like completed = 0
+            // Handle WHERE with literal values like completed = 0 or id = 1
             const literalWhereMatch = sql.match(
               /WHERE\s+(.+?)(?:\s+ORDER|\s+LIMIT|$)/i
             );
             if (literalWhereMatch) {
               const whereText = literalWhereMatch[1];
+              // Handle id = 1 (or any number)
+              const idLiteralMatch = whereText.match(/^id\s*=\s*(\d+)\b$/i);
+              if (idLiteralMatch) {
+                const id = Number(idLiteralMatch[1]);
+                const result = allRecords.find(r => r && r.id === id);
+                return result ?? undefined;
+              }
               // Handle completed = 0
               if (/\bcompleted\s*=\s*0\b/i.test(whereText)) {
-                return allRecords.find(r => r && r.completed === 0);
+                const result0 = allRecords.find(r => r && r.completed === 0);
+                return result0 ?? undefined;
               }
               // Handle completed = 1
               if (/\bcompleted\s*=\s*1\b/i.test(whereText)) {
-                return allRecords.find(r => r && r.completed === 1);
+                const result1 = allRecords.find(r => r && r.completed === 1);
+                return result1 ?? undefined;
               }
             }
 
-            // No WHERE - return first record
-            return allRecords[0];
+            // No WHERE or non-matching WHERE - return first record
+            return allRecords[0] ?? undefined;
           },
           all: (...params: unknown[]) => {
             if (!table) return [];
@@ -1157,7 +1458,7 @@ export function createMockDatabase(): MockDatabase {
                 }
 
                 // Handle date >= ? pattern (for upcoming/next7 views)
-                const dateGteMatch = whereClause.match(/date\s*>\s*\?/i);
+                const dateGteMatch = whereClause.match(/date\s*>=\s*\?/i);
                 if (dateGteMatch && dateGteMatch.index !== undefined) {
                   const paramCountBeforeDate = (
                     whereClause.substring(0, dateGteMatch.index).match(/\?/g) ||
@@ -1166,6 +1467,18 @@ export function createMockDatabase(): MockDatabase {
                   const date = params[paramCountBeforeDate] as string;
 
                   result = result.filter((r: any) => r && r.date >= date);
+                }
+
+                // Handle date <= ? pattern (for date range filtering)
+                const dateLteMatch = whereClause.match(/date\s*<=\s*\?/i);
+                if (dateLteMatch && dateLteMatch.index !== undefined) {
+                  const paramCountBeforeDate = (
+                    whereClause.substring(0, dateLteMatch.index).match(/\?/g) ||
+                    []
+                  ).length;
+                  const date = params[paramCountBeforeDate] as string;
+
+                  result = result.filter((r: any) => r && r.date <= date);
                 }
 
                 // Handle email = ? pattern for user lookup (auth)
@@ -1307,13 +1620,105 @@ export function createMockDatabase(): MockDatabase {
                       }
                     }
                   }
+
+                  // Handle arithmetic expressions like "column = column + 1"
+                  const arithmeticMatch = valExpr.match(/^(\w+)\s*\+\s*(\d+)$/);
+                  if (arithmeticMatch && targetId !== null) {
+                    const existing = table.get(Number(targetId));
+                    if (existing) {
+                      setValues[col] = (Number(existing[col]) || 0) + Number(arithmeticMatch[2]);
+                    }
+                  }
+
+                  // Handle arithmetic subtraction: "column = column - 1"
+                  const arithmeticSubMatch = valExpr.match(/^(\w+)\s*-\s*(\d+)$/);
+                  if (arithmeticSubMatch && targetId !== null) {
+                    const existing = table.get(Number(targetId));
+                    if (existing) {
+                      setValues[col] = (Number(existing[col]) || 0) - Number(arithmeticSubMatch[2]);
+                    }
+                  }
                 }
               });
             }
 
-            // Check for WHERE id = ? pattern
+            // Check for simple WHERE id = ? pattern first
             const whereIdMatch = sql.match(/WHERE\s+id\s*=\s*\?/i);
-            if (whereIdMatch && targetId !== null) {
+
+            // Handle multi-condition WHERE clauses (e.g., user_id = ? AND name = ? AND id != ?)
+            // Also handles single-column conditions like user_id = ?
+            const whereMatch = sql.match(/WHERE\s+(.+?)$/i);
+            if (whereMatch && params.length > 0 && !whereIdMatch) {
+              const whereClause = whereMatch[1];
+
+              // Count WHERE parameters to determine offset for setParamIdx
+              const whereParamCount = (whereClause.match(/\?/g) || []).length;
+              const whereStartIdx = setParamCount;
+
+              // Parse conditions like "user_id = ?", "user_id = ? AND name = ?", etc.
+              const conditions: Array<{ col: string; op: string; paramIdx: number; isLiteral: boolean; literalValue?: unknown }> = [];
+
+              // Match conditions with ? parameters
+              const paramPattern = /([\w.]+)\s*(=!|!=|<>|<|>|<=|>=|=)\s*\?/g;
+              let match: RegExpExecArray | null;
+              while ((match = paramPattern.exec(whereClause)) !== null) {
+                conditions.push({
+                  col: match[1].replace(/^[a-z]+\./i, ''),
+                  op: match[2],
+                  paramIdx: whereStartIdx + conditions.length,
+                  isLiteral: false,
+                });
+              }
+
+              // Match literal string conditions like status = 'active'
+              const literalStringPattern = /([\w.]+)\s*=\s*['"]([^'"]+)['"]/g;
+              while ((match = literalStringPattern.exec(whereClause)) !== null) {
+                const matchedCol = match[1].replace(/^[a-z]+\./i, '');
+                if (!conditions.some(c => c.col === matchedCol && c.op === '=')) {
+                  conditions.push({
+                    col: match[1].replace(/^[a-z]+\./i, ''),
+                    op: '=',
+                    paramIdx: -1,
+                    isLiteral: true,
+                    literalValue: match[2],
+                  });
+                }
+              }
+
+              // Update matching records
+              if (conditions.length > 0) {
+                table.forEach((record, key) => {
+                  let matches = true;
+
+                  // Check all conditions
+                  for (let i = 0; i < conditions.length; i++) {
+                    const cond = conditions[i];
+                    const recordVal = record[cond.col];
+                    const searchVal = cond.isLiteral ? cond.literalValue : params[cond.paramIdx];
+
+                    if (cond.op === '=' || cond.op === '==') {
+                      if (recordVal !== searchVal) matches = false;
+                    } else if (cond.op === '!=' || cond.op === '<>') {
+                      if (recordVal === searchVal) matches = false;
+                    }
+                  }
+
+                  if (matches) {
+                    Object.assign(record, setValues);
+                    changes++;
+                  }
+                });
+
+                if (changes > 0) {
+                  return { lastInsertRowid: table.size, changes };
+                }
+                return { lastInsertRowid: 0, changes: 0 };
+              }
+            }
+
+            // Check for WHERE id = ? pattern - specific handler for this common case
+            const whereIdMatch2 = sql.match(/WHERE\s+id\s*=\s*\?/i);
+            if (whereIdMatch2 && targetId !== null) {
               // Update only the specific record
               const existing = table.get(Number(targetId));
               if (existing) {
@@ -1449,56 +1854,111 @@ export function createMockDatabase(): MockDatabase {
           const tableName = parseTableName(processedStmt);
           const table = tableName && tables.get(tableName.toLowerCase());
           const columns = parseColumns(processedStmt);
-          const valuesMatch = processedStmt.match(/VALUES\s*\(([^)]+)\)/i);
 
-          if (table && valuesMatch && columns.length > 0) {
-            const valuesStr = valuesMatch[1];
-            // Parse values with proper handling of quotes and parentheses
-            const values: any[] = [];
-            let parenDepth = 0;
-            let current = '';
-            for (const char of valuesStr) {
-              if (char === '(' || char === '{' || char === '[') parenDepth++;
-              if (char === ')' || char === '}' || char === ']') parenDepth--;
-              if (char === ',' && parenDepth === 0) {
-                values.push(current.trim());
-                current = '';
-              } else {
-                current += char;
-              }
-            }
-            if (current.trim()) values.push(current.trim());
+          if (table && columns.length > 0) {
+            // Find the VALUES clause - handle multi-row INSERTs
+            const valuesMatch = processedStmt.match(/VALUES\s+([\s\S]+?)(?:;|$)/i);
+            if (valuesMatch) {
+              const valuesStr = valuesMatch[1];
 
-            const record: Record<string, unknown> = {};
+              // Check if this is a multi-row INSERT (contains multiple sets of parentheses separated by commas at top level)
+              const rows: string[][] = [];
+              let parenDepth = 0;
+              let currentRow = '';
+              let inValueRow = false;
 
-            columns.forEach((col, i) => {
-              const val = values[i];
-              if (val?.startsWith("'") && val?.endsWith("'")) {
-                record[col] = val.slice(1, -1);
-              } else if (/^\d+$/.test(val)) {
-                record[col] = Number(val);
-              } else if (val?.startsWith('(') && val?.endsWith(')')) {
-                // Handle array literals like ('label1', 'label2')
-                record[col] = val
-                  .slice(1, -1)
-                  .split(',')
-                  .map((v: string) => v.trim().replace(/['"]/g, ''));
-              } else {
-                record[col] = val;
-              }
-            });
-
-            // Auto-generate ID if not provided
-            if (!record.id) {
-              let maxId = 0;
-              table.forEach(rec => {
-                if (rec.id !== undefined && rec.id !== null) {
-                  maxId = Math.max(maxId, Number(rec.id));
+              for (const char of valuesStr) {
+                if (char === '(') {
+                  parenDepth++;
+                  if (parenDepth === 1) {
+                    inValueRow = true;
+                    currentRow = '';
+                  }
                 }
-              });
-              record.id = maxId + 1;
+                if (parenDepth > 0) {
+                  currentRow += char;
+                }
+                if (char === ')') {
+                  parenDepth--;
+                  if (parenDepth === 0 && inValueRow) {
+                    // Completed a value row
+                    const rowContent = currentRow.slice(1, -1); // Remove outer parens
+                    // Split by comma at top level (not inside nested parens/brackets)
+                    const valueTokens: string[] = [];
+                    let currentTok = '';
+                    let tokParenDepth = 0;
+                    for (const c of rowContent) {
+                      if (c === '(' || c === '{' || c === '[') tokParenDepth++;
+                      if (c === ')' || c === '}' || c === ']') tokParenDepth--;
+                      if (c === ',' && tokParenDepth === 0) {
+                        valueTokens.push(currentTok.trim());
+                        currentTok = '';
+                      } else {
+                        currentTok += c;
+                      }
+                    }
+                    if (currentTok.trim()) valueTokens.push(currentTok.trim());
+                    rows.push(valueTokens);
+                    inValueRow = false;
+                    currentRow = '';
+                  }
+                }
+              }
+
+              // Process each row as a separate record
+              for (const rowValues of rows) {
+                const record: Record<string, unknown> = {};
+
+                rowValues.forEach((val, i) => {
+                  if (i < columns.length) {
+                    const col = columns[i];
+                    if (val === 'NULL') {
+                      record[col] = null;
+                    } else if (val?.startsWith("'") && val?.endsWith("'")) {
+                      record[col] = val.slice(1, -1);
+                    } else if (/^\d+$/.test(val)) {
+                      record[col] = Number(val);
+                    } else if (val?.startsWith('(') && val?.endsWith(')')) {
+                      // Handle array literals like ('label1', 'label2')
+                      record[col] = val
+                        .slice(1, -1)
+                        .split(',')
+                        .map((v: string) => v.trim().replace(/['"]/g, ''));
+                    } else {
+                      record[col] = val;
+                    }
+                  }
+                });
+
+                // Apply default values for columns with DEFAULT clauses in schema - only for task_afterlife
+                if (tableName === 'task_afterlife') {
+                  const defaultValues: Record<string, number | string | null> = {
+                    completed_count: 0,
+                    resurrect_count: 0,
+                    blocked_count: 0,
+                    confidence: 0.5,
+                    reschedule_count: 0,
+                    evidence_count: 1,
+                    user_id: null,
+                  };
+
+                  for (const [col, defaultValue] of Object.entries(defaultValues)) {
+                    if (!(col in record)) {
+                      record[col] = defaultValue;
+                    }
+                  }
+                }
+
+                // Auto-generate ID if not provided
+                if (!record.id) {
+                  record.id = lastInsertId + 1;
+                } else {
+                  // Update lastInsertId for explicit IDs (like in prepare().run())
+                  lastInsertId = Math.max(lastInsertId, Number(record.id));
+                }
+                table.set(record.id as number, record);
+              }
             }
-            table.set(record.id as number, record);
           }
         }
       }

@@ -59,12 +59,20 @@ export async function softDeleteTask(taskId: number, reason?: string): Promise<b
       .all(taskId) as Array<{ name: string }>;
     const tags = labels.map(l => l.name).join(',') || null;
 
+    // Ensure deleted_reason column exists (add if migrating from older version)
+    try {
+      db.exec(`ALTER TABLE task_afterlife ADD COLUMN deleted_reason TEXT;`);
+    } catch {
+      // Column may already exist
+    }
+
     const insertResult = db
       .prepare(
         `INSERT INTO task_afterlife
            (original_task_id, user_id, name, description, priority,
             completed_count, last_completed_at, created_at, tags, deleted_reason)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       `
       )
       .run(
         task.id,
