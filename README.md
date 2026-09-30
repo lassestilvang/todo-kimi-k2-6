@@ -126,15 +126,26 @@ Configure Google Calendar API credentials in your `.env.local`:
 
 ## TaskFlow Labs
 
-Explore the Labs section to experiment with AI-powered productivity:
+Explore the Labs section to experiment with AI-powered productivity features:
 
-- **AI Playground** (`/labs`): Compare different AI models and their task parsing results
+### Core Labs
+- **AI Playground** (`/labs/ai-parsing`): Compare different AI models and their task parsing results
 - **Project Planner** (`/labs/project-planning`): Generate project plans from natural language
 - **Skills Tracker** (`/labs/skills`): Track skill development through your work
 - **Energy Scheduler** (`/labs/energy`): Optimize your schedule based on energy patterns
 - **Success Stories** (`/labs/stories`): Capture insights from completed tasks
 
-## New Features (v0.2.0)
+### 2026 Features
+- **Gamification** (`/labs/gamification`): XP, levels, achievements, and leaderboards
+- **Task Marketplace** (`/labs/marketplace`): Trade tasks with team members using XP
+- **Social Feed** (`/labs/social-feed`): Team activity stream and recognition
+- **Voice Control** (`/labs/voice-control`): Voice commands for task management
+- **Project Wiki** (`/labs/project-wiki`): Collaborative project knowledge base
+- **Meeting Assistant** (`/labs/meeting-assistant`): AI meeting notes and action items
+- **Notification Digest** (`/labs/notification-digest`): Daily/weekly activity summaries
+- **Risk Assessment** (`/labs/risk-assessment`): Predictive risk analysis
+
+## Upcoming Features
 
 ### Smart Inbox Automation
 
