@@ -39,6 +39,38 @@
     {
       "name": "sharing",
       "description": "Task sharing and collaboration"
+    },
+    {
+      "name": "gamification",
+      "description": "XP, levels, achievements and leaderboards"
+    },
+    {
+      "name": "marketplace",
+      "description": "Task marketplace for trading tasks with XP"
+    },
+    {
+      "name": "social",
+      "description": "Team social feed and activity stream"
+    },
+    {
+      "name": "voice",
+      "description": "Voice command processing"
+    },
+    {
+      "name": "wiki",
+      "description": "Project wiki and knowledge base"
+    },
+    {
+      "name": "meetings",
+      "description": "Meeting notes and action item extraction"
+    },
+    {
+      "name": "notifications",
+      "description": "Notification digests and preferences"
+    },
+    {
+      "name": "risk",
+      "description": "Predictive risk assessment"
     }
   ],
   "paths": {
@@ -367,6 +399,277 @@
           },
           "deadline": { "type": "string", "format": "date", "nullable": true }
         }
+      }
+    },
+    "/api/gamification": {
+      "get": {
+        "tags": ["gamification"],
+        "summary": "Get gamification data",
+        "description": "Returns leaderboard, user achievements, and current level/XP",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "default": 20 },
+            "description": "Max leaderboard entries"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Gamification data"
+          },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/api/marketplace": {
+      "get": {
+        "tags": ["marketplace"],
+        "summary": "List marketplace listings",
+        "parameters": [
+          { "name": "category", "in": "query", "schema": { "type": "string" } },
+          { "name": "skill", "in": "query", "schema": { "type": "string" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50 } }
+        ],
+        "responses": {
+          "200": { "description": "Listings" },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "post": {
+        "tags": ["marketplace"],
+        "summary": "Create a marketplace listing",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["task_id", "price_xp"],
+                "properties": {
+                  "task_id": { "type": "integer" },
+                  "price_xp": { "type": "integer" },
+                  "estimated_hours": { "type": "integer", "default": 1 },
+                  "required_skills": { "type": "array", "items": { "type": "string" } },
+                  "category": { "type": "string", "default": "other" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Listing created" },
+          "400": { "description": "Invalid request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/api/social-feed": {
+      "get": {
+        "tags": ["social"],
+        "summary": "Get team activity feed",
+        "parameters": [
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50 } },
+          { "name": "filter", "in": "query", "schema": { "type": "string", "enum": ["all", "team", "following"] } }
+        ],
+        "responses": {
+          "200": { "description": "Feed posts" },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "post": {
+        "tags": ["social"],
+        "summary": "Create a feed post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["activity_type", "title"],
+                "properties": {
+                  "activity_type": { "type": "string", "enum": ["task_completed", "streak", "milestone", "achievement", "level_up", "goal_completed"] },
+                  "title": { "type": "string" },
+                  "description": { "type": "string" },
+                  "metadata": { "type": "object" },
+                  "visibility": { "type": "string", "enum": ["public", "team", "private"], "default": "team" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Post created" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/api/voice-control": {
+      "post": {
+        "tags": ["voice"],
+        "summary": "Process a voice command",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["transcript"],
+                "properties": {
+                  "transcript": { "type": "string" },
+                  "execute": { "type": "boolean", "default": false }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Parsed intent and optional execution result" },
+          "400": { "description": "Invalid request" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/api/wiki": {
+      "get": {
+        "tags": ["wiki"],
+        "summary": "List or search wiki pages",
+        "parameters": [
+          { "name": "project_id", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "q", "in": "query", "schema": { "type": "string" }, "description": "Search query" }
+        ],
+        "responses": {
+          "200": { "description": "Pages array" },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "post": {
+        "tags": ["wiki"],
+        "summary": "Create a wiki page",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["title", "content"],
+                "properties": {
+                  "project_id": { "type": "integer", "default": 1 },
+                  "title": { "type": "string" },
+                  "content": { "type": "string" },
+                  "parent_id": { "type": "integer", "nullable": true }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Created page" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/api/wiki/{id}": {
+      "get": {
+        "tags": ["wiki"],
+        "summary": "Get a wiki page",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } },
+          { "name": "revisions", "in": "query", "schema": { "type": "boolean" } }
+        ],
+        "responses": {
+          "200": { "description": "Page (and revisions if requested)" },
+          "404": { "description": "Page not found" }
+        }
+      },
+      "patch": {
+        "tags": ["wiki"],
+        "summary": "Update a wiki page",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": { "type": "string" },
+                  "content": { "type": "string" },
+                  "changes_summary": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Updated page" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/api/meeting-notes": {
+      "get": {
+        "tags": ["meetings"],
+        "summary": "List meeting notes",
+        "responses": { "200": { "description": "Notes array" } }
+      },
+      "post": {
+        "tags": ["meetings"],
+        "summary": "Create meeting notes",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["title", "notes"],
+                "properties": {
+                  "title": { "type": "string" },
+                  "notes": { "type": "string" },
+                  "date": { "type": "string", "format": "date" },
+                  "participants": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Created notes" } }
+      }
+    },
+    "/api/notifications": {
+      "get": {
+        "tags": ["notifications"],
+        "summary": "Get notification data",
+        "parameters": [
+          {
+            "name": "action",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["digest", "preferences"] }
+          }
+        ],
+        "responses": { "200": { "description": "Digest or preferences" } }
+      },
+      "post": {
+        "tags": ["notifications"],
+        "summary": "Update notification preferences or send digest",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["action"],
+                "properties": {
+                  "action": { "type": "string", "enum": ["send_digest", "update_preferences"] },
+                  "preferences": { "type": "object" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Result" } }
       }
     }
   }

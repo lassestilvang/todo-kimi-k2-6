@@ -174,7 +174,7 @@ export function extractDueDate(text: string): string | undefined {
     },
     // "in 3 days" or "in 2 weeks"
     {
-      pattern: /\din\s+(\d+)\s*(day|days|week|weeks|month|months)\b/i,
+      pattern: /\bin\s+(\d+)\s*(day|days|week|weeks|month|months)\b/i,
       transformer: m => {
         const amount = parseInt(m[1]);
         const unit = m[2].toLowerCase();
@@ -221,11 +221,11 @@ export function extractPriority(
   if (/urgent|asap|immediate|critical|emergency/i.test(lower)) {
     return 'critical';
   }
-  if (/high|important|priority/i.test(lower)) {
-    return 'high';
-  }
   if (/low|deferred|later/i.test(lower)) {
     return 'low';
+  }
+  if (/high|important|priority/i.test(lower)) {
+    return 'high';
   }
 
   return undefined;
