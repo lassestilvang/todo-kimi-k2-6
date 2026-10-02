@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Heart,
   MessageCircle,
@@ -26,7 +26,6 @@ import { Input } from '@/components/ui/input';
 import {
   getFeed,
   likeFeedPost,
-  unlikeFeedPost,
   commentOnFeedPost,
   getFeedComments,
 } from '@/lib/actions/social-feed';
@@ -59,11 +58,7 @@ export function SocialFeed() {
   const [comments, setComments] = useState<Record<number, FeedComment[]>>({});
   const [newComment, setNewComment] = useState<Record<number, string>>({});
 
-  useEffect(() => {
-    loadFeed();
-  }, []);
-
-  const loadFeed = async () => {
+  const loadFeed = useCallback(async () => {
     try {
       setLoading(true);
       const feed = await getFeed({ limit: 20 });
@@ -73,7 +68,11 @@ export function SocialFeed() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadFeed();
+  }, [loadFeed]);
 
   const handleLike = async (postId: number) => {
     try {
@@ -84,17 +83,6 @@ export function SocialFeed() {
       ));
     } catch (error) {
       console.error('Failed to like:', error);
-    }
-  };
-
-  const handleUnlike = async (postId: number) => {
-    try {
-      await unlikeFeedPost(postId);
-      setPosts(posts.map(p =>
-        p.id === postId ? { ...p, likes_count: Math.max(0, p.likes_count - 1) } : p
-      ));
-    } catch (error) {
-      console.error('Failed to unlike:', error);
     }
   };
 
