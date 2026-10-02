@@ -1,7 +1,6 @@
 'use server';
 
 import { getDb } from '@/lib/db';
-import { getCurrentUser } from '@/lib/session';
 
 export interface Achievement {
   id: number;
@@ -58,7 +57,6 @@ export async function calculateUserLevel(userId: number): Promise<UserLevel> {
     .all(userId) as Array<{ date: string }>;
 
   let streak = 0;
-  const today = new Date().toISOString().split('T')[0];
   for (let i = 0; i < completions.length; i++) {
     const expected = new Date();
     expected.setDate(expected.getDate() - i);
@@ -77,7 +75,6 @@ export async function calculateUserLevel(userId: number): Promise<UserLevel> {
   const level = Math.floor(Math.sqrt(totalXp / 100)) + 1;
 
   // XP to next level
-  const xpForCurrentLevel = Math.pow(level - 1, 2) * 100;
   const xpForNextLevel = Math.pow(level, 2) * 100;
   const xpToNextLevel = xpForNextLevel - totalXp;
 
