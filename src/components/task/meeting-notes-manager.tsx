@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   MessageCircle,
   Plus,
@@ -8,7 +8,6 @@ import {
   Users,
   FileText,
   CheckSquare,
-  Trash2,
   Sparkles,
   ArrowRight,
 } from 'lucide-react';
@@ -24,7 +23,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Dialog,
   DialogContent,
@@ -72,11 +70,7 @@ export function MeetingNotesManager() {
   const [newDate, setNewDate] = useState(new Date().toISOString().split('T')[0]);
   const [newParticipants, setNewParticipants] = useState('');
 
-  useEffect(() => {
-    loadMeetings();
-  }, []);
-
-  const loadMeetings = async () => {
+  const loadMeetings = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch('/api/meeting-notes');
@@ -90,7 +84,11 @@ export function MeetingNotesManager() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadMeetings();
+  }, [loadMeetings]);
 
   const loadMeetingDetails = async (meeting: MeetingNotes) => {
     setSelectedMeeting(meeting);
