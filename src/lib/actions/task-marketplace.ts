@@ -86,7 +86,21 @@ export async function getMarketplaceListings(
   query += ' ORDER BY created_at DESC LIMIT ?';
   params.push(options?.limit || 50);
 
-  const listings = db.prepare(query).all(...params) as any[];
+  interface MarketplaceListingRow {
+    id: number;
+    task_id: number;
+    seller_id: number;
+    price_xp: number;
+    estimated_hours: number;
+    required_skills: string;
+    status: 'available' | 'claimed' | 'completed' | 'cancelled';
+    claimed_by: number | null;
+    category: string;
+    created_at: string;
+    updated_at: string;
+  }
+
+  const listings = db.prepare(query).all(...params) as MarketplaceListingRow[];
 
   // Enrich with task and user info
   return listings.map(listing => {
