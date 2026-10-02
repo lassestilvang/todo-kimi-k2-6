@@ -2,7 +2,7 @@
 
 import { RiskAssessmentDashboard } from '@/components/task/risk-assessment-dashboard';
 import { NotificationDigest } from '@/components/task/notification-digest';
-import { Shield, Bell } from 'lucide-react';
+import { Shield } from 'lucide-react';
 
 export default function RiskAssessmentPage() {
   return (
