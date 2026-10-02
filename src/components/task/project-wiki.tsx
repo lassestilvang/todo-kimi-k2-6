@@ -1,17 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   FileText,
   Plus,
   Search,
   Edit,
-  Eye,
   History,
-  Link as LinkIcon,
   MessageSquare,
-  ChevronRight,
-  ChevronDown,
   TreePine,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -86,11 +82,7 @@ export function ProjectWiki({ projectId = 1 }: { projectId?: number }) {
   const [commentText, setCommentText] = useState('');
   const [showRevisions, setShowRevisions] = useState(false);
 
-  useEffect(() => {
-    loadPages();
-  }, [projectId]);
-
-  const loadPages = async () => {
+  const loadPages = useCallback(async () => {
     try {
       setLoading(true);
       const [allPages, treeData] = await Promise.all([
@@ -104,7 +96,11 @@ export function ProjectWiki({ projectId = 1 }: { projectId?: number }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [projectId]);
+
+  useEffect(() => {
+    loadPages();
+  }, [loadPages]);
 
   const loadPage = async (pageId: number) => {
     try {
