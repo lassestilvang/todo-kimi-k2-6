@@ -1,7 +1,6 @@
 'use server';
 
 import { getDb } from '@/lib/db';
-import { getCurrentUser } from '@/lib/session';
 import { logError } from '@/lib/logger';
 
 export interface NotificationDigest {
@@ -135,7 +134,6 @@ async function calculateStreak(userId: number): Promise<number> {
   if (completions.length === 0) return 0;
 
   const uniqueDates = [...new Set(completions.map(c => c.date))];
-  const today = new Date().toISOString().split('T')[0];
 
   let streak = 0;
   for (let i = 0; i < uniqueDates.length; i++) {
