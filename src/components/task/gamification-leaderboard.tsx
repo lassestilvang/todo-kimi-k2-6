@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Trophy,
-  Star,
   Award,
   Target,
   Flame,
@@ -11,7 +10,6 @@ import {
   Crown,
   Medal,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -64,13 +62,7 @@ export function GamificationLeaderboard() {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
-  useEffect(() => {
-    if (user?.id) {
-      loadData();
-    }
-  }, [user?.id]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!user?.id) return;
 
     try {
@@ -98,7 +90,13 @@ export function GamificationLeaderboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user?.id) {
+      loadData();
+    }
+  }, [user, loadData]);
 
   const getRankIcon = (rank: number) => {
     switch (rank) {
@@ -250,7 +248,7 @@ export function GamificationLeaderboard() {
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {leaderboard.slice(0, 10).map((entry, idx) => (
+            {leaderboard.slice(0, 10).map((entry) => (
               <div
                 key={entry.user_id}
                 className={`flex items-center justify-between p-3 rounded-lg border ${
