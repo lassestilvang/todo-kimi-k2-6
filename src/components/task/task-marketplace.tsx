@@ -1,14 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   ShoppingBag,
   Coins,
   Clock,
-  Tag,
   CheckCircle2,
   User,
-  Award,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -70,7 +68,14 @@ const CATEGORIES = [
 export function TaskMarketplace() {
   const [listings, setListings] = useState<MarketplaceListing[]>([]);
   const [myListings, setMyListings] = useState<MarketplaceListing[]>([]);
-  const [myTasks, setMyTasks] = useState<any[]>([]);
+  interface TaskBasic {
+  id: number;
+  name: string;
+  completed?: boolean;
+  archived?: boolean;
+}
+
+  const [myTasks, setMyTasks] = useState<TaskBasic[]>([]);
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState('all');
   const [showCreate, setShowCreate] = useState(false);
@@ -82,13 +87,7 @@ export function TaskMarketplace() {
   const [estimatedHours, setEstimatedHours] = useState('2');
   const [requiredSkills, setRequiredSkills] = useState('');
 
-  useEffect(() => {
-    if (user?.id) {
-      loadData();
-    }
-  }, [user?.id, category]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!user?.id) return;
 
     try {
@@ -110,7 +109,13 @@ export function TaskMarketplace() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, category]);
+
+  useEffect(() => {
+    if (user?.id) {
+      loadData();
+    }
+  }, [user?.id, category, loadData]);
 
   const handleClaim = async (listingId: number) => {
     try {
