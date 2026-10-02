@@ -3,7 +3,6 @@
 import { getDb } from '@/lib/db';
 import { getCurrentUser } from '@/lib/session';
 import { logError } from '@/lib/logger';
-import { getTaskRelations } from '@/lib/db/relations';
 
 export interface MeetingNotes {
   id: number;
@@ -207,7 +206,6 @@ export async function createActionItem(
 export async function parseMeetingNotes(
   meetingId: number
 ): Promise<ActionItem[]> {
-  const db = getDb();
   const user = await getCurrentUser();
 
   if (!user?.id) {
@@ -550,7 +548,6 @@ function mapPriority(priority: 'critical' | 'high' | 'medium' | 'low' | 'none'):
  * Get meeting notes with action item counts
  */
 export async function getMeetingNotesWithActionCounts(): Promise<Array<MeetingNotes & { action_count: number; completed_count: number }>> {
-  const db = getDb();
   const user = await getCurrentUser();
 
   if (!user?.id) {
