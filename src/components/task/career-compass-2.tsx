@@ -4,16 +4,12 @@ import { useState, useEffect, useMemo } from 'react';
 import {
   Compass,
   Award,
-  Lightbulb,
   CheckCircle,
   MapPin,
   GraduationCap,
   TrendingUp,
-  BarChart3,
   Goal,
   Brain,
-  Calendar,
-  Users,
   Target,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -29,8 +25,6 @@ import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { fetchUserSkills, fetchSkillStatistics, fetchTasks } from '@/lib/actions/api-wrappers';
-import { useAuth } from '@/hooks/use-auth';
 
 interface Skill {
   id: number;
@@ -56,9 +50,13 @@ interface CareerPath {
   growthRate: number;
 }
 
+interface TaskBasic {
+  completed?: boolean;
+}
+
 interface CareerCompassProps {
   skills?: Skill[];
-  tasks?: any[];
+  tasks?: TaskBasic[];
   loading?: boolean;
 }
 
@@ -141,8 +139,6 @@ export function CareerCompass2({ skills = [], tasks = [], loading = false }: Car
   const skillNames = useMemo(() => {
     return new Set(skills.map(s => s.skill_name.toLowerCase()));
   }, [skills]);
-
-  const { user } = useAuth();
 
   // Generate career path recommendations
   useEffect(() => {
