@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Trophy,
   ShieldAlert,
@@ -53,12 +53,7 @@ export function CommandCenter() {
   });
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!user?.id) return;
-    loadAll();
-  }, [user?.id]);
-
-  const loadAll = async () => {
+  const loadAll = useCallback(async () => {
     if (!user?.id) return;
     setLoading(true);
     try {
@@ -78,7 +73,12 @@ export function CommandCenter() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    loadAll();
+  }, [user?.id, loadAll]);
 
   const quickActions: QuickAction[] = [
     {
