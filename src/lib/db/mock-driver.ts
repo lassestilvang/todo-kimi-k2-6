@@ -659,8 +659,6 @@ export function createMockDatabase(): MockDatabase {
             }
           }
 
-          const tableSize = table instanceof Map ? table.size : 0;
-
           // Helper to apply WHERE conditions to records
           function applyWhereConditions(sql: string, params: unknown[]): any[] {
             const whereMatch = sql.match(/WHERE\s+(.+?)(?:\s+ORDER|\s+LIMIT|$)/i);
@@ -1651,8 +1649,6 @@ export function createMockDatabase(): MockDatabase {
             if (whereMatch && params.length > 0 && !whereIdMatch) {
               const whereClause = whereMatch[1];
 
-              // Count WHERE parameters to determine offset for setParamIdx
-              const whereParamCount = (whereClause.match(/\?/g) || []).length;
               const whereStartIdx = setParamCount;
 
               // Parse conditions like "user_id = ?", "user_id = ? AND name = ?", etc.
@@ -1687,7 +1683,7 @@ export function createMockDatabase(): MockDatabase {
 
               // Update matching records
               if (conditions.length > 0) {
-                table.forEach((record, key) => {
+                table.forEach((record, _key) => {
                   let matches = true;
 
                   // Check all conditions
