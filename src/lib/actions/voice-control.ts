@@ -210,7 +210,7 @@ export async function executeVoiceIntent(
         const task = await createTask({
           name: intent.parameters.description as string,
           date: intent.parameters.date as string | undefined,
-          priority: intent.parameters.priority as any,
+          priority: intent.parameters.priority as 'none' | 'low' | 'medium' | 'high' | 'critical' | undefined,
         });
 
         return {
@@ -276,7 +276,7 @@ export async function executeVoiceIntent(
         }
 
         await updateTask(task.id, {
-          priority: priority as any,
+          priority: priority as 'none' | 'low' | 'medium' | 'high' | 'critical',
         });
 
         return { success: true, message: `Set ${identifier} to ${priority} priority` };
