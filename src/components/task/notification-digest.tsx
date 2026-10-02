@@ -1,12 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Bell,
   Calendar,
   CheckCircle,
   AlertTriangle,
-  Users,
   Gift,
   Settings,
 } from 'lucide-react';
@@ -19,7 +18,6 @@ import {
   CardDescription,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
@@ -32,7 +30,6 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { generateDailyDigest, getUserNotificationPreferences, updateUserNotificationPreferences } from '@/lib/actions/notification-digest';
-import { useAuth } from '@/hooks/use-auth';
 
 interface DailyDigestData {
   overdue: Array<{ id: number; name: string; days_overdue: number; priority: string }>;
@@ -45,10 +42,10 @@ interface DailyDigestData {
 
 interface NotificationDigestProps {
   userId?: number;
-  refreshInterval?: number;
+  _refreshInterval?: number;
 }
 
-export function NotificationDigest({ userId, refreshInterval = 300000 }: NotificationDigestProps) {
+export function NotificationDigest({ userId, _refreshInterval = 300000 }: NotificationDigestProps) {
   const [digest, setDigest] = useState<DailyDigestData | null>(null);
   const [loading, setLoading] = useState(true);
   const [preferences, setPreferences] = useState({
@@ -59,12 +56,12 @@ export function NotificationDigest({ userId, refreshInterval = 300000 }: Notific
     risk_alerts: true,
   });
 
-  useEffect(() => {
-    loadDigest();
-    loadPreferences();
-  }, [userId]);
+  const getUserId = async (): Promise<number | null> => {
+    // Will be implemented via auth hook
+    return null;
+  };
 
-  const loadDigest = async () => {
+  const loadDigest = useCallback(async () => {
     const id = userId || (await getUserId());
     if (!id) return;
 
@@ -72,20 +69,20 @@ export function NotificationDigest({ userId, refreshInterval = 300000 }: Notific
     const data = await generateDailyDigest(id);
     setDigest(data);
     setLoading(false);
-  };
+  }, [userId]);
 
-  const loadPreferences = async () => {
+  const loadPreferences = useCallback(async () => {
     const id = userId || (await getUserId());
     if (!id) return;
 
     const prefs = await getUserNotificationPreferences(id);
     setPreferences(prefs);
-  };
+  }, [userId]);
 
-  const getUserId = async (): Promise<number | null> => {
-    // Will be implemented via auth hook
-    return null;
-  };
+  useEffect(() => {
+    loadDigest();
+    loadPreferences();
+  }, [loadDigest, loadPreferences]);
 
   const togglePreference = async (key: keyof typeof preferences) => {
     if (!userId) return;
@@ -255,7 +252,7 @@ export function NotificationDigest({ userId, refreshInterval = 300000 }: Notific
               <Switch
                 id="daily-digest"
                 checked={preferences.daily_digest}
-                onCheckedChange={checked => togglePreference('daily_digest')}
+                onCheckedChange={_checked => togglePreference('daily_digest')}
               />
             </div>
             <div className="flex items-center justify-between">
@@ -265,7 +262,7 @@ export function NotificationDigest({ userId, refreshInterval = 300000 }: Notific
               <Switch
                 id="weekly-digest"
                 checked={preferences.weekly_digest}
-                onCheckedChange={checked => togglePreference('weekly_digest')}
+                onCheckedChange={_checked => togglePreference('weekly_digest')}
               />
             </div>
             <div className="flex items-center justify-between">
@@ -275,7 +272,7 @@ export function NotificationDigest({ userId, refreshInterval = 300000 }: Notific
               <Switch
                 id="push-enabled"
                 checked={preferences.push_enabled}
-                onCheckedChange={checked => togglePreference('push_enabled')}
+                onCheckedChange={_checked => togglePreference('push_enabled')}
               />
             </div>
             <div className="flex items-center justify-between">
@@ -285,7 +282,7 @@ export function NotificationDigest({ userId, refreshInterval = 300000 }: Notific
               <Switch
                 id="email-enabled"
                 checked={preferences.email_enabled}
-                onCheckedChange={checked => togglePreference('email_enabled')}
+                onCheckedChange={_checked => togglePreference('email_enabled')}
               />
             </div>
           </div>
