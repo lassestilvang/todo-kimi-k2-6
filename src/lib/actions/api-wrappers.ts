@@ -1,8 +1,8 @@
 'use server';
 
-import { getDb } from '@/lib/db';
 import { getCurrentUser } from '@/lib/session';
-import type { UserSkill } from '@/types';
+import type { UserSkill, TaskWithRelations } from '@/types';
+import type { GetTasksOptions } from './tasks';
 
 /**
  * Get user skills (server action wrapper for client components)
@@ -41,13 +41,10 @@ export async function fetchSkillStatistics(userId?: number): Promise<{
 /**
  * Get tasks for current user
  */
-export async function fetchTasks(options?: {
-  view?: string;
-  limit?: number;
-}): Promise<any[]> {
+export async function fetchTasks(options?: { view?: GetTasksOptions['view']; limit?: number }): Promise<TaskWithRelations[]> {
   const { getTasks } = await import('./tasks');
   const tasks = await getTasks({
-    view: options?.view as any,
+    view: options?.view,
     limit: options?.limit || 50,
   });
   return tasks;
