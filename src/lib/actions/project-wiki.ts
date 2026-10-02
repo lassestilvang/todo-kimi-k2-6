@@ -266,9 +266,18 @@ export async function addWikiComment(
     )
     .run(pageId, content, user.id, lineNumber || null);
 
+  interface WikiComment {
+  id: number;
+  page_id: number;
+  content: string;
+  author_id: number;
+  line_number: number | null;
+  created_at: string;
+}
+
   return db
     .prepare('SELECT * FROM wiki_comments WHERE id = ?')
-    .get(Number(result.lastInsertRowid)) as any;
+    .get(Number(result.lastInsertRowid)) as WikiComment;
 }
 
 /**
