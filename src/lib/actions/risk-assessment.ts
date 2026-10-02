@@ -372,8 +372,8 @@ function calculateComplexityScore(factors: string[]): number {
     score += factors.length * 15;
   }
 
-  const complexityKeywords = ['integration', 'api', 'database', 'security', 'review', 'deploy'];
   // Would check description for keywords in real implementation
+  // const complexityKeywords = ['integration', 'api', 'database', 'security', 'review', 'deploy'];
 
   return Math.min(100, score);
 }
@@ -410,7 +410,7 @@ function generateMitigation(riskLevel: 'low' | 'medium' | 'high' | 'critical', f
 /**
  * Generate recommendation
  */
-function generateRecommendation(riskLevel: 'low' | 'medium' | 'high' | 'critical', task: Task, factors: RiskFactors): string {
+function generateRecommendation(riskLevel: 'low' | 'medium' | 'high' | 'critical', _task: Task, _factors: RiskFactors): string {
   if (riskLevel === 'critical') {
     return 'Critical risk detected. Take immediate action to prevent delay.';
   }
