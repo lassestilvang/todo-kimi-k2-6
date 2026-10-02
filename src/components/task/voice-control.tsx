@@ -1,10 +1,55 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+
+// Type declarations for Web Speech API
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  start(): void;
+  stop(): void;
+  onresult: (event: SpeechRecognitionEvent) => void;
+  onend: () => void;
+  onerror: (event: SpeechRecognitionErrorEvent) => void;
+}
+
+interface SpeechRecognitionEvent extends Event {
+  resultIndex: number;
+  results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognitionErrorEvent extends Event {
+  error: string;
+}
+
+interface SpeechRecognitionResultList {
+  length: number;
+  item(index: number): SpeechRecognitionResult;
+  [index: number]: SpeechRecognitionResult;
+}
+
+interface SpeechRecognitionResult {
+  length: number;
+  item(index: number): SpeechRecognitionAlternative;
+  [index: number]: SpeechRecognitionAlternative;
+  isFinal: boolean;
+}
+
+interface SpeechRecognitionAlternative {
+  transcript: string;
+  confidence: number;
+}
+
+declare global {
+  interface Window {
+    SpeechRecognition: new () => SpeechRecognition;
+    webkitSpeechRecognition: new () => SpeechRecognition;
+  }
+}
 import {
   Mic,
   MicOff,
-  Volume2,
   Sparkles,
   CheckCircle2,
   XCircle,
@@ -19,7 +64,6 @@ import {
   CardDescription,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
 import { parseVoiceCommand, executeVoiceIntent, logVoiceCommand, getVoiceCommandHistory } from '@/lib/actions/voice-control';
@@ -31,7 +75,16 @@ export function VoiceControl() {
   const [intent, setIntent] = useState<ParsedVoiceIntent | null>(null);
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
   const [history, setHistory] = useState<VoiceCommand[]>([]);
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+
+  const loadHistory = useCallback(async () => {
+    try {
+      const commands = await getVoiceCommandHistory(20);
+      setHistory(commands);
+    } catch (error) {
+      console.error('Failed to load history:', error);
+    }
+  }, []);
 
   useEffect(() => {
     loadHistory();
@@ -39,29 +92,31 @@ export function VoiceControl() {
     // Check if browser supports SpeechRecognition
     if (typeof window !== 'undefined') {
       const SpeechRecognition =
-        (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        window.SpeechRecognition || window.webkitSpeechRecognition;
 
       if (SpeechRecognition) {
-        recognitionRef.current = new SpeechRecognition();
-        recognitionRef.current.continuous = false;
-        recognitionRef.current.interimResults = true;
-        recognitionRef.current.lang = 'en-US';
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = true;
+        recognition.lang = 'en-US';
 
-        recognitionRef.current.onresult = (event: any) => {
+        recognition.onresult = (event: SpeechRecognitionEvent) => {
           const current = event.resultIndex;
           const transcriptText = event.results[current][0].transcript;
           setTranscript(transcriptText);
         };
 
-        recognitionRef.current.onend = () => {
+        recognition.onend = () => {
           setListening(false);
         };
 
-        recognitionRef.current.onerror = (event: any) => {
+        recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
           console.error('Speech recognition error:', event.error);
           setListening(false);
           toast.error('Voice recognition failed. Try again.');
         };
+
+        recognitionRef.current = recognition;
       }
     }
 
@@ -70,16 +125,7 @@ export function VoiceControl() {
         recognitionRef.current.stop();
       }
     };
-  }, []);
-
-  const loadHistory = async () => {
-    try {
-      const commands = await getVoiceCommandHistory(20);
-      setHistory(commands);
-    } catch (error) {
-      console.error('Failed to load history:', error);
-    }
-  };
+  }, [loadHistory]);
 
   const startListening = () => {
     if (!recognitionRef.current) {
